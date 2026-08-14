@@ -6,6 +6,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/health",
+      "dest": "/api/index"
+    },
+    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }
