@@ -282,10 +282,10 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 });
 
 // WORKFLOW & KANBAN
-app.get('/api/workflow/:clientId', async (req: Request, res: Response) => {
+app.get(['/api/workflow/:clientId', '/api/kanban/:clientId', '/api/kanban'], async (req: Request, res: Response) => {
   const { clientId } = req.params;
   const assets = loadAssetsFromDisk();
-  const clientAssets = assets.filter(a => a.clientId === clientId || a.client_id === clientId);
+  const clientAssets = clientId ? assets.filter(a => a.clientId === clientId || a.client_id === clientId) : assets;
   return res.json({ success: true, data: clientAssets.length > 0 ? clientAssets : assets.slice(0, 4) });
 });
 

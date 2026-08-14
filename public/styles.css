@@ -48,12 +48,18 @@ body {
 /* LAYOUT PRINCIPAL */
 .app-container {
   display: flex;
+  width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
+  min-width: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* SIDEBAR LATERAL */
 .sidebar {
   width: 280px;
+  flex-shrink: 0;
   background: rgba(11, 15, 25, 0.95);
   border-right: 1px solid var(--border-glass);
   padding: 24px 20px;
