@@ -1,17 +1,13 @@
 {
-  "version": 2,
-  "routes": [
+  "outputDirectory": "public",
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     },
     {
-      "src": "/health",
-      "dest": "/api/index"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/health",
+      "destination": "/api/index"
     }
   ]
 }
