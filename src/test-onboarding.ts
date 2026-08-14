@@ -29,7 +29,7 @@ async function runOnboardingIntegrationTest() {
     console.log('\n📊 Resumo da Visão de Mercado (Preditiva):');
     console.table(result.dossier.marketOverview);
     console.log('\n🧠 Ganchos de Neuromarketing (Primeiros 3 segundos):');
-    console.log(result.dossier.neuromarketingAngles.hookConcepts);
+    console.log(result.dossier.neuromarketingGuidelines?.visualHooksFirst3s);
   } catch (error) {
     console.error('❌ Falha na execução da integração:', error);
   }

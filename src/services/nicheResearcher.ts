@@ -6,6 +6,7 @@ export interface ClientOnboardingInput {
   organizationId: string;
   clientId?: string;
   clientName: string;
+  name?: string;
   niche: string;
   website?: string;
   logoUrl?: string;

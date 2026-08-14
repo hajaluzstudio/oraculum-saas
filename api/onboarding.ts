@@ -32,10 +32,10 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
 
     const result = await registerClientAndGenerateDossier({
       organizationId,
-      name: clientName,
+      clientName: clientName,
       niche,
       website,
-      previous_agency_notes: sanitized_history || previous_agency_notes,
+      previousAgencyNotes: sanitized_history || previous_agency_notes,
     });
 
     const dossiers = loadDossiersFromDisk();

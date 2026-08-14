@@ -27,11 +27,11 @@ app.post('/api/spy/analyze', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'competitorName e niche são obrigatórios.' });
     }
 
-    const report = await analyzeCompetitorOffer(
+    const report = await analyzeCompetitorOffer({
       competitorName,
       niche,
-      competitorAdUrlOrText || 'Anúncio de alta escala com oferta direta e desconto agressivo.'
-    );
+      competitorAdUrlOrText: competitorAdUrlOrText || 'Anúncio de alta escala com oferta direta e desconto agressivo.'
+    });
 
     return res.json({ success: true, data: report });
   } catch (error: any) {

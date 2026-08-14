@@ -47,6 +47,8 @@ export interface InspectCreativeInput {
   niche: string;
   organizationId?: string;
   clientId?: string;
+  clientName?: string;
+  sampleTextOrDescription?: string;
   assetId?: string; // Se fornecido, atualiza o registro na tabela creative_assets do Supabase
 }
 

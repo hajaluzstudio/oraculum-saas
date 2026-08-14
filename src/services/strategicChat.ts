@@ -169,7 +169,7 @@ REGRAS ABSOLUTAS INEGOCIÁVEIS:
   // 3. Formata o histórico de conversas para a API do Gemini com memória contínua
   const contentsHistory: any[] = conversationHistory.slice(-8).map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: typeof msg.content === 'string' ? msg.content : (msg.content?.replyText || JSON.stringify(msg.content)) }]
+    parts: [{ text: typeof msg.content === 'string' ? msg.content : ((msg.content as any)?.replyText || JSON.stringify(msg.content)) }]
   }));
 
   const contents = [

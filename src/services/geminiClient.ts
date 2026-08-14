@@ -85,6 +85,7 @@ export interface NicheDossier {
   consumptionPsychology: ConsumptionPsychology;
   budgetPricingStrategy: BudgetPricingStrategy;
   neuromarketingGuidelines: DetailedNeuromarketingGuidelines;
+  neuromarketingAngles?: DetailedNeuromarketingGuidelines;
   traditionalAndOfflineMedia: TraditionalAndOfflineMedia;
   budgetAllocation: BudgetAllocation;
   influencerAndPodcastPartnerships: InfluencerAndPodcastPartnerships;

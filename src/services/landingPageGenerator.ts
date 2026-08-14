@@ -22,6 +22,9 @@ export const ai = new GoogleGenAI({
 
 export async function generateAutonomousLandingPage(input: {
   clientId: string;
+  clientName?: string;
+  niche?: string;
+  primaryColor?: string;
   theme?: 'dark_vip' | 'clinical_minimal' | 'tech_growth';
   offerGoal?: string;
 }): Promise<GeneratedLandingPage> {

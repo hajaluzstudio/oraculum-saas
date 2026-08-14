@@ -79,7 +79,8 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// Armazenamento em memória sincronizado fisicamente no disco (JSON Storage)
+import { supabase } from './services/supabaseClient';
+
 export interface LocalClientRecord {
   id: string;
   organization_id: string;
@@ -92,6 +93,7 @@ export interface LocalClientRecord {
 }
 
 export const localClientsStore: LocalClientRecord[] = loadClientsFromDisk();
+export const localDossiersStore: Record<string, any> = loadDossiersFromDisk();
 
 /**
  * GET /api/clients - Lista todos os clientes cadastrados da organização (Tenant RLS)
