@@ -357,8 +357,10 @@ const boxStyle: React.CSSProperties = {
 
 const kanbanGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
   gap: '16px',
+  width: '100%',
+  minWidth: 0,
 };
 
 const kanbanColStyle: React.CSSProperties = {
@@ -366,6 +368,9 @@ const kanbanColStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '12px',
   padding: '14px',
+  minWidth: 0,
+  wordBreak: 'break-word',
+  overflowWrap: 'anywhere',
 };
 
 const colHeaderStyle = (color: string): React.CSSProperties => ({
@@ -378,6 +383,8 @@ const colHeaderStyle = (color: string): React.CSSProperties => ({
   marginBottom: '14px',
   paddingBottom: '8px',
   borderBottom: `2px solid ${color}`,
+  minWidth: 0,
+  wordBreak: 'break-word',
 });
 
 const badgeCountStyle: React.CSSProperties = {
@@ -392,6 +399,7 @@ const cardListStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
+  minWidth: 0,
 };
 
 const assetCardStyle: React.CSSProperties = {
@@ -399,6 +407,9 @@ const assetCardStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.08)',
   padding: '12px',
   borderRadius: '8px',
+  minWidth: 0,
+  wordBreak: 'break-word',
+  overflowWrap: 'anywhere',
 };
 
 const typeBadgeStyle: React.CSSProperties = {
