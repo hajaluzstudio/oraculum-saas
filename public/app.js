@@ -1431,35 +1431,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           });
         }
-                  label: 'Faturamento (R$)',
-                  data: data.revenueTimeline,
-                  borderColor: '#00F5A0',
-                  backgroundColor: 'rgba(0, 245, 160, 0.15)',
-                  borderWidth: 3,
-                  fill: true,
-                  tension: 0.35
-                },
-                {
-                  label: 'Investimento (R$)',
-                  data: data.spendTimeline,
-                  borderColor: '#00F2FE',
-                  borderWidth: 2,
-                  fill: false,
-                  tension: 0.35
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { labels: { color: '#FFF' } } },
-              scales: {
-                x: { ticks: { color: '#94A3B8' } },
-                y: { ticks: { color: '#94A3B8' } }
-              }
-            }
-          });
-        }
 
         const presCtxChan = document.getElementById('pres-chart-channel');
         if (presCtxChan && typeof Chart !== 'undefined') {
