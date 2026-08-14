@@ -41,7 +41,9 @@ app.use(tenantAuthMiddleware);
 const getStaticFilePath = (fileName: string) => {
   const publicPath = path.join(process.cwd(), 'public', fileName);
   if (fs.existsSync(publicPath)) return publicPath;
-  return path.join(process.cwd(), fileName);
+  const rootPath = path.join(process.cwd(), fileName);
+  if (fs.existsSync(rootPath)) return rootPath;
+  return path.join(__dirname, fileName);
 };
 
 // ROTA RAIZ: Servir Frontend Dashboard index.html
@@ -49,8 +51,9 @@ app.get('/', (req: Request, res: Response) => {
   try {
     const indexPath = getStaticFilePath('index.html');
     if (fs.existsSync(indexPath)) {
+      const html = fs.readFileSync(indexPath, 'utf-8');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.sendFile(indexPath);
+      return res.status(200).send(html);
     }
     return res.status(404).send('index.html não encontrado.');
   } catch (e: any) {
@@ -61,8 +64,12 @@ app.get('/', (req: Request, res: Response) => {
 app.get('/index.html', (req: Request, res: Response) => {
   try {
     const indexPath = getStaticFilePath('index.html');
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.sendFile(indexPath);
+    if (fs.existsSync(indexPath)) {
+      const html = fs.readFileSync(indexPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
+    return res.status(404).send('index.html não encontrado.');
   } catch (e: any) {
     return res.status(500).send('Erro ao carregar página: ' + e.message);
   }
@@ -72,10 +79,14 @@ app.get('/index.html', (req: Request, res: Response) => {
 app.get('/app.js', (req: Request, res: Response) => {
   try {
     const appJsPath = getStaticFilePath('app.js');
-    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    return res.sendFile(appJsPath);
+    if (fs.existsSync(appJsPath)) {
+      const code = fs.readFileSync(appJsPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('app.js não encontrado.');
   } catch (e: any) {
-    return res.status(500).send('Erro ao carregar app.js');
+    return res.status(500).send('Erro ao carregar app.js: ' + e.message);
   }
 });
 
@@ -83,10 +94,14 @@ app.get('/app.js', (req: Request, res: Response) => {
 app.get('/styles.css', (req: Request, res: Response) => {
   try {
     const stylesPath = getStaticFilePath('styles.css');
-    res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    return res.sendFile(stylesPath);
+    if (fs.existsSync(stylesPath)) {
+      const css = fs.readFileSync(stylesPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      return res.status(200).send(css);
+    }
+    return res.status(404).send('styles.css não encontrado.');
   } catch (e: any) {
-    return res.status(500).send('Erro ao carregar styles.css');
+    return res.status(500).send('Erro ao carregar styles.css: ' + e.message);
   }
 });
 
@@ -94,8 +109,12 @@ app.get('/styles.css', (req: Request, res: Response) => {
 app.get('/manifest.json', (req: Request, res: Response) => {
   try {
     const manifestPath = getStaticFilePath('manifest.json');
-    res.setHeader('Content-Type', 'application/json');
-    return res.sendFile(manifestPath);
+    if (fs.existsSync(manifestPath)) {
+      const json = fs.readFileSync(manifestPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(json);
+    }
+    return res.status(404).send('manifest.json não encontrado.');
   } catch (e: any) {
     return res.status(500).send('Erro ao carregar manifest.json');
   }
@@ -105,8 +124,12 @@ app.get('/manifest.json', (req: Request, res: Response) => {
 app.get('/sw.js', (req: Request, res: Response) => {
   try {
     const swPath = getStaticFilePath('sw.js');
-    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    return res.sendFile(swPath);
+    if (fs.existsSync(swPath)) {
+      const code = fs.readFileSync(swPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('sw.js não encontrado.');
   } catch (e: any) {
     return res.status(500).send('Erro ao carregar sw.js');
   }
@@ -129,8 +152,10 @@ app.get('/api/clients', async (req: Request, res: Response) => {
     const organizationId = (req as any).organizationId;
     let dbClients: any[] = [];
     try {
-      const { data, error } = await supabase.from('clients').select('*').eq('organization_id', organizationId).order('created_at', { ascending: false });
-      if (!error && data) dbClients = data;
+      if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+        const { data, error } = await supabase.from('clients').select('*').eq('organization_id', organizationId).order('created_at', { ascending: false });
+        if (!error && data) dbClients = data;
+      }
     } catch (e) {}
 
     const localClients = loadClientsFromDisk();
