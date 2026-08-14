@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 
 import { registerClientAndGenerateDossier, getNicheKnowledgeBase } from '../src/services/nicheResearcher';
@@ -26,8 +27,6 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use(express.static(path.join(process.cwd(), 'public')));
-
 const DEFAULT_TENANT_ID = 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
 
 const tenantAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -38,6 +37,82 @@ const tenantAuthMiddleware = (req: Request, res: Response, next: NextFunction) =
 
 app.use(tenantAuthMiddleware);
 
+// Helper para ler arquivos da pasta public/ ou raiz
+const getStaticFilePath = (fileName: string) => {
+  const publicPath = path.join(process.cwd(), 'public', fileName);
+  if (fs.existsSync(publicPath)) return publicPath;
+  return path.join(process.cwd(), fileName);
+};
+
+// ROTA RAIZ: Servir Frontend Dashboard index.html
+app.get('/', (req: Request, res: Response) => {
+  try {
+    const indexPath = getStaticFilePath('index.html');
+    if (fs.existsSync(indexPath)) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.sendFile(indexPath);
+    }
+    return res.status(404).send('index.html não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar página: ' + e.message);
+  }
+});
+
+app.get('/index.html', (req: Request, res: Response) => {
+  try {
+    const indexPath = getStaticFilePath('index.html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.sendFile(indexPath);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar página: ' + e.message);
+  }
+});
+
+// SERVIR APP.JS
+app.get('/app.js', (req: Request, res: Response) => {
+  try {
+    const appJsPath = getStaticFilePath('app.js');
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    return res.sendFile(appJsPath);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar app.js');
+  }
+});
+
+// SERVIR STYLES.CSS
+app.get('/styles.css', (req: Request, res: Response) => {
+  try {
+    const stylesPath = getStaticFilePath('styles.css');
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    return res.sendFile(stylesPath);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar styles.css');
+  }
+});
+
+// SERVIR MANIFEST.JSON
+app.get('/manifest.json', (req: Request, res: Response) => {
+  try {
+    const manifestPath = getStaticFilePath('manifest.json');
+    res.setHeader('Content-Type', 'application/json');
+    return res.sendFile(manifestPath);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar manifest.json');
+  }
+});
+
+// SERVIR SW.JS
+app.get('/sw.js', (req: Request, res: Response) => {
+  try {
+    const swPath = getStaticFilePath('sw.js');
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    return res.sendFile(swPath);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar sw.js');
+  }
+});
+
+// HEALTH CHECK
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
