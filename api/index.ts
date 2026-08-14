@@ -37,13 +37,19 @@ const tenantAuthMiddleware = (req: Request, res: Response, next: NextFunction) =
 
 app.use(tenantAuthMiddleware);
 
-// Helper para ler arquivos da pasta public/ ou raiz
+// Helper para ler arquivos da pasta public/ em qualquer ambiente Serverless Vercel
 const getStaticFilePath = (fileName: string) => {
-  const publicPath = path.join(process.cwd(), 'public', fileName);
-  if (fs.existsSync(publicPath)) return publicPath;
-  const rootPath = path.join(process.cwd(), fileName);
-  if (fs.existsSync(rootPath)) return rootPath;
-  return path.join(__dirname, fileName);
+  const possiblePaths = [
+    path.join(process.cwd(), 'public', fileName),
+    path.join(__dirname, '../public', fileName),
+    path.join(__dirname, 'public', fileName),
+    path.join(process.cwd(), fileName),
+    path.join(__dirname, fileName)
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return possiblePaths[0];
 };
 
 // ROTA RAIZ: Servir Frontend Dashboard index.html
