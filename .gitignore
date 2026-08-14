@@ -5,3 +5,5 @@ uploads/
 *.log
 data_storage/*.json
 !data_storage/.gitkeep
+
+.vercel
