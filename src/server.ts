@@ -859,12 +859,16 @@ app.post('/api/landing-pages/generate', tenantAuthMiddleware, async (req: Reques
   }
 });
 
-// Inicialização do servidor
-app.listen(Number(PORT), '127.0.0.1', () => {
-  console.log(`\n==============================================================================`);
-  console.log(`🚀 SERVIDOR API BACKEND SAAS MARKETING HÍBRIDO EM EXECUÇÃO`);
-  console.log(`📡 Porta: ${PORT}`);
-  console.log(`🌐 Healthcheck: http://localhost:${PORT}/health ou http://127.0.0.1:${PORT}/health`);
-  console.log(`🔒 Isolamento Multi-Tenant: Exige cabeçalho "x-organization-id"`);
-  console.log(`==============================================================================\n`);
-});
+// Inicialização do servidor (apenas para dev local / servidor Node tradicional)
+if (!process.env.VERCEL) {
+  app.listen(Number(PORT), '127.0.0.1', () => {
+    console.log(`\n==============================================================================`);
+    console.log(`🚀 SERVIDOR API BACKEND SAAS MARKETING HÍBRIDO EM EXECUÇÃO`);
+    console.log(`📡 Porta: ${PORT}`);
+    console.log(`🌐 Healthcheck: http://localhost:${PORT}/health ou http://127.0.0.1:${PORT}/health`);
+    console.log(`🔒 Isolamento Multi-Tenant: Exige cabeçalho "x-organization-id"`);
+    console.log(`==============================================================================\n`);
+  });
+}
+
+export default app;
