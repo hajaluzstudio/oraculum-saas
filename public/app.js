@@ -2546,12 +2546,126 @@ document.addEventListener('DOMContentLoaded', () => {
     applyRbacAndSessionVisibility(null);
   }
 
+  // ============================================================================
+  // 12. GESTÃO MASTER DE AGÊNCIAS (SUPER ADMIN)
+  // ============================================================================
+  const tbodyAgencies = document.getElementById('sa-agencies-table-body');
+  const formCreateAgency = document.getElementById('form-sa-create-agency');
+  const btnToggleMaintenance = document.getElementById('btn-toggle-maintenance-global');
+
+  async function loadSuperAdminAgencies() {
+    if (!tbodyAgencies) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/agencies`);
+      if (res.ok) {
+        const { data } = await res.json();
+        renderAgenciesTable(data);
+      } else {
+        renderMockAgencies();
+      }
+    } catch (e) {
+      console.warn('API não acessível. Carregando mock de agências.');
+      renderMockAgencies();
+    }
+  }
+
+  function renderMockAgencies() {
+    renderAgenciesTable([
+      { id: 'ag_1', name: 'Haja Luz Studio (Matriz)', email_billing: 'contato@hajaluzstudio.com', monthly_fee: 1497, status: 'active', clients_count: 14, tokens: '1.240.000' },
+      { id: 'ag_2', name: 'Agência Growth Scale', email_billing: 'financeiro@growthscale.com', monthly_fee: 497, status: 'blocked', clients_count: 6, tokens: '380.000' }
+    ]);
+  }
+
+  function renderAgenciesTable(agencies) {
+    if (!tbodyAgencies) return;
+    tbodyAgencies.innerHTML = '';
+    
+    let activeCount = 0;
+    let blockedCount = 0;
+    let totalMRR = 0;
+    
+    agencies.forEach(ag => {
+      if (ag.status === 'active') { activeCount++; totalMRR += Number(ag.monthly_fee); }
+      else { blockedCount++; }
+      
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+      
+      const isActive = ag.status === 'active';
+      const statusHtml = isActive 
+        ? `<span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em dia</span>`
+        : `<span style="background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Bloqueada</span>`;
+        
+      const btnAction = isActive
+        ? `<button type="button" class="btn-toggle-agency" data-id="${ag.id}" data-status="${ag.status}" style="background: rgba(255, 75, 75, 0.2); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;"><i class="fa-solid fa-lock"></i> Bloquear</button>`
+        : `<button type="button" class="btn-toggle-agency" data-id="${ag.id}" data-status="${ag.status}" style="background: rgba(0, 245, 160, 0.2); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;"><i class="fa-solid fa-unlock"></i> Desbloquear</button>`;
+        
+      tr.innerHTML = `
+        <td style="padding: 14px 20px; font-weight: 700; color: #FFF;"><i class="fa-solid fa-building" style="color: #C084FC; margin-right: 6px;"></i> ${ag.name}</td>
+        <td style="padding: 14px 20px; color: #94A3B8;">${ag.email_billing || '-'}</td>
+        <td style="padding: 14px 20px; font-weight: 600;">${ag.clients_count || 0} clientes</td>
+        <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">${ag.tokens || '0'} tokens</td>
+        <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ ${Number(ag.monthly_fee || 0).toFixed(2)}</td>
+        <td style="padding: 14px 20px;">${statusHtml}</td>
+        <td style="padding: 14px 20px; text-align: right;">${btnAction}</td>
+      `;
+      tbodyAgencies.appendChild(tr);
+    });
+
+    const elActive = document.getElementById('sa-metric-active-agencies');
+    if (elActive) elActive.textContent = `${activeCount} / ${agencies.length}`;
+    
+    const elBlocked = document.getElementById('sa-metric-blocked-agencies');
+    if (elBlocked) elBlocked.textContent = blockedCount;
+    
+    const elMrr = document.getElementById('sa-metric-total-mrr');
+    if (elMrr) elMrr.textContent = `R$ ${totalMRR.toFixed(2)}`;
+    
+    document.querySelectorAll('.btn-toggle-agency').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const currentStatus = e.currentTarget.getAttribute('data-status');
+        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/admin/agencies/toggle-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agencyId: id, newStatus })
+          });
+          if(res.ok) loadSuperAdminAgencies();
+          else { alert('Ação simulada!'); loadSuperAdminAgencies(); }
+        } catch(err) {
+          alert('Sem servidor. Simulando toggle de status na interface.');
+          loadSuperAdminAgencies();
+        }
+      });
+    });
+  }
+
+  if (formCreateAgency) {
+    formCreateAgency.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('sa-input-agency-name').value;
+      const fee = document.getElementById('sa-input-agency-fee').value;
+      alert(`✅ Sucesso! Agência "${name}" (R$ ${fee}) seria cadastrada no Supabase aqui.`);
+      formCreateAgency.reset();
+      loadSuperAdminAgencies();
+    });
+  }
+
+  if (btnToggleMaintenance) {
+    btnToggleMaintenance.addEventListener('click', async () => {
+      alert('⚠️ Simulando ativação de Manutenção Geral.');
+    });
+  }
+
   // Inicializa Kanban e BI ao carregar
   setTimeout(() => {
     if (activeClientId) {
       loadClientKanbanCards(activeClientId);
       loadClientBiMetrics(activeClientId);
     }
+    loadSuperAdminAgencies();
   }, 600);
 });
 
