@@ -57,6 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
     'tab-settings': {
       title: 'Configurações, Notificações WhatsApp & Cofre RLS',
       subtitle: 'Gerenciamento de credenciais de APIs e central de disparos automatizados de WhatsApp.'
+    },
+    'tab-super-admin': {
+      title: 'Painel Master: Gestão Global de Agências & Bloqueio Financeiro',
+      subtitle: 'Controle de licenças, inadimplência, consumo de IA por tenant e modo manutenção global.'
     }
   };
 

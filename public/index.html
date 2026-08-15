@@ -871,6 +871,141 @@
           </div>
         </section>
 
+        <!-- ABA 7: GESTÃO MASTER DE AGÊNCIAS (SUPER ADMIN) -->
+        <section id="tab-super-admin" class="tab-panel">
+          <div class="card-glass" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(127, 0, 255, 0.08)); border: 1px solid rgba(168, 85, 247, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <span class="badge-tag" style="background: rgba(253, 224, 71, 0.2); color: #FDE047; border: 1px solid rgba(253, 224, 71, 0.4); margin-bottom: 8px;">👑 PAINEL MESTRE SUPER ADMIN</span>
+                <h2 style="margin: 4px 0 0; color: #FFF; font-family: 'Outfit', sans-serif;">Gestão Global de Agências & Bloqueio Financeiro</h2>
+                <p style="color: #94A3B8; margin: 4px 0 0; font-size: 13px;">Gerenciamento de licenças, status de inadimplência e manutenção da infraestrutura SaaS.</p>
+              </div>
+              <button type="button" id="btn-toggle-maintenance-global" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-wrench"></i> <span id="maintenance-btn-text">Ativar Modo Manutenção Geral</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- CARDS DE MÉTRICAS MESTRAS -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-building-user" style="color: #C084FC;"></i> Agências Ativas</span>
+              <h2 style="font-size: 26px; color: #FFF; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="sa-metric-active-agencies">2 / 3</h2>
+              <span style="font-size: 11px; color: #10B981;">Em dia com licença</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-lock" style="color: #FF4B4B;"></i> Agências Bloqueadas</span>
+              <h2 style="font-size: 26px; color: #FF4B4B; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="sa-metric-blocked-agencies">1</h2>
+              <span style="font-size: 11px; color: #FF4B4B;">Inadimplentes</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-users" style="color: #00F2FE;"></i> Total de Clientes Finais</span>
+              <h2 style="font-size: 26px; color: #00F2FE; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="sa-metric-total-clients">24</h2>
+              <span style="font-size: 11px; color: #00F2FE;">Empresas atendidas</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-sack-dollar" style="color: #00F5A0;"></i> Faturamento Recorrente (MRR)</span>
+              <h2 style="font-size: 26px; color: #00F5A0; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="sa-metric-total-mrr">R$ 2.991,00</h2>
+              <span style="font-size: 11px; color: #00F5A0;">Receita mensal licenças</span>
+            </div>
+          </div>
+
+          <!-- FORMULÁRIO DE CADASTRO DE AGÊNCIA -->
+          <div class="card-glass" style="margin-bottom: 24px;">
+            <h3 style="margin: 0 0 16px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-plus-circle" style="color: #C084FC;"></i> Cadastrar Nova Agência Parceira</h3>
+            <form id="form-sa-create-agency" style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 12px; align-items: end;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">Nome da Agência</label>
+                <input type="text" id="sa-input-agency-name" required placeholder="Ex: Agência E-commerce Scale" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">E-mail de Cobrança</label>
+                <input type="email" id="sa-input-agency-email" required placeholder="financeiro@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">Mensalidade (R$)</label>
+                <input type="number" id="sa-input-agency-fee" value="497" required style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #7F00FF, #E100FF); padding: 11px; font-weight: 700; font-size: 13px;">
+                <i class="fa-solid fa-plus"></i> Cadastrar Licença
+              </button>
+            </form>
+          </div>
+
+          <!-- TABELA DE AGÊNCIAS -->
+          <div class="card-glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 18px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-list-check" style="color: #00F2FE;"></i> Relatório de Licenças & Consumo de IA por Agência</h3>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; color: #E2E8F0;">
+              <thead>
+                <tr style="background: rgba(0,0,0,0.4); color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                  <th style="padding: 14px 20px;">Agência</th>
+                  <th style="padding: 14px 20px;">Contato Financeiro</th>
+                  <th style="padding: 14px 20px;">Clientes</th>
+                  <th style="padding: 14px 20px;">Consumo IA (Tokens)</th>
+                  <th style="padding: 14px 20px;">Mensalidade</th>
+                  <th style="padding: 14px 20px;">Status</th>
+                  <th style="padding: 14px 20px; text-align: right;">Ação Mestra</th>
+                </tr>
+              </thead>
+              <tbody id="sa-agencies-table-body">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
+                    <i class="fa-solid fa-building" style="color: #C084FC; margin-right: 6px;"></i> Haja Luz Studio (Matriz)
+                  </td>
+                  <td style="padding: 14px 20px; color: #94A3B8;">contato@hajaluzstudio.com</td>
+                  <td style="padding: 14px 20px; font-weight: 600;">14 clientes</td>
+                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">1.240.000 tokens</td>
+                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 1.497,00</td>
+                  <td style="padding: 14px 20px;">
+                    <span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em dia</span>
+                  </td>
+                  <td style="padding: 14px 20px; text-align: right;">
+                    <button type="button" class="btn-toggle-agency" data-id="ag_1" data-status="active" style="background: rgba(255, 75, 75, 0.2); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+                      <i class="fa-solid fa-lock"></i> Bloquear Acesso
+                    </button>
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
+                    <i class="fa-solid fa-building" style="color: #C084FC; margin-right: 6px;"></i> Agência Growth Scale
+                  </td>
+                  <td style="padding: 14px 20px; color: #94A3B8;">financeiro@growthscale.com</td>
+                  <td style="padding: 14px 20px; font-weight: 600;">6 clientes</td>
+                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">380.000 tokens</td>
+                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 497,00</td>
+                  <td style="padding: 14px 20px;">
+                    <span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em dia</span>
+                  </td>
+                  <td style="padding: 14px 20px; text-align: right;">
+                    <button type="button" class="btn-toggle-agency" data-id="ag_2" data-status="active" style="background: rgba(255, 75, 75, 0.2); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+                      <i class="fa-solid fa-lock"></i> Bloquear Acesso
+                    </button>
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
+                    <i class="fa-solid fa-building" style="color: #FF4B4B; margin-right: 6px;"></i> Vortex Growth & Performance
+                  </td>
+                  <td style="padding: 14px 20px; color: #94A3B8;">adm@vortexgrowth.com.br</td>
+                  <td style="padding: 14px 20px; font-weight: 600;">4 clientes</td>
+                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">210.000 tokens</td>
+                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 997,00</td>
+                  <td style="padding: 14px 20px;">
+                    <span style="background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Bloqueada (Inadimplente)</span>
+                  </td>
+                  <td style="padding: 14px 20px; text-align: right;">
+                    <button type="button" class="btn-toggle-agency" data-id="ag_3" data-status="blocked" style="background: rgba(0, 245, 160, 0.2); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+                      <i class="fa-solid fa-unlock"></i> Desbloquear
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
       </div>
     </main>
   </div>
