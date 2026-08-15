@@ -182,7 +182,7 @@ export async function saveScraperDataToKnowledgeBase(
     // Tenta atualizar registro existente do nicho ou insere um novo
     const { data: existingData } = await supabase
       .from('niche_knowledge_base')
-      .select('id, version, dossier_data')
+      .select('id, version, dossier_data, client_id')
       .eq('organization_id', organizationId)
       .eq('niche_name', niche)
       .order('version', { ascending: false })
@@ -234,8 +234,9 @@ export async function saveScraperDataToKnowledgeBase(
 
     // Persistência em disco/local de contingência
     if (clientId) {
-      localDossiersStore[clientId] = mergedDossier;
-      saveDossiersToDisk(localDossiersStore);
+      const currentDossiers = loadDossiersFromDisk();
+      currentDossiers[clientId] = mergedDossier;
+      saveDossiersToDisk(currentDossiers);
     }
 
     return { success: true, recordId: data?.id || 'kb_local_' + Date.now() };
