@@ -23,7 +23,7 @@ import {
   stopAutonomousScraperCron,
   getAutonomousScraperStatus,
   mineNicheTopPlayersAndTrends
-import { checkAgencyStatus } from '../src/middlewares/authAgency';
+import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } from '../src/middlewares/authAgency';
 
 dotenv.config();
 
@@ -510,6 +510,16 @@ app.post('/api/admin/agencies/toggle-status', async (req: Request, res: Response
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
+});
+
+app.get('/api/admin/maintenance', (req: Request, res: Response) => {
+  return res.json({ success: true, active: getMaintenanceModeState() });
+});
+
+app.post('/api/admin/maintenance', (req: Request, res: Response) => {
+  const { active } = req.body;
+  setMaintenanceModeState(Boolean(active));
+  return res.json({ success: true, active: getMaintenanceModeState(), message: `Modo manutenção alterado para ${active ? 'ATIVADO' : 'DESATIVADO'}` });
 });
 
 export default app;
