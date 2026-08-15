@@ -2416,8 +2416,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userSessionLabel) userSessionLabel.textContent = session.email;
 
-    // RBAC: Garantir que o botão de Gestão Master Agências fique sempre visível
-    if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'flex';
+    // RBAC: Exibir o botão de Gestão Master Agências apenas para usuários com role 'super_admin'
+    if (btnTabSuperAdmin) {
+      btnTabSuperAdmin.style.display = (session && session.role === 'super_admin') ? 'flex' : 'none';
+    }
 
     // Barreira de Inadimplência
     if (session.agencyStatus === 'blocked') {
