@@ -2264,6 +2264,148 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ============================================================================
+  // LÓGICA DO MODAL DE AUTENTICAÇÃO, AUTO-CADASTRO E BLOQUEIO FINANCEIRO
+  // ============================================================================
+  const authModalOverlay = document.getElementById('auth-modal-overlay');
+  const btnOpenAuthModal = document.getElementById('btn-open-auth-modal');
+  const btnCloseAuthModal = document.getElementById('btn-close-auth-modal');
+  const authTabBtnLogin = document.getElementById('auth-tab-btn-login');
+  const authTabBtnRegister = document.getElementById('auth-tab-btn-register');
+  const formAuthLogin = document.getElementById('form-auth-login');
+  const formAuthRegister = document.getElementById('form-auth-register');
+  const authErrorMsg = document.getElementById('auth-error-msg');
+  const userSessionLabel = document.getElementById('user-session-label');
+  const blockedSuspensionModal = document.getElementById('blocked-suspension-modal');
+  const btnLogoutSuspension = document.getElementById('btn-logout-suspension');
+
+  // Alternar abas no Modal de Auth
+  if (authTabBtnLogin && authTabBtnRegister) {
+    authTabBtnLogin.addEventListener('click', () => {
+      authTabBtnLogin.style.background = '#7F00FF';
+      authTabBtnLogin.style.color = '#FFF';
+      authTabBtnRegister.style.background = 'transparent';
+      authTabBtnRegister.style.color = '#94A3B8';
+      formAuthLogin.style.display = 'block';
+      formAuthRegister.style.display = 'none';
+      if (authErrorMsg) authErrorMsg.style.display = 'none';
+    });
+
+    authTabBtnRegister.addEventListener('click', () => {
+      authTabBtnRegister.style.background = '#00F5A0';
+      authTabBtnRegister.style.color = '#080B11';
+      authTabBtnLogin.style.background = 'transparent';
+      authTabBtnLogin.style.color = '#94A3B8';
+      formAuthRegister.style.display = 'block';
+      formAuthLogin.style.display = 'none';
+      if (authErrorMsg) authErrorMsg.style.display = 'none';
+    });
+  }
+
+  if (btnOpenAuthModal) {
+    btnOpenAuthModal.addEventListener('click', () => {
+      if (authModalOverlay) authModalOverlay.style.display = 'flex';
+    });
+  }
+
+  if (btnCloseAuthModal) {
+    btnCloseAuthModal.addEventListener('click', () => {
+      if (authModalOverlay) authModalOverlay.style.display = 'none';
+    });
+  }
+
+  // SUBMIT LOGIN
+  if (formAuthLogin) {
+    formAuthLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-login-email')?.value;
+      const password = document.getElementById('auth-login-password')?.value;
+
+      let role = 'agency_owner';
+      let agencyStatus = 'active';
+
+      if (email.toLowerCase().includes('admin')) {
+        role = 'super_admin';
+      } else if (email.toLowerCase().includes('bloqueado')) {
+        agencyStatus = 'blocked';
+      }
+
+      const sessionData = {
+        email,
+        role,
+        agencyStatus,
+        agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + email.split('@')[0],
+        loggedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('oraculum_session', JSON.stringify(sessionData));
+
+      if (userSessionLabel) {
+        userSessionLabel.textContent = sessionData.email;
+      }
+
+      if (authModalOverlay) authModalOverlay.style.display = 'none';
+
+      if (agencyStatus === 'blocked') {
+        if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'flex';
+      } else if (role === 'super_admin') {
+        const btnSuperAdmin = document.getElementById('btn-tab-super-admin');
+        if (btnSuperAdmin) btnSuperAdmin.click();
+        alert('👑 Bem-vindo, Super Admin! Painel Master ativado.');
+      } else {
+        alert(`✅ Login realizado com sucesso como ${email}!`);
+      }
+    });
+  }
+
+  // SUBMIT AUTO-CADASTRO DE AGÊNCIA
+  if (formAuthRegister) {
+    formAuthRegister.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const agencyName = document.getElementById('auth-reg-agency-name')?.value;
+      const fullName = document.getElementById('auth-reg-fullname')?.value;
+      const email = document.getElementById('auth-reg-email')?.value;
+
+      const sessionData = {
+        email,
+        fullName,
+        agencyName,
+        role: 'agency_owner',
+        agencyStatus: 'active',
+        loggedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('oraculum_session', JSON.stringify(sessionData));
+
+      if (userSessionLabel) {
+        userSessionLabel.textContent = email;
+      }
+
+      if (authModalOverlay) authModalOverlay.style.display = 'none';
+      alert(`🎉 Agência "${agencyName}" criada com sucesso! Seja bem-vindo ao Oraculum SaaS.`);
+    });
+  }
+
+  if (btnLogoutSuspension) {
+    btnLogoutSuspension.addEventListener('click', () => {
+      localStorage.removeItem('oraculum_session');
+      if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'none';
+      if (userSessionLabel) userSessionLabel.textContent = 'Entrar / Cadastrar';
+    });
+  }
+
+  // Checar sessão armazenada
+  const savedSessionStr = localStorage.getItem('oraculum_session');
+  if (savedSessionStr) {
+    try {
+      const savedSession = JSON.parse(savedSessionStr);
+      if (userSessionLabel) userSessionLabel.textContent = savedSession.email;
+      if (savedSession.agencyStatus === 'blocked') {
+        if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'flex';
+      }
+    } catch (e) {}
+  }
+
   // Inicializa Kanban e BI ao carregar
   setTimeout(() => {
     if (activeClientId) {

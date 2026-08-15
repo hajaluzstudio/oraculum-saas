@@ -77,6 +77,10 @@
           <i class="fa-solid fa-gear"></i>
           <span>Configurações & APIs</span>
         </button>
+        <button class="nav-item highlight-superadmin" data-tab="tab-super-admin" id="btn-tab-super-admin" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); margin-top: 6px;">
+          <i class="fa-solid fa-crown" style="color: #FDE047;"></i>
+          <span style="color: #E9D5FF; font-weight: 700;">Gestão Master Agências</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -131,6 +135,11 @@
             <i class="fa-solid fa-shield-halved"></i>
             <span>RLS Ativo</span>
           </div>
+
+          <!-- BOTÃO LOGIN / MINHA CONTA -->
+          <button type="button" id="btn-open-auth-modal" class="btn-primary" style="font-size: 11px; padding: 6px 14px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; border: none; border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; shadow: 0 4px 15px rgba(127,0,255,0.3);">
+            <i class="fa-solid fa-right-to-bracket"></i> <span id="user-session-label">Entrar / Cadastrar</span>
+          </button>
 
           <!-- BOTÃO INSTALAR PWA NO CELULAR -->
           <button type="button" id="btn-install-pwa" class="btn-secondary" style="font-size: 11px; padding: 6px 12px; background: rgba(0, 242, 254, 0.15); color: #00F2FE; border: 1px solid rgba(0, 242, 254, 0.4); border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
@@ -980,6 +989,94 @@
         <p style="color: #CBD5E1; font-size: 13px; line-height: 1.6; margin: 0;">
           A campanha atingiu uma relação LTV/CAC de alta lucratividade, acima do benchmark do setor. A recomendação do comitê de IA é aumentar a escala em 25% mantendo o criativo campeão de Hook de 3s no topo do funil e concentrando conversões no WhatsApp VIP.
         </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE AUTENTICAÇÃO / LOGIN / AUTO-CADASTRO DE AGÊNCIA -->
+  <div id="auth-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.92); backdrop-filter: blur(12px); z-index: 100000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
+    <div style="width: 100%; max-width: 460px; background: #0F172A; border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative; color: #FFF;">
+      <button type="button" id="btn-close-auth-modal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: #94A3B8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 24px; color: #FFF; box-shadow: 0 10px 25px rgba(127,0,255,0.4);">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; margin: 0 0 4px; color: #FFF;">ORACULUM SaaS</h2>
+        <p style="font-size: 12px; color: #94A3B8; margin: 0;">Plataforma de Inteligência Estratégica ROI-First</p>
+      </div>
+
+      <!-- Abas do Modal -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; background: #080B11; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; font-size: 13px; font-weight: 600;">
+        <button type="button" id="auth-tab-btn-login" style="padding: 10px; border: none; border-radius: 8px; background: #7F00FF; color: #FFF; cursor: pointer; transition: all 0.2s;">Entrar</button>
+        <button type="button" id="auth-tab-btn-register" style="padding: 10px; border: none; border-radius: 8px; background: transparent; color: #94A3B8; cursor: pointer; transition: all 0.2s;">Cadastrar Nova Agência</button>
+      </div>
+
+      <div id="auth-error-msg" style="display: none; background: rgba(255,75,75,0.15); border: 1px solid rgba(255,75,75,0.3); color: #FF4B4B; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 16px;"></div>
+
+      <!-- FORM 1: LOGIN -->
+      <form id="form-auth-login" style="display: block;">
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">E-mail Corporativo</label>
+          <input type="email" id="auth-login-email" required placeholder="seu.email@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">Senha de Acesso</label>
+          <input type="password" id="auth-login-password" required placeholder="••••••••" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <button type="submit" style="width: 100%; background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 14px; color: #FFF; font-weight: 700; font-size: 14px; cursor: pointer; shadow: 0 4px 15px rgba(127,0,255,0.3);">
+          Entrar na Plataforma <i class="fa-solid fa-arrow-right" style="margin-left: 6px;"></i>
+        </button>
+        <p style="font-size: 11px; color: #64748B; text-align: center; margin-top: 14px;">
+          Dica Master: Digite <code style="color: #A855F7;">admin@oraculum.com</code> para logar como Super Admin.
+        </p>
+      </form>
+
+      <!-- FORM 2: CADASTRO DE AGÊNCIA -->
+      <form id="form-auth-register" style="display: none;">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome da Agência / Empresa</label>
+          <input type="text" id="auth-reg-agency-name" required placeholder="Ex: Agência Turbo Digital" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome do Responsável / CEO</label>
+          <input type="text" id="auth-reg-fullname" required placeholder="Seu nome completo" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">E-mail Administrativo</label>
+          <input type="email" id="auth-reg-email" required placeholder="contato@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <div style="margin-bottom: 18px;">
+          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Senha Mestra de Acesso</label>
+          <input type="password" id="auth-reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+        </div>
+        <button type="submit" style="width: 100%; background: linear-gradient(135deg, #00F5A0, #00F2FE); border: none; border-radius: 12px; padding: 14px; color: #080B11; font-weight: 800; font-size: 14px; cursor: pointer;">
+          <i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i> Criar Agência & Iniciar Teste
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BARREIRA DE SUSPENSÃO / BLOQUEIO FINANCEIRO / MANUTENÇÃO -->
+  <div id="blocked-suspension-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.95); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
+    <div style="width: 100%; max-width: 500px; background: #0F172A; border: 1px solid rgba(255,75,75,0.4); border-radius: 28px; padding: 40px 32px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255,75,75,0.2);">
+      <div style="width: 72px; height: 72px; background: rgba(255,75,75,0.15); border: 2px solid rgba(255,75,75,0.4); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #FF4B4B; font-size: 32px;">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; color: #FFF; margin: 0 0 10px;" id="suspension-modal-title">Acesso Temporariamente Suspenso</h2>
+      <p style="font-size: 14px; color: #94A3B8; line-height: 1.6; margin: 0 0 24px;" id="suspension-modal-message">
+        Entre em contato com o suporte financeiro para regularizar sua assinatura e reativar o uso das inteligências.
+      </p>
+
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <a href="https://wa.me/5511999999999?text=Olá,%20preciso%20desbloquear%20o%20acesso%20da%20minha%20agência%20no%20Oraculum" target="_blank" style="background: #25D366; color: #FFF; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <i class="fa-brands fa-whatsapp" style="font-size: 16px;"></i> Falar com o Financeiro
+        </a>
+        <button type="button" id="btn-logout-suspension" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          Sair da Conta
+        </button>
       </div>
     </div>
   </div>
