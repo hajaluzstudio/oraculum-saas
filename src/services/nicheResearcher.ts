@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { generateNicheStrategicDossier, NicheDossier } from './geminiClient';
 import { saveDossiersToDisk, loadDossiersFromDisk } from './diskStorage';
+import { executeAutonomousScraperRun } from './autonomousScraperAgent';
 
 export interface ClientOnboardingInput {
   organizationId: string;
@@ -32,6 +33,7 @@ export interface ClientOnboardingOutput {
     version: number;
     created_at: string;
   };
+  topPlayersScraped?: any;
 }
 
 export const localDossiersStore: Record<string, any> = loadDossiersFromDisk();
@@ -49,7 +51,7 @@ export async function registerClientAndGenerateDossier(
     throw new Error('Parâmetros obrigatórios ausentes: organizationId, clientName e niche.');
   }
 
-  console.log(`[Agente de Nicho] 1/4 - Persistindo cliente "${clientName}" (${niche}) na tabela 'clients' do Supabase...`);
+  console.log(`[Agente de Nicho] 1/5 - Persistindo cliente "${clientName}" (${niche}) na tabela 'clients' do Supabase...`);
 
   // 1. INSERÇÃO RÍGIDA NO SUPABASE NA TABELA 'clients'
   let clientRecord: any = null;
@@ -94,18 +96,34 @@ export async function registerClientAndGenerateDossier(
     };
   }
 
-  console.log(`[Agente de Nicho] 2/4 - Disparando Oráculo Gemini (@google/genai) para o nicho "${niche}"...`);
+  console.log(`[Agente de Nicho] 2/5 - Disparando Robô Autônomo de Pesquisa para minerar Líderes de Mercado em "${niche}"...`);
+  let topPlayersData: any = null;
+  try {
+    const scraperRun = await executeAutonomousScraperRun(organizationId, niche, clientRecord.id);
+    topPlayersData = scraperRun.scraperOutput;
+    console.log(`[Agente de Nicho] ✅ Mineração de líderes concluída: ${topPlayersData?.topPlayers?.length || 0} players mapeados.`);
+  } catch (errScraper: any) {
+    console.warn(`[Agente de Nicho] ⚠️ Erro no robô autônomo scraper, continuando com dossier padrão:`, errScraper.message);
+  }
 
-  // 2. DISPARO DA IA PARA GERAÇÃO DO DOSSIÊ ESTRATÉGICO DE NICHO
+  console.log(`[Agente de Nicho] 3/5 - Disparando Oráculo Gemini (@google/genai) para o dossiê de "${niche}"...`);
+
+  // 3. DISPARO DA IA PARA GERAÇÃO DO DOSSIÊ ESTRATÉGICO DE NICHO
   const dossier: NicheDossier = await generateNicheStrategicDossier(niche, clientName);
+
+  if (topPlayersData) {
+    (dossier as any).topPlayersAnalysis = topPlayersData.topPlayers;
+    (dossier as any).strategicAdaptationDirectives = topPlayersData.strategicAdaptationDirectives;
+    (dossier as any).regulatoryCompliance = topPlayersData.regulatoryCompliance;
+  }
 
   // Armazena no repositório de memória e salva fisicamente no disco
   localDossiersStore[clientRecord.id] = dossier;
   saveDossiersToDisk(localDossiersStore);
 
-  console.log(`[Agente de Nicho] 3/4 - Persistindo Dossiê na tabela 'niche_knowledge_base'...`);
+  console.log(`[Agente de Nicho] 4/5 - Persistindo Dossiê na tabela 'niche_knowledge_base'...`);
 
-  // 3. INSERÇÃO DO DOSSIÊ NA NICHE_KNOWLEDGE_BASE NO SUPABASE
+  // 4. INSERÇÃO DO DOSSIÊ NA NICHE_KNOWLEDGE_BASE NO SUPABASE
   let kbRecord: any = null;
   try {
     const { data: kbData, error: kbError } = await supabase
@@ -117,9 +135,9 @@ export async function registerClientAndGenerateDossier(
           niche_name: niche,
           dossier_data: dossier,
           market_overview: dossier.marketOverview,
-          neuromarketing_angles: dossier.neuromarketingAngles,
-          global_benchmarks: dossier.globalBenchmarks,
-          compliance_rules: dossier.regulatoryAndMarketRestrictions,
+          neuromarketing_angles: (dossier as any).neuromarketingAngles || dossier.neuromarketingGuidelines,
+          global_benchmarks: (dossier as any).globalBenchmarks || { topPlayers: topPlayersData?.topPlayers },
+          compliance_rules: dossier.regulatoryAndMarketRestrictions || topPlayersData?.regulatoryCompliance,
           predictive_plan: dossier.predictiveActionPlan,
           version: 1,
         }

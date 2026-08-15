@@ -15,9 +15,15 @@ import { generateMetadataAndCopy } from '../src/services/metadataInjector';
 import { calculateOptimizedBudgetAllocation } from '../src/services/budgetOptimizer';
 import { getRolePermissions, defaultWhiteLabelConfig, UserRole } from '../src/services/authAndRoles';
 import { sendWhatsAppNotification, getClientNotificationHistory } from '../src/services/notificationCenter';
-import { analyzeCompetitorOffer } from '../src/services/competitorSpy';
 import { generateAutonomousLandingPage } from '../src/services/landingPageGenerator';
 import { supabase } from '../src/services/supabaseClient';
+import {
+  executeAutonomousScraperRun,
+  startAutonomousScraperCron,
+  stopAutonomousScraperCron,
+  getAutonomousScraperStatus,
+  mineNicheTopPlayersAndTrends
+import { checkAgencyStatus } from '../src/middlewares/authAgency';
 
 dotenv.config();
 
@@ -434,6 +440,76 @@ app.get('/api/portal/permissions/:role', (req: Request, res: Response) => {
   const { role } = req.params;
   const permissions = getRolePermissions(role as UserRole);
   return res.json({ success: true, role, permissions });
+});
+
+// AGENTES AUTÔNOMOS DE PESQUISA (SCRAPER & BENCHMARK DE LÍDERES)
+app.post('/api/autonomous-scraper/run', async (req: Request, res: Response) => {
+  try {
+    const { niche, clientId } = req.body;
+    const organizationId = (req as any).organizationId || DEFAULT_TENANT_ID;
+
+    if (!niche) {
+      return res.status(400).json({ error: 'Parâmetro "niche" é obrigatório.' });
+    }
+
+    const result = await executeAutonomousScraperRun(organizationId, niche, clientId);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/autonomous-scraper/cron/start', (req: Request, res: Response) => {
+  try {
+    const { intervalMinutes } = req.body;
+    const organizationId = (req as any).organizationId || DEFAULT_TENANT_ID;
+    startAutonomousScraperCron(intervalMinutes || 1440, organizationId);
+    return res.json({ success: true, message: 'Cron job dos Robôs Autônomos iniciado com sucesso.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/autonomous-scraper/cron/stop', (req: Request, res: Response) => {
+  try {
+    stopAutonomousScraperCron();
+    return res.json({ success: true, message: 'Cron job dos Robôs Autônomos interrompido.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/autonomous-scraper/status', (req: Request, res: Response) => {
+  const status = getAutonomousScraperStatus();
+  return res.json({ success: true, data: status });
+});
+
+// GESTÃO MASTER DE AGÊNCIAS & BLOQUEIO FINANCEIRO (SUPER ADMIN)
+app.get('/api/admin/agencies', async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase.from('agencies').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/agencies/toggle-status', async (req: Request, res: Response) => {
+  try {
+    const { agencyId, newStatus } = req.body;
+    const { data, error } = await supabase
+      .from('agencies')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', agencyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 export default app;

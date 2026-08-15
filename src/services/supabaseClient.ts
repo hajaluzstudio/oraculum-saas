@@ -15,3 +15,4 @@ if (!process.env.SUPABASE_URL) {
  * Cliente oficial do Supabase pré-configurado com suporte a multi-tenancy e RLS
  */
 export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabaseAdmin = supabase;
