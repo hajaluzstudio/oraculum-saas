@@ -189,7 +189,7 @@ app.post('/api/clients', async (req: Request, res: Response) => {
     const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
     if (!name || !niche) return res.status(400).json({ error: 'Nome e Nicho são obrigatórios.' });
 
-    const clientRecord = {
+    const clientRecord: any = {
       id: 'client_' + Date.now(),
       organization_id: organizationId,
       name,
@@ -200,6 +200,16 @@ app.post('/api/clients', async (req: Request, res: Response) => {
       created_at: new Date().toISOString(),
     };
 
+    // Salva no Supabase (persistência permanente na nuvem)
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      try {
+        const { error: sbError } = await supabase.from('clients').insert([clientRecord]);
+        if (sbError) console.warn('[Supabase] Aviso ao salvar cliente:', sbError.message);
+        else console.log('[Supabase] ✅ Cliente salvo na nuvem:', clientRecord.id);
+      } catch (e: any) { console.warn('[Supabase] Erro ao inserir cliente:', e.message); }
+    }
+
+    // Salva também em disco (fallback local)
     const localClients = loadClientsFromDisk();
     localClients.unshift(clientRecord);
     saveClientsToDisk(localClients);
@@ -213,6 +223,17 @@ app.post('/api/clients', async (req: Request, res: Response) => {
 app.delete('/api/clients/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    // Remove do Supabase
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      try {
+        const { error: sbError } = await supabase.from('clients').delete().eq('id', id);
+        if (sbError) console.warn('[Supabase] Aviso ao deletar cliente:', sbError.message);
+        else console.log('[Supabase] ✅ Cliente removido da nuvem:', id);
+      } catch (e: any) { console.warn('[Supabase] Erro ao deletar cliente:', e.message); }
+    }
+
+    // Remove também do disco local
     let localClients = loadClientsFromDisk();
     localClients = localClients.filter(c => c.id !== id);
     saveClientsToDisk(localClients);
@@ -237,6 +258,32 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
       previousAgencyNotes: sanitized_history || previous_agency_notes,
     });
 
+    // Salva cliente no Supabase
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      try {
+        await supabase.from('clients').upsert([{
+          id: result.client.id,
+          organization_id: organizationId,
+          name: clientName,
+          niche,
+          website: website || null,
+          previous_agency_notes: sanitized_history || previous_agency_notes || null,
+          status: 'active',
+        }], { onConflict: 'id' });
+
+        // Salva dossiê no Supabase
+        await supabase.from('niche_knowledge_base').upsert([{
+          client_id: result.client.id,
+          organization_id: organizationId,
+          niche,
+          dossier_data: result.dossier,
+          updated_at: new Date().toISOString(),
+        }], { onConflict: 'client_id' });
+        console.log('[Supabase] ✅ Onboarding + Dossiê salvos na nuvem para:', clientName);
+      } catch (e: any) { console.warn('[Supabase] Aviso ao salvar onboarding:', e.message); }
+    }
+
+    // Salva em disco (fallback)
     const dossiers = loadDossiersFromDisk();
     dossiers[result.client.id] = result.dossier;
     saveDossiersToDisk(dossiers);
@@ -283,6 +330,18 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     if (!clientId || !message) return res.status(400).json({ error: 'clientId e message são obrigatórios.' });
 
     const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
+
+    // Salva histórico do chat no Supabase
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      try {
+        await supabase.from('chat_history').insert([
+          { client_id: clientId, role: 'user', content: message },
+          { client_id: clientId, role: 'assistant', content: typeof response === 'string' ? response : JSON.stringify(response) }
+        ]);
+        console.log('[Supabase] ✅ Histórico de chat salvo para client:', clientId);
+      } catch (e: any) { console.warn('[Supabase] Aviso ao salvar chat:', e.message); }
+    }
+
     return res.json({ success: true, data: response });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
