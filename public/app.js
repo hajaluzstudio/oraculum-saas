@@ -2416,18 +2416,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userSessionLabel) userSessionLabel.textContent = session.email;
 
-    // RBAC: Apenas Super Admin enxerga o botão e o módulo de Gestão Master Agências
-    if (session.role === 'super_admin') {
-      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'flex';
-    } else {
-      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'none';
-      // Se estivesse tentando acessar o super admin, redireciona pro onboarding
-      const activeTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-      if (activeTab === 'tab-super-admin') {
-        const btnOnboarding = document.getElementById('btn-tab-onboarding');
-        if (btnOnboarding) btnOnboarding.click();
-      }
-    }
+    // RBAC: Garantir que o botão de Gestão Master Agências fique sempre visível
+    if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'flex';
 
     // Barreira de Inadimplência
     if (session.agencyStatus === 'blocked') {
