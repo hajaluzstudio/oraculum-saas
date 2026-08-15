@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseClient';
-import { localDossiersStore, saveDossiersToDisk } from './diskStorage';
+import { loadDossiersFromDisk, saveDossiersToDisk } from './diskStorage';
 
 dotenv.config();
 
