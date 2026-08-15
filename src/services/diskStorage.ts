@@ -20,27 +20,21 @@ const DOSSIERS_FILE = path.join(DATA_DIR, 'dossiers_db.json');
 const ASSETS_FILE = path.join(DATA_DIR, 'assets_db.json');
 const BI_METRICS_FILE = path.join(DATA_DIR, 'bi_metrics_db.json');
 
-const defaultClients = [
-  { id: 'client_01', organization_id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104', name: 'Dr. Alexandre Viana - Clínica Luxe', niche: 'Médico Cirurgião Plástico', status: 'active', created_at: new Date().toISOString() },
-  { id: 'client_02', organization_id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104', name: 'Advocacia Silva & Associados', niche: 'Advogado Trabalhista', status: 'active', created_at: new Date().toISOString() },
-  { id: 'client_03', organization_id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104', name: 'Imobiliária Prime Residence', niche: 'Mercado Imobiliário de Luxo', status: 'active', created_at: new Date().toISOString() }
-];
-
 export function loadClientsFromDisk(): any[] {
   ensureDataDirExists();
   try {
     if (fs.existsSync(CLIENTS_FILE)) {
       const content = fs.readFileSync(CLIENTS_FILE, 'utf-8');
       const parsed = JSON.parse(content);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        // Filtra clientes demo (IDs fixos) para não poluir o sistema
+        return parsed.filter(c => !['client_01', 'client_02', 'client_03'].includes(c.id));
       }
     }
   } catch (e) {
     console.warn('[DiskStorage] Aviso ao carregar clientes do disco:', e);
   }
-  saveClientsToDisk(defaultClients);
-  return defaultClients;
+  return []; // Retorna lista vazia em vez de clientes demo
 }
 
 export function saveClientsToDisk(clients: any[]) {

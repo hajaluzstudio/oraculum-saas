@@ -164,20 +164,20 @@ app.get('/health', (req: Request, res: Response) => {
 app.get('/api/clients', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    let dbClients: any[] = [];
-    try {
-      if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-        const { data, error } = await supabase.from('clients').select('*').eq('organization_id', organizationId).order('created_at', { ascending: false });
-        if (!error && data) dbClients = data;
-      }
-    } catch (e) {}
 
+    // Prioridade 1: busca do Supabase (nuvem - dados reais)
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      try {
+        const { data, error } = await supabase.from('clients').select('*').eq('organization_id', organizationId).order('created_at', { ascending: false });
+        if (!error && data) {
+          return res.json({ success: true, data });
+        }
+      } catch (e) {}
+    }
+
+    // Fallback: disco local (sem clientes demo)
     const localClients = loadClientsFromDisk();
-    const combined = [...dbClients];
-    localClients.forEach(lc => {
-      if (!combined.some(c => c.id === lc.id)) combined.unshift(lc);
-    });
-    return res.json({ success: true, data: combined.length > 0 ? combined : localClients });
+    return res.json({ success: true, data: localClients });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
