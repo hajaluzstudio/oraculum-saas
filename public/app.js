@@ -2390,24 +2390,160 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (btnLogoutSuspension) {
-    btnLogoutSuspension.addEventListener('click', () => {
-      localStorage.removeItem('oraculum_session');
+  // ============================================================================
+  // AUTH GATE PORTAL & CONTROLE DE VISIBILIDADE RBAC (SUPER ADMIN VS AGÊNCIA)
+  // ============================================================================
+  const authGateContainer = document.getElementById('auth-gate-container');
+  const appContainer = document.querySelector('.app-container');
+  const gateTabBtnLogin = document.getElementById('gate-tab-btn-login');
+  const gateTabBtnRegister = document.getElementById('gate-tab-btn-register');
+  const formGateLogin = document.getElementById('form-gate-login');
+  const formGateRegister = document.getElementById('form-gate-register');
+  const gateErrorMsg = document.getElementById('gate-error-msg');
+  const btnSidebarLogout = document.getElementById('btn-sidebar-logout');
+  const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
+
+  function applyRbacAndSessionVisibility(session) {
+    if (!session) {
+      if (appContainer) appContainer.style.display = 'none';
+      if (authGateContainer) authGateContainer.style.display = 'flex';
+      return;
+    }
+
+    // Usuário autenticado
+    if (authGateContainer) authGateContainer.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+
+    if (userSessionLabel) userSessionLabel.textContent = session.email;
+
+    // RBAC: Apenas Super Admin enxerga o botão e o módulo de Gestão Master Agências
+    if (session.role === 'super_admin') {
+      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'flex';
+    } else {
+      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'none';
+      // Se estivesse tentando acessar o super admin, redireciona pro onboarding
+      const activeTab = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
+      if (activeTab === 'tab-super-admin') {
+        const btnOnboarding = document.getElementById('btn-tab-onboarding');
+        if (btnOnboarding) btnOnboarding.click();
+      }
+    }
+
+    // Barreira de Inadimplência
+    if (session.agencyStatus === 'blocked') {
+      if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'flex';
+    } else {
       if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'none';
-      if (userSessionLabel) userSessionLabel.textContent = 'Entrar / Cadastrar';
+    }
+  }
+
+  // Alternar abas no Auth Gate
+  if (gateTabBtnLogin && gateTabBtnRegister) {
+    gateTabBtnLogin.addEventListener('click', () => {
+      gateTabBtnLogin.style.background = 'linear-gradient(135deg, #7F00FF, #E100FF)';
+      gateTabBtnLogin.style.color = '#FFF';
+      gateTabBtnRegister.style.background = 'transparent';
+      gateTabBtnRegister.style.color = '#94A3B8';
+      formGateLogin.style.display = 'block';
+      formGateRegister.style.display = 'none';
+      if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+    });
+
+    gateTabBtnRegister.addEventListener('click', () => {
+      gateTabBtnRegister.style.background = 'linear-gradient(135deg, #00F5A0, #00F2FE)';
+      gateTabBtnRegister.style.color = '#080B11';
+      gateTabBtnLogin.style.background = 'transparent';
+      gateTabBtnLogin.style.color = '#94A3B8';
+      formGateRegister.style.display = 'block';
+      formGateLogin.style.display = 'none';
+      if (gateErrorMsg) gateErrorMsg.style.display = 'none';
     });
   }
 
-  // Checar sessão armazenada
-  const savedSessionStr = localStorage.getItem('oraculum_session');
-  if (savedSessionStr) {
-    try {
-      const savedSession = JSON.parse(savedSessionStr);
-      if (userSessionLabel) userSessionLabel.textContent = savedSession.email;
-      if (savedSession.agencyStatus === 'blocked') {
-        if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'flex';
+  // Submit Login no Auth Gate
+  if (formGateLogin) {
+    formGateLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('gate-login-email')?.value;
+      const password = document.getElementById('gate-login-password')?.value;
+
+      let role = 'agency_owner';
+      let agencyStatus = 'active';
+
+      if (email.toLowerCase().includes('admin')) {
+        role = 'super_admin';
+      } else if (email.toLowerCase().includes('bloqueado')) {
+        agencyStatus = 'blocked';
       }
-    } catch (e) {}
+
+      const session = {
+        email,
+        role,
+        agencyStatus,
+        agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + email.split('@')[0],
+        loggedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('oraculum_session', JSON.stringify(session));
+      applyRbacAndSessionVisibility(session);
+
+      if (role === 'super_admin' && btnTabSuperAdmin) {
+        btnTabSuperAdmin.click();
+      }
+    });
+  }
+
+  // Submit Cadastrar Agência no Auth Gate
+  if (formGateRegister) {
+    formGateRegister.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const agencyName = document.getElementById('gate-reg-agency-name')?.value;
+      const fullName = document.getElementById('gate-reg-fullname')?.value;
+      const email = document.getElementById('gate-reg-email')?.value;
+
+      const session = {
+        email,
+        fullName,
+        agencyName,
+        role: 'agency_owner',
+        agencyStatus: 'active',
+        loggedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('oraculum_session', JSON.stringify(session));
+      applyRbacAndSessionVisibility(session);
+      alert(`🎉 Agência "${agencyName}" cadastrada com sucesso! Seja bem-vindo ao Oraculum SaaS.`);
+    });
+  }
+
+  // Logout no Sidebar Footer
+  function executeLogout() {
+    localStorage.removeItem('oraculum_session');
+    if (appContainer) appContainer.style.display = 'none';
+    if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'none';
+    if (authGateContainer) authGateContainer.style.display = 'flex';
+    if (userSessionLabel) userSessionLabel.textContent = 'Entrar / Cadastrar';
+  }
+
+  if (btnSidebarLogout) {
+    btnSidebarLogout.addEventListener('click', executeLogout);
+  }
+
+  if (btnLogoutSuspension) {
+    btnLogoutSuspension.addEventListener('click', executeLogout);
+  }
+
+  // Verificar sessão inicial ao carregar
+  const initialSessionStr = localStorage.getItem('oraculum_session');
+  if (initialSessionStr) {
+    try {
+      const initialSession = JSON.parse(initialSessionStr);
+      applyRbacAndSessionVisibility(initialSession);
+    } catch (e) {
+      applyRbacAndSessionVisibility(null);
+    }
+  } else {
+    applyRbacAndSessionVisibility(null);
   }
 
   // Inicializa Kanban e BI ao carregar
