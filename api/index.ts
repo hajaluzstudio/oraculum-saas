@@ -17,12 +17,14 @@ import { getRolePermissions, defaultWhiteLabelConfig, UserRole } from '../src/se
 import { sendWhatsAppNotification, getClientNotificationHistory } from '../src/services/notificationCenter';
 import { generateAutonomousLandingPage } from '../src/services/landingPageGenerator';
 import { supabase } from '../src/services/supabaseClient';
+import { analyzeCompetitorOffer } from '../src/services/competitorSpy';
 import {
   executeAutonomousScraperRun,
   startAutonomousScraperCron,
   stopAutonomousScraperCron,
   getAutonomousScraperStatus,
   mineNicheTopPlayersAndTrends
+} from '../src/services/autonomousScraperAgent';
 import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } from '../src/middlewares/authAgency';
 
 dotenv.config();
