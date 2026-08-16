@@ -125,20 +125,6 @@
         </div>
       </div>
 
-      <!-- CARD DINÂMICO DO USUÁRIO / AGÊNCIA AUTENTICADO -->
-      <div class="user-profile-card" style="margin: 12px 16px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <div id="user-avatar-initials" style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; text-transform: uppercase; flex-shrink: 0; box-shadow: 0 4px 12px rgba(127, 0, 255, 0.4);">
-          OU
-        </div>
-        <div style="overflow: hidden; flex: 1;">
-          <div id="user-display-name" style="font-weight: 700; font-size: 13px; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Carregando...</div>
-          <div id="user-display-role" style="font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Perfil</div>
-          <span id="user-display-badge" style="display: inline-block; margin-top: 3px; font-size: 9px; padding: 2px 7px; background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 99px; font-weight: 700; text-transform: uppercase;">
-            Autenticado
-          </span>
-        </div>
-      </div>
-
       <nav class="nav-menu">
         <button class="nav-item active" data-tab="tab-onboarding" id="btn-tab-onboarding">
           <i class="fa-solid fa-user-plus"></i>
@@ -187,23 +173,49 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="tenant-selector">
+        <div class="tenant-selector" style="margin-bottom: 8px;">
           <label><i class="fa-solid fa-building-user"></i> Tenant / Agência:</label>
           <select id="tenant-select">
             <option value="e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104">Haja Luz Studio (Default)</option>
             <option value="b1f3c8a0-9e2d-411a-8833-112233445566">Agência Growth Scale</option>
           </select>
         </div>
-        <div class="engine-status">
-          <span class="status-dot online"></span>
-          <span>Gemini 2.5 Flash SDK Active</span>
+
+        <!-- MENU DROPDOWN INTERATIVO DO RODAPÉ -->
+        <div class="user-dropdown-menu" id="user-dropdown-menu">
+          <div class="dropdown-header">
+            <strong id="dropdown-full-name">Administrador Master</strong>
+            <small id="dropdown-email">admin@oraculum.com</small>
+          </div>
+          <hr class="dropdown-divider">
+          <a href="javascript:void(0)" onclick="window.abrirModalPerfil()" class="dropdown-item">
+            <i class="fa-solid fa-user-gear" style="color: #C084FC;"></i> Editar Perfil & Foto
+          </a>
+          <a href="javascript:void(0)" onclick="window.abrirModalSenha()" class="dropdown-item">
+            <i class="fa-solid fa-lock" style="color: #00F2FE;"></i> Alterar Senha
+          </a>
+          <a href="javascript:void(0)" onclick="window.abrirConfiguracoes()" class="dropdown-item">
+            <i class="fa-solid fa-sliders" style="color: #38BDF8;"></i> Preferências / Config
+          </a>
+          <hr class="dropdown-divider">
+          <a href="javascript:void(0)" onclick="window.fazerLogout(event)" class="dropdown-item text-danger">
+            <i class="fa-solid fa-right-from-bracket"></i> Encerrar Sessão
+          </a>
         </div>
-        <button type="button" id="btn-sidebar-change-password" style="width: 100%; margin-top: 10px; background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-          <i class="fa-solid fa-key"></i> Alterar Senha
-        </button>
-        <button type="button" id="btn-sidebar-logout" onclick="window.executarLogout(event)" style="width: 100%; margin-top: 6px; background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-          <i class="fa-solid fa-right-from-bracket"></i> Sair da Conta
-        </button>
+
+        <!-- CARD ÚNICO DO USUÁRIO / TENANT (CLICÁVEL) -->
+        <div class="user-profile-card" id="user-profile-trigger" onclick="window.toggleUserDropdown(event)">
+          <div class="user-avatar" id="user-avatar-container">
+            <span id="user-avatar-initials">AM</span>
+          </div>
+          <div class="user-info-text">
+            <span class="user-name" id="user-display-name">Administrador</span>
+            <span class="user-role-tenant" id="user-display-role">Painel Global</span>
+          </div>
+          <div class="user-card-arrow">
+            <i class="fa-solid fa-chevron-up"></i>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -1572,7 +1584,121 @@
       }
     });
 
-    // FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
+    // 1. ALTERNAR DROPDOWN DO RODAPÉ
+    window.toggleUserDropdown = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) {
+        menu.classList.toggle('active');
+      }
+    };
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', function(e) {
+      const trigger = document.getElementById('user-profile-trigger');
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu && trigger && !trigger.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove('active');
+      }
+    });
+
+    // 2. AÇÕES DO MENU DROPDOWN
+    window.abrirModalPerfil = function() {
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) menu.classList.remove('active');
+      
+      let modal = document.getElementById('modal-user-profile');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-user-profile';
+        modal.style.cssText = 'position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+        modal.innerHTML = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-gear text-purple-400"></i> Editar Perfil & Foto</h3>
+              <button onclick="document.getElementById('modal-user-profile').style.display='none'" class="text-slate-400 hover:text-white text-xl cursor-pointer">&times;</button>
+            </div>
+            <form onsubmit="window.salvarPerfilUsuario(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome de Exibição / Responsável</label>
+                <input type="text" id="profile-input-name" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome da Agência / Fantasia</label>
+                <input type="text" id="profile-input-agency" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">URL da Foto do Avatar (Opcional)</label>
+                <input type="url" id="profile-input-avatar" placeholder="https://exemplo.com/foto.jpg" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+              </div>
+              <div class="flex justify-end space-x-2 pt-3 border-t border-slate-800">
+                <button type="button" onclick="document.getElementById('modal-user-profile').style.display='none'" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-xs cursor-pointer">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-semibold text-white text-xs cursor-pointer">Salvar Alterações</button>
+              </div>
+            </form>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      
+      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+      let session = null;
+      try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
+      if (session) {
+        document.getElementById('profile-input-name').value = session.fullName || session.nome || '';
+        document.getElementById('profile-input-agency').value = session.agencyName || '';
+        document.getElementById('profile-input-avatar').value = session.fotoUrl || '';
+      }
+      modal.style.display = 'flex';
+    };
+
+    window.salvarPerfilUsuario = function(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('profile-input-name').value.trim();
+      const agencyName = document.getElementById('profile-input-agency').value.trim();
+      const fotoUrl = document.getElementById('profile-input-avatar').value.trim();
+
+      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+      let session = null;
+      try { session = sessionStr ? JSON.parse(sessionStr) : {}; } catch(e){ session = {}; }
+
+      session.fullName = name;
+      if (agencyName) session.agencyName = agencyName;
+      if (fotoUrl) session.fotoUrl = fotoUrl;
+      else delete session.fotoUrl;
+
+      sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+      localStorage.setItem('oraculum_session', JSON.stringify(session));
+
+      document.getElementById('modal-user-profile').style.display = 'none';
+      window.atualizarCardUsuarioLogado(session);
+      alert('✅ Perfil atualizado com sucesso!');
+    };
+
+    window.abrirModalSenha = function() {
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) menu.classList.remove('active');
+      const passModal = document.getElementById('change-password-modal');
+      if (passModal) passModal.style.display = 'flex';
+    };
+
+    window.abrirConfiguracoes = function() {
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) menu.classList.remove('active');
+      const btnSettings = document.getElementById('btn-tab-settings');
+      if (btnSettings) btnSettings.click();
+    };
+
+    window.fazerLogout = function(e) {
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) menu.classList.remove('active');
+      window.executarLogout(e);
+    };
+
+    // 3. FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
     window.atualizarCardUsuarioLogado = function(providedSession = null) {
       const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
       let session = providedSession;
@@ -1580,18 +1706,22 @@
         try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
       }
 
-      const nameEl = document.getElementById('user-display-name');
+      const nomeEl = document.getElementById('user-display-name');
       const roleEl = document.getElementById('user-display-role');
       const badgeEl = document.getElementById('user-display-badge');
-      const avatarEl = document.getElementById('user-avatar-initials');
+      const avatarContainer = document.getElementById('user-avatar-container');
       const headerEmailEl = document.getElementById('header-user-email');
+      const dropdownFullName = document.getElementById('dropdown-full-name');
+      const dropdownEmail = document.getElementById('dropdown-email');
 
       if (!session || !session.email) {
-        if (nameEl) nameEl.textContent = 'Visitante';
+        if (nomeEl) nomeEl.textContent = 'Visitante';
         if (roleEl) roleEl.textContent = 'Não Autenticado';
         if (badgeEl) badgeEl.textContent = 'Desconectado';
-        if (avatarEl) avatarEl.textContent = '??';
+        if (avatarContainer) avatarContainer.innerHTML = '<span id="user-avatar-initials">??</span>';
         if (headerEmailEl) headerEmailEl.textContent = 'Desconectado';
+        if (dropdownFullName) dropdownFullName.textContent = 'Visitante';
+        if (dropdownEmail) dropdownEmail.textContent = 'não autenticado';
         return;
       }
 
@@ -1600,48 +1730,62 @@
       const isMaster = role === 'super_admin' || role === 'master';
 
       if (headerEmailEl) headerEmailEl.textContent = email;
+      if (dropdownEmail) dropdownEmail.textContent = email;
+
+      let displayName = '';
+      let displayRole = '';
+      let displayBadge = '';
+      let initials = 'AM';
 
       if (isMaster) {
-        const displayName = session.fullName || session.name || "Administrador Master";
-        const displayRole = "Acesso Master / Plataforma";
-        const displayBadge = "Master / Super Admin";
+        displayName = session.fullName || session.name || "Administrador Master";
+        displayRole = "Painel Master / Plataforma";
+        displayBadge = "Master / Super Admin";
+        initials = 'AM';
 
-        if (nameEl) nameEl.textContent = displayName;
-        if (roleEl) roleEl.textContent = displayRole;
         if (badgeEl) {
           badgeEl.textContent = displayBadge;
           badgeEl.style.background = 'rgba(253, 224, 71, 0.15)';
           badgeEl.style.color = '#FDE047';
           badgeEl.style.borderColor = 'rgba(253, 224, 71, 0.4)';
         }
-        if (avatarEl) avatarEl.textContent = 'AM';
       } else {
         const rawName = session.fullName || session.nomeResponsavel || session.agencyName || email.split('@')[0];
-        const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         const agencyTitle = session.agencyName || (email.split('@')[0] ? 'Agência ' + email.split('@')[0].toUpperCase() : 'Agência Parceira');
-        const displayRole = agencyTitle;
-        const displayBadge = session.plan || session.plan_tier || "Plano Enterprise Pro";
+        displayRole = agencyTitle;
+        displayBadge = session.plan || session.plan_tier || "Plano Enterprise Pro";
 
         const words = displayName.trim().split(' ');
-        let initials = 'AP';
         if (words.length >= 2) {
           initials = (words[0][0] + words[1][0]).toUpperCase();
         } else if (words.length === 1 && words[0].length >= 2) {
           initials = words[0].substring(0, 2).toUpperCase();
+        } else {
+          initials = 'AP';
         }
 
-        if (nameEl) nameEl.textContent = displayName;
-        if (roleEl) roleEl.textContent = displayRole;
         if (badgeEl) {
           badgeEl.textContent = displayBadge;
           badgeEl.style.background = 'rgba(168, 85, 247, 0.15)';
           badgeEl.style.color = '#C084FC';
           badgeEl.style.borderColor = 'rgba(168, 85, 247, 0.3)';
         }
-        if (avatarEl) avatarEl.textContent = initials;
       }
 
-      console.log(`[UserCard] Perfil atualizado: ${nameEl?.textContent} (${role})`);
+      if (nomeEl) nomeEl.textContent = displayName;
+      if (roleEl) roleEl.textContent = displayRole;
+      if (dropdownFullName) dropdownFullName.textContent = displayName;
+
+      if (avatarContainer) {
+        if (session.fotoUrl) {
+          avatarContainer.innerHTML = `<img src="${session.fotoUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        } else {
+          avatarContainer.innerHTML = `<span id="user-avatar-initials">${initials}</span>`;
+        }
+      }
+
+      console.log(`[UserCard] Card de perfil e dropdown atualizados: ${displayName} (${role})`);
     };
 
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
@@ -1843,8 +1987,8 @@
     })();
   </script>
 
-  <script src="app.js?v=26.0.0"></script>
-  <script src="/agency-management.js?v=26.0.0"></script>
-  <script src="/client-management.js?v=26.0.0"></script>
+  <script src="app.js?v=27.0.0"></script>
+  <script src="/agency-management.js?v=27.0.0"></script>
+  <script src="/client-management.js?v=27.0.0"></script>
 </body>
 </html>
