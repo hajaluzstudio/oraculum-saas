@@ -45,10 +45,24 @@ body {
   overflow-x: hidden;
 }
 
-/* LAYOUT PRINCIPAL DO DASHBOARD */
+/* REGRAS ABSOLUTAS DE EXIBIÇÃO DE AUTENTICAÇÃO */
 #main-dashboard-container {
+  display: none !important;
   width: 100%;
   min-height: 100vh;
+}
+
+#auth-gate-container {
+  display: flex !important;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  min-height: 100vh;
+  z-index: 99999;
+  background: #030712;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
 }
 
 .app-container {
@@ -61,13 +75,22 @@ body {
   box-sizing: border-box;
 }
 
-/* ESTADO AUTENTICADO: Exibir Dashboard e Ocultar Auth Gate */
-html.is-authenticated .app-container {
-  display: flex !important;
+/* Glassmorphic Auth Card Custom Styling */
+.auth-glass-card {
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(124, 58, 237, 0.15) !important;
 }
 
-html.is-authenticated #auth-gate-container {
-  display: none !important;
+.auth-input {
+  transition: all 0.2s ease-in-out;
+}
+.auth-input:focus {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3) !important;
+  outline: none !important;
 }
 
 /* SIDEBAR LATERAL */
