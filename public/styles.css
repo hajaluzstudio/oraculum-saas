@@ -45,8 +45,9 @@ body {
   overflow-x: hidden;
 }
 
-/* REGRAS ABSOLUTAS DE EXIBIÇÃO DE AUTENTICAÇÃO */
-#main-dashboard-container {
+/* BLINDAGEM ABSOLUTA DE AUTENTICAÇÃO NO CSS */
+#main-dashboard-container,
+.app-container {
   display: none !important;
   width: 100%;
   min-height: 100vh;
@@ -63,16 +64,6 @@ body {
   align-items: center;
   justify-content: center;
   overflow-y: auto;
-}
-
-.app-container {
-  display: flex;
-  width: 100%;
-  max-width: 100vw;
-  min-height: 100vh;
-  min-width: 0;
-  overflow-x: hidden;
-  box-sizing: border-box;
 }
 
 /* Glassmorphic Auth Card Custom Styling */

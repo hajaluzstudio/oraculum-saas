@@ -2403,9 +2403,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
 
   function applyRbacAndSessionVisibility(session) {
-    if (!session || (!session.email && !session.token)) {
+    const appContainer = document.querySelector('.app-container');
+    if (!session || !session.email || !session.token) {
       document.documentElement.classList.remove('is-authenticated');
       if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'none', 'important');
+      if (appContainer) appContainer.style.setProperty('display', 'none', 'important');
       if (authGateContainer) authGateContainer.style.setProperty('display', 'flex', 'important');
       return;
     }
@@ -2414,6 +2416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.classList.add('is-authenticated');
     if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
     if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'block', 'important');
+    if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
 
     if (userSessionLabel) userSessionLabel.textContent = session.email;
 
@@ -2530,11 +2533,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Logout no Sidebar Footer
+  // Logout no Sidebar Footer (Limpa completamente o localStorage)
   function executeLogout() {
     localStorage.removeItem('oraculum_session');
     document.documentElement.classList.remove('is-authenticated');
+    const appContainer = document.querySelector('.app-container');
     if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'none', 'important');
+    if (appContainer) appContainer.style.setProperty('display', 'none', 'important');
     if (blockedSuspensionModal) blockedSuspensionModal.style.setProperty('display', 'none', 'important');
     if (authGateContainer) authGateContainer.style.setProperty('display', 'flex', 'important');
     if (userSessionLabel) userSessionLabel.textContent = 'Entrar / Cadastrar';
@@ -2548,24 +2553,22 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLogoutSuspension.addEventListener('click', executeLogout);
   }
 
-  // Inicialização Única da Autenticação (Sem Reload Loop)
+  // Inicialização Única da Autenticação (Com validação estrita de token e sem Reload Loop)
   try {
     const sessionStr = localStorage.getItem('oraculum_session');
     const session = sessionStr ? JSON.parse(sessionStr) : null;
 
-    if (session && (session.token || session.email)) {
-      if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
-      if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'block', 'important');
+    if (session && session.token && session.email) {
       applyRbacAndSessionVisibility(session);
     } else {
-      if (authGateContainer) authGateContainer.style.setProperty('display', 'flex', 'important');
-      if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'none', 'important');
+      // Limpa qualquer sessão legada ou mal formatada automaticamente
+      localStorage.removeItem('oraculum_session');
+      applyRbacAndSessionVisibility(null);
     }
   } catch (error) {
     console.error('Erro na verificação da sessão, limpando...', error);
     localStorage.removeItem('oraculum_session');
-    if (authGateContainer) authGateContainer.style.setProperty('display', 'flex', 'important');
-    if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'none', 'important');
+    applyRbacAndSessionVisibility(null);
   }
 
   // ============================================================================
