@@ -60,6 +60,13 @@ const getStaticFilePath = (fileName: string) => {
   return possiblePaths[0];
 };
 
+// Helper para enviar headers no-cache estritos
+const setNoCacheHeaders = (res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+};
+
 // ROTA RAIZ: Servir Frontend Dashboard index.html
 app.get('/', (req: Request, res: Response) => {
   try {
@@ -67,6 +74,7 @@ app.get('/', (req: Request, res: Response) => {
     if (fs.existsSync(indexPath)) {
       const html = fs.readFileSync(indexPath, 'utf-8');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      setNoCacheHeaders(res);
       return res.status(200).send(html);
     }
     return res.status(404).send('index.html não encontrado.');
@@ -81,6 +89,7 @@ app.get('/index.html', (req: Request, res: Response) => {
     if (fs.existsSync(indexPath)) {
       const html = fs.readFileSync(indexPath, 'utf-8');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      setNoCacheHeaders(res);
       return res.status(200).send(html);
     }
     return res.status(404).send('index.html não encontrado.');
@@ -96,6 +105,7 @@ app.get('/app.js', (req: Request, res: Response) => {
     if (fs.existsSync(appJsPath)) {
       const code = fs.readFileSync(appJsPath, 'utf-8');
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      setNoCacheHeaders(res);
       return res.status(200).send(code);
     }
     return res.status(404).send('app.js não encontrado.');
@@ -111,6 +121,7 @@ app.get('/styles.css', (req: Request, res: Response) => {
     if (fs.existsSync(stylesPath)) {
       const css = fs.readFileSync(stylesPath, 'utf-8');
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      setNoCacheHeaders(res);
       return res.status(200).send(css);
     }
     return res.status(404).send('styles.css não encontrado.');

@@ -25,6 +25,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Oraculum">
+
+  <!-- GUARDA DE AUTENTICAÇÃO INSTANTÂNEA: Garante que o Auth Gate apareça imediatamente se não houver login ativo -->
+  <script>
+    (function() {
+      try {
+        var sess = localStorage.getItem('oraculum_session');
+        if (!sess || sess === 'null' || sess === 'undefined') {
+          document.write('<style id="auth-gate-lock">.app-container { display: none !important; } #auth-gate-container { display: flex !important; }</style>');
+        }
+      } catch(e) {
+        document.write('<style id="auth-gate-lock">.app-container { display: none !important; } #auth-gate-container { display: flex !important; }</style>');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -1302,10 +1316,111 @@
           <i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i> Criar Conta da Agência
         </button>
       </form>
-
     </div>
   </div>
 
-  <script src="app.js?v=1045"></script>
+  <!-- INLINE LOGIC DO AUTH GATE & LOGOUT (Executa instantaneamente independente de qualquer script externo) -->
+  <script>
+    (function initAuthGateInline() {
+      var gateTabBtnLogin = document.getElementById('gate-tab-btn-login');
+      var gateTabBtnRegister = document.getElementById('gate-tab-btn-register');
+      var formGateLogin = document.getElementById('form-gate-login');
+      var formGateRegister = document.getElementById('form-gate-register');
+      var gateErrorMsg = document.getElementById('gate-error-msg');
+      var authGateContainer = document.getElementById('auth-gate-container');
+      var appContainer = document.querySelector('.app-container');
+
+      if (gateTabBtnLogin && gateTabBtnRegister) {
+        gateTabBtnLogin.onclick = function() {
+          gateTabBtnLogin.style.background = 'linear-gradient(135deg, #7F00FF, #E100FF)';
+          gateTabBtnLogin.style.color = '#FFF';
+          gateTabBtnRegister.style.background = 'transparent';
+          gateTabBtnRegister.style.color = '#94A3B8';
+          if (formGateLogin) formGateLogin.style.display = 'block';
+          if (formGateRegister) formGateRegister.style.display = 'none';
+          if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+        };
+
+        gateTabBtnRegister.onclick = function() {
+          gateTabBtnRegister.style.background = 'linear-gradient(135deg, #00F5A0, #00F2FE)';
+          gateTabBtnRegister.style.color = '#080B11';
+          gateTabBtnLogin.style.background = 'transparent';
+          gateTabBtnLogin.style.color = '#94A3B8';
+          if (formGateRegister) formGateRegister.style.display = 'block';
+          if (formGateLogin) formGateLogin.style.display = 'none';
+          if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+        };
+      }
+
+      if (formGateLogin) {
+        formGateLogin.onsubmit = function(e) {
+          e.preventDefault();
+          var emailInput = document.getElementById('gate-login-email');
+          var email = emailInput ? emailInput.value : '';
+          var role = email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner';
+          var agencyStatus = email.toLowerCase().includes('bloqueado') ? 'blocked' : 'active';
+          var session = {
+            email: email,
+            role: role,
+            agencyStatus: agencyStatus,
+            agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + email.split('@')[0],
+            loggedAt: new Date().toISOString()
+          };
+          localStorage.setItem('oraculum_session', JSON.stringify(session));
+          var lockStyle = document.getElementById('auth-gate-lock');
+          if (lockStyle) lockStyle.remove();
+          if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
+          if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
+          var btnSuper = document.getElementById('btn-tab-super-admin');
+          if (btnSuper) btnSuper.style.setProperty('display', role === 'super_admin' ? 'flex' : 'none', 'important');
+          var userLbl = document.getElementById('user-session-label');
+          if (userLbl) userLbl.textContent = email;
+          if (agencyStatus === 'blocked') {
+            var blockModal = document.getElementById('blocked-suspension-modal');
+            if (blockModal) blockModal.style.setProperty('display', 'flex', 'important');
+          }
+        };
+      }
+
+      if (formGateRegister) {
+        formGateRegister.onsubmit = function(e) {
+          e.preventDefault();
+          var agencyName = document.getElementById('gate-reg-agency-name').value;
+          var fullName = document.getElementById('gate-reg-fullname').value;
+          var email = document.getElementById('gate-reg-email').value;
+          var session = {
+            email: email,
+            fullName: fullName,
+            agencyName: agencyName,
+            role: 'agency_owner',
+            agencyStatus: 'active',
+            loggedAt: new Date().toISOString()
+          };
+          localStorage.setItem('oraculum_session', JSON.stringify(session));
+          var lockStyle = document.getElementById('auth-gate-lock');
+          if (lockStyle) lockStyle.remove();
+          if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
+          if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
+          var btnSuper = document.getElementById('btn-tab-super-admin');
+          if (btnSuper) btnSuper.style.setProperty('display', 'none', 'important');
+          var userLbl = document.getElementById('user-session-label');
+          if (userLbl) userLbl.textContent = email;
+          alert('🎉 Agência "' + agencyName + '" cadastrada com sucesso!');
+        };
+      }
+
+      // Logout buttons
+      var btnLogout = document.getElementById('btn-sidebar-logout');
+      var btnLogoutSusp = document.getElementById('btn-logout-suspension');
+      var handleLogout = function() {
+        localStorage.removeItem('oraculum_session');
+        window.location.reload();
+      };
+      if (btnLogout) btnLogout.onclick = handleLogout;
+      if (btnLogoutSusp) btnLogoutSusp.onclick = handleLogout;
+    })();
+  </script>
+
+  <script src="app.js?v=3000"></script>
 </body>
 </html>
