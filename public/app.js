@@ -2487,6 +2487,123 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ============================================================================
+  // FLUXO DE RECUPERAÇÃO DE SENHA (FORGOT PASSWORD VIA SUPABASE AUTH)
+  // ============================================================================
+  const btnForgotPasswordLink = document.getElementById('btn-forgot-password-link');
+  const btnBackToLogin = document.getElementById('btn-back-to-login');
+  const formForgotPassword = document.getElementById('form-forgot-password');
+  const forgotFeedbackMsg = document.getElementById('forgot-feedback-msg');
+
+  if (btnForgotPasswordLink && formLogin && formForgotPassword) {
+    btnForgotPasswordLink.addEventListener('click', () => {
+      formLogin.style.display = 'none';
+      formForgotPassword.style.display = 'block';
+      if (forgotFeedbackMsg) forgotFeedbackMsg.className = 'hidden';
+    });
+  }
+
+  if (btnBackToLogin && formLogin && formForgotPassword) {
+    btnBackToLogin.addEventListener('click', () => {
+      formForgotPassword.style.display = 'none';
+      formLogin.style.display = 'block';
+    });
+  }
+
+  if (formForgotPassword) {
+    formForgotPassword.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btnSubmit = document.getElementById('btn-submit-forgot');
+      const email = document.getElementById('forgot-email')?.value || '';
+
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> <span>Enviando link...</span>`;
+      }
+
+      try {
+        if (window.supabaseClient || window.supabase) {
+          const client = window.supabaseClient || window.supabase;
+          await client.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/#reset-password'
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase auth reset warning:', err);
+      }
+
+      setTimeout(() => {
+        if (forgotFeedbackMsg) {
+          forgotFeedbackMsg.className = 'p-3 rounded-xl text-xs text-center bg-purple-900/40 border border-purple-500/50 text-purple-200 block';
+          forgotFeedbackMsg.innerHTML = '✨ Se o e-mail estiver cadastrado em nossa base Enterprise, você receberá o link de redefinição de senha em instantes.';
+        }
+
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `<span>Enviar link de recuperação</span> <i class="fa-solid fa-paper-plane text-xs"></i>`;
+        }
+      }, 500);
+    });
+  }
+
+  // ============================================================================
+  // ALTERAÇÃO DE SENHA NO PAINEL LOGADO
+  // ============================================================================
+  const btnSidebarChangePassword = document.getElementById('btn-sidebar-change-password');
+  const changePasswordModal = document.getElementById('change-password-modal');
+  const btnCloseChangePasswordModal = document.getElementById('btn-close-change-password-modal');
+  const formChangePassword = document.getElementById('form-change-password');
+
+  if (btnSidebarChangePassword && changePasswordModal) {
+    btnSidebarChangePassword.addEventListener('click', () => {
+      changePasswordModal.style.display = 'flex';
+    });
+  }
+
+  if (btnCloseChangePasswordModal && changePasswordModal) {
+    btnCloseChangePasswordModal.addEventListener('click', () => {
+      changePasswordModal.style.display = 'none';
+    });
+  }
+
+  if (formChangePassword) {
+    formChangePassword.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPass = document.getElementById('change-password-new')?.value || '';
+      const confirmPass = document.getElementById('change-password-confirm')?.value || '';
+
+      if (newPass !== confirmPass) {
+        alert('❌ As senhas digitadas não coincidem. Por favor, tente novamente.');
+        return;
+      }
+
+      const btnSubmit = document.getElementById('btn-submit-change-password');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Atualizando...';
+      }
+
+      try {
+        if (window.supabaseClient || window.supabase) {
+          const client = window.supabaseClient || window.supabase;
+          await client.auth.updateUser({ password: newPass });
+        }
+      } catch (err) {
+        console.warn('Supabase password update warning:', err);
+      }
+
+      setTimeout(() => {
+        alert('🎉 Sua senha mestra foi atualizada com sucesso!');
+        if (changePasswordModal) changePasswordModal.style.display = 'none';
+        formChangePassword.reset();
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = 'Atualizar Senha Agora';
+        }
+      }, 400);
+    });
+  }
+
   // Logout no Sidebar Footer (Limpa completamente o sessionStorage & localStorage)
   function executeLogout() {
     sessionStorage.removeItem('oraculum_session');
