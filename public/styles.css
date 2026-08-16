@@ -60,11 +60,26 @@ body {
 #auth-gate-container {
   display: flex !important;
   position: fixed;
-  inset: 0;
-  background: #080B11;
-  z-index: 300000;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #080B11 !important;
+  z-index: 999999 !important;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+}
+
+/* ESTADO AUTENTICADO: Exibir Dashboard e Ocultar Auth Gate */
+html.is-authenticated .app-container {
+  display: flex !important;
+}
+
+html.is-authenticated #auth-gate-container {
+  display: none !important;
 }
 
 /* SIDEBAR LATERAL */

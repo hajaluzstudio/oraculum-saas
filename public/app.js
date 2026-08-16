@@ -2405,12 +2405,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyRbacAndSessionVisibility(session) {
     if (!session) {
+      document.documentElement.classList.remove('is-authenticated');
       if (appContainer) appContainer.style.display = 'none';
       if (authGateContainer) authGateContainer.style.display = 'flex';
       return;
     }
 
     // Usuário autenticado
+    document.documentElement.classList.add('is-authenticated');
     if (authGateContainer) authGateContainer.style.display = 'none';
     if (appContainer) appContainer.style.display = 'flex';
 
