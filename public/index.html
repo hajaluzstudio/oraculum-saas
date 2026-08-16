@@ -125,6 +125,20 @@
         </div>
       </div>
 
+      <!-- CARD DINÂMICO DO USUÁRIO / AGÊNCIA AUTENTICADO -->
+      <div class="user-profile-card" style="margin: 12px 16px; padding: 12px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div id="user-avatar-initials" style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; text-transform: uppercase; flex-shrink: 0; box-shadow: 0 4px 12px rgba(127, 0, 255, 0.4);">
+          OU
+        </div>
+        <div style="overflow: hidden; flex: 1;">
+          <div id="user-display-name" style="font-weight: 700; font-size: 13px; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Carregando...</div>
+          <div id="user-display-role" style="font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Perfil</div>
+          <span id="user-display-badge" style="display: inline-block; margin-top: 3px; font-size: 9px; padding: 2px 7px; background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 99px; font-weight: 700; text-transform: uppercase;">
+            Autenticado
+          </span>
+        </div>
+      </div>
+
       <nav class="nav-menu">
         <button class="nav-item active" data-tab="tab-onboarding" id="btn-tab-onboarding">
           <i class="fa-solid fa-user-plus"></i>
@@ -251,6 +265,11 @@
           <div class="stat-pill">
             <i class="fa-solid fa-shield-halved"></i>
             <span>RLS Ativo</span>
+          </div>
+
+          <div class="stat-pill user-header-pill" style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-circle-user" style="color: #C084FC;"></i>
+            <span id="header-user-email" style="font-size: 11px; color: #E2E8F0; font-weight: 600;">Carregando...</span>
           </div>
 
 
@@ -1553,6 +1572,78 @@
       }
     });
 
+    // FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
+    window.atualizarCardUsuarioLogado = function(providedSession = null) {
+      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+      let session = providedSession;
+      if (!session) {
+        try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
+      }
+
+      const nameEl = document.getElementById('user-display-name');
+      const roleEl = document.getElementById('user-display-role');
+      const badgeEl = document.getElementById('user-display-badge');
+      const avatarEl = document.getElementById('user-avatar-initials');
+      const headerEmailEl = document.getElementById('header-user-email');
+
+      if (!session || !session.email) {
+        if (nameEl) nameEl.textContent = 'Visitante';
+        if (roleEl) roleEl.textContent = 'Não Autenticado';
+        if (badgeEl) badgeEl.textContent = 'Desconectado';
+        if (avatarEl) avatarEl.textContent = '??';
+        if (headerEmailEl) headerEmailEl.textContent = 'Desconectado';
+        return;
+      }
+
+      const email = session.email || 'usuario@oraculum.com';
+      const role = session.role || (email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner');
+      const isMaster = role === 'super_admin' || role === 'master';
+
+      if (headerEmailEl) headerEmailEl.textContent = email;
+
+      if (isMaster) {
+        const displayName = session.fullName || session.name || "Administrador Master";
+        const displayRole = "Acesso Master / Plataforma";
+        const displayBadge = "Master / Super Admin";
+
+        if (nameEl) nameEl.textContent = displayName;
+        if (roleEl) roleEl.textContent = displayRole;
+        if (badgeEl) {
+          badgeEl.textContent = displayBadge;
+          badgeEl.style.background = 'rgba(253, 224, 71, 0.15)';
+          badgeEl.style.color = '#FDE047';
+          badgeEl.style.borderColor = 'rgba(253, 224, 71, 0.4)';
+        }
+        if (avatarEl) avatarEl.textContent = 'AM';
+      } else {
+        const rawName = session.fullName || session.nomeResponsavel || session.agencyName || email.split('@')[0];
+        const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const agencyTitle = session.agencyName || (email.split('@')[0] ? 'Agência ' + email.split('@')[0].toUpperCase() : 'Agência Parceira');
+        const displayRole = agencyTitle;
+        const displayBadge = session.plan || session.plan_tier || "Plano Enterprise Pro";
+
+        const words = displayName.trim().split(' ');
+        let initials = 'AP';
+        if (words.length >= 2) {
+          initials = (words[0][0] + words[1][0]).toUpperCase();
+        } else if (words.length === 1 && words[0].length >= 2) {
+          initials = words[0].substring(0, 2).toUpperCase();
+        }
+
+        if (nameEl) nameEl.textContent = displayName;
+        if (roleEl) roleEl.textContent = displayRole;
+        if (badgeEl) {
+          badgeEl.textContent = displayBadge;
+          badgeEl.style.background = 'rgba(168, 85, 247, 0.15)';
+          badgeEl.style.color = '#C084FC';
+          badgeEl.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+        }
+        if (avatarEl) avatarEl.textContent = initials;
+      }
+
+      console.log(`[UserCard] Perfil atualizado: ${nameEl?.textContent} (${role})`);
+    };
+
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
     (function verificarSessaoInicial() {
       if (window.location.search.includes('logout')) {
@@ -1577,6 +1668,7 @@
           authGate.style.setProperty('display', 'flex', 'important');
           authGate.style.setProperty('pointer-events', 'auto', 'important');
         }
+        window.atualizarCardUsuarioLogado(null);
       } else {
         // COM SESSÃO VÁLIDA -> EXIBE O DASHBOARD
         document.documentElement.classList.add('is-authenticated');
@@ -1587,6 +1679,7 @@
         }
         if (mainDash) mainDash.style.setProperty('display', 'block', 'important');
         if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
+        window.atualizarCardUsuarioLogado(sessionObj);
       }
     })();
 
@@ -1660,6 +1753,9 @@
 
         if (typeof applyRbacAndSessionVisibility === 'function') {
           applyRbacAndSessionVisibility(sessionObj);
+        }
+        if (typeof window.atualizarCardUsuarioLogado === 'function') {
+          window.atualizarCardUsuarioLogado(sessionObj);
         }
 
         const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
@@ -1747,8 +1843,8 @@
     })();
   </script>
 
-  <script src="app.js?v=25.0.0"></script>
-  <script src="/agency-management.js?v=25.0.0"></script>
-  <script src="/client-management.js?v=25.0.0"></script>
+  <script src="app.js?v=26.0.0"></script>
+  <script src="/agency-management.js?v=26.0.0"></script>
+  <script src="/client-management.js?v=26.0.0"></script>
 </body>
 </html>

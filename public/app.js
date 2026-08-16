@@ -2471,6 +2471,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userSessionLabel) userSessionLabel.textContent = session.email;
 
+    if (typeof window.atualizarCardUsuarioLogado === 'function') {
+      window.atualizarCardUsuarioLogado(session);
+    }
+
     // RBAC: Exibir o botão de Gestão Master Agências apenas para usuários com role 'super_admin'
     if (btnTabSuperAdmin) {
       btnTabSuperAdmin.style.setProperty('display', (session && session.role === 'super_admin') ? 'flex' : 'none', 'important');
