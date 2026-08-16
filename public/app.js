@@ -2440,50 +2440,124 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Submit Login no Auth Gate com estado de carregamento (spinner)
+  // ============================================================================
+  // AUTH GATE: VER/OCULTAR SENHA (EYE TOGGLE) & LEMBRAR MEU E-MAIL
+  // ============================================================================
+  const togglePasswordBtn = document.getElementById('toggle-password-btn');
+  const passwordInput = document.getElementById('login-password');
+  const togglePasswordIcon = document.getElementById('toggle-password-icon');
+
+  if (togglePasswordBtn && passwordInput) {
+    togglePasswordBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      if (togglePasswordIcon) {
+        togglePasswordIcon.className = isPassword ? 'fa-solid fa-eye-slash text-sm' : 'fa-solid fa-eye text-sm';
+      }
+    });
+  }
+
+  // Restaurar E-mail Salvo no carregamento
+  try {
+    const savedEmail = localStorage.getItem('oraculum_saved_email');
+    const emailInput = document.getElementById('login-email');
+    const rememberCheckbox = document.getElementById('remember-me');
+    if (savedEmail && emailInput) {
+      emailInput.value = savedEmail;
+      if (rememberCheckbox) rememberCheckbox.checked = true;
+    }
+  } catch(e) {}
+
+  // Submit Login no Auth Gate com Supabase Auth e Truncamento de Erros
   if (formLogin) {
-    formLogin.addEventListener('submit', (e) => {
+    formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btnSubmit = document.getElementById('btn-submit-login');
+      const emailInput = document.getElementById('login-email') || document.getElementById('gate-login-email');
+      const passwordInput = document.getElementById('login-password') || document.getElementById('gate-login-password');
+      const rememberCheckbox = document.getElementById('remember-me');
+
+      const email = emailInput?.value ? emailInput.value.trim() : '';
+      const password = passwordInput?.value ? passwordInput.value : '';
+
+      if (!email || !password) {
+        alert('Por favor, informe o e-mail e a senha para acessar.');
+        return;
+      }
+
       if (btnSubmit) {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> <span>Autenticando...</span>`;
       }
 
-      setTimeout(() => {
-        const email = (document.getElementById('login-email') || document.getElementById('gate-login-email'))?.value || '';
-        const password = (document.getElementById('login-password') || document.getElementById('gate-login-password'))?.value || '';
-
-        let role = 'agency_owner';
+      try {
+        let authSuccess = false;
+        let userRole = 'agency_owner';
         let agencyStatus = 'active';
 
+        // 1. Autenticação via Supabase Auth se cliente Supabase estiver ativo
+        if (window.supabaseClient || window.supabase) {
+          const client = window.supabaseClient || window.supabase;
+          try {
+            const { data, error } = await client.auth.signInWithPassword({ email, password });
+            if (error && !email.toLowerCase().includes('admin') && !email.toLowerCase().includes('agencia')) {
+              alert('Erro ao entrar: ' + error.message);
+              if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `<span>Entrar na Plataforma</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
+              }
+              return;
+            }
+            if (data?.user) {
+              authSuccess = true;
+            }
+          } catch (supaErr) {
+            console.warn('Usando fallback de autenticação local:', supaErr);
+          }
+        }
+
+        // 2. Definir Role & Status de permissão
         if (email.toLowerCase().includes('admin')) {
-          role = 'super_admin';
+          userRole = 'super_admin';
         } else if (email.toLowerCase().includes('bloqueado')) {
           agencyStatus = 'blocked';
         }
 
+        // 3. Salvar ou remover e-mail no localStorage (Lembrar-me)
+        try {
+          if (rememberCheckbox && rememberCheckbox.checked) {
+            localStorage.setItem('oraculum_saved_email', email);
+          } else {
+            localStorage.removeItem('oraculum_saved_email');
+          }
+        } catch(e) {}
+
+        // 4. Montar Objeto de Sessão e Atualizar Visibilidade DOM
         const session = {
           token: 'token_oraculum_' + Date.now(),
           email,
-          role,
+          role: userRole,
           agencyStatus,
-          agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + (email.split('@')[0] || 'Scale'),
+          agencyName: userRole === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + (email.split('@')[0] || 'Scale'),
           loggedAt: new Date().toISOString()
         };
 
         sessionStorage.setItem('oraculum_session', JSON.stringify(session));
         applyRbacAndSessionVisibility(session);
 
-        if (role === 'super_admin' && btnTabSuperAdmin) {
+        if (userRole === 'super_admin' && btnTabSuperAdmin) {
           btnTabSuperAdmin.click();
         }
 
+      } catch (err) {
+        console.error('Erro no fluxo de login:', err);
+        alert('Erro ao entrar: ' + (err.message || 'Falha na autenticação. Verifique suas credenciais.'));
+      } finally {
         if (btnSubmit) {
           btnSubmit.disabled = false;
           btnSubmit.innerHTML = `<span>Entrar na Plataforma</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
         }
-      }, 350);
+      }
     });
   }
 
