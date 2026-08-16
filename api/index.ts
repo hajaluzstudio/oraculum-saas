@@ -557,7 +557,7 @@ app.get('/api/autonomous-scraper/status', (req: Request, res: Response) => {
 });
 
 // GESTÃO MASTER DE AGÊNCIAS & BLOQUEIO FINANCEIRO (SUPER ADMIN)
-app.get('/api/admin/agencies', async (req: Request, res: Response) => {
+app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase.from('agencies').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -566,6 +566,127 @@ app.get('/api/admin/agencies', async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+// CRIAR AGÊNCIA COMPLETA
+app.post(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      slug,
+      email_billing,
+      cnpj,
+      responsible_name,
+      phone,
+      zip_code,
+      address_street,
+      address_number,
+      address_neighborhood,
+      address_city,
+      address_state,
+      monthly_fee,
+      due_day,
+      client_limit,
+      status,
+      plan_tier
+    } = req.body;
+
+    const agencySlug = slug || (name ? name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36) : 'agencia-' + Date.now());
+
+    const payload = {
+      name: name || 'Nova Agência Enterprise',
+      slug: agencySlug,
+      email_billing: email_billing || 'financeiro@agencia.com',
+      cnpj: cnpj || null,
+      responsible_name: responsible_name || null,
+      phone: phone || null,
+      zip_code: zip_code || null,
+      address_street: address_street || null,
+      address_number: address_number || null,
+      address_neighborhood: address_neighborhood || null,
+      address_city: address_city || null,
+      address_state: address_state || null,
+      monthly_fee: monthly_fee ? parseFloat(monthly_fee) : 0,
+      due_day: due_day ? parseInt(due_day) : 10,
+      client_limit: client_limit ? parseInt(client_limit) : 10,
+      status: status || 'active',
+      plan_tier: plan_tier || 'enterprise',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase.from('agencies').insert([payload]).select().single();
+    if (error) throw error;
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ATUALIZAR AGÊNCIA COMPLETA (PUT/PATCH)
+const updateAgencyHandler = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const body = req.body;
+
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+
+    const allowedFields = [
+      'name', 'slug', 'email_billing', 'cnpj', 'responsible_name', 'phone',
+      'zip_code', 'address_street', 'address_number', 'address_neighborhood',
+      'address_city', 'address_state', 'monthly_fee', 'due_day', 'client_limit',
+      'status', 'plan_tier'
+    ];
+
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        if (field === 'monthly_fee') updatePayload[field] = parseFloat(body[field]);
+        else if (field === 'due_day' || field === 'client_limit') updatePayload[field] = parseInt(body[field]);
+        else updatePayload[field] = body[field];
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('agencies')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+app.put('/api/portal/agencies/:id', updateAgencyHandler);
+app.put('/api/admin/agencies/:id', updateAgencyHandler);
+app.patch('/api/portal/agencies/:id', updateAgencyHandler);
+app.patch('/api/admin/agencies/:id', updateAgencyHandler);
+
+// EXCLUIR AGÊNCIA (DELETE)
+const deleteAgencyHandler = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Delete associated clients first if necessary
+    try {
+      await supabase.from('clients').delete().eq('agency_id', id);
+    } catch (e) {}
+
+    const { error } = await supabase.from('agencies').delete().eq('id', id);
+    if (error) throw error;
+
+    return res.json({ success: true, message: 'Agência excluída permanentemente com sucesso.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+app.delete('/api/portal/agencies/:id', deleteAgencyHandler);
+app.delete('/api/admin/agencies/:id', deleteAgencyHandler);
 
 app.post('/api/admin/agencies/toggle-status', async (req: Request, res: Response) => {
   try {

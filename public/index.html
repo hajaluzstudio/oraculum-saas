@@ -21,7 +21,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="styles.css?v=5.0.0">
+  <link rel="stylesheet" href="styles.css?v=6.0.0">
   
   <!-- Configurações de PWA Mobile -->
   <link rel="manifest" href="/manifest.json">
@@ -1035,101 +1035,206 @@
             </div>
           </div>
 
-          <!-- FORMULÁRIO DE CADASTRO DE AGÊNCIA -->
-          <div class="card-glass" style="margin-bottom: 24px;">
-            <h3 style="margin: 0 0 16px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-plus-circle" style="color: #C084FC;"></i> Cadastrar Nova Agência Parceira</h3>
-            <form id="form-sa-create-agency" style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 12px; align-items: end;">
-              <div>
-                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">Nome da Agência</label>
-                <input type="text" id="sa-input-agency-name" required placeholder="Ex: Agência E-commerce Scale" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-              </div>
-              <div>
-                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">E-mail de Cobrança</label>
-                <input type="email" id="sa-input-agency-email" required placeholder="financeiro@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-              </div>
-              <div>
-                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px;">Mensalidade (R$)</label>
-                <input type="number" id="sa-input-agency-fee" value="497" required style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-              </div>
-              <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #7F00FF, #E100FF); padding: 11px; font-weight: 700; font-size: 13px;">
-                <i class="fa-solid fa-plus"></i> Cadastrar Licença
-              </button>
-            </form>
+          <!-- CABEÇALHO COM AÇÕES DE CADASTRO -->
+          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,242,254,0.05)); border: 1px solid rgba(168,85,247,0.3);">
+            <div>
+              <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-building-flag" style="color: #C084FC;"></i> Cadastro Completo de Agências Enterprise</h3>
+              <p style="margin: 0; font-size: 12px; color: #94A3B8;">Gerencie dados jurídicos, faturamento, CNPJ, limites de clientes e licenças recorrentes.</p>
+            </div>
+            <button type="button" id="btn-open-create-agency-modal" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+              <i class="fa-solid fa-plus-circle"></i> + Cadastrar Nova Agência
+            </button>
           </div>
 
           <!-- TABELA DE AGÊNCIAS -->
           <div class="card-glass" style="padding: 0; overflow: hidden;">
             <div style="padding: 18px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
-              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-list-check" style="color: #00F2FE;"></i> Relatório de Licenças & Consumo de IA por Agência</h3>
+              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-list-check" style="color: #00F2FE;"></i> Relatório de Licenças & Consumo por Agência</h3>
             </div>
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; color: #E2E8F0;">
-              <thead>
-                <tr style="background: rgba(0,0,0,0.4); color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.08);">
-                  <th style="padding: 14px 20px;">Agência</th>
-                  <th style="padding: 14px 20px;">Contato Financeiro</th>
-                  <th style="padding: 14px 20px;">Clientes</th>
-                  <th style="padding: 14px 20px;">Consumo IA (Tokens)</th>
-                  <th style="padding: 14px 20px;">Mensalidade</th>
-                  <th style="padding: 14px 20px;">Status</th>
-                  <th style="padding: 14px 20px; text-align: right;">Ação Mestra</th>
-                </tr>
-              </thead>
-              <tbody id="sa-agencies-table-body">
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
-                    <i class="fa-solid fa-building" style="color: #C084FC; margin-right: 6px;"></i> Haja Luz Studio (Matriz)
-                  </td>
-                  <td style="padding: 14px 20px; color: #94A3B8;">contato@hajaluzstudio.com</td>
-                  <td style="padding: 14px 20px; font-weight: 600;">14 clientes</td>
-                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">1.240.000 tokens</td>
-                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 1.497,00</td>
-                  <td style="padding: 14px 20px;">
-                    <span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em dia</span>
-                  </td>
-                  <td style="padding: 14px 20px; text-align: right;">
-                    <button type="button" class="btn-toggle-agency" data-id="ag_1" data-status="active" style="background: rgba(255, 75, 75, 0.2); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
-                      <i class="fa-solid fa-lock"></i> Bloquear Acesso
-                    </button>
-                  </td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
-                    <i class="fa-solid fa-building" style="color: #C084FC; margin-right: 6px;"></i> Agência Growth Scale
-                  </td>
-                  <td style="padding: 14px 20px; color: #94A3B8;">financeiro@growthscale.com</td>
-                  <td style="padding: 14px 20px; font-weight: 600;">6 clientes</td>
-                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">380.000 tokens</td>
-                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 497,00</td>
-                  <td style="padding: 14px 20px;">
-                    <span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em dia</span>
-                  </td>
-                  <td style="padding: 14px 20px; text-align: right;">
-                    <button type="button" class="btn-toggle-agency" data-id="ag_2" data-status="active" style="background: rgba(255, 75, 75, 0.2); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
-                      <i class="fa-solid fa-lock"></i> Bloquear Acesso
-                    </button>
-                  </td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 14px 20px; font-weight: 700; color: #FFF;">
-                    <i class="fa-solid fa-building" style="color: #FF4B4B; margin-right: 6px;"></i> Vortex Growth & Performance
-                  </td>
-                  <td style="padding: 14px 20px; color: #94A3B8;">adm@vortexgrowth.com.br</td>
-                  <td style="padding: 14px 20px; font-weight: 600;">4 clientes</td>
-                  <td style="padding: 14px 20px; font-family: monospace; color: #00F2FE;">210.000 tokens</td>
-                  <td style="padding: 14px 20px; font-weight: 700; color: #00F5A0;">R$ 997,00</td>
-                  <td style="padding: 14px 20px;">
-                    <span style="background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Bloqueada (Inadimplente)</span>
-                  </td>
-                  <td style="padding: 14px 20px; text-align: right;">
-                    <button type="button" class="btn-toggle-agency" data-id="ag_3" data-status="blocked" style="background: rgba(0, 245, 160, 0.2); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.4); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
-                      <i class="fa-solid fa-unlock"></i> Desbloquear
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; color: #E2E8F0;">
+                <thead>
+                  <tr style="background: rgba(0,0,0,0.4); color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <th style="padding: 14px 18px;">Agência / CNPJ</th>
+                    <th style="padding: 14px 18px;">Responsável / Contato</th>
+                    <th style="padding: 14px 18px;">Cidade / UF</th>
+                    <th style="padding: 14px 18px;">Mensalidade (Venc.)</th>
+                    <th style="padding: 14px 18px;">Status</th>
+                    <th style="padding: 14px 18px; text-align: right;">Ações de Controle</th>
+                  </tr>
+                </thead>
+                <tbody id="sa-agencies-table-body">
+                  <!-- Linhas renderizadas dinamicamente via JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
+
+    <!-- MODAL DE CADASTRO E EDIÇÃO DE AGÊNCIA (SUPER ADMIN CRUD) -->
+    <div id="agency-crud-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.88); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px; overflow-y: auto;">
+      <div style="width: 100%; max-width: 720px; background: #0F172A; border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 25px 60px rgba(0,0,0,0.9); position: relative; max-height: 90vh; overflow-y: auto;">
+        <button type="button" id="btn-close-agency-modal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: #94A3B8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; background: rgba(168, 85, 247, 0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #C084FC; font-size: 20px;">
+              <i class="fa-solid fa-building"></i>
+            </div>
+            <div>
+              <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #FFF; margin: 0;" id="agency-modal-title">Cadastrar Nova Agência</h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 2px 0 0;">Preencha a ficha cadastral completa para faturamento e controle de acesso.</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="form-agency-crud" style="display: flex; flex-direction: column; gap: 20px;">
+          <input type="hidden" id="agency-modal-id" value="">
+
+          <!-- SEÇÃO 1: DADOS EMPRESARIAIS -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px;">
+            <h4 style="margin: 0 0 14px; font-size: 13px; color: #C084FC; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-id-card"></i> 1. Dados Jurídicos e Comerciais
+            </h4>
+            <div style="display: grid; grid-template-columns: 2fr 1.5fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Razão Social / Nome Fantasia *</label>
+                <input type="text" id="agency-input-name" required placeholder="Ex: Agência Turbo Digital LTDA" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">CNPJ *</label>
+                <input type="text" id="agency-input-cnpj" required placeholder="00.000.000/0001-00" maxlength="18" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+            </div>
+            <div style="margin-top: 12px;">
+              <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome do Responsável / CEO *</label>
+              <input type="text" id="agency-input-responsible" required placeholder="Ex: Carlos Eduardo de Oliveira" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+            </div>
+          </div>
+
+          <!-- SEÇÃO 2: CONTATO & FATURAMENTO -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px;">
+            <h4 style="margin: 0 0 14px; font-size: 13px; color: #00F2FE; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-headset"></i> 2. Contato & Faturamento
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">E-mail Principal *</label>
+                <input type="email" id="agency-input-email" required placeholder="financeiro@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Telefone / WhatsApp *</label>
+                <input type="text" id="agency-input-phone" required placeholder="(11) 99999-9999" maxlength="15" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 3: ENDEREÇO COMPLETO -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px;">
+            <h4 style="margin: 0 0 14px; font-size: 13px; color: #FDE047; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-map-location-dot"></i> 3. Endereço Completo
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">CEP *</label>
+                <input type="text" id="agency-input-zip" required placeholder="00000-000" maxlength="9" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Logradouro / Avenida *</label>
+                <input type="text" id="agency-input-street" required placeholder="Av. Paulista" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Número *</label>
+                <input type="text" id="agency-input-number" required placeholder="1000, Cj 50" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Bairro *</label>
+                <input type="text" id="agency-input-neighborhood" required placeholder="Bela Vista" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Cidade *</label>
+                <input type="text" id="agency-input-city" required placeholder="São Paulo" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">UF (Estado) *</label>
+                <input type="text" id="agency-input-state" required placeholder="SP" maxlength="2" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; text-transform: uppercase;">
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 4: LICENÇA, PLANO & COBRANÇA -->
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px;">
+            <h4 style="margin: 0 0 14px; font-size: 13px; color: #00F5A0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-credit-card"></i> 4. Licença & Condições Comerciais
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Plano SaaS *</label>
+                <select id="agency-input-plan" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                  <option value="starter">Starter Scale</option>
+                  <option value="pro">Pro Agency</option>
+                  <option value="enterprise" selected>Enterprise VIP</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Mensalidade (R$) *</label>
+                <input type="number" id="agency-input-fee" required value="497" step="0.01" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Dia do Vencimento *</label>
+                <input type="number" id="agency-input-due-day" required value="10" min="1" max="31" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Status do Acesso *</label>
+                <select id="agency-input-status" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                  <option value="active" selected>Ativa / Em Dia</option>
+                  <option value="blocked">Bloqueada (Inadimplente)</option>
+                  <option value="trial">Período de Testes</option>
+                  <option value="past_due">Atrasada / Aviso</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+            <button type="button" id="btn-cancel-agency-modal" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #94A3B8; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
+              Cancelar
+            </button>
+            <button type="submit" id="btn-submit-agency-modal" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 24px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+              <i class="fa-solid fa-check"></i> Salvar Agência
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO CRÍTICA DE AGÊNCIA -->
+    <div id="confirm-delete-agency-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.95); backdrop-filter: blur(15px); z-index: 210000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px;">
+      <div style="width: 100%; max-width: 480px; background: #0F172A; border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 24px; padding: 36px 28px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255, 75, 75, 0.25);">
+        <div style="width: 64px; height: 64px; background: rgba(255, 75, 75, 0.15); border: 2px solid rgba(255, 75, 75, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #FF4B4B; font-size: 28px;">
+          <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #FFF; margin: 0 0 10px;">Excluir Agência Definitivamente?</h3>
+        <p style="font-size: 13px; color: #94A3B8; line-height: 1.6; margin: 0 0 24px;" id="delete-agency-warning-text">
+          Tem certeza de que deseja excluir permanentemente esta agência e todos os seus dados vinculados? Esta ação não pode ser desfeita.
+        </p>
+
+        <input type="hidden" id="delete-agency-target-id" value="">
+
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button type="button" id="btn-cancel-delete-agency" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
+            Cancelar
+          </button>
+          <button type="button" id="btn-confirm-delete-agency" style="background: #FF4B4B; border: none; color: #FFF; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,75,75,0.4);">
+            Sim, Excluir Definitivamente
+          </button>
+        </div>
+      </div>
+    </div>
 
       </div>
     </main>
@@ -1343,6 +1448,6 @@
 
   </div> <!-- FIM DE #main-dashboard-container -->
 
-  <script src="app.js?v=5.0.0"></script>
+  <script src="app.js?v=6.0.0"></script>
 </body>
 </html>
