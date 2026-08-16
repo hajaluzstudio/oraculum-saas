@@ -183,7 +183,7 @@
         <button type="button" id="btn-sidebar-change-password" style="width: 100%; margin-top: 10px; background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
           <i class="fa-solid fa-key"></i> Alterar Senha
         </button>
-        <button type="button" id="btn-sidebar-logout" onclick="window.executeLogout()" style="width: 100%; margin-top: 6px; background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+        <button type="button" id="btn-sidebar-logout" onclick="window.executarLogout(event)" style="width: 100%; margin-top: 6px; background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); font-size: 11px; font-weight: 700; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
           <i class="fa-solid fa-right-from-bracket"></i> Sair da Conta
         </button>
       </div>
@@ -1436,7 +1436,7 @@
         <a href="https://wa.me/5511999999999?text=Olá,%20preciso%20desbloquear%20o%20acesso%20da%20minha%20agência%20no%20Oraculum" target="_blank" style="background: #25D366; color: #FFF; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
           <i class="fa-brands fa-whatsapp" style="font-size: 16px;"></i> Falar com o Financeiro
         </a>
-        <button type="button" id="btn-logout-suspension" onclick="window.executeLogout()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
+        <button type="button" id="btn-logout-suspension" onclick="window.executarLogout(event)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
           Sair da Conta
         </button>
       </div>
@@ -1444,26 +1444,53 @@
   </div>
 
   <script>
-    // 0. FUNÇÃO GLOBAL DE LOGOUT COMPLETO DA CONTA
-    window.executeLogout = function() {
-      console.log("Executando Logout seguro...");
-      sessionStorage.clear();
-      try { localStorage.removeItem('oraculum_session'); } catch(e){}
-      document.documentElement.classList.remove('is-authenticated');
+    // 1. FUNÇÃO GLOBAL DE LOGOUT COMPLETO DA CONTA
+    window.executarLogout = async function(e) {
+      if (e) e.preventDefault();
       
-      const authGate = document.getElementById('auth-gate-container');
+      // 1. Limpa todas as sessões e tokens salvos
+      sessionStorage.removeItem('oraculum_session');
+      sessionStorage.clear();
+      localStorage.removeItem('oraculum_session');
+
+      // 2. Encerra a sessão no Supabase se disponível
+      try {
+        if (typeof supabase !== 'undefined' && supabase.auth) {
+          await supabase.auth.signOut();
+        }
+      } catch (err) {
+        console.warn("Aviso ao deslogar do Supabase:", err);
+      }
+
+      // 3. Oculta o dashboard principal e exibe o Auth Gate (Login)
+      document.documentElement.classList.remove('is-authenticated');
       const mainDash = document.getElementById('main-dashboard-container');
+      const authGate = document.getElementById('auth-gate-container');
       const appContainer = document.querySelector('.app-container');
 
       if (mainDash) mainDash.style.setProperty('display', 'none', 'important');
       if (appContainer) appContainer.style.setProperty('display', 'none', 'important');
       if (authGate) {
         authGate.style.setProperty('display', 'flex', 'important');
-        authGate.style.setProperty('pointer-events', 'auto', 'important');
+        authGate.style.pointerEvents = 'auto';
       }
+
+      // 4. Limpa campos de senha
+      const passInput = document.getElementById('login-password');
+      if (passInput) passInput.value = '';
 
       window.location.href = window.location.origin + window.location.pathname + '?logout=' + Date.now();
     };
+
+    window.executeLogout = window.executarLogout;
+
+    // Listener global de segurança para botões de sair
+    document.addEventListener('click', function(e) {
+      const btnSair = e.target.closest('#btn-logout, #btn-sidebar-logout, #btn-logout-suspension, .btn-logout, [data-action="logout"], a[href="#logout"]');
+      if (btnSair) {
+        window.executarLogout(e);
+      }
+    });
 
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
     (function verificarSessaoInicial() {
@@ -1658,7 +1685,7 @@
     })();
   </script>
 
-  <script src="app.js?v=16.0.0"></script>
-  <script src="/agency-management.js?v=16.0.0"></script>
+  <script src="app.js?v=17.0.0"></script>
+  <script src="/agency-management.js?v=17.0.0"></script>
 </body>
 </html>
