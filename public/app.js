@@ -2441,23 +2441,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
-  // AUTH GATE: VER/OCULTAR SENHA (EYE TOGGLE) & LEMBRAR MEU E-MAIL
+  // AUTH GATE: VER/OCULTAR SENHA (EYE TOGGLE) & SUBMISSÃO DO LOGIN
   // ============================================================================
-  console.log("Iniciando scripts de Login");
+  console.log("Iniciando motor de Login...");
 
-  // 1. Mostrar/Ocultar Senha
-  const toggleBtn = document.getElementById('toggle-password-btn');
   const passInput = document.getElementById('login-password');
+  const toggleBtn = document.getElementById('toggle-password-btn');
   const togglePasswordIcon = document.getElementById('toggle-password-icon');
+  const btnSubmit = formLogin ? formLogin.querySelector('button[type="submit"]') : null;
+
+  // 1. Lógica do Olho (Ver/Ocultar Senha)
   if (toggleBtn && passInput) {
     toggleBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
-      passInput.setAttribute('type', type);
+      e.preventDefault(); // Impede que o botão do olho recarregue a página
+      const currentType = passInput.getAttribute('type');
+      const newType = currentType === 'password' ? 'text' : 'password';
+      passInput.setAttribute('type', newType);
       if (togglePasswordIcon) {
-        togglePasswordIcon.className = type === 'text' ? 'fa-solid fa-eye-slash text-sm' : 'fa-solid fa-eye text-sm';
+        togglePasswordIcon.className = newType === 'text' ? 'fa-solid fa-eye-slash text-sm' : 'fa-solid fa-eye text-sm';
       }
     });
+  } else {
+    console.warn("Aviso: Botão de ver senha ou input não encontrados no HTML.");
   }
 
   // Restaurar E-mail Salvo no carregamento
@@ -2471,35 +2476,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch(e) {}
 
-  // 2. Submissão do Login
+  // 2. Lógica de Submissão do Login
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
-      e.preventDefault(); // OBRIGATÓRIO: Impede o recarregamento da página!
+      e.preventDefault(); // OBRIGATÓRIO: Impede a página de recarregar e apagar os dados!
       
-      const email = document.getElementById('login-email').value;
-      const password = passInput ? passInput.value : document.getElementById('login-password').value;
+      const emailInput = document.getElementById('login-email');
+      const email = emailInput ? emailInput.value.trim() : '';
+      const password = passInput ? passInput.value : '';
       const rememberMe = document.getElementById('remember-me')?.checked;
-      const btnSubmit = formLogin.querySelector('button[type="submit"]');
-      
-      const originalText = btnSubmit.innerHTML;
-      btnSubmit.innerHTML = 'Autenticando...';
-      btnSubmit.disabled = true;
+
+      if (!email || !password) {
+        alert("Por favor, preencha o e-mail e a senha.");
+        return;
+      }
+
+      const activeBtnSubmit = btnSubmit || formLogin.querySelector('button[type="submit"]');
+      const originalText = activeBtnSubmit ? activeBtnSubmit.innerHTML : 'Entrar na Plataforma';
+      if (activeBtnSubmit) {
+        activeBtnSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-sm mr-2"></i> Autenticando...';
+        activeBtnSubmit.disabled = true;
+      }
 
       try {
+        const supabaseObj = (typeof supabase !== 'undefined') ? supabase : (window.supabaseClient || window.supabase);
         let sessionData = null;
 
-        // 1. Tentar Supabase Auth
-        if (window.supabaseClient || window.supabase) {
-          const client = window.supabaseClient || window.supabase;
+        if (supabaseObj && supabaseObj.auth) {
           try {
-            const { data, error } = await client.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseObj.auth.signInWithPassword({ email, password });
             if (error && !email.toLowerCase().includes('admin') && !email.toLowerCase().includes('agencia')) {
               throw error;
             }
             if (data?.session) {
               sessionData = {
                 token: data.session.access_token,
-                email,
+                email: data.user?.email || email,
                 role: email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner',
                 agencyStatus: 'active',
                 loggedAt: new Date().toISOString()
@@ -2517,9 +2529,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const agencyStatus = email.toLowerCase().includes('bloqueado') ? 'blocked' : 'active';
           sessionData = {
             token: 'token_oraculum_' + Date.now(),
-            email,
-            role,
-            agencyStatus,
+            email: email,
+            role: role,
+            agencyStatus: agencyStatus,
             agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + (email.split('@')[0] || 'Scale'),
             loggedAt: new Date().toISOString()
           };
@@ -2529,17 +2541,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rememberMe) localStorage.setItem('oraculum_saved_email', email);
         else localStorage.removeItem('oraculum_saved_email');
 
-        // Monta Sessão e entra
+        // Sucesso! Salva a sessão no sessionStorage
         sessionStorage.setItem('oraculum_session', JSON.stringify(sessionData));
         
+        // Troca as telas
         const authGate = document.getElementById('auth-gate-container');
         const mainDash = document.getElementById('main-dashboard-container');
-        if (authGate) authGate.style.setProperty('display', 'none', 'important');
-        if (mainDash) mainDash.style.setProperty('display', 'flex', 'important');
+        const appContainer = document.querySelector('.app-container');
         
-        // Chama função de tela
+        if (authGate) authGate.style.setProperty('display', 'none', 'important');
+        if (mainDash) mainDash.style.setProperty('display', 'block', 'important');
+        if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
+        
         if (typeof applyRbacAndSessionVisibility === 'function') {
-           applyRbacAndSessionVisibility(JSON.parse(sessionStorage.getItem('oraculum_session')));
+          applyRbacAndSessionVisibility(sessionData);
         }
 
         if (sessionData.role === 'super_admin' && btnTabSuperAdmin) {
@@ -2547,13 +2562,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
       } catch (err) {
-        alert('Erro ao entrar: ' + err.message);
-        console.error(err);
+        console.error("Falha no login:", err);
+        alert("Erro ao entrar: " + (err.message || "Credenciais inválidas."));
       } finally {
-        btnSubmit.innerHTML = originalText;
-        btnSubmit.disabled = false;
+        if (activeBtnSubmit) {
+          activeBtnSubmit.innerHTML = originalText;
+          activeBtnSubmit.disabled = false;
+        }
       }
     });
+  } else {
+    console.error("ERRO: Formulário #form-login não encontrado.");
   }
 
   // ============================================================================
@@ -2564,18 +2583,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const formForgotPassword = document.getElementById('form-forgot-password');
   const forgotFeedbackMsg = document.getElementById('forgot-feedback-msg');
 
-  if (btnForgotPasswordLink && formLogin && formForgotPassword) {
-    btnForgotPasswordLink.addEventListener('click', () => {
-      formLogin.style.display = 'none';
-      formForgotPassword.style.display = 'block';
+  if (btnForgotPasswordLink && formForgotPassword) {
+    btnForgotPasswordLink.addEventListener('click', (e) => {
+      if (e) e.preventDefault();
+      if (formLogin) formLogin.style.display = 'none';
+      if (formForgotPassword) formForgotPassword.style.display = 'block';
       if (forgotFeedbackMsg) forgotFeedbackMsg.className = 'hidden';
     });
   }
 
-  if (btnBackToLogin && formLogin && formForgotPassword) {
-    btnBackToLogin.addEventListener('click', () => {
-      formForgotPassword.style.display = 'none';
-      formLogin.style.display = 'block';
+  if (btnBackToLogin && formForgotPassword) {
+    btnBackToLogin.addEventListener('click', (e) => {
+      if (e) e.preventDefault();
+      if (formForgotPassword) formForgotPassword.style.display = 'none';
+      if (formLogin) formLogin.style.display = 'block';
     });
   }
 
