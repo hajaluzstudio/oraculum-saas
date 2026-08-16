@@ -56,6 +56,17 @@ body {
   box-sizing: border-box;
 }
 
+/* AUTH GATE FULLSCREEN */
+#auth-gate-container {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: #080B11;
+  z-index: 300000;
+  align-items: center;
+  justify-content: center;
+}
+
 /* SIDEBAR LATERAL */
 .sidebar {
   width: 280px;
