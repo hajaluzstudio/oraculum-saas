@@ -114,6 +114,22 @@ app.get('/app.js', (req: Request, res: Response) => {
   }
 });
 
+// SERVIR AGENCY-MANAGEMENT.JS
+app.get('/agency-management.js', (req: Request, res: Response) => {
+  try {
+    const agencyJsPath = getStaticFilePath('agency-management.js');
+    if (fs.existsSync(agencyJsPath)) {
+      const code = fs.readFileSync(agencyJsPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      setNoCacheHeaders(res);
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('agency-management.js não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar agency-management.js: ' + e.message);
+  }
+});
+
 // SERVIR STYLES.CSS
 app.get('/styles.css', (req: Request, res: Response) => {
   try {

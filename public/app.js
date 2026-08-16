@@ -3269,12 +3269,27 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("[Oraculum] Módulo Master Agências pronto.");
   }
 
-  // Execução isolada por módulo para garantir que um elemento nulo não trave os demais
-  try { initChat(); } catch (e) { console.error('Erro no Chat:', e); }
-  try { initOnboarding(); } catch (e) { console.error('Erro no Onboarding:', e); }
-  try { initRoteiros(); } catch (e) { console.error('Erro nos Roteiros:', e); }
-  try { initBI(); } catch (e) { console.error('Erro no BI:', e); }
-  try { initMaster(); } catch (e) { console.error('Erro no Master:', e); }
+  // Execução isolada por módulo com verificação estrita de existência
+  if (typeof initChat === 'function') {
+    try { initChat(); } catch (e) { console.warn('Aviso initChat:', e); }
+  }
+  if (typeof initOnboarding === 'function') {
+    try { initOnboarding(); } catch (e) { console.warn('Aviso initOnboarding:', e); }
+  }
+  if (typeof initRoteiros === 'function') {
+    try { initRoteiros(); } catch (e) { console.warn('Aviso initRoteiros:', e); }
+  }
+  if (typeof initBI === 'function') {
+    try { initBI(); } catch (e) { console.warn('Aviso initBI:', e); }
+  }
+  if (typeof initMaster === 'function') {
+    try { initMaster(); } catch (e) { console.warn('Aviso initMaster:', e); }
+  }
+  if (typeof renderizarListaAgencias === 'function') {
+    try { renderizarListaAgencias(); } catch (e) { console.warn('Aviso renderizarListaAgencias:', e); }
+  } else if (typeof window.renderizarListaAgencias === 'function') {
+    try { window.renderizarListaAgencias(); } catch (e) { console.warn('Aviso window.renderizarListaAgencias:', e); }
+  }
 
   console.log("[Oraculum] Sistema inicializado e pronto para eventos.");
 });
