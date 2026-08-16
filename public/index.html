@@ -30,8 +30,11 @@
   <script>
     (function() {
       try {
-        var sess = localStorage.getItem('oraculum_session');
-        if (!sess || sess === 'null' || sess === 'undefined') {
+        var sessStr = localStorage.getItem('oraculum_session');
+        var sess = (sessStr && sessStr !== 'null' && sessStr !== 'undefined') ? JSON.parse(sessStr) : null;
+        if (sess && sess.email) {
+          document.write('<style id="auth-gate-lock">.app-container { display: flex !important; } #auth-gate-container { display: none !important; }</style>');
+        } else {
           document.write('<style id="auth-gate-lock">.app-container { display: none !important; } #auth-gate-container { display: flex !important; }</style>');
         }
       } catch(e) {

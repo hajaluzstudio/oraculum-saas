@@ -45,9 +45,9 @@ body {
   overflow-x: hidden;
 }
 
-/* LAYOUT PRINCIPAL */
+/* LAYOUT PRINCIPAL (Oculto por padrão até que o usuário faça login) */
 .app-container {
-  display: flex;
+  display: none;
   width: 100%;
   max-width: 100vw;
   min-height: 100vh;
@@ -56,9 +56,9 @@ body {
   box-sizing: border-box;
 }
 
-/* AUTH GATE FULLSCREEN */
+/* AUTH GATE FULLSCREEN (Visível por padrão na abertura da página) */
 #auth-gate-container {
-  display: flex;
+  display: flex !important;
   position: fixed;
   inset: 0;
   background: #080B11;
