@@ -2,30 +2,8 @@
 // GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC & EQUIPE)
 // =======================================================
 
-window.agenciasMock = window.agenciasMock || [
-  { 
-    id: '1', 
-    name: 'Agência Oraculum Master', 
-    cnpj: '12.345.678/0001-99', 
-    phone: '(11) 98888-7777', 
-    admin_email: 'admin@oraculum.com', 
-    zip: '01001-000',
-    street: 'Praça da Sé',
-    neighborhood: 'Sé',
-    city: 'São Paulo',
-    state: 'SP',
-    plan: 'Enterprise Pro', 
-    monthly_fee: '1497,00', 
-    users_count: 5, 
-    active: true, 
-    created_at: new Date().toLocaleDateString('pt-BR') 
-  }
-];
-
-window.agencyUsersMock = window.agencyUsersMock || [
-  { id: 'u1', agency_id: '1', name: 'Carlos Andrade', email: 'carlos@oraculum.com', role: 'Master da Agência', created_at: new Date().toLocaleDateString('pt-BR') },
-  { id: 'u2', agency_id: '1', name: 'Mariana Lima', email: 'mariana@oraculum.com', role: 'Coordenador de Marketing', created_at: new Date().toLocaleDateString('pt-BR') }
-];
+window.agenciasMock = window.agenciasMock || [];
+window.agencyUsersMock = window.agencyUsersMock || [];
 
 // Helper para obter o cliente Supabase disponível globalmente
 function getSupabaseClient() {
@@ -474,6 +452,28 @@ window.excluirUsuarioAgencia = async function(userId, agencyId, agencyName) {
   }
 };
 
+// RECÁLCULO DINÂMICO E REAL DOS KPIS DA GESTÃO MASTER
+window.atualizarKPIsMaster = function() {
+  const list = window.agenciasMock || [];
+  const activeCount = list.filter(ag => ag.active === true || ag.status === 'active').length;
+  const blockedCount = list.filter(ag => ag.active === false || ag.status === 'blocked').length;
+  const totalClientsCount = list.reduce((sum, ag) => sum + (Number(ag.users_count) || Number(ag.clients_count) || 0), 0);
+  const totalMrrSum = list.reduce((sum, ag) => {
+    const fee = typeof ag.monthly_fee === 'number' ? ag.monthly_fee : parseFloat(String(ag.monthly_fee || 0).replace('.', '').replace(',', '.'));
+    return sum + (isNaN(fee) ? 0 : fee);
+  }, 0);
+
+  const elActive = document.getElementById('sa-metric-active-agencies');
+  const elBlocked = document.getElementById('sa-metric-blocked-agencies');
+  const elClients = document.getElementById('sa-metric-total-clients');
+  const elMrr = document.getElementById('sa-metric-total-mrr');
+
+  if (elActive) elActive.textContent = `${activeCount} / ${list.length}`;
+  if (elBlocked) elBlocked.textContent = String(blockedCount);
+  if (elClients) elClients.textContent = String(totalClientsCount);
+  if (elMrr) elMrr.textContent = `R$ ${totalMrrSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 // 6. RENDERIZAR TABELA DO SUPER ADMIN (COM BOTÃO DE USUÁRIOS)
 window.renderizarListaAgencias = function() {
   const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body, #view-master tbody, tbody');
@@ -482,7 +482,8 @@ window.renderizarListaAgencias = function() {
   const list = window.agenciasMock || [];
 
   if (list.length === 0) {
-    container.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Nenhuma agência cadastrada no momento.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhuma agência cadastrada ainda. Clique em "+ Nova Agência" para começar.</td></tr>`;
+    if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
     return;
   }
 
@@ -500,7 +501,7 @@ window.renderizarListaAgencias = function() {
         <div class="text-xs text-slate-500">${ag.phone ? 'Tel: ' + ag.phone : ''}</div>
       </td>
       <td class="py-3 px-4 text-slate-300 text-xs font-semibold">
-        <span class="px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700">${ag.users_count || 1} membros</span>
+        <span class="px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700">${ag.users_count || 0} membros</span>
       </td>
       <td class="py-3 px-4">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${ag.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
@@ -514,6 +515,8 @@ window.renderizarListaAgencias = function() {
       </td>
     </tr>
   `).join('');
+
+  if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
 };
 
 // 7. LEITURA INICIAL E PERSISTÊNCIA REAL DO SUPABASE

@@ -11,7 +11,25 @@ if ('serviceWorker' in navigator) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Oraculum SaaS Frontend Inicializado.');
+  console.log('🚀 Oraculum SaaS Frontend Inicializado em Modo Clean State.');
+
+  // LIMPEZA ÚNICA DO LOCALSTORAGE (MOCK LEGADO)
+  (function limparCacheMockAntigo() {
+    try {
+      const keysToRemove = [
+        'oraculum_mock_initialized',
+        'oraculum_mock_clients',
+        'oraculum_fake_agencies',
+        'oraculum_saved_mock'
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      const savedClient = localStorage.getItem('oraculum_active_client_id');
+      if (savedClient && (savedClient.startsWith('client_0') || savedClient.includes('viana') || savedClient.includes('alexandre'))) {
+        localStorage.removeItem('oraculum_active_client_id');
+      }
+    } catch(e) {}
+  })();
 
   // Configuração e Inicialização Segura da Instância do Supabase (Sem SyntaxError)
   if (!window.supabaseClient) {
@@ -138,32 +156,40 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('[Clients] Falha na requisição. Populando clientes em memória.');
     }
 
-    if (clientsList.length === 0) {
-      clientsList = [
-        { id: 'client_01', name: 'Dr. Alexandre Viana - Clínica Luxe', niche: 'Médico Cirurgião Plástico' },
-        { id: 'client_02', name: 'Advocacia Silva & Associados', niche: 'Advogado Trabalhista' },
-        { id: 'client_03', name: 'Imobiliária Prime Residence', niche: 'Mercado Imobiliário de Luxo' }
-      ];
-    }
-
     if (activeClientSelect) {
       activeClientSelect.innerHTML = '';
-      clientsList.forEach(client => {
+      if (clientsList.length === 0) {
         const opt = document.createElement('option');
-        opt.value = client.id;
-        opt.textContent = `${client.name} (${client.niche})`;
+        opt.value = '';
+        opt.textContent = 'Nenhum cliente ativo';
         opt.style.background = '#0d121d';
-        opt.style.color = '#F1F5F9';
+        opt.style.color = '#94A3B8';
         activeClientSelect.appendChild(opt);
-      });
 
-      const savedId = localStorage.getItem('oraculum_active_client_id');
-      const targetId = (savedId && clientsList.some(c => c.id === savedId))
-        ? savedId
-        : clientsList[0].id;
+        activeClientId = null;
+        activeClientName = 'Nenhum cliente ativo';
+        localStorage.removeItem('oraculum_active_client_id');
 
-      activeClientSelect.value = targetId;
-      await selectActiveClient(targetId);
+        const chatLabel = document.getElementById('chat-active-client-label');
+        if (chatLabel) chatLabel.textContent = 'Nenhum cliente ativo (Aguardando Onboarding)';
+      } else {
+        clientsList.forEach(client => {
+          const opt = document.createElement('option');
+          opt.value = client.id;
+          opt.textContent = `${client.name} (${client.niche})`;
+          opt.style.background = '#0d121d';
+          opt.style.color = '#F1F5F9';
+          activeClientSelect.appendChild(opt);
+        });
+
+        const savedId = localStorage.getItem('oraculum_active_client_id');
+        const targetId = (savedId && clientsList.some(c => c.id === savedId))
+          ? savedId
+          : clientsList[0].id;
+
+        activeClientSelect.value = targetId;
+        await selectActiveClient(targetId);
+      }
     }
   }
 
