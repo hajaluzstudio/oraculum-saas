@@ -2489,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loggedAt: new Date().toISOString()
         };
 
-        localStorage.setItem('oraculum_session', JSON.stringify(session));
+        sessionStorage.setItem('oraculum_session', JSON.stringify(session));
         applyRbacAndSessionVisibility(session);
 
         if (role === 'super_admin' && btnTabSuperAdmin) {
@@ -2529,7 +2529,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loggedAt: new Date().toISOString()
         };
 
-        localStorage.setItem('oraculum_session', JSON.stringify(session));
+        sessionStorage.setItem('oraculum_session', JSON.stringify(session));
         applyRbacAndSessionVisibility(session);
 
         if (btnSubmit) {
@@ -2540,9 +2540,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Logout no Sidebar Footer (Limpa completamente o localStorage)
+  // Logout no Sidebar Footer (Limpa completamente o sessionStorage & localStorage)
   function executeLogout() {
-    localStorage.removeItem('oraculum_session');
+    sessionStorage.removeItem('oraculum_session');
+    try { localStorage.clear(); } catch(e){}
     document.documentElement.classList.remove('is-authenticated');
     const appContainer = document.querySelector('.app-container');
     if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'none', 'important');
@@ -2560,21 +2561,22 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLogoutSuspension.addEventListener('click', executeLogout);
   }
 
-  // Inicialização Única da Autenticação (Com validação estrita de token e sem Reload Loop)
+  // Inicialização Única da Autenticação via sessionStorage (Com Purga de localStorage Antigo)
   try {
-    const sessionStr = localStorage.getItem('oraculum_session');
+    try { localStorage.removeItem('oraculum_session'); } catch(e){}
+
+    const sessionStr = sessionStorage.getItem('oraculum_session');
     const session = sessionStr ? JSON.parse(sessionStr) : null;
 
     if (session && session.token && session.email) {
       applyRbacAndSessionVisibility(session);
     } else {
-      // Limpa qualquer sessão legada ou mal formatada automaticamente
-      localStorage.removeItem('oraculum_session');
+      sessionStorage.removeItem('oraculum_session');
       applyRbacAndSessionVisibility(null);
     }
   } catch (error) {
     console.error('Erro na verificação da sessão, limpando...', error);
-    localStorage.removeItem('oraculum_session');
+    sessionStorage.removeItem('oraculum_session');
     applyRbacAndSessionVisibility(null);
   }
 
