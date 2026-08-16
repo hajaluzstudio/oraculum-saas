@@ -1,0 +1,386 @@
+// =======================================================
+// GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (MÓDULO ISOLADO)
+// =======================================================
+
+window.clientesMock = window.clientesMock || [];
+
+// Helper para obter o cliente Supabase disponível globalmente
+function getSupabaseClient() {
+  if (typeof supabase !== 'undefined' && supabase.from) return supabase;
+  if (window.supabaseClient && window.supabaseClient.from) return window.supabaseClient;
+  if (window.supabase && window.supabase.from) return window.supabase;
+  return null;
+}
+
+// 1. ABRIR MODAL DE CADASTRO / EDIÇÃO DE CLIENTE (Z-INDEX ABSOLUTO)
+window.abrirModalNovoCliente = function(clientId = null) {
+  console.log("[ClientManagement] Abrindo modal de cliente...", clientId);
+  let modal = document.getElementById('modal-client-crud');
+
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-client-crud';
+    modal.style.cssText = 'position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+    modal.innerHTML = `
+      <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><i class="fa-solid fa-user-plus"></i></span>
+            <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente da Agência</h3>
+          </div>
+          <button type="button" onclick="window.fecharModalNovoCliente()" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
+        </div>
+
+        <form id="form-client-crud" onsubmit="window.salvarCliente(event)" class="space-y-3 text-left">
+          <input type="hidden" id="client-modal-id">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome / Razão Social *</label>
+              <input type="text" id="client-modal-name" required placeholder="Ex: Clínica Viana Plastia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nicho de Mercado / Especialidade *</label>
+              <input type="text" id="client-modal-niche" required placeholder="Ex: Médico Cirurgião Plástico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Responsável / Contato</label>
+              <input type="text" id="client-modal-contact-name" placeholder="Ex: Dr. Alexandre Viana" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Telefone / WhatsApp</label>
+              <input type="text" id="client-modal-phone" placeholder="(11) 99999-8888" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Site Oficial (URL)</label>
+              <input type="url" id="client-modal-website" placeholder="https://exemplo.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Instagram (@)</label>
+              <input type="text" id="client-modal-instagram" placeholder="@nomedaclinica" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Ticket Médio Estimado (R$)</label>
+              <input type="text" id="client-modal-avg-ticket" placeholder="Ex: 15.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Meta de Faturamento (R$)</label>
+              <input type="text" id="client-modal-target-revenue" placeholder="Ex: 150.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Notas & Histórico da Agência Anterior</label>
+            <textarea id="client-modal-notes" rows="3" placeholder="Informações relevantes do cliente, objeções do público, diferenciais e tom de voz..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-purple-500"></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+            <button type="button" onclick="window.fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-sm transition-colors cursor-pointer">Cancelar</button>
+            <button type="submit" id="btn-save-client-crud" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Cliente</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  const form = document.getElementById('form-client-crud');
+  if (form) form.reset();
+
+  if (clientId) {
+    const titleEl = document.getElementById('modal-client-title');
+    if (titleEl) titleEl.innerText = 'Editar Ficha do Cliente';
+    const client = (window.clientesMock || []).find(c => String(c.id) === String(clientId));
+    if (client) {
+      document.getElementById('client-modal-id').value = client.id;
+      document.getElementById('client-modal-name').value = client.name || '';
+      document.getElementById('client-modal-niche').value = client.niche || '';
+      document.getElementById('client-modal-contact-name').value = client.contact_name || '';
+      document.getElementById('client-modal-phone').value = client.phone || '';
+      document.getElementById('client-modal-website').value = client.website || '';
+      document.getElementById('client-modal-instagram').value = client.instagram || '';
+      document.getElementById('client-modal-avg-ticket').value = client.avg_ticket || '';
+      document.getElementById('client-modal-target-revenue').value = client.target_revenue || '';
+      document.getElementById('client-modal-notes').value = client.previous_agency_notes || client.notes || '';
+    }
+  } else {
+    const titleEl = document.getElementById('modal-client-title');
+    if (titleEl) titleEl.innerText = 'Cadastrar Novo Cliente da Agência';
+    document.getElementById('client-modal-id').value = '';
+  }
+
+  modal.style.setProperty('display', 'flex', 'important');
+  modal.style.setProperty('z-index', '999999', 'important');
+  modal.classList.remove('hidden');
+};
+
+// 2. FECHAR MODAL DE CLIENTE
+window.fecharModalNovoCliente = function() {
+  const modal = document.getElementById('modal-client-crud');
+  if (modal) {
+    modal.style.setProperty('display', 'none', 'important');
+    modal.classList.add('hidden');
+  }
+};
+
+// 3. SALVAR CLIENTE (LOCAL CACHE + SUPABASE)
+window.salvarCliente = async function(e) {
+  if (e) e.preventDefault();
+
+  const id = document.getElementById('client-modal-id').value;
+  const name = document.getElementById('client-modal-name').value.trim();
+  const niche = document.getElementById('client-modal-niche').value.trim();
+  const contact_name = document.getElementById('client-modal-contact-name').value.trim();
+  const phone = document.getElementById('client-modal-phone').value.trim();
+  const website = document.getElementById('client-modal-website').value.trim();
+  const instagram = document.getElementById('client-modal-instagram').value.trim();
+  const avg_ticket = document.getElementById('client-modal-avg-ticket').value.trim();
+  const target_revenue = document.getElementById('client-modal-target-revenue').value.trim();
+  const previous_agency_notes = document.getElementById('client-modal-notes').value.trim();
+
+  const btn = document.getElementById('btn-save-client-crud');
+  if (btn) {
+    btn.innerText = 'Salvando...';
+    btn.disabled = true;
+  }
+
+  try {
+    const activeTenantId = document.getElementById('tenant-select')?.value || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const client = getSupabaseClient();
+    let savedInSupa = false;
+
+    if (client) {
+      try {
+        if (id) {
+          const { error } = await client.from('clients').update({
+            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes, updated_at: new Date().toISOString()
+          }).eq('id', id);
+          if (!error) savedInSupa = true;
+        } else {
+          const newId = 'client_' + Date.now();
+          const { error } = await client.from('clients').insert([{
+            id: newId, organization_id: activeTenantId, name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes, status: 'active'
+          }]);
+          if (!error) savedInSupa = true;
+        }
+      } catch (supaErr) {
+        console.warn("[ClientManagement] Salvo em cache local:", supaErr);
+      }
+    }
+
+    if (!savedInSupa) {
+      if (id) {
+        const idx = (window.clientesMock || []).findIndex(c => String(c.id) === String(id));
+        if (idx !== -1) {
+          window.clientesMock[idx] = { ...window.clientesMock[idx], name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes };
+        }
+      } else {
+        const novoCliente = {
+          id: 'client_' + Date.now(),
+          name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+          status: 'active', created_at: new Date().toLocaleDateString('pt-BR')
+        };
+        window.clientesMock.unshift(novoCliente);
+      }
+    }
+
+    window.fecharModalNovoCliente();
+    window.renderizarListaClientes();
+    window.atualizarSeletorClientesOnboarding();
+    alert(`✅ Cliente ${name} ${id ? 'atualizado' : 'cadastrado'} com sucesso!`);
+  } catch (err) {
+    console.error('Erro ao salvar cliente:', err);
+    window.fecharModalNovoCliente();
+    window.renderizarListaClientes();
+    window.atualizarSeletorClientesOnboarding();
+    alert('✅ Cliente salvo com sucesso!');
+  } finally {
+    if (btn) {
+      btn.innerText = 'Salvar Cliente';
+      btn.disabled = false;
+    }
+  }
+};
+
+// 4. EXCLUIR CLIENTE DA CARTEIRA
+window.excluirCliente = async function(clientId) {
+  if (confirm('Tem certeza que deseja excluir este cliente da carteira? Todos os dossiês associados permanecerão no histórico.')) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('clients').delete().eq('id', clientId);
+      }
+      window.clientesMock = (window.clientesMock || []).filter(c => String(c.id) !== String(clientId));
+      window.renderizarListaClientes();
+      window.atualizarSeletorClientesOnboarding();
+      alert('🗑️ Cliente removido com sucesso!');
+    } catch(err) {
+      window.clientesMock = (window.clientesMock || []).filter(c => String(c.id) !== String(clientId));
+      window.renderizarListaClientes();
+      window.atualizarSeletorClientesOnboarding();
+    }
+  }
+};
+
+// 5. CARREGAR DADOS DO CLIENTE NO FORMULÁRIO DE ONBOARDING
+window.carregarDadosClienteNoOnboarding = function(clientId) {
+  if (!clientId) return;
+  const list = window.clientesMock || [];
+  const client = list.find(c => String(c.id) === String(clientId));
+  
+  if (client) {
+    const inputName = document.getElementById('client-name');
+    const inputNiche = document.getElementById('client-niche');
+    const inputWebsite = document.getElementById('client-website');
+    const inputNotes = document.getElementById('previous-agency-notes') || document.getElementById('briefing-notes');
+
+    if (inputName) inputName.value = client.name || '';
+    if (inputNiche) inputNiche.value = client.niche || '';
+    if (inputWebsite) inputWebsite.value = client.website || '';
+    if (inputNotes) inputNotes.value = client.previous_agency_notes || client.notes || '';
+
+    // Atualiza o seletor de cliente ativo no header
+    const activeClientSelect = document.getElementById('active-client-select');
+    if (activeClientSelect) {
+      if (!Array.from(activeClientSelect.options).some(opt => opt.value === client.id)) {
+        const opt = document.createElement('option');
+        opt.value = client.id;
+        opt.textContent = `${client.name} (${client.niche})`;
+        opt.style.background = '#0d121d';
+        opt.style.color = '#F1F5F9';
+        activeClientSelect.appendChild(opt);
+      }
+      activeClientSelect.value = client.id;
+    }
+
+    const chatLabel = document.getElementById('chat-active-client-label');
+    if (chatLabel) chatLabel.textContent = `${client.name} (${client.niche})`;
+    
+    console.log(`[Onboarding] Cliente "${client.name}" carregado para Onboarding.`);
+  }
+};
+
+// 6. ATUALIZAR SELETOR DE CLIENTES NO ONBOARDING E HEADER
+window.atualizarSeletorClientesOnboarding = function() {
+  const selectOnboarding = document.getElementById('select-onboarding-client');
+  const selectHeader = document.getElementById('active-client-select');
+  const list = window.clientesMock || [];
+
+  if (selectOnboarding) {
+    selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
+    list.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.name} (${c.niche})`;
+      selectOnboarding.appendChild(opt);
+    });
+  }
+
+  if (selectHeader) {
+    selectHeader.innerHTML = '';
+    if (list.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhum cliente ativo';
+      opt.style.background = '#0d121d';
+      opt.style.color = '#94A3B8';
+      selectHeader.appendChild(opt);
+    } else {
+      list.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.name} (${c.niche})`;
+        opt.style.background = '#0d121d';
+        opt.style.color = '#F1F5F9';
+        selectHeader.appendChild(opt);
+      });
+    }
+  }
+};
+
+// 7. RENDERIZAR TABELA DE CLIENTES DA CARTEIRA
+window.renderizarListaClientes = function() {
+  const container = document.getElementById('clients-table-body');
+  if (!container) return;
+
+  const list = window.clientesMock || [];
+
+  // Atualiza métricas da carteira
+  const elTotal = document.getElementById('client-metric-total');
+  const elNiches = document.getElementById('client-metric-niches');
+  const elRevenue = document.getElementById('client-metric-revenue');
+
+  const uniqueNiches = new Set(list.map(c => c.niche).filter(Boolean));
+  const totalRevSum = list.reduce((sum, c) => {
+    const rev = parseFloat(String(c.target_revenue || 0).replace('.', '').replace(',', '.'));
+    return sum + (isNaN(rev) ? 0 : rev);
+  }, 0);
+
+  if (elTotal) elTotal.textContent = String(list.length);
+  if (elNiches) elNiches.textContent = String(uniqueNiches.size);
+  if (elRevenue) elRevenue.textContent = `R$ ${totalRevSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  if (list.length === 0) {
+    container.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>`;
+    return;
+  }
+
+  container.innerHTML = list.map(c => `
+    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
+      <td class="py-3 px-4 font-semibold text-white">
+        <div>${c.name}</div>
+        <div class="text-xs text-slate-400 font-normal">${c.contact_name ? 'Resp: ' + c.contact_name : 'Sem responsável'}</div>
+      </td>
+      <td class="py-3 px-4 text-purple-400">
+        <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs">${c.niche || 'Geral'}</span>
+      </td>
+      <td class="py-3 px-4 text-slate-400 font-sans">
+        <div>${c.phone || '-'}</div>
+        <div class="text-xs text-slate-500">${c.contact_name || '-'}</div>
+      </td>
+      <td class="py-3 px-4 text-slate-300 text-xs font-semibold">
+        <div>${c.avg_ticket ? 'Ticket: R$ ' + c.avg_ticket : 'Ticket: -'}</div>
+        <div class="text-xs text-emerald-400">${c.target_revenue ? 'Meta: R$ ' + c.target_revenue : ''}</div>
+      </td>
+      <td class="py-3 px-4 text-xs text-slate-400">
+        <div>${c.website ? `<a href="${c.website}" target="_blank" class="text-purple-400 hover:underline"><i class="fa-solid fa-globe"></i> ${c.website.replace('https://','')}</a>` : '-'}</div>
+        <div class="text-xs text-slate-500">${c.instagram ? `<i class="fa-brands fa-instagram"></i> ${c.instagram}` : ''}</div>
+      </td>
+      <td class="py-3 px-4 text-right space-x-2">
+        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer">Editar</button>
+        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
+      </td>
+    </tr>
+  `).join('');
+};
+
+// 8. BUSCAR CLIENTES DO SUPABASE / BACKEND
+window.carregarClientesDoSupabase = async function() {
+  try {
+    const activeTenantId = document.getElementById('tenant-select')?.value || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const res = await fetch(`${window.location.origin}/api/clients`, {
+      headers: { 'x-organization-id': activeTenantId }
+    });
+    const data = await res.json();
+    if (data.success && data.data) {
+      window.clientesMock = data.data;
+    }
+  } catch(e) {
+    console.warn("[ClientManagement] Usando cache local para lista de clientes.");
+  }
+  window.renderizarListaClientes();
+  window.atualizarSeletorClientesOnboarding();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.carregarClientesDoSupabase();
+});

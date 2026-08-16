@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
       title: 'Onboarding Autônomo por Nicho',
       subtitle: 'Cadastre o cliente para a IA gerar o Dossiê Estratégico Preditivo isolado por tenant.'
     },
+    'tab-clientes': {
+      title: 'Carteira de Clientes & Fichas Cadastrais',
+      subtitle: 'Gerencie os dados cadastrais, ticket médio, meta de faturamento e contatos dos clientes da agência.'
+    },
     'tab-chat': {
       title: 'Chat Estratégico de Co-Criação',
       subtitle: 'Interaja diretamente com o Oráculo de IA para justificar táticas, briefings e orçamento.'
@@ -3295,9 +3299,22 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("[Oraculum] Módulo Master Agências pronto.");
   }
 
+  function initClientes() {
+    if (typeof window.renderizarListaClientes === 'function') {
+      window.renderizarListaClientes();
+    }
+    if (typeof window.carregarClientesDoSupabase === 'function') {
+      window.carregarClientesDoSupabase();
+    }
+    console.log("[Oraculum] Módulo Carteira de Clientes pronto.");
+  }
+
   // Execução isolada por módulo com verificação estrita de existência
   if (typeof initChat === 'function') {
     try { initChat(); } catch (e) { console.warn('Aviso initChat:', e); }
+  }
+  if (typeof initClientes === 'function') {
+    try { initClientes(); } catch (e) { console.warn('Aviso initClientes:', e); }
   }
   if (typeof initOnboarding === 'function') {
     try { initOnboarding(); } catch (e) { console.warn('Aviso initOnboarding:', e); }

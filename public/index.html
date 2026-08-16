@@ -130,6 +130,10 @@
           <i class="fa-solid fa-user-plus"></i>
           <span>Onboarding Autônomo</span>
         </button>
+        <button class="nav-item" data-tab="tab-clientes" id="btn-tab-clientes">
+          <i class="fa-solid fa-users"></i>
+          <span>Carteira de Clientes</span>
+        </button>
         <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat">
           <i class="fa-solid fa-comments"></i>
           <span>Chat Estratégico</span>
@@ -271,6 +275,17 @@
                 <p>A IA aciona o Oráculo para pesquisar regras éticas, dores viscerais e gatilhos de neuromarketing do setor.</p>
               </div>
               <form id="form-onboarding">
+                <!-- SELETOR DINÂMICO DE CLIENTES DA CARTEIRA -->
+                <div class="form-group" style="background: rgba(127, 0, 255, 0.08); border: 1px solid rgba(127, 0, 255, 0.25); padding: 14px; border-radius: 14px; margin-bottom: 16px;">
+                  <label for="select-onboarding-client" style="color: #C084FC; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-address-book"></i> Selecionar Cliente da Carteira (Puxar Ficha Cadastral)
+                  </label>
+                  <select id="select-onboarding-client" onchange="window.carregarDadosClienteNoOnboarding(this.value)" style="width: 100%; background: #0F172A; border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; cursor: pointer;">
+                    <option value="">-- Selecione o Cliente para o Onboarding --</option>
+                  </select>
+                  <span style="font-size: 11px; color: #94A3B8; margin-top: 4px; display: block;">Selecione um cliente para carregar automaticamente Nome, Nicho, Site e Briefing Cadastrado.</span>
+                </div>
+
                 <div class="form-group">
                   <label for="client-name">Nome do Cliente / Marca *</label>
                   <input type="text" id="client-name" placeholder="Ex: Clínica Alfa Digital" required>
@@ -284,8 +299,8 @@
                   <input type="url" id="client-website" placeholder="https://clinicaluxe.com.br">
                 </div>
                 <div class="form-group">
-                  <label for="previous-agency-notes">Histórico Sanitizado da Agência Anterior</label>
-                  <textarea id="previous-agency-notes" rows="3" placeholder="Usado APENAS para branding/tom de voz. Estratégias de conversão usam benchmarks globais."></textarea>
+                  <label for="previous-agency-notes">Histórico Sanitizado & Briefing Híbrido (Agência + IA)</label>
+                  <textarea id="previous-agency-notes" rows="3" placeholder="Insira metas de CAC, objeções do público, tom de voz e diretrizes estratégicas..."></textarea>
                 </div>
                 <button type="submit" class="btn-primary" id="btn-run-onboarding">
                   <i class="fa-solid fa-wand-magic-sparkles"></i> Disparar Onboarding por IA
@@ -310,6 +325,63 @@
                   <p>Preencha os campos ao lado e clique em "Disparar Onboarding" para a IA estruturar a base de conhecimento exclusiva do nicho.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA CARTEIRA DE CLIENTES -->
+        <section id="tab-clientes" class="tab-panel">
+          <!-- CARDS DE MÉTRICAS DA CARTEIRA -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-users" style="color: #C084FC;"></i> Clientes Ativos</span>
+              <h2 style="font-size: 26px; color: #FFF; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-total">0</h2>
+              <span style="font-size: 11px; color: #10B981;">Cadastrados na carteira</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-chart-pie" style="color: #00F2FE;"></i> Nichos Mapeados</span>
+              <h2 style="font-size: 26px; color: #00F2FE; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-niches">0</h2>
+              <span style="font-size: 11px; color: #00F2FE;">Setores com inteligência</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-hand-holding-dollar" style="color: #00F5A0;"></i> Meta de Faturamento Acumulada</span>
+              <h2 style="font-size: 26px; color: #00F5A0; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-revenue">R$ 0,00</h2>
+              <span style="font-size: 11px; color: #00F5A0;">Soma dos clientes</span>
+            </div>
+          </div>
+
+          <!-- CABEÇALHO COM AÇÃO NOVO CLIENTE -->
+          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,242,254,0.05)); border: 1px solid rgba(168,85,247,0.3);">
+            <div>
+              <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-address-book" style="color: #C084FC;"></i> Gestão Cadastral da Carteira de Clientes</h3>
+              <p style="margin: 0; font-size: 12px; color: #94A3B8;">Cadastre os dados completos das empresas clientes para alimentar a esteira autônoma de Onboarding e IA.</p>
+            </div>
+            <button type="button" id="btn-modal-novo-cliente" onclick="window.abrirModalNovoCliente()" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+              <i class="fa-solid fa-user-plus"></i> + Novo Cliente
+            </button>
+          </div>
+
+          <!-- TABELA DE CLIENTES DA AGÊNCIA -->
+          <div class="card-glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 18px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-users-gear" style="color: #00F2FE;"></i> Tabela da Carteira de Clientes</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                  <tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94A3B8; text-transform: uppercase; font-size: 11px;">
+                    <th style="padding: 14px 18px;">Empresa / Marca</th>
+                    <th style="padding: 14px 18px;">Nicho / Setor</th>
+                    <th style="padding: 14px 18px;">Responsável & Contato</th>
+                    <th style="padding: 14px 18px;">Ticket Médio / Meta</th>
+                    <th style="padding: 14px 18px;">Canais (Site / IG)</th>
+                    <th style="padding: 14px 18px; text-align: right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="clients-table-body">
+                  <tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -1675,7 +1747,8 @@
     })();
   </script>
 
-  <script src="app.js?v=24.0.0"></script>
-  <script src="/agency-management.js?v=24.0.0"></script>
+  <script src="app.js?v=25.0.0"></script>
+  <script src="/agency-management.js?v=25.0.0"></script>
+  <script src="/client-management.js?v=25.0.0"></script>
 </body>
 </html>

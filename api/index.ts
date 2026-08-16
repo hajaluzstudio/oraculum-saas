@@ -130,6 +130,22 @@ app.get('/agency-management.js', (req: Request, res: Response) => {
   }
 });
 
+// SERVIR CLIENT-MANAGEMENT.JS
+app.get('/client-management.js', (req: Request, res: Response) => {
+  try {
+    const clientJsPath = getStaticFilePath('client-management.js');
+    if (fs.existsSync(clientJsPath)) {
+      const code = fs.readFileSync(clientJsPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      setNoCacheHeaders(res);
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('client-management.js não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar client-management.js: ' + e.message);
+  }
+});
+
 // SERVIR STYLES.CSS
 app.get('/styles.css', (req: Request, res: Response) => {
   try {
