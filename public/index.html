@@ -1038,7 +1038,7 @@
               <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-building-flag" style="color: #C084FC;"></i> Cadastro Completo de Agências Enterprise</h3>
               <p style="margin: 0; font-size: 12px; color: #94A3B8;">Gerencie dados jurídicos, faturamento, CNPJ, limites de clientes e licenças recorrentes.</p>
             </div>
-            <button type="button" id="btn-open-create-agency-modal" onclick="window.abrirModalAgencia()" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+            <button type="button" id="btn-nova-agencia" onclick="window.abrirModalNovaAgencia(event)" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
               <i class="fa-solid fa-plus-circle"></i> + Cadastrar Nova Agência
             </button>
           </div>
@@ -1069,7 +1069,7 @@
         </section>
 
     <!-- MODAL DE CADASTRO E EDIÇÃO DE AGÊNCIA (SUPER ADMIN CRUD) -->
-    <div id="agency-crud-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.88); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px; overflow-y: auto;">
+    <div id="modal-nova-agencia" class="hidden" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.88); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px; overflow-y: auto;">
       <div style="width: 100%; max-width: 720px; background: #0F172A; border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 25px 60px rgba(0,0,0,0.9); position: relative; max-height: 90vh; overflow-y: auto;">
         <button type="button" id="btn-close-agency-modal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: #94A3B8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
           <i class="fa-solid fa-xmark"></i>
@@ -1685,7 +1685,7 @@
     })();
   </script>
 
-  <script src="app.js?v=17.0.0"></script>
-  <script src="/agency-management.js?v=17.0.0"></script>
+  <script src="app.js?v=18.0.0"></script>
+  <script src="/agency-management.js?v=18.0.0"></script>
 </body>
 </html>

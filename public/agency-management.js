@@ -106,9 +106,96 @@ window.abrirModalAgencia = function(agenciaId = null) {
 
 // 2. FECHAR MODAL
 window.fecharModalAgencia = function() {
-  const modal = document.getElementById('modal-agency');
+  const modal = document.getElementById('modal-agency') || document.getElementById('modal-nova-agencia') || document.getElementById('agency-crud-modal');
   if (modal) modal.style.display = 'none';
 };
+
+// ==========================================
+// FUNÇÃO GLOBAL PARA ABRIR O CADASTRO DE AGÊNCIA
+// ==========================================
+window.abrirModalNovaAgencia = function(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  // 1. Garante a preparação do modal de agência
+  if (typeof window.abrirModalAgencia === 'function') {
+    window.abrirModalAgencia();
+  }
+
+  // 2. Localiza os possíveis IDs/Classes do Modal de Agência
+  const modalAgencia = document.getElementById('modal-nova-agencia') || 
+                       document.getElementById('modal-agency') || 
+                       document.getElementById('agency-crud-modal') ||
+                       document.getElementById('agency-modal') ||
+                       document.querySelector('.modal-nova-agencia');
+
+  if (modalAgencia) {
+    // Força a exibição do modal e traz para a frente
+    modalAgencia.style.setProperty('display', 'flex', 'important');
+    modalAgencia.style.setProperty('z-index', '999999', 'important');
+    modalAgencia.style.setProperty('opacity', '1', 'important');
+    modalAgencia.style.setProperty('pointer-events', 'auto', 'important');
+    modalAgencia.classList.remove('hidden', 'd-none');
+    
+    // Foca no primeiro campo de entrada (se houver)
+    const primeiroInput = modalAgencia.querySelector('input, select');
+    if (primeiroInput) primeiroInput.focus();
+    
+    console.log("Modal de Nova Agência aberto com sucesso!");
+  } else {
+    const secaoCadastro = document.getElementById('section-nova-agencia') || document.getElementById('cadastro-agencia-view');
+    if (secaoCadastro) {
+      secaoCadastro.style.setProperty('display', 'block', 'important');
+      secaoCadastro.classList.remove('hidden', 'd-none');
+    } else {
+      console.warn("Elemento do modal ou seção de cadastro de agência não foi encontrado no DOM. Verifique o ID do container.");
+    }
+  }
+};
+
+// ==========================================
+// FUNÇÃO PARA FECHAR O MODAL DE AGÊNCIA
+// ==========================================
+window.fecharModalNovaAgencia = function(event) {
+  if (event) event.preventDefault();
+  
+  if (typeof window.fecharModalAgencia === 'function') {
+    window.fecharModalAgencia();
+  }
+
+  const modalAgencia = document.getElementById('modal-nova-agencia') || 
+                       document.getElementById('modal-agency') || 
+                       document.getElementById('agency-crud-modal') ||
+                       document.getElementById('agency-modal') ||
+                       document.querySelector('.modal-nova-agencia');
+
+  if (modalAgencia) {
+    modalAgencia.style.setProperty('display', 'none', 'important');
+    modalAgencia.classList.add('hidden');
+  }
+};
+
+// ==========================================
+// LISTENER GLOBAL (Garante o clique mesmo sem onclick no HTML)
+// ==========================================
+document.addEventListener('click', function(e) {
+  // Captura cliques no botão de nova agência por ID, classe ou texto
+  const btnNovaAgencia = e.target.closest(
+    '#btn-nova-agencia, #btn-cadastrar-agencia, #btn-open-create-agency-modal, .btn-nova-agencia, [data-action="nova-agencia"], [data-target="#modal-nova-agencia"]'
+  );
+  
+  if (btnNovaAgencia) {
+    window.abrirModalNovaAgencia(e);
+  }
+
+  // Captura cliques nos botões de fechar/cancelar dentro do modal
+  const btnFechar = e.target.closest('#btn-fechar-modal-agencia, .btn-fechar-modal, [data-dismiss="modal"]');
+  if (btnFechar && e.target.closest('#modal-nova-agencia, #modal-agency, #agency-crud-modal, #agency-modal')) {
+    window.fecharModalNovaAgencia(e);
+  }
+});
 
 // 3. PERSISTÊNCIA REAL NO SUPABASE (CRIAR OU ATUALIZAR)
 window.salvarAgencia = async function(e) {
