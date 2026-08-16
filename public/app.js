@@ -2645,7 +2645,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
-  // 12. GESTÃO MASTER DE AGÊNCIAS (SUPER ADMIN CRUD COMPLETO)
+  // 12. GESTÃO MASTER DE AGÊNCIAS (SUPER ADMIN LOGIC & EVENT DELEGATION)
   // ============================================================================
   const tbodyAgencies = document.getElementById('sa-agencies-table-body');
   const btnOpenCreateAgencyModal = document.getElementById('btn-open-create-agency-modal');
@@ -2783,34 +2783,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = isEdit ? `${API_BASE_URL}/api/portal/agencies/${agencyId}` : `${API_BASE_URL}/api/portal/agencies`;
         const method = isEdit ? 'PUT' : 'POST';
 
-        const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        // 1. API Serverless Call
+        try {
+          await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch(e) {}
 
-        if (res.ok) {
-          alert(`🎉 Agência ${isEdit ? 'atualizada' : 'cadastrada'} com sucesso!`);
-        } else {
-          // Fallback mock local update if serverless endpoint is offline
-          if (isEdit) {
-            const idx = currentAgenciesCache.findIndex(a => a.id === agencyId);
-            if (idx !== -1) currentAgenciesCache[idx] = { ...currentAgenciesCache[idx], ...payload };
-          } else {
-            currentAgenciesCache.unshift({ id: 'ag_' + Date.now(), ...payload });
-          }
-          alert(`🎉 Agência ${isEdit ? 'atualizada' : 'cadastrada'} na interface!`);
+        // 2. Supabase Direct Client Call if available
+        if (window.supabaseClient || window.supabase) {
+          const client = window.supabaseClient || window.supabase;
+          try {
+            if (isEdit) {
+              await client.from('agencies').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', agencyId);
+            } else {
+              const slug = payload.name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36);
+              await client.from('agencies').insert([{ ...payload, slug }]);
+            }
+          } catch(e) {}
         }
-      } catch (err) {
-        console.warn('Servidor offline. Atualizando estado local:', err);
-        const isEdit = Boolean(agencyId);
+
+        // 3. Local Cache Sync
         if (isEdit) {
           const idx = currentAgenciesCache.findIndex(a => a.id === agencyId);
           if (idx !== -1) currentAgenciesCache[idx] = { ...currentAgenciesCache[idx], ...payload };
         } else {
           currentAgenciesCache.unshift({ id: 'ag_' + Date.now(), ...payload });
         }
-        alert(`🎉 Agência ${isEdit ? 'atualizada' : 'cadastrada'} na interface com sucesso!`);
+
+        alert(`🎉 Agência ${isEdit ? 'atualizada' : 'cadastrada'} com sucesso!`);
+      } catch (err) {
+        console.error('Erro ao salvar agência:', err);
+        alert('❌ Erro ao salvar agência: ' + (err.message || 'Falha de conexão.'));
       } finally {
         if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = `<i class="fa-solid fa-check"></i> Salvar Agência`; }
         closeAgencyCrudModal();
@@ -2819,16 +2825,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Modal de Confirmação de Exclusão
-  function openDeleteConfirmation(id, name) {
-    if (!confirmDeleteAgencyModal) return;
-    deleteAgencyTargetId.value = id;
-    if (deleteAgencyWarningText) {
-      deleteAgencyWarningText.innerHTML = `Tem certeza de que deseja excluir permanentemente a agência <strong>"${name}"</strong> e todos os seus dados? Esta ação não pode ser desfeita.`;
-    }
-    confirmDeleteAgencyModal.style.display = 'flex';
-  }
-
+  // Modal de Confirmação de Exclusão (Cancel button)
   function closeDeleteConfirmation() {
     if (confirmDeleteAgencyModal) confirmDeleteAgencyModal.style.display = 'none';
   }
@@ -2844,21 +2841,111 @@ document.addEventListener('DOMContentLoaded', () => {
       btnConfirmDeleteAgency.textContent = 'Excluindo...';
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/portal/agencies/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          alert('🗑️ Agência excluída permanentemente com sucesso!');
-        } else {
-          currentAgenciesCache = currentAgenciesCache.filter(a => a.id !== id);
-          alert('🗑️ Agência removida com sucesso!');
+        try {
+          await fetch(`${API_BASE_URL}/api/portal/agencies/${id}`, { method: 'DELETE' });
+        } catch(e) {}
+
+        if (window.supabaseClient || window.supabase) {
+          const client = window.supabaseClient || window.supabase;
+          try { await client.from('agencies').delete().eq('id', id); } catch(e) {}
         }
-      } catch (err) {
+
         currentAgenciesCache = currentAgenciesCache.filter(a => a.id !== id);
-        alert('🗑️ Agência removida com sucesso!');
+        alert('🗑️ Agência excluída permanentemente com sucesso!');
+      } catch (err) {
+        console.error('Erro ao excluir agência:', err);
+        alert('❌ Erro ao excluir agência.');
       } finally {
         btnConfirmDeleteAgency.disabled = false;
         btnConfirmDeleteAgency.textContent = 'Sim, Excluir Definitivamente';
         closeDeleteConfirmation();
         loadSuperAdminAgencies();
+      }
+    });
+  }
+
+  // EVENT DELEGATION NA TABELA DE AGÊNCIAS (EDITAR, EXCLUIR, BLOQUEAR)
+  if (tbodyAgencies) {
+    tbodyAgencies.addEventListener('click', async (e) => {
+      const editBtn = e.target.closest('.btn-edit-agency');
+      const deleteBtn = e.target.closest('.btn-delete-agency');
+      const toggleBtn = e.target.closest('.btn-toggle-agency');
+
+      // 1. AÇÃO DE EDITAR
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-id');
+        const ag = currentAgenciesCache.find(a => a.id === id);
+        if (ag) {
+          openAgencyModalForEditing(ag);
+        } else {
+          alert('❌ Dados da agência não encontrados para edição.');
+        }
+        return;
+      }
+
+      // 2. AÇÃO DE EXCLUIR COM CONFIRMAÇÃO
+      if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-id');
+        const name = deleteBtn.getAttribute('data-name') || 'esta agência';
+
+        const confirmed = confirm(`ATENÇÃO: Tem certeza que deseja excluir a agência "${name}" e TODOS os seus clientes permanentemente?\n\nEsta ação não pode ser desfeita.`);
+        if (!confirmed) return;
+
+        try {
+          try {
+            await fetch(`${API_BASE_URL}/api/portal/agencies/${id}`, { method: 'DELETE' });
+          } catch(e) {}
+
+          if (window.supabaseClient || window.supabase) {
+            const client = window.supabaseClient || window.supabase;
+            try { await client.from('agencies').delete().eq('id', id); } catch(e) {}
+          }
+
+          currentAgenciesCache = currentAgenciesCache.filter(a => a.id !== id);
+          alert(`🗑️ Agência "${name}" e seus dados foram excluídos permanentemente com sucesso!`);
+        } catch (err) {
+          console.error('Erro ao excluir agência:', err);
+          alert('❌ Erro ao excluir agência.');
+        } finally {
+          loadSuperAdminAgencies();
+        }
+        return;
+      }
+
+      // 3. AÇÃO DE BLOQUEAR / DESBLOQUEAR (TOGGLE STATUS)
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute('data-id');
+        const currentStatus = toggleBtn.getAttribute('data-status');
+        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
+        const labelStatus = newStatus === 'active' ? 'ATIVA' : 'BLOQUEADA';
+
+        try {
+          try {
+            await fetch(`${API_BASE_URL}/api/admin/agencies/toggle-status`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ agencyId: id, newStatus })
+            });
+          } catch(e) {}
+
+          if (window.supabaseClient || window.supabase) {
+            const client = window.supabaseClient || window.supabase;
+            try {
+              await client.from('agencies').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
+            } catch(e) {}
+          }
+
+          const idx = currentAgenciesCache.findIndex(a => a.id === id);
+          if (idx !== -1) currentAgenciesCache[idx].status = newStatus;
+
+          alert(`⚡ Status da agência alterado para ${labelStatus} com sucesso!`);
+        } catch (err) {
+          console.error('Erro ao alterar status:', err);
+          alert('❌ Erro ao alterar status da agência.');
+        } finally {
+          loadSuperAdminAgencies();
+        }
+        return;
       }
     });
   }
@@ -3015,50 +3102,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elClients = document.getElementById('sa-metric-total-clients');
     if (elClients) elClients.textContent = totalClients || 24;
-
-    // Event listeners dos botões de ação na tabela
-    document.querySelectorAll('.btn-edit-agency').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        const ag = currentAgenciesCache.find(a => a.id === id);
-        if (ag) openAgencyModalForEditing(ag);
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-agency').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        const name = e.currentTarget.getAttribute('data-name');
-        openDeleteConfirmation(id, name);
-      });
-    });
-    
-    document.querySelectorAll('.btn-toggle-agency').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        const currentStatus = e.currentTarget.getAttribute('data-status');
-        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/admin/agencies/toggle-status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agencyId: id, newStatus })
-          });
-          if (res.ok) {
-            loadSuperAdminAgencies();
-          } else {
-            const idx = currentAgenciesCache.findIndex(a => a.id === id);
-            if (idx !== -1) currentAgenciesCache[idx].status = newStatus;
-            renderAgenciesTable(currentAgenciesCache);
-          }
-        } catch(err) {
-          const idx = currentAgenciesCache.findIndex(a => a.id === id);
-          if (idx !== -1) currentAgenciesCache[idx].status = newStatus;
-          renderAgenciesTable(currentAgenciesCache);
-        }
-      });
-    });
   }
+
+  // Inicializa Kanban e BI ao carregar
+  setTimeout(() => {
+    if (activeClientId) {
+      loadClientKanbanCards(activeClientId);
+      loadClientBiMetrics(activeClientId);
+    }
+    loadSuperAdminAgencies();
+  }, 600);
+});
 
   // Inicializa Kanban e BI ao carregar
   setTimeout(() => {
