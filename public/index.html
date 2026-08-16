@@ -21,7 +21,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="styles.css?v=3.0.0">
+  <link rel="stylesheet" href="styles.css?v=4.0.0">
   
   <!-- Configurações de PWA Mobile -->
   <link rel="manifest" href="/manifest.json">
@@ -34,7 +34,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  <!-- AUTH GATE CONTAINER (TELA DE LOGIN / CADASTRO DE AGÊNCIA - GLASSMORPHISM) -->
+  <!-- AUTH GATE CONTAINER (TELA DE LOGIN RESTRITA ENTERPRISE - GLASSMORPHISM) -->
   <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 relative overflow-hidden" style="display: flex !important;">
     <!-- Ambient Glow Effects -->
     <div class="absolute -top-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -46,17 +46,12 @@
           <i class="fa-solid fa-brain text-white text-2xl"></i>
         </div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight font-sans">ORACULUM</h1>
-        <p class="text-xs text-purple-400 font-semibold tracking-widest mt-1 uppercase">ROI-First SaaS • Plataforma Autônoma</p>
-      </div>
-
-      <div class="flex border-b border-slate-800 mb-2">
-        <button id="tab-login-btn" class="flex-1 py-2.5 text-sm font-semibold border-b-2 border-purple-500 text-purple-400 transition-all">Entrar</button>
-        <button id="tab-register-btn" class="flex-1 py-2.5 text-sm font-semibold text-slate-400 border-b-2 border-transparent transition-all">Cadastrar Agência</button>
+        <p class="text-xs text-purple-400 font-semibold tracking-widest mt-1 uppercase">ACESSO RESTRITO A PARCEIROS E AGÊNCIAS ENTERPRISE</p>
       </div>
 
       <form id="form-login" class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">E-mail de Acesso</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">E-mail Corporativo de Acesso</label>
           <div class="relative">
             <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
             <input type="email" id="login-email" placeholder="seu.email@agencia.com" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500" />
@@ -64,7 +59,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Sua Senha</label>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Sua Senha Mestra</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
             <input type="password" id="login-password" placeholder="••••••••" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500" />
@@ -72,40 +67,13 @@
         </div>
 
         <button type="submit" id="btn-submit-login" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 font-semibold py-3.5 rounded-xl text-sm text-white shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2">
-          <span>Acessar Sistema</span>
+          <span>Entrar na Plataforma</span>
           <i class="fa-solid fa-arrow-right text-xs"></i>
         </button>
 
         <p class="text-[11px] text-slate-500 text-center mt-3">
           Dica: Use <code class="text-purple-400 font-bold">admin@oraculum.com</code> para acesso Super Admin.
         </p>
-      </form>
-
-      <form id="form-register-agency" class="space-y-4" style="display: none;">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Nome da Agência</label>
-          <input type="text" id="reg-agency-name" placeholder="Ex: Agência Growth Scale" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl p-3 text-sm text-white placeholder-slate-500" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Seu Nome Completo</label>
-          <input type="text" id="reg-user-name" placeholder="Seu nome completo" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl p-3 text-sm text-white placeholder-slate-500" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">E-mail Corporativo</label>
-          <input type="email" id="reg-email" placeholder="contato@agencia.com" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl p-3 text-sm text-white placeholder-slate-500" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Crie uma Senha</label>
-          <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" required minlength="6" class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl p-3 text-sm text-white placeholder-slate-500" />
-        </div>
-
-        <button type="submit" id="btn-submit-register" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-semibold py-3.5 rounded-xl text-sm text-white shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2">
-          <span>Criar Conta da Agência</span>
-          <i class="fa-solid fa-shield-check text-xs"></i>
-        </button>
       </form>
     </div>
   </div>
@@ -1308,6 +1276,6 @@
 
   </div> <!-- FIM DE #main-dashboard-container -->
 
-  <script src="app.js?v=3.0.0"></script>
+  <script src="app.js?v=4.0.0"></script>
 </body>
 </html>

@@ -2440,23 +2440,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Alternar abas no Auth Gate
-  if (tabLoginBtn && tabRegisterBtn) {
-    tabLoginBtn.addEventListener('click', () => {
-      tabLoginBtn.className = 'flex-1 py-2.5 text-sm font-semibold border-b-2 border-purple-500 text-purple-400 transition-all';
-      tabRegisterBtn.className = 'flex-1 py-2.5 text-sm font-semibold text-slate-400 border-b-2 border-transparent transition-all';
-      if (formLogin) formLogin.style.display = 'block';
-      if (formRegisterAgency) formRegisterAgency.style.display = 'none';
-    });
-
-    tabRegisterBtn.addEventListener('click', () => {
-      tabRegisterBtn.className = 'flex-1 py-2.5 text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 transition-all';
-      tabLoginBtn.className = 'flex-1 py-2.5 text-sm font-semibold text-slate-400 border-b-2 border-transparent transition-all';
-      if (formRegisterAgency) formRegisterAgency.style.display = 'block';
-      if (formLogin) formLogin.style.display = 'none';
-    });
-  }
-
   // Submit Login no Auth Gate com estado de carregamento (spinner)
   if (formLogin) {
     formLogin.addEventListener('submit', (e) => {
@@ -2498,43 +2481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = `<span>Acessar Sistema</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
-        }
-      }, 350);
-    });
-  }
-
-  // Submit Cadastrar Agência no Auth Gate com estado de carregamento (spinner)
-  if (formRegisterAgency) {
-    formRegisterAgency.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const btnSubmit = document.getElementById('btn-submit-register');
-      if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> <span>Criando Conta...</span>`;
-      }
-
-      setTimeout(() => {
-        const agencyName = (document.getElementById('reg-agency-name') || document.getElementById('gate-reg-agency-name'))?.value || '';
-        const fullName = (document.getElementById('reg-user-name') || document.getElementById('gate-reg-fullname'))?.value || '';
-        const email = (document.getElementById('reg-email') || document.getElementById('gate-reg-email'))?.value || '';
-
-        const session = {
-          token: 'token_oraculum_' + Date.now(),
-          email,
-          fullName,
-          agencyName,
-          role: 'agency_owner',
-          agencyStatus: 'active',
-          loggedAt: new Date().toISOString()
-        };
-
-        sessionStorage.setItem('oraculum_session', JSON.stringify(session));
-        applyRbacAndSessionVisibility(session);
-
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.innerHTML = `<span>Criar Conta da Agência</span> <i class="fa-solid fa-shield-check text-xs"></i>`;
+          btnSubmit.innerHTML = `<span>Entrar na Plataforma</span> <i class="fa-solid fa-arrow-right text-xs"></i>`;
         }
       }, 350);
     });
