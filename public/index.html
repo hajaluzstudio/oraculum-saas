@@ -126,13 +126,13 @@
       </div>
 
       <nav class="nav-menu">
-        <button class="nav-item active" data-tab="tab-onboarding" id="btn-tab-onboarding">
-          <i class="fa-solid fa-user-plus"></i>
-          <span>Onboarding Autônomo</span>
-        </button>
-        <button class="nav-item" data-tab="tab-clientes" id="btn-tab-clientes">
+        <button class="nav-item active" data-tab="tab-clientes" id="btn-tab-clientes">
           <i class="fa-solid fa-users"></i>
           <span>Carteira de Clientes</span>
+        </button>
+        <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Onboarding Autônomo</span>
         </button>
         <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat">
           <i class="fa-solid fa-comments"></i>
@@ -249,8 +249,8 @@
       <!-- CABEÇALHO SUPERIOR -->
       <header class="top-header">
         <div class="header-title">
-          <h1 id="page-title">Onboarding Autônomo por Nicho</h1>
-          <p id="page-subtitle">Cadastre o cliente para a IA gerar o Dossiê Estratégico Preditivo isolado por tenant.</p>
+          <h1 id="page-title">Carteira de Clientes & Fichas Cadastrais</h1>
+          <p id="page-subtitle">Gerencie os dados cadastrais, ticket médio, meta de faturamento e contatos dos clientes da agência.</p>
         </div>
 
         <div class="header-actions">
@@ -289,8 +289,65 @@
       <!-- SEÇÕES DAS ABAS -->
       <div class="tab-content-container">
 
-        <!-- ABA 1: ONBOARDING AUTÔNOMO -->
-        <section id="tab-onboarding" class="tab-panel active">
+        <!-- ABA 1: CARTEIRA DE CLIENTES -->
+        <section id="tab-clientes" class="tab-panel active">
+          <!-- CARDS DE MÉTRICAS DA CARTEIRA -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-users" style="color: #C084FC;"></i> Clientes Ativos</span>
+              <h2 style="font-size: 26px; color: #FFF; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-total">0</h2>
+              <span style="font-size: 11px; color: #10B981;">Cadastrados na carteira</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-chart-pie" style="color: #00F2FE;"></i> Nichos Mapeados</span>
+              <h2 style="font-size: 26px; color: #00F2FE; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-niches">0</h2>
+              <span style="font-size: 11px; color: #00F2FE;">Setores com inteligência</span>
+            </div>
+            <div class="card-glass" style="padding: 18px;">
+              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-hand-holding-dollar" style="color: #00F5A0;"></i> Meta de Faturamento Acumulada</span>
+              <h2 style="font-size: 26px; color: #00F5A0; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-revenue">R$ 0,00</h2>
+              <span style="font-size: 11px; color: #00F5A0;">Soma dos clientes</span>
+            </div>
+          </div>
+
+          <!-- CABEÇALHO COM AÇÃO NOVO CLIENTE -->
+          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,242,254,0.05)); border: 1px solid rgba(168,85,247,0.3);">
+            <div>
+              <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-address-book" style="color: #C084FC;"></i> Gestão Cadastral da Carteira de Clientes</h3>
+              <p style="margin: 0; font-size: 12px; color: #94A3B8;">Cadastre os dados completos das empresas clientes para alimentar a esteira autônoma de Onboarding e IA.</p>
+            </div>
+            <button type="button" id="btn-modal-novo-cliente" onclick="window.abrirModalNovoCliente()" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+              <i class="fa-solid fa-user-plus"></i> + Novo Cliente
+            </button>
+          </div>
+
+          <!-- TABELA DE CLIENTES DA AGÊNCIA -->
+          <div class="card-glass" style="padding: 0; overflow: hidden;">
+            <div style="padding: 18px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-users-gear" style="color: #00F2FE;"></i> Tabela da Carteira de Clientes</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                  <tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94A3B8; text-transform: uppercase; font-size: 11px;">
+                    <th style="padding: 14px 18px;">Empresa / Marca</th>
+                    <th style="padding: 14px 18px;">Nicho / Setor</th>
+                    <th style="padding: 14px 18px;">Responsável & Contato</th>
+                    <th style="padding: 14px 18px;">Ticket Médio / Meta</th>
+                    <th style="padding: 14px 18px;">Canais (Site / IG)</th>
+                    <th style="padding: 14px 18px; text-align: right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="clients-table-body">
+                  <tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 2: ONBOARDING AUTÔNOMO -->
+        <section id="tab-onboarding" class="tab-panel">
           <div class="grid-2col">
             <div class="card-glass">
               <div class="card-header">
@@ -348,63 +405,6 @@
                   <p>Preencha os campos ao lado e clique em "Disparar Onboarding" para a IA estruturar a base de conhecimento exclusiva do nicho.</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ABA CARTEIRA DE CLIENTES -->
-        <section id="tab-clientes" class="tab-panel">
-          <!-- CARDS DE MÉTRICAS DA CARTEIRA -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-            <div class="card-glass" style="padding: 18px;">
-              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-users" style="color: #C084FC;"></i> Clientes Ativos</span>
-              <h2 style="font-size: 26px; color: #FFF; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-total">0</h2>
-              <span style="font-size: 11px; color: #10B981;">Cadastrados na carteira</span>
-            </div>
-            <div class="card-glass" style="padding: 18px;">
-              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-chart-pie" style="color: #00F2FE;"></i> Nichos Mapeados</span>
-              <h2 style="font-size: 26px; color: #00F2FE; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-niches">0</h2>
-              <span style="font-size: 11px; color: #00F2FE;">Setores com inteligência</span>
-            </div>
-            <div class="card-glass" style="padding: 18px;">
-              <span style="font-size: 11px; color: #94A3B8;"><i class="fa-solid fa-hand-holding-dollar" style="color: #00F5A0;"></i> Meta de Faturamento Acumulada</span>
-              <h2 style="font-size: 26px; color: #00F5A0; margin: 6px 0 0; font-family: 'Outfit', sans-serif;" id="client-metric-revenue">R$ 0,00</h2>
-              <span style="font-size: 11px; color: #00F5A0;">Soma dos clientes</span>
-            </div>
-          </div>
-
-          <!-- CABEÇALHO COM AÇÃO NOVO CLIENTE -->
-          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,242,254,0.05)); border: 1px solid rgba(168,85,247,0.3);">
-            <div>
-              <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-address-book" style="color: #C084FC;"></i> Gestão Cadastral da Carteira de Clientes</h3>
-              <p style="margin: 0; font-size: 12px; color: #94A3B8;">Cadastre os dados completos das empresas clientes para alimentar a esteira autônoma de Onboarding e IA.</p>
-            </div>
-            <button type="button" id="btn-modal-novo-cliente" onclick="window.abrirModalNovoCliente()" style="background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 12px; padding: 12px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
-              <i class="fa-solid fa-user-plus"></i> + Novo Cliente
-            </button>
-          </div>
-
-          <!-- TABELA DE CLIENTES DA AGÊNCIA -->
-          <div class="card-glass" style="padding: 0; overflow: hidden;">
-            <div style="padding: 18px 24px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
-              <h3 style="margin: 0; font-size: 15px; color: #FFF;"><i class="fa-solid fa-users-gear" style="color: #00F2FE;"></i> Tabela da Carteira de Clientes</h3>
-            </div>
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                <thead>
-                  <tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94A3B8; text-transform: uppercase; font-size: 11px;">
-                    <th style="padding: 14px 18px;">Empresa / Marca</th>
-                    <th style="padding: 14px 18px;">Nicho / Setor</th>
-                    <th style="padding: 14px 18px;">Responsável & Contato</th>
-                    <th style="padding: 14px 18px;">Ticket Médio / Meta</th>
-                    <th style="padding: 14px 18px;">Canais (Site / IG)</th>
-                    <th style="padding: 14px 18px; text-align: right;">Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="clients-table-body">
-                  <tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>
-                </tbody>
-              </table>
             </div>
           </div>
         </section>
@@ -1979,8 +1979,8 @@
     })();
   </script>
 
-  <script src="app.js?v=28.0.0"></script>
-  <script src="/agency-management.js?v=28.0.0"></script>
-  <script src="/client-management.js?v=28.0.0"></script>
+  <script src="app.js?v=29.0.0"></script>
+  <script src="/agency-management.js?v=29.0.0"></script>
+  <script src="/client-management.js?v=29.0.0"></script>
 </body>
 </html>
