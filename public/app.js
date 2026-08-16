@@ -3,6 +3,13 @@
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
 
+// Limpeza automática de Service Workers residuais e cache estático
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (let registration of registrations) { registration.unregister(); }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Oraculum SaaS Frontend Inicializado.');
 
