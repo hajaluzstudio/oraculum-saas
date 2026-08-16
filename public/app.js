@@ -3106,65 +3106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getMockAgenciesList() {
-    return [
-      {
-        id: 'ag_1',
-        name: 'Haja Luz Studio (Matriz)',
-        cnpj: '12.345.678/0001-99',
-        responsible_name: 'Gabriel Luz',
-        email_billing: 'contato@hajaluzstudio.com',
-        phone: '(11) 98888-7777',
-        zip_code: '01310-100',
-        address_street: 'Av. Paulista',
-        address_number: '1000',
-        address_neighborhood: 'Bela Vista',
-        address_city: 'São Paulo',
-        address_state: 'SP',
-        monthly_fee: 1497,
-        due_day: 10,
-        status: 'active',
-        plan_tier: 'enterprise',
-        clients_count: 14
-      },
-      {
-        id: 'ag_2',
-        name: 'Agência Growth Scale',
-        cnpj: '98.765.432/0001-11',
-        responsible_name: 'Mariana Costa',
-        email_billing: 'financeiro@growthscale.com',
-        phone: '(21) 97777-6666',
-        zip_code: '22041-001',
-        address_street: 'Av. Atlântica',
-        address_number: '500',
-        address_neighborhood: 'Copacabana',
-        address_city: 'Rio de Janeiro',
-        address_state: 'RJ',
-        monthly_fee: 497,
-        due_day: 15,
-        status: 'active',
-        plan_tier: 'pro',
-        clients_count: 6
-      },
-      {
-        id: 'ag_3',
-        name: 'Vortex Growth & Performance',
-        cnpj: '44.555.666/0001-22',
-        responsible_name: 'Rodrigo Mendonça',
-        email_billing: 'adm@vortexgrowth.com.br',
-        phone: '(31) 96666-5555',
-        zip_code: '30130-000',
-        address_street: 'Rua da Bahia',
-        address_number: '1200',
-        address_neighborhood: 'Centro',
-        address_city: 'Belo Horizonte',
-        address_state: 'MG',
-        monthly_fee: 997,
-        due_day: 5,
-        status: 'blocked',
-        plan_tier: 'pro',
-        clients_count: 4
-      }
-    ];
+    return [];
   }
 
   function renderAgenciesTable(agencies) {
