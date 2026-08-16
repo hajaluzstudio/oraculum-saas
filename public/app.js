@@ -2394,19 +2394,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // AUTH GATE PORTAL & CONTROLE DE VISIBILIDADE RBAC (SUPER ADMIN VS AGÊNCIA)
   // ============================================================================
   const authGateContainer = document.getElementById('auth-gate-container');
-  const appContainer = document.querySelector('.app-container');
-  const gateTabBtnLogin = document.getElementById('gate-tab-btn-login');
-  const gateTabBtnRegister = document.getElementById('gate-tab-btn-register');
-  const formGateLogin = document.getElementById('form-gate-login');
-  const formGateRegister = document.getElementById('form-gate-register');
-  const gateErrorMsg = document.getElementById('gate-error-msg');
+  const mainDashboardContainer = document.getElementById('main-dashboard-container');
+  const tabLoginBtn = document.getElementById('tab-login-btn') || document.getElementById('gate-tab-btn-login');
+  const tabRegisterBtn = document.getElementById('tab-register-btn') || document.getElementById('gate-tab-btn-register');
+  const formLogin = document.getElementById('form-login') || document.getElementById('form-gate-login');
+  const formRegisterAgency = document.getElementById('form-register-agency') || document.getElementById('form-gate-register');
   const btnSidebarLogout = document.getElementById('btn-sidebar-logout');
   const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
 
   function applyRbacAndSessionVisibility(session) {
-    if (!session) {
+    if (!session || !session.email) {
       document.documentElement.classList.remove('is-authenticated');
-      if (appContainer) appContainer.style.display = 'none';
+      if (mainDashboardContainer) mainDashboardContainer.style.display = 'none';
       if (authGateContainer) authGateContainer.style.display = 'flex';
       return;
     }
@@ -2414,7 +2413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Usuário autenticado
     document.documentElement.classList.add('is-authenticated');
     if (authGateContainer) authGateContainer.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
+    if (mainDashboardContainer) mainDashboardContainer.style.display = 'block';
 
     if (userSessionLabel) userSessionLabel.textContent = session.email;
 
@@ -2432,34 +2431,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Alternar abas no Auth Gate
-  if (gateTabBtnLogin && gateTabBtnRegister) {
-    gateTabBtnLogin.addEventListener('click', () => {
-      gateTabBtnLogin.style.background = 'linear-gradient(135deg, #7F00FF, #E100FF)';
-      gateTabBtnLogin.style.color = '#FFF';
-      gateTabBtnRegister.style.background = 'transparent';
-      gateTabBtnRegister.style.color = '#94A3B8';
-      formGateLogin.style.display = 'block';
-      formGateRegister.style.display = 'none';
-      if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+  if (tabLoginBtn && tabRegisterBtn) {
+    tabLoginBtn.addEventListener('click', () => {
+      tabLoginBtn.className = 'flex-1 py-2 text-sm font-semibold border-b-2 border-purple-500 text-purple-400';
+      tabRegisterBtn.className = 'flex-1 py-2 text-sm font-semibold text-slate-400 border-b-2 border-transparent';
+      if (formLogin) formLogin.style.display = 'block';
+      if (formRegisterAgency) formRegisterAgency.style.display = 'none';
     });
 
-    gateTabBtnRegister.addEventListener('click', () => {
-      gateTabBtnRegister.style.background = 'linear-gradient(135deg, #00F5A0, #00F2FE)';
-      gateTabBtnRegister.style.color = '#080B11';
-      gateTabBtnLogin.style.background = 'transparent';
-      gateTabBtnLogin.style.color = '#94A3B8';
-      formGateRegister.style.display = 'block';
-      formGateLogin.style.display = 'none';
-      if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+    tabRegisterBtn.addEventListener('click', () => {
+      tabRegisterBtn.className = 'flex-1 py-2 text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400';
+      tabLoginBtn.className = 'flex-1 py-2 text-sm font-semibold text-slate-400 border-b-2 border-transparent';
+      if (formRegisterAgency) formRegisterAgency.style.display = 'block';
+      if (formLogin) formLogin.style.display = 'none';
     });
   }
 
   // Submit Login no Auth Gate
-  if (formGateLogin) {
-    formGateLogin.addEventListener('submit', (e) => {
+  if (formLogin) {
+    formLogin.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = document.getElementById('gate-login-email')?.value;
-      const password = document.getElementById('gate-login-password')?.value;
+      const email = (document.getElementById('login-email') || document.getElementById('gate-login-email'))?.value || '';
+      const password = (document.getElementById('login-password') || document.getElementById('gate-login-password'))?.value || '';
 
       let role = 'agency_owner';
       let agencyStatus = 'active';
@@ -2488,12 +2481,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Submit Cadastrar Agência no Auth Gate
-  if (formGateRegister) {
-    formGateRegister.addEventListener('submit', (e) => {
+  if (formRegisterAgency) {
+    formRegisterAgency.addEventListener('submit', (e) => {
       e.preventDefault();
-      const agencyName = document.getElementById('gate-reg-agency-name')?.value;
-      const fullName = document.getElementById('gate-reg-fullname')?.value;
-      const email = document.getElementById('gate-reg-email')?.value;
+      const agencyName = (document.getElementById('reg-agency-name') || document.getElementById('gate-reg-agency-name'))?.value || '';
+      const fullName = (document.getElementById('reg-user-name') || document.getElementById('gate-reg-fullname'))?.value || '';
+      const email = (document.getElementById('reg-email') || document.getElementById('gate-reg-email'))?.value || '';
 
       const session = {
         email,
@@ -2513,7 +2506,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Logout no Sidebar Footer
   function executeLogout() {
     localStorage.removeItem('oraculum_session');
-    if (appContainer) appContainer.style.display = 'none';
+    document.documentElement.classList.remove('is-authenticated');
+    if (mainDashboardContainer) mainDashboardContainer.style.display = 'none';
     if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'none';
     if (authGateContainer) authGateContainer.style.display = 'flex';
     if (userSessionLabel) userSessionLabel.textContent = 'Entrar / Cadastrar';

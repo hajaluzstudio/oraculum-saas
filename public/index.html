@@ -35,12 +35,38 @@
         if (sess && sess.email) {
           document.documentElement.classList.add('is-authenticated');
         }
-      } catch(e) {}
-    })();
-  </script>
-</head>
+  <!-- Tailwind CSS CDN para Auth Gate -->
+  <script src="https://cdn.tailwindcss.com"></script>
 <body>
-  <div class="app-container">
+  <!-- AUTH GATE CONTAINER (TELA DE LOGIN / CADASTRO DE AGÊNCIA) -->
+  <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-6">
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-white tracking-wide">ORACULUM</h1>
+        <p class="text-xs text-purple-400 font-semibold tracking-widest mt-1">ROI-FIRST SAAS</p>
+      </div>
+      <div class="flex border-b border-slate-800 mb-4">
+        <button id="tab-login-btn" class="flex-1 py-2 text-sm font-semibold border-b-2 border-purple-500 text-purple-400">Entrar</button>
+        <button id="tab-register-btn" class="flex-1 py-2 text-sm font-semibold text-slate-400 border-b-2 border-transparent">Cadastrar Agência</button>
+      </div>
+      <form id="form-login" class="space-y-4">
+        <input type="email" id="login-email" placeholder="E-mail de acesso" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <input type="password" id="login-password" placeholder="Sua senha" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 font-semibold p-3 rounded-lg text-sm text-white shadow-lg shadow-purple-600/30">Acessar Sistema</button>
+      </form>
+      <form id="form-register-agency" class="space-y-4" style="display: none;">
+        <input type="text" id="reg-agency-name" placeholder="Nome da Agência" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <input type="text" id="reg-user-name" placeholder="Seu Nome Completo" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <input type="email" id="reg-email" placeholder="E-mail corporativo" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <input type="password" id="reg-password" placeholder="Crie uma senha" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white" />
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 font-semibold p-3 rounded-lg text-sm text-white shadow-lg shadow-emerald-600/30">Criar Conta da Agência</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD CONTAINER (OCULTO POR PADRÃO ATÉ AUTENTICAR) -->
+  <div id="main-dashboard-container" style="display: none;">
+    <div class="app-container">
     <!-- BARRA LATERAL (SIDEBAR) -->
     <aside class="sidebar">
       <div class="brand">
@@ -1234,190 +1260,7 @@
     </div>
   </div>
 
-  <!-- TELA CHEIA DE LOGIN / CADASTRO DE AGÊNCIA (AUTH GATE PORTAL) -->
-  <div id="auth-gate-container" style="display: flex; position: fixed; inset: 0; background: #080B11; z-index: 300000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px; overflow-y: auto;">
-    <!-- Background Animated Glows -->
-    <div style="position: absolute; top: -10%; left: -10%; width: 40%; height: 40%; background: rgba(127, 0, 255, 0.15); filter: blur(140px); border-radius: 50%; pointer-events: none;"></div>
-    <div style="position: absolute; bottom: -10%; right: -10%; width: 40%; height: 40%; background: rgba(0, 242, 254, 0.15); filter: blur(140px); border-radius: 50%; pointer-events: none;"></div>
-
-    <div style="width: 100%; max-width: 440px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 28px; padding: 40px 32px; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8); backdrop-filter: blur(20px); position: relative; z-index: 2; color: #FFF;">
-      <!-- Branding Logo -->
-      <div style="text-align: center; margin-bottom: 28px;">
-        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #7F00FF 0%, #E100FF 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 28px; color: #FFF; box-shadow: 0 10px 30px rgba(127,0,255,0.4);">
-          <i class="fa-solid fa-brain"></i>
-        </div>
-        <h1 style="font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; margin: 0 0 6px; color: #FFF; letter-spacing: -0.5px;">ORACULUM SaaS</h1>
-        <p style="font-size: 13px; color: #94A3B8; margin: 0;">Plataforma de Inteligência Estratégica ROI-First</p>
-      </div>
-
-      <!-- Abas de Navegação -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; background: #080B11; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 4px; margin-bottom: 24px; font-size: 13px; font-weight: 700;">
-        <button type="button" id="gate-tab-btn-login" style="padding: 11px; border: none; border-radius: 10px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; cursor: pointer; transition: all 0.2s;">
-          Acessar Conta
-        </button>
-        <button type="button" id="gate-tab-btn-register" style="padding: 11px; border: none; border-radius: 10px; background: transparent; color: #94A3B8; cursor: pointer; transition: all 0.2s;">
-          Cadastrar Agência
-        </button>
-      </div>
-
-      <div id="gate-error-msg" style="display: none; background: rgba(255,75,75,0.15); border: 1px solid rgba(255,75,75,0.3); color: #FF4B4B; padding: 12px; border-radius: 12px; font-size: 12px; margin-bottom: 20px; text-align: center;"></div>
-
-      <!-- FORMULARIO 1: LOGIN -->
-      <form id="form-gate-login" style="display: block;">
-        <div style="margin-bottom: 16px;">
-          <label style="font-size: 12px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">E-mail Corporativo</label>
-          <div style="position: relative;">
-            <i class="fa-solid fa-envelope" style="position: absolute; left: 14px; top: 15px; color: #64748B; font-size: 14px;"></i>
-            <input type="email" id="gate-login-email" required placeholder="seu.email@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 12px 12px 40px; color: #FFF; font-size: 13px; outline: none; transition: border 0.2s;">
-          </div>
-        </div>
-
-        <div style="margin-bottom: 24px;">
-          <label style="font-size: 12px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">Senha de Acesso</label>
-          <div style="position: relative;">
-            <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 15px; color: #64748B; font-size: 14px;"></i>
-            <input type="password" id="gate-login-password" required placeholder="••••••••" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 12px 12px 40px; color: #FFF; font-size: 13px; outline: none; transition: border 0.2s;">
-          </div>
-        </div>
-
-        <button type="submit" style="width: 100%; background: linear-gradient(135deg, #7F00FF, #E100FF); border: none; border-radius: 14px; padding: 14px; color: #FFF; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 8px 25px rgba(127,0,255,0.35); transition: all 0.2s;">
-          Entrar no Oraculum <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
-        </button>
-
-        <p style="font-size: 11px; color: #64748B; text-align: center; margin-top: 18px; margin-bottom: 0;">
-          Dica Master: Use <code style="color: #FDE047; font-weight: bold;">admin@oraculum.com</code> para acesso Super Admin.
-        </p>
-      </form>
-
-      <!-- FORMULARIO 2: CADASTRO DE AGÊNCIA -->
-      <form id="form-gate-register" style="display: none;">
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome da Agência / Empresa</label>
-          <input type="text" id="gate-reg-agency-name" required placeholder="Ex: Agência Turbo Digital Scale" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome do Responsável / CEO</label>
-          <input type="text" id="gate-reg-fullname" required placeholder="Seu nome completo" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">E-mail Administrativo</label>
-          <input type="email" id="gate-reg-email" required placeholder="contato@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-
-        <div style="margin-bottom: 22px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Senha Mestra de Acesso</label>
-          <input type="password" id="gate-reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-
-        <button type="submit" style="width: 100%; background: linear-gradient(135deg, #00F5A0, #00F2FE); border: none; border-radius: 14px; padding: 14px; color: #080B11; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 8px 25px rgba(0, 245, 160, 0.25);">
-          <i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i> Criar Conta da Agência
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- INLINE LOGIC DO AUTH GATE & LOGOUT (Executa instantaneamente independente de qualquer script externo) -->
-  <script>
-    (function initAuthGateInline() {
-      var gateTabBtnLogin = document.getElementById('gate-tab-btn-login');
-      var gateTabBtnRegister = document.getElementById('gate-tab-btn-register');
-      var formGateLogin = document.getElementById('form-gate-login');
-      var formGateRegister = document.getElementById('form-gate-register');
-      var gateErrorMsg = document.getElementById('gate-error-msg');
-      var authGateContainer = document.getElementById('auth-gate-container');
-      var appContainer = document.querySelector('.app-container');
-
-      if (gateTabBtnLogin && gateTabBtnRegister) {
-        gateTabBtnLogin.onclick = function() {
-          gateTabBtnLogin.style.background = 'linear-gradient(135deg, #7F00FF, #E100FF)';
-          gateTabBtnLogin.style.color = '#FFF';
-          gateTabBtnRegister.style.background = 'transparent';
-          gateTabBtnRegister.style.color = '#94A3B8';
-          if (formGateLogin) formGateLogin.style.display = 'block';
-          if (formGateRegister) formGateRegister.style.display = 'none';
-          if (gateErrorMsg) gateErrorMsg.style.display = 'none';
-        };
-
-        gateTabBtnRegister.onclick = function() {
-          gateTabBtnRegister.style.background = 'linear-gradient(135deg, #00F5A0, #00F2FE)';
-          gateTabBtnRegister.style.color = '#080B11';
-          gateTabBtnLogin.style.background = 'transparent';
-          gateTabBtnLogin.style.color = '#94A3B8';
-          if (formGateRegister) formGateRegister.style.display = 'block';
-          if (formGateLogin) formGateLogin.style.display = 'none';
-          if (gateErrorMsg) gateErrorMsg.style.display = 'none';
-        };
-      }
-
-      if (formGateLogin) {
-        formGateLogin.onsubmit = function(e) {
-          e.preventDefault();
-          var emailInput = document.getElementById('gate-login-email');
-          var email = emailInput ? emailInput.value : '';
-          var role = email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner';
-          var agencyStatus = email.toLowerCase().includes('bloqueado') ? 'blocked' : 'active';
-          var session = {
-            email: email,
-            role: role,
-            agencyStatus: agencyStatus,
-            agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + email.split('@')[0],
-            loggedAt: new Date().toISOString()
-          };
-          localStorage.setItem('oraculum_session', JSON.stringify(session));
-          document.documentElement.classList.add('is-authenticated');
-          if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
-          if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
-          var btnSuper = document.getElementById('btn-tab-super-admin');
-          if (btnSuper) btnSuper.style.setProperty('display', role === 'super_admin' ? 'flex' : 'none', 'important');
-          var userLbl = document.getElementById('user-session-label');
-          if (userLbl) userLbl.textContent = email;
-          if (agencyStatus === 'blocked') {
-            var blockModal = document.getElementById('blocked-suspension-modal');
-            if (blockModal) blockModal.style.setProperty('display', 'flex', 'important');
-          }
-        };
-      }
-
-      if (formGateRegister) {
-        formGateRegister.onsubmit = function(e) {
-          e.preventDefault();
-          var agencyName = document.getElementById('gate-reg-agency-name').value;
-          var fullName = document.getElementById('gate-reg-fullname').value;
-          var email = document.getElementById('gate-reg-email').value;
-          var session = {
-            email: email,
-            fullName: fullName,
-            agencyName: agencyName,
-            role: 'agency_owner',
-            agencyStatus: 'active',
-            loggedAt: new Date().toISOString()
-          };
-          localStorage.setItem('oraculum_session', JSON.stringify(session));
-          var lockStyle = document.getElementById('auth-gate-lock');
-          if (lockStyle) lockStyle.remove();
-          if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
-          if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
-          var btnSuper = document.getElementById('btn-tab-super-admin');
-          if (btnSuper) btnSuper.style.setProperty('display', 'none', 'important');
-          var userLbl = document.getElementById('user-session-label');
-          if (userLbl) userLbl.textContent = email;
-          alert('🎉 Agência "' + agencyName + '" cadastrada com sucesso!');
-        };
-      }
-
-      // Logout buttons
-      var btnLogout = document.getElementById('btn-sidebar-logout');
-      var btnLogoutSusp = document.getElementById('btn-logout-suspension');
-      var handleLogout = function() {
-        localStorage.removeItem('oraculum_session');
-        window.location.reload();
-      };
-      if (btnLogout) btnLogout.onclick = handleLogout;
-      if (btnLogoutSusp) btnLogoutSusp.onclick = handleLogout;
-    })();
-  </script>
+  </div> <!-- FIM DE #main-dashboard-container -->
 
   <script src="app.js?v=3000"></script>
 </body>
