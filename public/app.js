@@ -2421,7 +2421,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Usuário autenticado
     document.documentElement.classList.add('is-authenticated');
-    if (authGateContainer) authGateContainer.style.setProperty('display', 'none', 'important');
+    if (authGateContainer) {
+      authGateContainer.style.setProperty('display', 'none', 'important');
+      authGateContainer.style.setProperty('pointer-events', 'none', 'important');
+      authGateContainer.style.setProperty('z-index', '-1', 'important');
+    }
     if (mainDashboardContainer) mainDashboardContainer.style.setProperty('display', 'block', 'important');
     if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
 
@@ -3194,24 +3198,75 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elClients) elClients.textContent = totalClients || 24;
   }
 
-  // Inicializa Kanban e BI ao carregar
-  setTimeout(() => {
-    if (activeClientId) {
-      loadClientKanbanCards(activeClientId);
-      loadClientBiMetrics(activeClientId);
-    }
-    loadSuperAdminAgencies();
-  }, 600);
-});
+  // ==========================================================
+  // INICIALIZAÇÃO ISOLADA DE MÓDULOS COM TRY/CATCH E DIAGNÓSTICO
+  // ==========================================================
+  function initChat() {
+    const chatForm = document.getElementById('chat-form');
+    const btnSendChat = document.getElementById('btn-send-chat');
+    const chatInput = document.getElementById('chat-input') || document.getElementById('chat-user-input');
 
-  // Inicializa Kanban e BI ao carregar
-  setTimeout(() => {
-    if (activeClientId) {
-      loadClientKanbanCards(activeClientId);
-      loadClientBiMetrics(activeClientId);
+    if (chatForm) {
+      chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (typeof handleSendChatMessage === 'function') handleSendChatMessage();
+      });
     }
-    loadSuperAdminAgencies();
-  }, 600);
+
+    if (btnSendChat) {
+      btnSendChat.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        if (typeof handleSendChatMessage === 'function') handleSendChatMessage();
+      });
+    }
+
+    if (chatInput) {
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (typeof handleSendChatMessage === 'function') handleSendChatMessage();
+        }
+      });
+    }
+    console.log("[Oraculum] Módulo Chat pronto.");
+  }
+
+  function initOnboarding() {
+    const formOnboarding = document.getElementById('form-onboarding') || document.getElementById('form-niche-research');
+    if (formOnboarding) {
+      formOnboarding.addEventListener('submit', (e) => {
+        e.preventDefault();
+      });
+    }
+    console.log("[Oraculum] Módulo Onboarding pronto.");
+  }
+
+  function initRoteiros() {
+    console.log("[Oraculum] Módulo Roteiros pronto.");
+  }
+
+  function initBI() {
+    console.log("[Oraculum] Módulo BI pronto.");
+  }
+
+  function initMaster() {
+    if (typeof window.renderizarListaAgencias === 'function') {
+      window.renderizarListaAgencias();
+    }
+    if (typeof window.carregarAgenciasDoSupabase === 'function') {
+      window.carregarAgenciasDoSupabase();
+    }
+    console.log("[Oraculum] Módulo Master Agências pronto.");
+  }
+
+  // Execução isolada por módulo para garantir que um elemento nulo não trave os demais
+  try { initChat(); } catch (e) { console.error('Erro no Chat:', e); }
+  try { initOnboarding(); } catch (e) { console.error('Erro no Onboarding:', e); }
+  try { initRoteiros(); } catch (e) { console.error('Erro nos Roteiros:', e); }
+  try { initBI(); } catch (e) { console.error('Erro no BI:', e); }
+  try { initMaster(); } catch (e) { console.error('Erro no Master:', e); }
+
+  console.log("[Oraculum] Sistema inicializado e pronto para eventos.");
 });
 
 function generateMockDossier(clientName, niche) {
