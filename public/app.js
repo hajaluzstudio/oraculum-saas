@@ -13,6 +13,16 @@ if ('serviceWorker' in navigator) {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Oraculum SaaS Frontend Inicializado.');
 
+  // Configuração e Inicialização Segura da Instância do Supabase (Sem SyntaxError)
+  if (!window.supabaseClient) {
+    const SUPABASE_URL = window.ENV_SUPABASE_URL || 'https://xyz.supabase.co';
+    const SUPABASE_ANON_KEY = window.ENV_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+      window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  }
+  var db = window.supabaseClient || (typeof supabase !== 'undefined' ? supabase : null);
+
   // Configuração Base da API (Dinâmico para Vercel e Localhost)
   const API_BASE_URL = window.location.origin;
   let activeTenantId = document.getElementById('tenant-select')?.value || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
@@ -3294,3 +3304,5 @@ function generateMockDossier(clientName, niche) {
     }
   };
 }
+
+console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
