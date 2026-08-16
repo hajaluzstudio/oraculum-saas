@@ -21,7 +21,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="styles.css?v=10.0.0">
+  <link rel="stylesheet" href="styles.css?v=12.0.0">
   
   <!-- Configurações de PWA Mobile -->
   <link rel="manifest" href="/manifest.json">
@@ -1531,8 +1531,80 @@
         btn.disabled = false;
       }
     };
+
+    // ==========================================
+    // MOTOR DE NAVEGAÇÃO ENTRE ABAS DO DASHBOARD
+    // ==========================================
+    (function inicializarNavegacaoDashboard() {
+      console.log("Iniciando motor de navegação das abas...");
+
+      // 1. Garante que nenhum overlay fantasma bloqueie cliques no dashboard
+      const authGate = document.getElementById('auth-gate-container');
+      if (authGate && authGate.style.display === 'none') {
+        authGate.style.pointerEvents = 'none';
+      }
+
+      // 2. Mapeamento e função global para alternar seções
+      window.navegarParaSecao = function(secaoId) {
+        console.log("Navegando para seção:", secaoId);
+        
+        // Lista todas as seções/painéis do dashboard
+        const todasSecoes = document.querySelectorAll('main section, [data-section-content], .dashboard-view, .tab-pane, .tab-panel, #view-chat, #view-roteiros, #view-master, #view-analytics, #view-config, #view-onboarding');
+        
+        // Oculta todas
+        todasSecoes.forEach(sec => {
+          sec.style.setProperty('display', 'none', 'important');
+          sec.classList.remove('active');
+        });
+
+        // Procura o elemento de destino por ID ou por atributo data
+        const alvo = document.getElementById(secaoId) || 
+                     document.getElementById(`view-${secaoId}`) || 
+                     document.getElementById(`section-${secaoId}`) ||
+                     document.getElementById(`tab-${secaoId}`) ||
+                     document.querySelector(`[data-section="${secaoId}"]`);
+
+        if (alvo) {
+          alvo.style.setProperty('display', 'block', 'important');
+          alvo.classList.add('active');
+        } else {
+          console.warn("Seção de destino não encontrada:", secaoId);
+        }
+
+        // Atualiza estado visual do menu (botão ativo)
+        document.querySelectorAll('aside button, aside a, nav button, nav a').forEach(btn => {
+          btn.classList.remove('bg-purple-600/20', 'text-purple-400', 'border-purple-500', 'active');
+        });
+      };
+
+      // 3. Listener universal de cliques em itens do menu lateral
+      document.addEventListener('click', function(e) {
+        const itemMenu = e.target.closest('aside a, aside button, nav a, nav button, [data-section], [data-tab], [data-view]');
+        
+        if (itemMenu) {
+          // Impede comportamento padrão se for link <a>
+          if (itemMenu.tagName === 'A' && (itemMenu.getAttribute('href') === '#' || !itemMenu.getAttribute('href')?.startsWith('http'))) {
+            e.preventDefault();
+          }
+
+          // Identifica o destino
+          const target = itemMenu.getAttribute('data-section') || 
+                         itemMenu.getAttribute('data-tab') || 
+                         itemMenu.getAttribute('data-view') || 
+                         itemMenu.getAttribute('href')?.replace('#', '') ||
+                         itemMenu.id?.replace('btn-nav-', '')?.replace('nav-', '');
+
+          if (target) {
+            window.navegarParaSecao(target);
+            itemMenu.classList.add('bg-purple-600/20', 'text-purple-400', 'active');
+          }
+        }
+      }, true);
+
+      console.log("Motor de navegação pronto e escutando cliques!");
+    })();
   </script>
 
-  <script src="app.js?v=11.0.0"></script>
+  <script src="app.js?v=12.0.0"></script>
 </body>
 </html>
