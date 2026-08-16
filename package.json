@@ -1,7 +1,7 @@
 {
   "name": "oraculum-saas",
   "version": "1.0.0",
-  "description": "Plataforma SaaS Proprietária de Marketing Híbrido ROI-First",
+  "description": "Plataforma SaaS Proprietária de Marketing Híbrido ROI-First (5 Serverless Functions)",
   "main": "dist/index.js",
   "scripts": {
     "build": "esbuild src/server.ts --bundle --platform=node --target=node20 --outfile=dist/server.js",
