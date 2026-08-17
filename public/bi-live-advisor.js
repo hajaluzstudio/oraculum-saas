@@ -216,8 +216,19 @@
       const elevenKey = localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key');
       const elevenVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || 'pNInz6obpgDQGcFmaJgB';
 
+      const fallbackNativo = () => {
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(formatado);
+          utterance.lang = 'pt-BR';
+          utterance.rate = 1.05;
+          window.speechSynthesis.speak(utterance);
+          if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); }
+        }
+      };
+
       if (!elevenKey) {
-        console.warn("[Oraculum Live] Chave da ElevenLabs não configurada. Configure em Configurações > ElevenLabs API Key.");
+        console.warn("[Oraculum Live] Chave da ElevenLabs não configurada. Usando voz nativa do navegador.");
+        fallbackNativo();
         return;
       }
 
@@ -277,8 +288,8 @@
         audio.onerror = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
         await audio.play();
       } else {
-        console.error("[Oraculum Live] Falha na síntese de voz ElevenLabs.");
-        if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); }
+        console.error("[Oraculum Live] Falha na síntese de voz ElevenLabs. Usando fallback nativo.");
+        fallbackNativo();
       }
     } catch(e) {
       console.warn("Falha no áudio ElevenLabs:", e);
@@ -310,10 +321,11 @@
     }
 
     try {
+      let silenceTimer = null;
       recognition = new SpeechRecognition();
       recognition.lang = 'pt-BR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.continuous = true;
+      recognition.interimResults = true;
 
       recognition.onstart = () => {
         gravando = true;
@@ -329,10 +341,27 @@
       };
 
       recognition.onresult = (event) => {
-        const transcricao = event.results[0][0].transcript;
+        let transcricaoFinal = '';
+        let transcricaoInterim = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcricaoFinal += event.results[i][0].transcript;
+          } else {
+            transcricaoInterim += event.results[i][0].transcript;
+          }
+        }
+        
+        const transcricao = transcricaoFinal + transcricaoInterim;
         const input = document.getElementById('oraculo-input-text');
         if (input) input.value = transcricao;
-        window.enviarMensagemOraculo();
+        
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          recognition.stop();
+          if (input && input.value.trim().length > 0) {
+            window.enviarMensagemOraculo();
+          }
+        }, 2500);
       };
 
       recognition.onerror = (e) => {
@@ -649,8 +678,8 @@ Mensagem do Usuário: "${perguntaUsuario}"
     const contexto = extrairContextoCompletoBI();
     const clientId = contexto.cliente || 'cliente_ativo';
 
-    // 1º Grava a mensagem do usuário via INSERT no oraculo_memoria
-    await window.salvarMensagemNuvem(clientId, 'user', texto, contexto);
+    // 1º Grava a mensagem do usuário via INSERT no oraculo_memoria (assíncrono para não travar a IA)
+    const promiseSalvarMsg = window.salvarMensagemNuvem(clientId, 'user', texto, contexto).catch(console.error);
 
     const btnSend = document.getElementById('btn-send-oraculo');
     if (btnSend) btnSend.disabled = true;
@@ -669,6 +698,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
 
     try {
       const historicoAtual = await window.carregarHistoricoNuvem(clientId);
+      await promiseSalvarMsg;
       
       // 2º Faz a chamada real à API do Gemini enviando o histórico completo
       const respostaTexto = await perguntarAoOraculoGemini(texto, contexto, historicoAtual);
