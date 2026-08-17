@@ -86,8 +86,9 @@ window.testarConexaoGeminiReal = async function() {
 
   const keyLimpa = apiKey.trim();
 
-  // 1. Tenta listar modelos diretamente da conta do usuário via GET /models
+  // 1. Tenta listar modelos de GERAR TEXTO diretamente da conta do usuário via GET /models
   let listaTentativas = [];
+  const modelosExcluidos = ['-tts', '-audio', '-embed', 'embedding', 'bidi', 'imagen'];
 
   for (const apiVer of ['v1beta', 'v1']) {
     try {
@@ -95,9 +96,23 @@ window.testarConexaoGeminiReal = async function() {
       if (resList.ok) {
         const dataList = await resList.json();
         if (dataList.models && Array.isArray(dataList.models)) {
-          const validos = dataList.models.filter(m => 
-            m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
-          );
+          const validos = dataList.models.filter(m => {
+            const name = m.name.toLowerCase();
+            const hasGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent');
+            const isExcluded = modelosExcluidos.some(e => name.includes(e));
+            return hasGenerate && !isExcluded;
+          });
+
+          validos.sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            if (nameA.includes('1.5-flash') && !nameB.includes('1.5-flash')) return -1;
+            if (!nameA.includes('1.5-flash') && nameB.includes('1.5-flash')) return 1;
+            if (nameA.includes('2.0-flash') && !nameB.includes('2.0-flash')) return -1;
+            if (!nameA.includes('2.0-flash') && nameB.includes('2.0-flash')) return 1;
+            return 0;
+          });
+
           validos.forEach(m => {
             const name = m.name.replace('models/', '');
             listaTentativas.push({ apiVersion: apiVer, modelName: name });
@@ -109,19 +124,22 @@ window.testarConexaoGeminiReal = async function() {
     }
   }
 
-  if (listaTentativas.length === 0) {
-    listaTentativas = [
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-8b' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
-      { apiVersion: 'v1beta', modelName: 'gemini-pro' },
-      { apiVersion: 'v1',     modelName: 'gemini-pro' }
-    ];
-  }
+  const fallbacksSeguros = [
+    { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
+    { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
+    { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
+    { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
+    { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
+    { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
+    { apiVersion: 'v1beta', modelName: 'gemini-pro' },
+    { apiVersion: 'v1',     modelName: 'gemini-pro' }
+  ];
+
+  fallbacksSeguros.forEach(fb => {
+    if (!listaTentativas.some(t => t.apiVersion === fb.apiVersion && t.modelName === fb.modelName)) {
+      listaTentativas.push(fb);
+    }
+  });
 
   let conectou = false;
   let ultimoErro = '';
@@ -144,7 +162,7 @@ window.testarConexaoGeminiReal = async function() {
       } else {
         const err = await res.json().catch(() => ({}));
         ultimoErro = err.error?.message || `HTTP ${res.status}`;
-        if (res.status !== 404 && !ultimoErro.includes('not found')) {
+        if (res.status !== 404 && !ultimoErro.includes('not found') && !ultimoErro.includes('modalities') && !ultimoErro.includes('TEXT')) {
           break;
         }
       }

@@ -511,8 +511,9 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 
     const keyLimpa = apiKey.trim();
 
-    // 1. Tenta descobrir os modelos habilitados para a chave via GET /models (v1beta e v1)
+    // 1. Tenta descobrir os modelos habilitados para GERAR TEXTO na chave via GET /models (v1beta e v1)
     let listaTentativas = [];
+    const modelosExcluidos = ['-tts', '-audio', '-embed', 'embedding', 'bidi', 'imagen'];
     
     for (const apiVer of ['v1beta', 'v1']) {
       try {
@@ -520,9 +521,24 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
         if (resList.ok) {
           const dataList = await resList.json();
           if (dataList.models && Array.isArray(dataList.models)) {
-            const validos = dataList.models.filter(m => 
-              m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
-            );
+            const validos = dataList.models.filter(m => {
+              const name = m.name.toLowerCase();
+              const hasGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent');
+              const isExcluded = modelosExcluidos.some(e => name.includes(e));
+              return hasGenerate && !isExcluded;
+            });
+
+            // Prioriza gemini-1.5-flash e gemini-2.0-flash para resposta de texto rapida
+            validos.sort((a, b) => {
+              const nameA = a.name.toLowerCase();
+              const nameB = b.name.toLowerCase();
+              if (nameA.includes('1.5-flash') && !nameB.includes('1.5-flash')) return -1;
+              if (!nameA.includes('1.5-flash') && nameB.includes('1.5-flash')) return 1;
+              if (nameA.includes('2.0-flash') && !nameB.includes('2.0-flash')) return -1;
+              if (!nameA.includes('2.0-flash') && nameB.includes('2.0-flash')) return 1;
+              return 0;
+            });
+
             validos.forEach(m => {
               const name = m.name.replace('models/', '');
               listaTentativas.push({ apiVersion: apiVer, modelName: name });
@@ -534,20 +550,23 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       }
     }
 
-    // Se a listagem não retornou modelos, utiliza lista exaustiva de fallbacks
-    if (listaTentativas.length === 0) {
-      listaTentativas = [
-        { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
-        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
-        { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
-        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
-        { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
-        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-8b' },
-        { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
-        { apiVersion: 'v1beta', modelName: 'gemini-pro' },
-        { apiVersion: 'v1',     modelName: 'gemini-pro' }
-      ];
-    }
+    // Fallbacks de modelos de texto seguros caso a listagem falhe
+    const fallbacksSeguros = [
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
+      { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
+      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
+      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
+      { apiVersion: 'v1beta', modelName: 'gemini-pro' },
+      { apiVersion: 'v1',     modelName: 'gemini-pro' }
+    ];
+
+    fallbacksSeguros.forEach(fb => {
+      if (!listaTentativas.some(t => t.apiVersion === fb.apiVersion && t.modelName === fb.modelName)) {
+        listaTentativas.push(fb);
+      }
+    });
 
     let ultimoErro = null;
 
@@ -577,7 +596,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-          if (response.status === 404 || msgErro.includes('not found')) {
+          if (response.status === 404 || msgErro.includes('not found') || msgErro.includes('modalities') || msgErro.includes('TEXT')) {
             ultimoErro = `Modelo ${item.modelName} (${response.status}): ${msgErro}`;
             continue;
           }
@@ -593,7 +612,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 
         return respostaTexto;
       } catch (err) {
-        if (err.message && (err.message.includes('not found') || err.message.includes('404'))) {
+        if (err.message && (err.message.includes('not found') || err.message.includes('404') || err.message.includes('modalities') || err.message.includes('TEXT'))) {
           ultimoErro = err.message;
           continue;
         }
@@ -601,7 +620,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       }
     }
 
-    throw new Error(ultimoErro || "Nenhum modelo do Google Gemini respondeu com sucesso para esta API Key.");
+    throw new Error(ultimoErro || "Nenhum modelo de texto do Google Gemini respondeu com sucesso para esta API Key.");
   }
   window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
 
