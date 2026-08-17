@@ -2027,10 +2027,119 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.testarConexaoElevenLabsLive = async function() {
+    const inputKey = document.getElementById('setting-eleven-key') || 
+                     document.getElementById('setting-eleven-key-sa') || 
+                     document.getElementById('elevenlabs-api-key') || 
+                     document.querySelector('input[placeholder*="xi-"]');
+
+    const inputVoice = document.getElementById('setting-eleven-voice-id') || 
+                       document.getElementById('setting-eleven-voice-id-sa') || 
+                       document.getElementById('elevenlabs-voice-id');
+
+    const elevenKey = inputKey ? inputKey.value.trim() : '';
+    const voiceId = inputVoice ? inputVoice.value.trim() : '21m00Tcm4TlvDq8ikWAM';
+
+    const badge = document.getElementById('badge-eleven-status');
+    const badgeSa = document.getElementById('badge-eleven-status-sa');
+    const audit = document.getElementById('audit-log-eleven');
+
+    if (!elevenKey) {
+      const setUnset = (el) => {
+        if (!el) return;
+        el.innerText = '○ Voz WebSpeech Padrão';
+        el.style.background = 'rgba(148, 163, 184, 0.15)';
+        el.style.color = '#94A3B8';
+      };
+      setUnset(badge);
+      setUnset(badgeSa);
+      if (audit) audit.innerText = 'Última verificação: Nenhuma chave da ElevenLabs informada';
+      alert('⚠️ Por favor, insira a chave da ElevenLabs antes de testar.');
+      return { success: false };
+    }
+
+    const setTesting = (el) => {
+      if (!el) return;
+      el.innerText = '⏳ Validando ElevenLabs...';
+      el.style.background = 'rgba(168, 85, 247, 0.15)';
+      el.style.color = '#C084FC';
+    };
+    setTesting(badge);
+    setTesting(badgeSa);
+    if (audit) audit.innerText = 'Consultando plano e cota de caracteres na ElevenLabs...';
+
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/user', {
+        method: 'GET',
+        headers: {
+          'xi-api-key': elevenKey
+        }
+      });
+
+      const data = await res.json();
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (res.ok && data.subscription) {
+        const sub = data.subscription;
+        const tier = sub.tier || 'Starter';
+        const limit = sub.character_limit || 0;
+        const used = sub.character_count || 0;
+        const remaining = limit > 0 ? (limit - used) : 0;
+        const remainingFormatted = remaining.toLocaleString('pt-BR');
+
+        const setOk = (el) => {
+          if (!el) return;
+          el.innerText = `● ElevenLabs Ativa (${remainingFormatted} chars)`;
+          el.style.background = 'rgba(16, 185, 129, 0.15)';
+          el.style.color = '#10B981';
+        };
+        setOk(badge);
+        setOk(badgeSa);
+
+        const auditText = `Última verificação: Hoje às ${now} | Plano: ${tier} | Restantes: ${remainingFormatted} / ${limit.toLocaleString('pt-BR')} caracteres`;
+        if (audit) audit.innerText = auditText;
+
+        localStorage.setItem('ELEVENLABS_API_KEY', elevenKey);
+        localStorage.setItem('elevenlabs_api_key', elevenKey);
+        localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
+        localStorage.setItem('elevenlabs_voice_id', voiceId);
+        localStorage.setItem('elevenlabs_last_ping', now);
+
+        window.exibirToastSucesso(`✓ Conexão com ElevenLabs validada com sucesso! (${remainingFormatted} caracteres restantes)`);
+        return { success: true, tier, remaining };
+      } else {
+        const errMsg = data.detail?.message || data.message || 'Chave da ElevenLabs inválida ou sem permissão.';
+        const setErr = (el) => {
+          if (!el) return;
+          el.innerText = '✖ Chave ElevenLabs Inválida';
+          el.style.background = 'rgba(239, 68, 68, 0.15)';
+          el.style.color = '#EF4444';
+        };
+        setErr(badge);
+        setErr(badgeSa);
+        if (audit) audit.innerText = `Última verificação: Erro em ${now} (${errMsg.substring(0, 45)}...)`;
+        alert(`❌ Falha na validação ElevenLabs:\n${errMsg}`);
+        return { success: false, error: errMsg };
+      }
+    } catch (err) {
+      const setErr = (el) => {
+        if (!el) return;
+        el.innerText = '✖ Erro de Conexão ElevenLabs';
+        el.style.background = 'rgba(239, 68, 68, 0.15)';
+        el.style.color = '#EF4444';
+      };
+      setErr(badge);
+      setErr(badgeSa);
+      alert(`❌ Erro ao comunicar com a API da ElevenLabs: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  };
+
   window.testarTodasConexoes = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
     window.exibirToastSucesso("⚡ Auditando conexões de API em tempo real...");
     await window.testarConexaoGeminiLive();
+    await window.testarConexaoElevenLabsLive();
     await window.testarConexaoMetaLive();
     await window.testarConexaoGoogleAdsLive();
   };
@@ -2043,8 +2152,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('gemini-api-key') || 
                         document.querySelector('input[placeholder*="AIzaSy"]');
 
-    const elevenInput = document.getElementById('setting-eleven-key') || document.getElementById('setting-eleven-key-sa');
-    const voiceIdInput = document.getElementById('setting-eleven-voice-id') || document.getElementById('setting-eleven-voice-id-sa');
+    const elevenInput = document.getElementById('setting-eleven-key') || 
+                        document.getElementById('setting-eleven-key-sa') ||
+                        document.getElementById('elevenlabs-api-key') ||
+                        document.querySelector('input[placeholder*="xi-"]');
+
+    const voiceIdInput = document.getElementById('setting-eleven-voice-id') || 
+                         document.getElementById('setting-eleven-voice-id-sa') ||
+                         document.getElementById('elevenlabs-voice-id');
+
     const metaTokenEl = document.getElementById('setting-meta-token');
     const metaAccountEl = document.getElementById('setting-meta-account');
     const googleTokenEl = document.getElementById('setting-google-token');
@@ -2068,21 +2184,27 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('oraculum_gemini_key');
     }
 
-    if (elevenVal) localStorage.setItem('ELEVENLABS_API_KEY', elevenVal);
-    if (voiceIdVal) localStorage.setItem('ELEVENLABS_VOICE_ID', voiceIdVal);
+    if (elevenVal) {
+      localStorage.setItem('ELEVENLABS_API_KEY', elevenVal);
+      localStorage.setItem('elevenlabs_api_key', elevenVal);
+    }
+    if (voiceIdVal) {
+      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceIdVal);
+      localStorage.setItem('elevenlabs_voice_id', voiceIdVal);
+    }
     if (metaTokenVal) localStorage.setItem('META_ACCESS_TOKEN', metaTokenVal);
     if (metaAccountVal) localStorage.setItem('META_ACCOUNT_ID', metaAccountVal);
     if (googleTokenVal) localStorage.setItem('GOOGLE_ADS_DEV_TOKEN', googleTokenVal);
     if (googleCustomerVal) localStorage.setItem('GOOGLE_ADS_CUSTOMER_ID', googleCustomerVal);
 
     carregarChavesSalvas();
-    window.exibirToastSucesso("✓ Configurações salvas no Cofre com sucesso!");
+    window.exibirToastSucesso("✓ Credenciais salvas no Cofre com sucesso!");
   };
 
   function carregarChavesSalvas() {
     const savedGemini = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('oraculum_gemini_key') || '';
-    const savedEleven = localStorage.getItem('ELEVENLABS_API_KEY') || '';
-    const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
+    const savedEleven = localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key') || '';
+    const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || '21m00Tcm4TlvDq8ikWAM';
     const savedMetaToken = localStorage.getItem('META_ACCESS_TOKEN') || '';
     const savedMetaAccount = localStorage.getItem('META_ACCOUNT_ID') || '';
     const savedGoogleToken = localStorage.getItem('GOOGLE_ADS_DEV_TOKEN') || '';
@@ -2090,6 +2212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedCustom = localStorage.getItem('CUSTOM_API_KEYS');
 
     const geminiPing = localStorage.getItem('gemini_last_ping');
+    const elevenPing = localStorage.getItem('elevenlabs_last_ping');
     const metaPing = localStorage.getItem('meta_last_ping');
     const googlePing = localStorage.getItem('google_ads_last_ping');
 
@@ -2110,6 +2233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const badgeGoogleAdsStatus = document.getElementById('badge-google-ads-status');
 
     const auditGemini = document.getElementById('audit-log-gemini');
+    const auditEleven = document.getElementById('audit-log-eleven');
     const auditMeta = document.getElementById('audit-log-meta');
     const auditGoogleAds = document.getElementById('audit-log-google-ads');
 
@@ -2122,6 +2246,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingElevenKey && savedEleven) settingElevenKey.value = savedEleven;
     if (settingElevenKeySa && savedEleven) settingElevenKeySa.value = savedEleven;
 
+    const extraElevenKey = document.getElementById('elevenlabs-api-key') || document.querySelector('input[placeholder*="xi-"]');
+    if (extraElevenKey && savedEleven) extraElevenKey.value = savedEleven;
+
     if (settingElevenVoiceId) settingElevenVoiceId.value = savedVoiceId;
     if (settingElevenVoiceIdSa) settingElevenVoiceIdSa.value = savedVoiceId;
 
@@ -2131,7 +2258,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingGoogleToken && savedGoogleToken) settingGoogleToken.value = savedGoogleToken;
     if (settingGoogleCustomer && savedGoogleCustomer) settingGoogleCustomer.value = savedGoogleCustomer;
 
-    // APLICAR BADGES SEM VALORES MOCKADOS ESTÁTICOS
     const applyBadge = (el, text, isOk) => {
       if (!el) return;
       el.innerText = text;
@@ -2154,12 +2280,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (auditGemini) auditGemini.innerText = 'Última verificação: Não auditado';
     }
 
-    if (savedEleven) {
-      applyBadge(badgeElevenStatus, '● Voz Humana Ativa', true);
-      applyBadge(badgeElevenStatusSa, '● Voz Humana Ativa', true);
+    if (savedEleven && elevenPing) {
+      applyBadge(badgeElevenStatus, '● ElevenLabs Ativa', true);
+      applyBadge(badgeElevenStatusSa, '● ElevenLabs Ativa', true);
+      if (auditEleven) auditEleven.innerText = `Última verificação: ${elevenPing} | Credenciais Validadas`;
+    } else if (savedEleven) {
+      applyBadge(badgeElevenStatus, '● Credenciais Salvas', true);
+      applyBadge(badgeElevenStatusSa, '● Credenciais Salvas', true);
+      if (auditEleven) auditEleven.innerText = 'Última verificação: Clique em Testar Conexão';
     } else {
       applyBadge(badgeElevenStatus, '○ Voz WebSpeech Padrão', false);
       applyBadge(badgeElevenStatusSa, '○ Voz WebSpeech Padrão', false);
+      if (auditEleven) auditEleven.innerText = 'Última verificação: Não auditado';
     }
 
     if (savedMetaToken && metaPing) {
