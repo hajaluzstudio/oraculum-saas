@@ -183,6 +183,9 @@
     if (remetente === 'usuario') {
       msgDiv.style.cssText = 'background: rgba(127, 0, 255, 0.2); border: 1px solid rgba(127, 0, 255, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #C084FC; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
+    } else if (remetente === 'erro') {
+      msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px; color: #FCA5A5; margin-right: 16px;';
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
     } else {
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #38BDF8; font-weight: bold; margin: 0 0 4px;">🔮 Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
@@ -498,9 +501,10 @@
     const systemInstructionText = "Você é o Oráculo Live Advisor, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
 
     const promptCompleto = `
-Você é o Oráculo Live Advisor, uma inteligência artificial viva, natural e estratégica.
-Responda sempre em PORTUGUÊS DO BRASIL (PT-BR).
-Converse com o usuário de forma fluida, humana e inteligente, adaptando-se a qualquer pergunta, saudação ou análise sem usar respostas pré-programadas ou textos fixos.
+[INSTRUÇÃO DE SISTEMA E PERSONA DO ORÁCULO]
+Você é o Oráculo Live Advisor, uma inteligência artificial viva, natural, humana e estratégica.
+Responda SEMPRE em PORTUGUÊS DO BRASIL (PT-BR).
+Converse com o usuário de forma fluida e inteligente, adaptando-se a qualquer pergunta, saudação ou análise sem usar respostas pré-programadas ou textos fixos.
 
 [DADOS CONTEXTUAIS DA CONTA DO CLIENTE]
 ${JSON.stringify(contextoBI, null, 2)}
@@ -577,9 +581,6 @@ Mensagem do Usuário: "${perguntaUsuario}"
         const url = `https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`;
 
         const payloadBody = {
-          systemInstruction: {
-            parts: [{ text: systemInstructionText }]
-          },
           contents: [
             {
               role: "user",
@@ -591,6 +592,12 @@ Mensagem do Usuário: "${perguntaUsuario}"
             maxOutputTokens: 800
           }
         };
+
+        if (item.apiVersion === 'v1beta' && !item.modelName.includes('gemini-pro')) {
+          payloadBody.systemInstruction = {
+            parts: [{ text: systemInstructionText }]
+          };
+        }
 
         const response = await fetch(url, {
           method: 'POST',
