@@ -214,16 +214,15 @@
             if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
           }
 
-          const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenVoiceId}`, {
+          const res = await fetch('/api/tts', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'xi-api-key': elevenKey.trim()
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               text: formatado,
-              model_id: "eleven_multilingual_v2",
-              voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+              voiceId: elevenVoiceId,
+              apiKey: elevenKey.trim()
             })
           });
 

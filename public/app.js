@@ -2087,40 +2087,30 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Feedback de carregamento
     const btnTest = document.getElementById('btn-test-elevenlabs') || document.getElementById('btn-test-eleven-voice');
-    if (btnTest) btnTest.innerText = "⏳ Gerando Áudio Neural...";
+    if (btnTest) btnTest.innerText = "⏳ Gerando Áudio...";
 
     try {
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      const response = await fetch('/api/tts', {
         method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': apiKey
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: "Conexão estabelecida com sucesso. O Oráculo Live Advisor agora possui voz humana ultra-realista.",
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.8
-          }
+          voiceId: voiceId,
+          apiKey: apiKey
         })
       });
 
       if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.detail?.message || `Status HTTP ${response.status}`);
+        const errText = await response.text();
+        throw new Error(errText || `Erro HTTP ${response.status}`);
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
       const audio = new Audio(audioUrl);
-      
       audio.play();
 
-      // Salva automaticamente após validação positiva
       localStorage.setItem('ELEVENLABS_API_KEY', apiKey);
       localStorage.setItem('elevenlabs_api_key', apiKey);
       localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
@@ -2128,7 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const setOk = (el) => {
         if (!el) return;
-        el.innerText = '● ElevenLabs Validada (Voz Ativa)';
+        el.innerText = '● ElevenLabs Validada (Proxy TTS)';
         el.style.background = 'rgba(16, 185, 129, 0.15)';
         el.style.color = '#10B981';
       };
@@ -2136,16 +2126,15 @@ document.addEventListener('DOMContentLoaded', () => {
       setOk(badgeSa);
 
       const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Amostra de áudio gerada com sucesso (${voiceId})`;
+      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Áudio gerado via Proxy /api/tts (${voiceId})`;
 
       if (typeof window.exibirToastSucesso === 'function') {
         window.exibirToastSucesso("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
       } else {
         alert("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
       }
-
-    } catch (error) {
-      console.error("Erro ElevenLabs:", error);
+    } catch (err) {
+      console.error("Erro ElevenLabs:", err);
       const setErr = (el) => {
         if (!el) return;
         el.innerText = '✖ Chave ElevenLabs Inválida';
@@ -2155,9 +2144,9 @@ document.addEventListener('DOMContentLoaded', () => {
       setErr(badge);
       setErr(badgeSa);
 
-      alert(`Erro na validação ElevenLabs: ${error.message}\nVerifique se a chave possui créditos gratuitos ativos.`);
+      alert(`Erro na validação ElevenLabs: ${err.message}`);
     } finally {
-      if (btnTest) btnTest.innerText = "⚡ Testar Conexão / Ouvir Amostra";
+      if (btnTest) btnTest.innerText = "⚡ Testar Conexão";
     }
   };
 
