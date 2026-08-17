@@ -1,9 +1,9 @@
 // =======================================================
-// ORÁCULO LIVE ADVISOR - BI FEEDBACK LOOP (VERSÃO ROBUSTA & DESBLOQUEADA)
+// ORÁCULO LIVE ADVISOR - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
 // =======================================================
 
 (function () {
-  console.log("Inicializando Oráculo Live Advisor HD...");
+  console.log("Inicializando Oráculo Live Advisor Completo...");
 
   let isProcessando = false;
   let gravando = false;
@@ -73,7 +73,7 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" id="btn-summary-shortcut" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(127,0,255,0.2); color: #C084FC; border: 1px solid rgba(127,0,255,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
+          <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(127,0,255,0.2); color: #C084FC; border: 1px solid rgba(127,0,255,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
             ⚡ Resumo Geral
           </button>
           <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 22px; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -82,7 +82,7 @@
 
       <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
         <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px; color: #CBD5E1; line-height: 1.5;">
-          👋 Olá! Sou o <strong>Oráculo</strong>. Estou acompanhando os dados desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo durante a reunião.
+          👋 Olá! Sou o <strong>Oráculo</strong>. Estou acompanhando os dados de BI desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo.
         </div>
       </div>
 
@@ -99,13 +99,13 @@
           <button type="button" id="btn-toggle-mic" onclick="window.alternarMicrofone()" style="padding: 10px 12px; background: #1E293B; color: #FFF; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; cursor: pointer; font-size: 14px;" title="Falar por voz">
             🎙️
           </button>
-          <input type="text" id="oraculo-input-text" placeholder="Pergunte sobre ROI, CAC, conversão..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; color: #FFF; font-size: 12px; outline: none;">
+          <input type="text" id="oraculo-input-text" placeholder="Pergunte sobre ROI, CAC, conversão, ROAS..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; color: #FFF; font-size: 12px; outline: none;">
           <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
             ➤
           </button>
         </form>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B; padding: 0 4px;">
-          <span>Oráculo Intelligence Core</span>
+          <span>Gemini Live Neural Engine</span>
           <button type="button" onclick="window.salvarConversaNaAta()" style="background: transparent; border: none; color: #C084FC; cursor: pointer; text-decoration: underline;">Salvar na Ata</button>
         </div>
       </div>
@@ -157,7 +157,7 @@
   function extrairContextoCompletoBI() {
     try {
       return {
-        cliente: document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente em Apresentação',
+        cliente: document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente Ativo',
         faturamento: document.getElementById('bi-val-revenue')?.innerText || document.getElementById('bi-total-revenue')?.innerText || 'R$ 0,00',
         gastoTrafego: document.getElementById('bi-val-spend')?.innerText || document.getElementById('bi-ad-spend')?.innerText || 'R$ 0,00',
         roas: document.getElementById('bi-val-roas')?.innerText || document.getElementById('bi-roas-val')?.innerText || '0.0x',
@@ -235,7 +235,7 @@
   window.alternarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Seu navegador não suporta reconhecimento de voz direto. Utilize o Google Chrome ou Edge.");
+      alert("Seu navegador não suporta microfone direto. Use Chrome ou Edge.");
       return;
     }
 
