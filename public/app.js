@@ -2135,6 +2135,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  async function testarVozElevenLabs(textoDemo, voiceId, apiKey) {
+    if (!apiKey || apiKey.trim() === '') {
+      alert("⚠️ Chave de API da ElevenLabs não encontrada! Verifique as configurações.");
+      return;
+    }
+    
+    if (!voiceId || voiceId.trim() === '') {
+      alert("⚠️ Nenhum Voice ID selecionado!");
+      return;
+    }
+
+    try {
+      console.log("Iniciando requisição para ElevenLabs...");
+      const cleanKey = apiKey.trim();
+      const cleanVoiceId = voiceId.trim();
+      const demoText = textoDemo || "Olá! Este é um teste de voz com Inteligência Artificial da ElevenLabs.";
+
+      let response;
+      try {
+        response = await fetch('/api/elevenlabs-tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: demoText,
+            apiKey: cleanKey,
+            voiceId: cleanVoiceId
+          })
+        });
+      } catch (proxyErr) {
+        console.warn("Proxy /api/elevenlabs-tts indisponível, tentando chamada direta...", proxyErr);
+      }
+
+      if (!response || !response.ok) {
+        response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${cleanVoiceId}`, {
+          method: "POST",
+          headers: {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": cleanKey
+          },
+          body: JSON.stringify({
+            text: demoText,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75
+            }
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Erro retornado pela ElevenLabs:", response.status, errorData);
+        alert(`❌ Erro da API ElevenLabs (${response.status}): ${errorData?.detail?.message || response.statusText}`);
+        return;
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      await audio.play();
+      console.log("Áudio ElevenLabs reproduzido com sucesso!");
+
+    } catch (error) {
+      console.error("Erro na requisição ElevenLabs:", error);
+      alert("❌ Falha de rede/CORS ao tentar conectar com a ElevenLabs. Verifique o console.");
+    }
+  }
+  window.testarVozElevenLabs = testarVozElevenLabs;
+
   function reproduzirVozNativaHD(texto) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
