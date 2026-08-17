@@ -480,24 +480,22 @@
   };
 
   async function perguntarAoOraculoGemini(perguntaUsuario, contextoBI = {}, historico = []) {
-    let apiKey = '';
-    if (typeof window.getGeminiKey === 'function') {
+    let apiKey = localStorage.getItem('GEMINI_API_KEY') || 
+                 localStorage.getItem('gemini_api_key') || 
+                 localStorage.getItem('custom_gemini_api_key') || 
+                 localStorage.getItem('oraculum_gemini_key') || '';
+
+    if (!apiKey && typeof window.getGeminiKey === 'function') {
       apiKey = await window.getGeminiKey();
-    } else {
-      apiKey = localStorage.getItem('GEMINI_API_KEY') || 
-               localStorage.getItem('custom_gemini_api_key') || 
-               localStorage.getItem('gemini_api_key') || 
-               localStorage.getItem('oraculum_gemini_key') || 
-               window.ENV_GEMINI_API_KEY || '';
     }
-    
-    if (!apiKey) {
+
+    if (!apiKey || !apiKey.trim()) {
       throw new Error("Chave da API do Gemini não configurada em Configurações API.");
     }
 
     const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message || h.content}`).join('\n');
 
-    const promptSistema = `
+    const promptCompleto = `
 Você é o Oráculo Live Advisor, o Chief Marketing Officer (CMO) e Diretor de Performance e Inteligência de Marketing da Agência.
 Seu objetivo é analisar dados de tráfego pago, CAC, ROAS, ROI, LTV e conversão com tom executivo, direto, confiante e altamente estratégico.
 Responda sempre em Português do Brasil com foco em retorno financeiro, gestão de risco e escala previsível de negócios.
@@ -519,9 +517,12 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: promptSistema }]
-        }],
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: promptCompleto }]
+          }
+        ],
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 800
@@ -531,15 +532,15 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const msgErro = errorData.error?.message || `Erro HTTP ${response.status}: ${response.statusText}`;
-      throw new Error(`API Gemini (${response.status}): ${msgErro}`);
+      const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(`Google Gemini (${response.status}): ${msgErro}`);
     }
 
     const data = await response.json();
     const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!respostaTexto) {
-      throw new Error("A API do Gemini não retornou texto válido.");
+      throw new Error("O Gemini não retornou texto válido no campo candidates[0].content.parts[0].text.");
     }
 
     return respostaTexto;
@@ -601,8 +602,8 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
 
-      // EXIBE O ERRO REAL NA TELA SEM MOCK DE FALLBACK
-      adicionarAoFeed('erro', err.message || "Falha ao conectar com o Google Gemini. Verifique sua API Key.");
+      // EXIBE O ERRO REAL NA TELA EM VERMELHO SEM MOCK
+      adicionarAoFeed('erro', `Erro na API do Oráculo: ${err.message}`);
     } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
