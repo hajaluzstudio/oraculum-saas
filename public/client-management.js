@@ -192,27 +192,39 @@ window.salvarCliente = async function(e) {
     const client = getSupabaseClient();
     let savedInSupa = false;
 
-    if (client) {
-      try {
-        if (id) {
-          const { error } = await client.from('clients').update({
+    try {
+      if (id) {
+        // A API atual não tem PUT /api/clients/:id, então vamos tentar direto no supabase
+        // Mas como RLS bloqueia anon, enviamos via POST para a API ou usamos o mock
+        const { error } = await client.from('clients').update({
+          name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+          meta_ad_account_id, meta_pixel_id, google_customer_id,
+          updated_at: new Date().toISOString()
+        }).eq('id', id);
+        if (!error) savedInSupa = true;
+      } else {
+        // Para novo cliente, usamos a API Backend que roda com SERVICE_ROLE e burla o RLS
+        const response = await fetch('/api/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-organization-id': activeTenantId
+          },
+          body: JSON.stringify({
             name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-            meta_ad_account_id, meta_pixel_id, google_customer_id,
-            updated_at: new Date().toISOString()
-          }).eq('id', id);
-          if (!error) savedInSupa = true;
+            meta_ad_account_id, meta_pixel_id, google_customer_id
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok && !data.error) {
+          savedInSupa = true;
         } else {
-          const newId = 'client_' + Date.now();
-          const { error } = await client.from('clients').insert([{
-            id: newId, organization_id: activeTenantId, name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-            meta_ad_account_id, meta_pixel_id, google_customer_id,
-            status: 'active'
-          }]);
-          if (!error) savedInSupa = true;
+          console.error("Erro da API:", data.error);
         }
-      } catch (supaErr) {
-        console.warn("[ClientManagement] Falha ao salvar no Supabase, caindo para cache local:", supaErr);
       }
+    } catch (supaErr) {
+      console.warn("[ClientManagement] Falha ao salvar no Supabase (Backend/RLS), caindo para cache local:", supaErr);
     }
 
     if (!savedInSupa) {

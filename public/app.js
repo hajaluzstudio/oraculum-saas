@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   })();
 
-  // Configuração e Inicialização Segura da Instância do Supabase (Sem SyntaxError)
+  // Configuração e Inicialização Segura da Instância do Supabase
   if (!window.supabaseClient) {
-    const SUPABASE_URL = window.ENV_SUPABASE_URL || 'https://xyz.supabase.co';
-    const SUPABASE_ANON_KEY = window.ENV_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+    const SUPABASE_URL = window.ENV_SUPABASE_URL || 'https://dlxwnzzfomdygrnxnfcs.supabase.co';
+    const SUPABASE_ANON_KEY = window.ENV_SUPABASE_ANON_KEY || 'sb_publishable_SZwqZHoCZiHXJ53q8nVM-A_3WDgh7et';
     if (typeof supabase !== 'undefined' && supabase.createClient) {
       window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
