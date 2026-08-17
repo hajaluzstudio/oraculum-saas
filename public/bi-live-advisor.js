@@ -802,7 +802,7 @@ ${textoOraculo}`;
 
       const contexto = extrairContextoCompletoBI();
       const clientId = contexto.cliente || 'cliente_ativo';
-      localStorage.setItem(\`oraculum_war_room_\${clientId}\`, JSON.stringify(jsonData));
+      localStorage.setItem(`oraculum_war_room_${clientId}`, JSON.stringify(jsonData));
 
       // Atualizar a interface do War Room
       if (typeof window.renderWarRoomData === 'function') {
