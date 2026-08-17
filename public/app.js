@@ -69,17 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
       title: 'Chat Estratégico de Co-Criação',
       subtitle: 'Interaja diretamente com o Oraculum de IA para justificar táticas, briefings e orçamento.'
     },
-    'tab-scripts': {
-      title: 'Gerador Autônomo de Roteiros & Teleprompter',
-      subtitle: 'Estruturação preditiva segundo a segundo com foco em retenção dos 3s e gravação em estúdio.'
-    },
     'tab-lp': {
       title: 'Construtor Autônomo de Landing Pages de Alta Conversão',
       subtitle: 'Geração por IA de páginas responsivas com psicologia de consumo e formulário de captura VIP.'
-    },
-    'tab-vision': {
-      title: 'AI Creative Scoring (Visão Computacional)',
-      subtitle: 'Avaliação multimídia quadro a quadro com foco cirúrgico no Hook dos primeiros 3 segundos.'
     },
     'tab-drive': {
       title: 'Esteira Autônoma do Google Drive & Kanban',
@@ -4701,14 +4693,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Função para abrir o teleprompter da Sala de Operação
   window.abrirTeleprompterWR = function() {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
-    const btnScripts = document.getElementById('btn-tab-scripts');
-    const tabScripts = document.getElementById('tab-scripts');
-    if(btnScripts) btnScripts.classList.add('active');
-    if(tabScripts) tabScripts.classList.add('active');
-    document.getElementById('page-title').textContent = 'Roteiros & Teleprompter';
-    document.getElementById('page-subtitle').textContent = 'Grave vídeos com teleprompter embutido.';
+    // Redireciona para a Sala de Operação -> Vídeo
+    document.getElementById('btn-tab-war-room').click();
+    const wrVideoBtn = document.querySelector('[data-wr-target="wr-video"]');
+    if (wrVideoBtn) wrVideoBtn.click();
+    
+    // Rola a página para a seção do teleprompter
+    setTimeout(() => {
+      const teleprompterSection = document.getElementById('script-output-container');
+      if (teleprompterSection) {
+        teleprompterSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 300);
   };
 
   window.renderWarRoomData = function(clientId) {
