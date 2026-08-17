@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
@@ -106,6 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       const targetTab = item.getAttribute('data-tab');
+
+      if (targetTab === 'tab-settings' && typeof window.isUserMasterAdmin === 'function') {
+        if (!window.isUserMasterAdmin()) {
+          alert('🔒 Acesso Restrito: A seção de Configurações & APIs é exclusiva para Administradores Master.');
+          return;
+        }
+      }
 
       navItems.forEach(n => n.classList.remove('active'));
       item.classList.add('active');
