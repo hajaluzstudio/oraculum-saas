@@ -1059,28 +1059,34 @@
                 <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: #6366F1;"></i> Google Gemini AI API</h3>
                 <p>Motor neural para o Oráculo Live Advisor e raciocínio analítico preditivo.</p>
               </div>
-              <span id="badge-gemini-status" class="badge-tag" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B;">Modo Fallback Local</span>
+              <span id="badge-gemini-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">○ Não Configurado</span>
             </div>
             <div style="margin-top: 14px;">
               <div class="form-group" style="position: relative;">
                 <label for="setting-gemini-key">API Key (Google AI Studio)</label>
                 <div style="position: relative; display: flex; align-items: center;">
                   <input type="password" id="setting-gemini-key" placeholder="AIzaSy... (Chave API do Google Studio)" style="padding-right: 44px; width: 100%;">
-                  <button type="button" onclick="window.alternarVisibilidadeChave('setting-gemini-key', this)" title="Mostrar/Ocultar Chave" style="position: absolute; right: 10px; background: transparent; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 6px; display: flex; align-items: center; justify-content: center;">
+                  <button type="button" onclick="window.alternarVisibilidadeChave('setting-gemini-key', this)" title="Mostrar/Ocultar Chave" style="position: absolute; right: 10px; background: transparent; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 6px;">
                     <i class="fa-solid fa-eye"></i>
                   </button>
                 </div>
               </div>
+              <div id="audit-log-gemini" style="font-size: 11px; color: #94A3B8; margin-top: 4px;">Última verificação: Não auditado</div>
+
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                  <span style="color: #94A3B8; font-size: 12px;">Obtenha uma chave gratuita no Google AI Studio.</span>
                   <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" style="color: #818CF8; text-decoration: underline; font-size: 12px;">
                     Gerar Chave no Google AI Studio <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
                   </a>
                 </div>
-                <button id="btn-save-api-keys" type="button" onclick="window.salvarChavesAPI(event)" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-semibold text-xs shadow-lg flex items-center gap-2 transition-all" style="background: linear-gradient(135deg, #7F00FF, #4F46E5); border: none; border-radius: 12px; padding: 10px 20px; color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
-                  <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Chaves de API
-                </button>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" onclick="window.testarConexaoGeminiLive()" class="btn-secondary sm" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Testar Conexão
+                  </button>
+                  <button id="btn-save-api-keys" type="button" onclick="window.salvarChavesAPI(event)" style="background: linear-gradient(135deg, #7F00FF, #4F46E5); border: none; border-radius: 10px; padding: 8px 16px; color: #FFF; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+                    <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Chaves de API
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1092,7 +1098,7 @@
                 <h3><i class="fa-solid fa-volume-high" style="color: #A855F7;"></i> ElevenLabs TTS (Voz Humana Ultra-Realista)</h3>
                 <p>Sintetizador neural em HD com entonação humana natural para respostas faladas ao vivo.</p>
               </div>
-              <span id="badge-eleven-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">Voz WebSpeech Padrão</span>
+              <span id="badge-eleven-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">○ Voz WebSpeech Padrão</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px;">
               <div class="form-group">
@@ -1138,7 +1144,7 @@
 
           <!-- 4. CREDENCIAIS META ADS E GOOGLE ADS -->
           <div class="card-glass">
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <h3><i class="fa-solid fa-key"></i> Configurações & Credenciais de API de Tráfego</h3>
                 <p>Cadastre de forma segura os tokens do Meta Ads e Google Ads exigidos pelo `biTracker.ts`.</p>
@@ -1146,41 +1152,67 @@
               <span class="badge-tag" style="background: rgba(0, 242, 254, 0.15); color: #00F2FE;">COFRE RLS</span>
             </div>
 
-            <form id="form-ad-credentials" style="display: flex; flexDirection: column; gap: 20px; margin-top: 16px;">
+            <form id="form-ad-credentials" style="display: flex; flex-direction: column; gap: 20px; margin-top: 16px;">
               <!-- META ADS MARKETING API -->
               <div style="background: rgba(255,255,255,0.03); padding: 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-                <h4 style="color: #1877F2; margin-bottom: 12px;"><i class="fa-brands fa-facebook"></i> Meta Marketing API Access Token</h4>
-                <div class="form-group">
-                  <label for="setting-meta-token">Meta Marketing Access Token *</label>
-                  <input type="password" id="setting-meta-token" placeholder="EAAXXXXX... (Access Token do Usuário de Sistema)" value="EAAGm0PXz...sampleToken" required>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h4 style="color: #1877F2; margin: 0;"><i class="fa-brands fa-facebook"></i> Meta Marketing API Access Token</h4>
+                  <span id="badge-meta-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">○ Não Configurado</span>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
+                  <label for="setting-meta-token">Meta Marketing Access Token *</label>
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="setting-meta-token" placeholder="EAAXXXXX... (Access Token do Usuário de Sistema)" style="padding-right: 44px; width: 100%;">
+                    <button type="button" onclick="window.alternarVisibilidadeChave('setting-meta-token', this)" title="Mostrar/Ocultar Chave" style="position: absolute; right: 10px; background: transparent; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 6px;">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
                   <label for="setting-meta-account">Meta Ad Account ID *</label>
-                  <input type="text" id="setting-meta-account" placeholder="act_123456789012345" value="act_9876543210" required>
+                  <input type="text" id="setting-meta-account" placeholder="act_123456789012345">
+                </div>
+                <div id="audit-log-meta" style="font-size: 11px; color: #94A3B8; margin-top: 6px;">Última verificação: Não auditado</div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                  <button type="button" onclick="window.testarConexaoMetaLive()" class="btn-secondary sm" style="background: rgba(24, 119, 242, 0.15); color: #38BDF8; border: 1px solid rgba(24, 119, 242, 0.3); font-size: 11px; padding: 6px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Testar Conexão Meta Ads
+                  </button>
                 </div>
               </div>
 
               <!-- GOOGLE ADS API -->
               <div style="background: rgba(255,255,255,0.03); padding: 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
-                <h4 style="color: #EA4335; margin-bottom: 12px;"><i class="fa-brands fa-google"></i> Google Ads Developer Token</h4>
-                <div class="form-group">
-                  <label for="setting-google-token">Google Ads Developer Token *</label>
-                  <input type="password" id="setting-google-token" placeholder="ABcdeFghIJklmNOpq... (Developer Token)" value="ABcdeFghIJklmNOpqSample" required>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h4 style="color: #EA4335; margin: 0;"><i class="fa-brands fa-google"></i> Google Ads Developer Token</h4>
+                  <span id="badge-google-ads-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">○ Não Configurado</span>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
+                  <label for="setting-google-token">Google Ads Developer Token *</label>
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="setting-google-token" placeholder="ABcdeFghIJklmNOpq... (Developer Token)" style="padding-right: 44px; width: 100%;">
+                    <button type="button" onclick="window.alternarVisibilidadeChave('setting-google-token', this)" title="Mostrar/Ocultar Chave" style="position: absolute; right: 10px; background: transparent; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 6px;">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
                   <label for="setting-google-customer">Google Ads Customer ID *</label>
-                  <input type="text" id="setting-google-customer" placeholder="123-456-7890" value="555-123-4567" required>
+                  <input type="text" id="setting-google-customer" placeholder="123-456-7890">
+                </div>
+                <div id="audit-log-google-ads" style="font-size: 11px; color: #94A3B8; margin-top: 6px;">Última verificação: Não auditado</div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                  <button type="button" onclick="window.testarConexaoGoogleAdsLive()" class="btn-secondary sm" style="background: rgba(234, 67, 53, 0.15); color: #F87171; border: 1px solid rgba(234, 67, 53, 0.3); font-size: 11px; padding: 6px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Testar Conexão Google Ads
+                  </button>
                 </div>
               </div>
 
-              <div id="settings-status-box" style="display: none; padding: 12px; border-radius: 8px; font-size: 13px;"></div>
-
               <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button type="button" class="btn-secondary" id="btn-test-api-credentials">
-                  <i class="fa-solid fa-bolt"></i> Testar Conexão de API
+                <button type="button" class="btn-secondary" id="btn-test-api-credentials" onclick="window.testarTodasConexoes(event)">
+                  <i class="fa-solid fa-bolt"></i> ⚡ Testar Todas as Conexões
                 </button>
-                <button type="submit" class="btn-primary" id="btn-save-api-credentials">
-                  <i class="fa-solid fa-lock"></i> Salvar Credenciais no Cofre RLS
+                <button type="submit" class="btn-primary" id="btn-save-api-credentials" style="background: linear-gradient(135deg, #7F00FF, #E100FF);">
+                  <i class="fa-solid fa-lock"></i> 💾 Salvar Configurações no Cofre RLS
                 </button>
               </div>
             </form>

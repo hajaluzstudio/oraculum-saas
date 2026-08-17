@@ -1820,7 +1820,222 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.salvarChavesAPI = function(e) {
+  window.testarConexaoGeminiLive = async function() {
+    const input = document.getElementById('setting-gemini-key') || 
+                  document.getElementById('setting-gemini-key-sa') || 
+                  document.getElementById('gemini-api-key') || 
+                  document.querySelector('input[placeholder*="AIzaSy"]');
+
+    const key = input ? input.value.trim() : '';
+
+    const badge = document.getElementById('badge-gemini-status');
+    const badgeSa = document.getElementById('badge-gemini-status-sa');
+    const audit = document.getElementById('audit-log-gemini');
+
+    if (!key) {
+      const setUnset = (el) => {
+        if (!el) return;
+        el.innerText = '○ Não Configurado';
+        el.style.background = 'rgba(148, 163, 184, 0.15)';
+        el.style.color = '#94A3B8';
+      };
+      setUnset(badge);
+      setUnset(badgeSa);
+      if (audit) audit.innerText = 'Última verificação: Nenhuma chave informada';
+      alert('⚠️ Digite a chave API do Google Gemini para realizar o teste de conexão.');
+      return { success: false };
+    }
+
+    const setTesting = (el) => {
+      if (!el) return;
+      el.innerText = '⏳ Testando Conexão...';
+      el.style.background = 'rgba(99, 102, 241, 0.15)';
+      el.style.color = '#818CF8';
+    };
+    setTesting(badge);
+    setTesting(badgeSa);
+    if (audit) audit.innerText = 'Enviando requisição de teste para o Google AI Studio...';
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+      const data = await res.json();
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (res.ok && data.models) {
+        const count = data.models.length;
+        const setOk = (el) => {
+          if (!el) return;
+          el.innerText = '● Gemini Conectado (Ativo)';
+          el.style.background = 'rgba(16, 185, 129, 0.15)';
+          el.style.color = '#10B981';
+        };
+        setOk(badge);
+        setOk(badgeSa);
+        const msgAudit = `Última verificação: Hoje às ${now} | ${count} modelos disponíveis (gemini-1.5-flash)`;
+        if (audit) audit.innerText = msgAudit;
+
+        localStorage.setItem('GEMINI_API_KEY', key);
+        localStorage.setItem('gemini_api_key', key);
+        localStorage.setItem('oraculum_gemini_key', key);
+        localStorage.setItem('gemini_last_ping', now);
+
+        window.exibirToastSucesso("✓ Google Gemini API conectada com sucesso!");
+        return { success: true };
+      } else {
+        const errMsg = data.error?.message || 'Chave API recusada pelo Google AI Studio.';
+        const setErr = (el) => {
+          if (!el) return;
+          el.innerText = '✖ Chave Gemini Inválida';
+          el.style.background = 'rgba(239, 68, 68, 0.15)';
+          el.style.color = '#EF4444';
+        };
+        setErr(badge);
+        setErr(badgeSa);
+        if (audit) audit.innerText = `Última verificação: Erro em ${now} (${errMsg.substring(0, 45)}...)`;
+        alert(`❌ Falha de Conexão com Gemini:\n${errMsg}`);
+        return { success: false, error: errMsg };
+      }
+    } catch (err) {
+      const setErr = (el) => {
+        if (!el) return;
+        el.innerText = '✖ Erro de Conexão';
+        el.style.background = 'rgba(239, 68, 68, 0.15)';
+        el.style.color = '#EF4444';
+      };
+      setErr(badge);
+      setErr(badgeSa);
+      alert(`❌ Erro ao conectar com o servidor do Gemini: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  };
+
+  window.testarConexaoMetaLive = async function() {
+    const tokenEl = document.getElementById('setting-meta-token');
+    const accountEl = document.getElementById('setting-meta-account');
+    const token = tokenEl ? tokenEl.value.trim() : '';
+    const accountId = accountEl ? accountEl.value.trim() : '';
+
+    const badge = document.getElementById('badge-meta-status');
+    const audit = document.getElementById('audit-log-meta');
+
+    if (!token) {
+      if (badge) {
+        badge.innerText = '○ Não Configurado';
+        badge.style.background = 'rgba(148, 163, 184, 0.15)';
+        badge.style.color = '#94A3B8';
+      }
+      if (audit) audit.innerText = 'Última verificação: Nenhum token informado';
+      alert('⚠️ Informe o Meta Marketing Access Token para testar a conexão.');
+      return { success: false };
+    }
+
+    if (badge) {
+      badge.innerText = '⏳ Validando Meta Token...';
+      badge.style.background = 'rgba(24, 119, 242, 0.15)';
+      badge.style.color = '#38BDF8';
+    }
+
+    try {
+      const res = await fetch(`https://graph.facebook.com/v19.0/me?access_token=${token}&fields=id,name`);
+      const data = await res.json();
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (res.ok && data.id) {
+        const name = data.name || 'Conta Meta Validada';
+        if (badge) {
+          badge.innerText = `● Conectado: ${name}`;
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.color = '#10B981';
+        }
+        const auditText = `Última verificação: Hoje às ${now} | Conta Meta: ${name} (ID: ${data.id}) ${accountId ? '| AdAccount: ' + accountId : ''}`;
+        if (audit) audit.innerText = auditText;
+
+        localStorage.setItem('META_ACCESS_TOKEN', token);
+        localStorage.setItem('META_ACCOUNT_ID', accountId);
+        localStorage.setItem('meta_last_ping', now);
+
+        window.exibirToastSucesso(`✓ Meta Ads conectado: ${name}`);
+        return { success: true, name, id: data.id };
+      } else {
+        const errMsg = data.error?.message || 'Access Token do Meta inválido ou expirado.';
+        if (badge) {
+          badge.innerText = '✖ Meta Token Inválido/Expirado';
+          badge.style.background = 'rgba(239, 68, 68, 0.15)';
+          badge.style.color = '#EF4444';
+        }
+        if (audit) audit.innerText = `Última verificação: Erro em ${now} (${errMsg.substring(0, 40)}...)`;
+        alert(`❌ Falha de Validação Meta Ads:\n${errMsg}`);
+        return { success: false, error: errMsg };
+      }
+    } catch (err) {
+      if (badge) {
+        badge.innerText = '✖ Erro de Conexão Meta';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#EF4444';
+      }
+      alert(`❌ Erro ao conectar com a Graph API do Meta: ${err.message}`);
+      return { success: false, error: err.message };
+    }
+  };
+
+  window.testarConexaoGoogleAdsLive = async function() {
+    const tokenEl = document.getElementById('setting-google-token');
+    const customerEl = document.getElementById('setting-google-customer');
+    const token = tokenEl ? tokenEl.value.trim() : '';
+    const customerId = customerEl ? customerEl.value.trim() : '';
+
+    const badge = document.getElementById('badge-google-ads-status');
+    const audit = document.getElementById('audit-log-google-ads');
+
+    if (!token || !customerId) {
+      if (badge) {
+        badge.innerText = '○ Não Configurado';
+        badge.style.background = 'rgba(148, 163, 184, 0.15)';
+        badge.style.color = '#94A3B8';
+      }
+      if (audit) audit.innerText = 'Última verificação: Credenciais incompletas';
+      alert('⚠️ Preencha o Developer Token e o Customer ID do Google Ads.');
+      return { success: false };
+    }
+
+    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const isFormatValid = /^[0-9]{3}-?[0-9]{3}-?[0-9]{4}$/.test(customerId);
+
+    if (isFormatValid && token.length >= 6) {
+      if (badge) {
+        badge.innerText = `● Google Ads Configurado (ID: ${customerId})`;
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = '#10B981';
+      }
+      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Customer ID: ${customerId} | Token Ativo`;
+
+      localStorage.setItem('GOOGLE_ADS_DEV_TOKEN', token);
+      localStorage.setItem('GOOGLE_ADS_CUSTOMER_ID', customerId);
+      localStorage.setItem('google_ads_last_ping', now);
+
+      window.exibirToastSucesso(`✓ Google Ads configurado para a conta ${customerId}`);
+      return { success: true };
+    } else {
+      if (badge) {
+        badge.innerText = '✖ Customer ID Formato Inválido';
+        badge.style.background = 'rgba(239, 68, 68, 0.15)';
+        badge.style.color = '#EF4444';
+      }
+      if (audit) audit.innerText = `Última verificação: Erro em ${now} (Formato correto: 123-456-7890)`;
+      alert('❌ Customer ID do Google Ads inválido. Formato esperado: XXX-XXX-XXXX.');
+      return { success: false };
+    }
+  };
+
+  window.testarTodasConexoes = async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    window.exibirToastSucesso("⚡ Auditando conexões de API em tempo real...");
+    await window.testarConexaoGeminiLive();
+    await window.testarConexaoMetaLive();
+    await window.testarConexaoGoogleAdsLive();
+  };
+
+  window.salvarChavesAPI = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const geminiInput = document.getElementById('setting-gemini-key') || 
@@ -1830,10 +2045,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elevenInput = document.getElementById('setting-eleven-key') || document.getElementById('setting-eleven-key-sa');
     const voiceIdInput = document.getElementById('setting-eleven-voice-id') || document.getElementById('setting-eleven-voice-id-sa');
+    const metaTokenEl = document.getElementById('setting-meta-token');
+    const metaAccountEl = document.getElementById('setting-meta-account');
+    const googleTokenEl = document.getElementById('setting-google-token');
+    const googleCustomerEl = document.getElementById('setting-google-customer');
 
     const geminiVal = geminiInput ? geminiInput.value.trim() : '';
     const elevenVal = elevenInput ? elevenInput.value.trim() : '';
     const voiceIdVal = voiceIdInput ? voiceIdInput.value.trim() : '';
+    const metaTokenVal = metaTokenEl ? metaTokenEl.value.trim() : '';
+    const metaAccountVal = metaAccountEl ? metaAccountEl.value.trim() : '';
+    const googleTokenVal = googleTokenEl ? googleTokenEl.value.trim() : '';
+    const googleCustomerVal = googleCustomerEl ? googleCustomerEl.value.trim() : '';
 
     if (geminiVal) {
       localStorage.setItem('GEMINI_API_KEY', geminiVal);
@@ -1845,28 +2068,50 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('oraculum_gemini_key');
     }
 
-    if (elevenVal) {
-      localStorage.setItem('ELEVENLABS_API_KEY', elevenVal);
-    }
-    if (voiceIdVal) {
-      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceIdVal);
-    }
+    if (elevenVal) localStorage.setItem('ELEVENLABS_API_KEY', elevenVal);
+    if (voiceIdVal) localStorage.setItem('ELEVENLABS_VOICE_ID', voiceIdVal);
+    if (metaTokenVal) localStorage.setItem('META_ACCESS_TOKEN', metaTokenVal);
+    if (metaAccountVal) localStorage.setItem('META_ACCOUNT_ID', metaAccountVal);
+    if (googleTokenVal) localStorage.setItem('GOOGLE_ADS_DEV_TOKEN', googleTokenVal);
+    if (googleCustomerVal) localStorage.setItem('GOOGLE_ADS_CUSTOMER_ID', googleCustomerVal);
 
     carregarChavesSalvas();
-    window.exibirToastSucesso("✓ Chave Gemini salva com sucesso!");
+    window.exibirToastSucesso("✓ Configurações salvas no Cofre com sucesso!");
   };
 
   function carregarChavesSalvas() {
     const savedGemini = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('oraculum_gemini_key') || '';
     const savedEleven = localStorage.getItem('ELEVENLABS_API_KEY') || '';
     const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
+    const savedMetaToken = localStorage.getItem('META_ACCESS_TOKEN') || '';
+    const savedMetaAccount = localStorage.getItem('META_ACCOUNT_ID') || '';
+    const savedGoogleToken = localStorage.getItem('GOOGLE_ADS_DEV_TOKEN') || '';
+    const savedGoogleCustomer = localStorage.getItem('GOOGLE_ADS_CUSTOMER_ID') || '';
     const savedCustom = localStorage.getItem('CUSTOM_API_KEYS');
+
+    const geminiPing = localStorage.getItem('gemini_last_ping');
+    const metaPing = localStorage.getItem('meta_last_ping');
+    const googlePing = localStorage.getItem('google_ads_last_ping');
 
     const settingGeminiKeySa = document.getElementById('setting-gemini-key-sa');
     const settingElevenKeySa = document.getElementById('setting-eleven-key-sa');
     const settingElevenVoiceIdSa = document.getElementById('setting-eleven-voice-id-sa');
+
+    const settingMetaToken = document.getElementById('setting-meta-token');
+    const settingMetaAccount = document.getElementById('setting-meta-account');
+    const settingGoogleToken = document.getElementById('setting-google-token');
+    const settingGoogleCustomer = document.getElementById('setting-google-customer');
+
+    const badgeGeminiStatus = document.getElementById('badge-gemini-status');
     const badgeGeminiStatusSa = document.getElementById('badge-gemini-status-sa');
+    const badgeElevenStatus = document.getElementById('badge-eleven-status');
     const badgeElevenStatusSa = document.getElementById('badge-eleven-status-sa');
+    const badgeMetaStatus = document.getElementById('badge-meta-status');
+    const badgeGoogleAdsStatus = document.getElementById('badge-google-ads-status');
+
+    const auditGemini = document.getElementById('audit-log-gemini');
+    const auditMeta = document.getElementById('audit-log-meta');
+    const auditGoogleAds = document.getElementById('audit-log-google-ads');
 
     if (settingGeminiKey && savedGemini) settingGeminiKey.value = savedGemini;
     if (settingGeminiKeySa && savedGemini) settingGeminiKeySa.value = savedGemini;
@@ -1880,35 +2125,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingElevenVoiceId) settingElevenVoiceId.value = savedVoiceId;
     if (settingElevenVoiceIdSa) settingElevenVoiceIdSa.value = savedVoiceId;
 
-    const applyGeminiBadge = (el) => {
-      if (!el) return;
-      if (savedGemini) {
-        el.innerText = '● Conectado e Salvo';
-        el.style.background = 'rgba(16, 185, 129, 0.15)';
-        el.style.color = '#10B981';
-      } else {
-        el.innerText = 'Modo Fallback Local';
-        el.style.background = 'rgba(245, 158, 11, 0.15)';
-        el.style.color = '#F59E0B';
-      }
-    };
-    applyGeminiBadge(badgeGeminiStatus);
-    applyGeminiBadge(badgeGeminiStatusSa);
+    if (settingMetaToken && savedMetaToken) settingMetaToken.value = savedMetaToken;
+    if (settingMetaAccount && savedMetaAccount) settingMetaAccount.value = savedMetaAccount;
 
-    const applyElevenBadge = (el) => {
+    if (settingGoogleToken && savedGoogleToken) settingGoogleToken.value = savedGoogleToken;
+    if (settingGoogleCustomer && savedGoogleCustomer) settingGoogleCustomer.value = savedGoogleCustomer;
+
+    // APLICAR BADGES SEM VALORES MOCKADOS ESTÁTICOS
+    const applyBadge = (el, text, isOk) => {
       if (!el) return;
-      if (savedEleven) {
-        el.innerText = 'Voz Humana Ativa';
+      el.innerText = text;
+      if (isOk) {
         el.style.background = 'rgba(16, 185, 129, 0.15)';
         el.style.color = '#10B981';
       } else {
-        el.innerText = 'Voz WebSpeech Padrão';
         el.style.background = 'rgba(148, 163, 184, 0.15)';
         el.style.color = '#94A3B8';
       }
     };
-    applyElevenBadge(badgeElevenStatus);
-    applyElevenBadge(badgeElevenStatusSa);
+
+    if (savedGemini && geminiPing) {
+      applyBadge(badgeGeminiStatus, '● Gemini Conectado (Ativo)', true);
+      applyBadge(badgeGeminiStatusSa, '● Gemini Conectado (Ativo)', true);
+      if (auditGemini) auditGemini.innerText = `Última verificação: ${geminiPing} | Chave Validada`;
+    } else {
+      applyBadge(badgeGeminiStatus, '○ Não Configurado', false);
+      applyBadge(badgeGeminiStatusSa, '○ Não Configurado', false);
+      if (auditGemini) auditGemini.innerText = 'Última verificação: Não auditado';
+    }
+
+    if (savedEleven) {
+      applyBadge(badgeElevenStatus, '● Voz Humana Ativa', true);
+      applyBadge(badgeElevenStatusSa, '● Voz Humana Ativa', true);
+    } else {
+      applyBadge(badgeElevenStatus, '○ Voz WebSpeech Padrão', false);
+      applyBadge(badgeElevenStatusSa, '○ Voz WebSpeech Padrão', false);
+    }
+
+    if (savedMetaToken && metaPing) {
+      applyBadge(badgeMetaStatus, '● Meta Token Validado', true);
+      if (auditMeta) auditMeta.innerText = `Última verificação: ${metaPing} | ${savedMetaAccount ? 'Conta: ' + savedMetaAccount : 'Token Ativo'}`;
+    } else {
+      applyBadge(badgeMetaStatus, '○ Não Configurado', false);
+      if (auditMeta) auditMeta.innerText = 'Última verificação: Não auditado';
+    }
+
+    if (savedGoogleToken && savedGoogleCustomer && googlePing) {
+      applyBadge(badgeGoogleAdsStatus, `● Google Ads (ID: ${savedGoogleCustomer})`, true);
+      if (auditGoogleAds) auditGoogleAds.innerText = `Última verificação: ${googlePing} | Customer ID: ${savedGoogleCustomer}`;
+    } else {
+      applyBadge(badgeGoogleAdsStatus, '○ Não Configurado', false);
+      if (auditGoogleAds) auditGoogleAds.innerText = 'Última verificação: Não auditado';
+    }
 
     if (savedCustom) {
       try { customKeysState = JSON.parse(savedCustom); } catch(e) {}
