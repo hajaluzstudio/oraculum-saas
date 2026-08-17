@@ -100,8 +100,31 @@ document.addEventListener('DOMContentLoaded', () => {
     'tab-super-admin': {
       title: 'Painel Master: Gestão Global de Agências & Bloqueio Financeiro',
       subtitle: 'Controle de licenças, inadimplência, consumo de IA por tenant e modo manutenção global.'
+    },
+    'tab-war-room': {
+      title: 'Sala de Operação (War Room)',
+      subtitle: 'Central de distribuição autônoma de tarefas geradas pelo Oraculum para as 5 equipes (Vídeo, Design, Tráfego, Copy e Comercial).'
     }
   };
+
+  // ============================================================================
+  // SIDEBAR TOGGLE
+  // ============================================================================
+  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (btnToggleSidebar && sidebarEl) {
+    btnToggleSidebar.addEventListener('click', () => {
+      sidebarEl.classList.toggle('collapsed');
+      const icon = btnToggleSidebar.querySelector('i');
+      if (sidebarEl.classList.contains('collapsed')) {
+        icon.classList.remove('fa-chevron-left');
+        icon.classList.add('fa-chevron-right');
+      } else {
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-left');
+      }
+    });
+  }
 
   navItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -124,6 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
           panel.classList.remove('active');
         }
       });
+
+      if (targetTab === 'tab-war-room' && typeof window.renderWarRoomData === 'function') {
+        const clientName = document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'cliente_ativo';
+        window.renderWarRoomData(clientName);
+      }
 
       if (tabTitles[targetTab]) {
         pageTitle.textContent = tabTitles[targetTab].title;
@@ -4646,6 +4674,124 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   console.log("[Oraculum] Sistema inicializado e pronto para eventos.");
+  
+  // ============================================================================
+  // WAR ROOM (SALA DE OPERAÇÃO) - Lógica de Sub-abas
+  // ============================================================================
+  const wrTabBtns = document.querySelectorAll('.wr-tab-btn');
+  const wrPanels = document.querySelectorAll('.wr-panel');
+  wrTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active de todos os botões e painéis
+      wrTabBtns.forEach(b => b.classList.remove('active'));
+      wrPanels.forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
+      // Adiciona active no clicado
+      btn.classList.add('active');
+      const targetId = btn.getAttribute('data-wr-target');
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+        targetPanel.style.display = 'block';
+      }
+    });
+  });
+
+  // Função para abrir o teleprompter da Sala de Operação
+  window.abrirTeleprompterWR = function() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
+    const btnScripts = document.getElementById('btn-tab-scripts');
+    const tabScripts = document.getElementById('tab-scripts');
+    if(btnScripts) btnScripts.classList.add('active');
+    if(tabScripts) tabScripts.classList.add('active');
+    document.getElementById('page-title').textContent = 'Roteiros & Teleprompter';
+    document.getElementById('page-subtitle').textContent = 'Grave vídeos com teleprompter embutido.';
+  };
+
+  window.renderWarRoomData = function(clientId) {
+    const dataStr = localStorage.getItem(`oraculum_war_room_${clientId}`);
+    if (!dataStr) return; // Se não tem dados, deixa o placeholder
+
+    let data;
+    try { data = JSON.parse(dataStr); } catch(e) { return; }
+
+    // 1. VÍDEO
+    const vidBox = document.getElementById('wr-video-content');
+    if (vidBox && data.video_data && data.video_data.length > 0) {
+      let html = '';
+      data.video_data.forEach(v => {
+        html += `<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <h4 style="color: #34D399; margin: 0 0 4px; font-size: 13px;">${v.title} (${v.duration})</h4>
+          <p style="margin: 0 0 4px; font-size: 12px; color: #E2E8F0;"><strong>Hook:</strong> ${v.hook}</p>
+          <p style="margin: 0 0 4px; font-size: 12px; color: #94A3B8;"><strong>Body:</strong> ${v.body}</p>
+          <p style="margin: 0; font-size: 12px; color: #E2E8F0;"><strong>CTA:</strong> ${v.cta}</p>
+        </div>`;
+      });
+      vidBox.innerHTML = html;
+    }
+
+    // 2. DESIGN
+    const desBox = document.getElementById('wr-design-content');
+    if (desBox && data.design_data && data.design_data.length > 0) {
+      let html = '';
+      data.design_data.forEach(d => {
+        html += `<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <h4 style="color: #38BDF8; margin: 0 0 4px; font-size: 13px;">${d.title} [${d.format}]</h4>
+          <p style="margin: 0 0 4px; font-size: 12px; color: #E2E8F0;"><strong>Headline:</strong> ${d.headline}</p>
+          <p style="margin: 0 0 4px; font-size: 12px; color: #94A3B8;"><strong>Visual:</strong> ${d.visual_concept}</p>
+          <p style="margin: 0; font-size: 12px; color: #E2E8F0;"><strong>Botão:</strong> ${d.cta_button}</p>
+        </div>`;
+      });
+      desBox.innerHTML = html;
+    }
+
+    // 3. TRÁFEGO
+    const trfBox = document.getElementById('wr-traffic-content');
+    if (trfBox && data.traffic_data) {
+      const t = data.traffic_data;
+      trfBox.innerHTML = `<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <p style="margin: 0 0 6px; font-size: 12px; color: #E2E8F0;"><strong>Objetivo:</strong> <span style="color:#10B981;">${t.campaign_goal}</span></p>
+        <p style="margin: 0 0 6px; font-size: 12px; color: #E2E8F0;"><strong>Público:</strong> ${t.target_audience}</p>
+        <p style="margin: 0 0 6px; font-size: 12px; color: #E2E8F0;"><strong>Orçamento Sugerido:</strong> ${t.daily_budget}</p>
+        <p style="margin: 0 0 6px; font-size: 12px; color: #E2E8F0;"><strong>Meta CPL:</strong> ${t.target_cpl}</p>
+        <p style="margin: 0; font-size: 12px; color: #F59E0B;"><strong>Ação 48h:</strong> ${t.action_48h}</p>
+      </div>`;
+    }
+
+    // 4. COPYWRITING
+    const copyBox = document.getElementById('wr-copy-content');
+    if (copyBox && data.copy_data && data.copy_data.length > 0) {
+      let html = '';
+      data.copy_data.forEach(c => {
+        html += `<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <span style="display:inline-block; background: rgba(16, 185, 129, 0.2); color:#34D399; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:6px;">${c.type}</span>
+          <p style="margin: 0; font-size: 12px; color: #E2E8F0;">${c.content}</p>
+        </div>`;
+      });
+      copyBox.innerHTML = html;
+    }
+
+    // 5. COMERCIAL
+    const salesBox = document.getElementById('wr-sales-content');
+    if (salesBox && data.sales_data) {
+      const s = data.sales_data;
+      salesBox.innerHTML = `<div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <p style="margin: 0 0 8px; font-size: 12px; color: #E2E8F0;"><strong>SLA de Resposta:</strong> <span style="color:#EF4444; font-weight:bold;">&lt; ${s.sla_minutes} minutos</span></p>
+        <div style="background: #0F172A; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+          <p style="margin: 0; font-size: 11px; color: #34D399; font-weight: bold; margin-bottom: 4px;">Script Inicial WhatsApp</p>
+          <p style="margin: 0; font-size: 12px; color: #CBD5E1;">${s.whatsapp_script}</p>
+        </div>
+        <div style="background: #0F172A; padding: 10px; border-radius: 6px;">
+          <p style="margin: 0; font-size: 11px; color: #F59E0B; font-weight: bold; margin-bottom: 4px;">Quebra de Objeção Principal</p>
+          <p style="margin: 0; font-size: 12px; color: #CBD5E1;">${s.objection_killer}</p>
+        </div>
+      </div>`;
+    }
+  };
+
 });
 
 function generateMockDossier(clientName, niche) {

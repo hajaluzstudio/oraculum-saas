@@ -115,52 +115,60 @@
     <div class="app-container">
     <!-- BARRA LATERAL (SIDEBAR) -->
     <aside class="sidebar">
-      <div class="brand" style="justify-content: center; padding: 24px 20px 12px 20px;">
-        <img src="logo-oraculum-01.svg" alt="Oraculum Logo" style="width: 100%; max-width: 180px; height: auto;">
+      <div class="brand" style="justify-content: center; padding: 24px 20px 12px 20px; position: relative;">
+        <img src="logo-oraculum-01.svg" alt="Oraculum Logo" id="sidebar-logo-full" style="width: 100%; max-width: 180px; height: auto;">
+        <!-- Logo ícone reduzido -->
+        <div id="sidebar-logo-mini" style="display: none; width: 32px; height: 32px; background: #0A0E17; border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 8px; color: #10B981; font-weight: 800; font-size: 18px; line-height: 30px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">O</div>
+        <!-- Botão Toggle -->
+        <button id="btn-toggle-sidebar" style="position: absolute; right: -12px; top: 32px; background: #10B981; color: #0A0E17; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"><i class="fa-solid fa-chevron-left" style="font-size: 10px;"></i></button>
       </div>
 
       <nav class="nav-menu">
-        <button class="nav-item active" data-tab="tab-clientes" id="btn-tab-clientes">
+        <button class="nav-item active" data-tab="tab-clientes" id="btn-tab-clientes" data-tooltip="Carteira de Clientes">
           <i class="fa-solid fa-users"></i>
           <span>Carteira de Clientes</span>
         </button>
-        <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding">
+        <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding" data-tooltip="Onboarding Autônomo">
           <i class="fa-solid fa-user-plus"></i>
           <span>Onboarding Autônomo</span>
         </button>
-        <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat">
+        <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat" data-tooltip="Chat Estratégico">
           <i class="fa-solid fa-comments"></i>
           <span>Chat Estratégico</span>
         </button>
-        <button class="nav-item" data-tab="tab-scripts" id="btn-tab-scripts">
-          <i class="fa-solid fa-clapperboard"></i>
-          <span>Roteiros & Teleprompter</span>
-        </button>
-        <button class="nav-item" data-tab="tab-lp" id="btn-tab-lp">
-          <i class="fa-solid fa-globe"></i>
-          <span>Landing Pages</span>
-        </button>
-        <button class="nav-item" data-tab="tab-vision" id="btn-tab-vision">
-          <i class="fa-solid fa-eye"></i>
-          <span>AI Creative Scoring</span>
-        </button>
-        <button class="nav-item" data-tab="tab-drive" id="btn-tab-drive">
-          <i class="fa-solid fa-kanban"></i>
-          <span>Trilha de Equipe & Kanban</span>
-        </button>
-        <button class="nav-item" data-tab="tab-bi" id="btn-tab-bi">
+        <button class="nav-item" data-tab="tab-bi" id="btn-tab-bi" data-tooltip="BI & Feedback Loop">
           <i class="fa-solid fa-chart-line"></i>
           <span>BI & Feedback Loop</span>
         </button>
-        <button class="nav-item" data-tab="tab-spy" id="btn-tab-spy">
+        <button class="nav-item" data-tab="tab-spy" id="btn-tab-spy" data-tooltip="Radar de Concorrentes">
           <i class="fa-solid fa-user-secret"></i>
           <span>Radar de Concorrentes</span>
         </button>
-        <button class="nav-item" data-tab="tab-settings" id="btn-tab-settings">
+        <button class="nav-item" data-tab="tab-war-room" id="btn-tab-war-room" data-tooltip="Sala de Operação" style="color: #34D399; font-weight: 700; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1);">
+          <i class="fa-solid fa-bolt" style="color: #10B981;"></i>
+          <span>Sala de Operação</span>
+        </button>
+        <button class="nav-item" data-tab="tab-scripts" id="btn-tab-scripts" data-tooltip="Roteiros & Teleprompter">
+          <i class="fa-solid fa-clapperboard"></i>
+          <span>Roteiros & Teleprompter</span>
+        </button>
+        <button class="nav-item" data-tab="tab-lp" id="btn-tab-lp" data-tooltip="Landing Pages">
+          <i class="fa-solid fa-globe"></i>
+          <span>Landing Pages</span>
+        </button>
+        <button class="nav-item" data-tab="tab-vision" id="btn-tab-vision" data-tooltip="AI Creative Scoring">
+          <i class="fa-solid fa-eye"></i>
+          <span>AI Creative Scoring</span>
+        </button>
+        <button class="nav-item" data-tab="tab-drive" id="btn-tab-drive" data-tooltip="Trilha & Kanban">
+          <i class="fa-solid fa-kanban"></i>
+          <span>Trilha de Equipe & Kanban</span>
+        </button>
+        <button class="nav-item" data-tab="tab-settings" id="btn-tab-settings" data-tooltip="Configurações & APIs">
           <i class="fa-solid fa-gear"></i>
           <span>Configurações & APIs</span>
         </button>
-        <button class="nav-item highlight-superadmin" data-tab="tab-super-admin" id="btn-tab-super-admin" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); margin-top: 6px;">
+        <button class="nav-item highlight-superadmin" data-tab="tab-super-admin" id="btn-tab-super-admin" data-tooltip="Gestão Master" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); margin-top: 6px;">
           <i class="fa-solid fa-crown" style="color: #FDE047;"></i>
           <span style="color: #E9D5FF; font-weight: 700;">Gestão Master Agências</span>
         </button>
@@ -1007,6 +1015,86 @@
                   <p>Preencha os dados do concorrente e clique em "Disparar Análise" para a IA mapear as falhas de posicionamento e criar os hooks de contra-ataque.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA WAR ROOM: SALA DE OPERAÇÃO -->
+        <section id="tab-war-room" class="tab-panel">
+          <div class="war-room-container" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
+            <!-- Cabeçalho de Navegação Interno (As 5 Equipes) -->
+            <div class="war-room-nav" style="display: flex; gap: 8px; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.15); overflow-x: auto;">
+              <button class="wr-tab-btn active" data-wr-target="wr-video"><i class="fa-solid fa-film"></i> Vídeo & Gravação</button>
+              <button class="wr-tab-btn" data-wr-target="wr-design"><i class="fa-solid fa-palette"></i> Design & Web</button>
+              <button class="wr-tab-btn" data-wr-target="wr-traffic"><i class="fa-solid fa-bullseye"></i> Tráfego</button>
+              <button class="wr-tab-btn" data-wr-target="wr-copy"><i class="fa-solid fa-pen-nib"></i> Copywriting</button>
+              <button class="wr-tab-btn" data-wr-target="wr-sales"><i class="fa-solid fa-handshake"></i> Comercial & Vendas</button>
+            </div>
+
+            <!-- Painéis das 5 Equipes -->
+            <div class="war-room-content" style="flex: 1; position: relative;">
+              
+              <!-- 1. VÍDEO -->
+              <div id="wr-video" class="wr-panel active">
+                <div class="card-glass">
+                  <div class="card-header">
+                    <h3><i class="fa-solid fa-film"></i> Roteiros e AI Creative Score</h3>
+                    <button class="btn-primary sm" onclick="alert('Funcionalidade em desenvolvimento.')"><i class="fa-solid fa-mobile-screen"></i> Abrir Teleprompter</button>
+                  </div>
+                  <div id="wr-video-content" class="wr-data-box" style="margin-top: 16px;">
+                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. DESIGN -->
+              <div id="wr-design" class="wr-panel" style="display: none;">
+                <div class="card-glass">
+                  <div class="card-header">
+                    <h3><i class="fa-solid fa-palette"></i> Briefings Visuais e Landing Pages</h3>
+                  </div>
+                  <div id="wr-design-content" class="wr-data-box" style="margin-top: 16px;">
+                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. TRÁFEGO -->
+              <div id="wr-traffic" class="wr-panel" style="display: none;">
+                <div class="card-glass">
+                  <div class="card-header">
+                    <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
+                  </div>
+                  <div id="wr-traffic-content" class="wr-data-box" style="margin-top: 16px;">
+                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. COPYWRITING -->
+              <div id="wr-copy" class="wr-panel" style="display: none;">
+                <div class="card-glass">
+                  <div class="card-header">
+                    <h3><i class="fa-solid fa-pen-nib"></i> Headlines, Hooks e Textos Persuasivos</h3>
+                  </div>
+                  <div id="wr-copy-content" class="wr-data-box" style="margin-top: 16px;">
+                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5. COMERCIAL -->
+              <div id="wr-sales" class="wr-panel" style="display: none;">
+                <div class="card-glass">
+                  <div class="card-header">
+                    <h3><i class="fa-solid fa-handshake"></i> Playbook de Vendas e Quebra de Objeções</h3>
+                  </div>
+                  <div id="wr-sales-content" class="wr-data-box" style="margin-top: 16px;">
+                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>

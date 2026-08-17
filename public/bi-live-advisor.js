@@ -189,6 +189,7 @@
     } else {
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
       msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum</span></div><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML += `<button onclick="window.distribuirParaWarRoom(this.dataset.textoOriginal, event)" data-texto-original="${texto.replace(/"/g, '&quot;')}" style="margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34D399; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s;"><i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação</button>`;
     }
 
     feed.appendChild(msgDiv);
@@ -745,6 +746,88 @@ Mensagem do Usuário: "${perguntaUsuario}"
       alert("✅ Insights salvos na Ata de Reunião!");
     } else {
       alert("✅ Insights copiados com sucesso!");
+    }
+  };
+
+  window.distribuirParaWarRoom = async function(textoOraculo, event) {
+    try {
+      const btn = event.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+      btn.disabled = true;
+
+      const key = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key');
+      if (!key) {
+        alert('Configure a chave do Gemini na aba de APIs Master.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
+      
+      const promptJSON = `Extraia as ações táticas do seguinte texto estratégico e converta exatamente neste formato JSON:
+{
+  "summary": "Resumo da estratégia em 1 frase",
+  "video_data": [{ "title": "Título", "duration": "Tempo exato ex 30s", "hook": "Gancho dos 3s", "body": "Roteiro base", "cta": "Chamada final" }],
+  "design_data": [{ "title": "Nome do criativo/LP", "format": "Feed/Stories/LP", "headline": "Headline principal", "visual_concept": "Conceito visual", "cta_button": "Texto do botão" }],
+  "traffic_data": { "campaign_goal": "Objetivo principal", "target_audience": "Público alvo", "daily_budget": "Sugestão orçamento", "target_cpl": "Custo por lead alvo", "action_48h": "Próximo passo em 48h" },
+  "copy_data": [{ "type": "Hook/Headline/Body", "content": "Texto persuasivo" }],
+  "sales_data": { "whatsapp_script": "Script de contato", "objection_killer": "Mata objeção", "sla_minutes": 3 }
+}
+
+Texto Base:
+${textoOraculo}`;
+
+      const url = \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${key}\`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: promptJSON }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json"
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error("Falha na extração Gemini");
+      const data = await response.json();
+      const jsonDataString = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      let jsonData;
+      try {
+        jsonData = JSON.parse(jsonDataString);
+      } catch (e) {
+        throw new Error("Resposta da IA não foi um JSON válido.");
+      }
+
+      const contexto = extrairContextoCompletoBI();
+      const clientId = contexto.cliente || 'cliente_ativo';
+      localStorage.setItem(\`oraculum_war_room_\${clientId}\`, JSON.stringify(jsonData));
+
+      // Atualizar a interface do War Room
+      if (typeof window.renderWarRoomData === 'function') {
+        window.renderWarRoomData(clientId);
+      }
+
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado ao War Room';
+      btn.style.background = 'rgba(16, 185, 129, 0.4)';
+      btn.style.color = '#fff';
+      
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10B981;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:99999;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:13px;';
+      toast.innerHTML = '🚀 Estratégia aprovada e distribuída com sucesso para as 5 equipes no War Room!';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao extrair JSON: ' + err.message);
+      const btn = event?.currentTarget;
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação';
+        btn.disabled = false;
+      }
     }
   };
 
