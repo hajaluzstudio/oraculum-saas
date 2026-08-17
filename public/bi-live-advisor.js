@@ -363,33 +363,6 @@
     }
   };
 
-  // Resposta Estratégica Especialista (Motor de Inteligência do Oráculo)
-  function gerarRespostaInteligente(pergunta, ctx) {
-    const p = pergunta.toLowerCase();
-    
-    if (p.includes('resumo') || p.includes('apresente') || p.includes('geral') || p.includes('balanço')) {
-      return `Apresentando o diagnóstico executivo da conta de **${ctx.cliente}**:\n\n• **Faturamento Consolidado:** ${ctx.faturamento}\n• **Investimento em Mídia:** ${ctx.gastoTrafego}\n• **Eficiência de Retorno (ROAS):** ${ctx.roas}\n• **Volume de Leads/Oportunidades:** ${ctx.leads}\n\nA estratégia de funil mantém margem positiva e comprova a geração de caixa no período analisado.`;
-    }
-    
-    if (p.includes('cac') || p.includes('teto') || p.includes('criativo')) {
-      return `O **CAC por Criativo versus Teto Alvo** mede o custo exato de aquisição gerado por cada anúncio individual contra o limite financeiro seguro estabelecido para a conta de **${ctx.cliente}**.\n\nQuando um criativo performa abaixo do teto alvo, ele gera lucro líquido imediato e deve receber escala de orçamento. Se ultrapassar o teto, pausamos o anúncio para proteger a margem do cliente.`;
-    }
-
-    if (p.includes('ctr') || p.includes('clique') || p.includes('link')) {
-      return `O **CTR (Click-Through Rate)** avalia o poder de atração do gancho visual e da cópia. Um CTR acima de 1.5% indica que a mensagem capturou o público correto, enquanto um CTR baixo sinaliza necessidade de testar novas variações de headline e primeiros 3 segundos de vídeo.`;
-    }
-
-    if (p.includes('orçamento') || p.includes('verba') || p.includes('investir') || p.includes('aumentar') || p.includes('alocação')) {
-      return `Com base no retorno atual de **${ctx.roas}**, a **Alocação Preditiva de Orçamento** recomenda redistribuir 70% da verba nos públicos e criativos de maior taxa de conversão final, mantendo 30% para testes contínuos de novos ângulos de abordagem.`;
-    }
-
-    if (p.includes('qualificado') || p.includes('lead') || p.includes('avaliação') || p.includes('procedimento') || p.includes('venda')) {
-      return `Para a conta de **${ctx.cliente}**, o funil não mede apenas volume bruto de contatos, mas a taxa de qualificação: leads que avançam para avaliações agendadas e fechamento de procedimentos de alto valor, garantindo o menor Custo por Procedimento Realizado.`;
-    }
-
-    return `Análise estratégica para **${ctx.cliente}**: Toda tomada de decisão no sistema prioriza métricas financeiras reais (CAC, LTV e ROAS). Com o investimento atual de **${ctx.gastoTrafego}** gerando **${ctx.faturamento}**, as próximas ações devem focar na escala dos criativos validados pelo AI Creative Score.`;
-  }
-
   // =======================================================
   // ROTINAS DE SINCRONIZAÇÃO EM NUVEM (Supabase / PostgreSQL)
   // TABELAS: oraculo_memoria, clients, agency_settings
@@ -397,12 +370,10 @@
   window.carregarHistoricoNuvem = async function(clientId) {
     if (!clientId) return [];
     try {
-      // Busca primeiramente na tabela oraculo_memoria do Supabase
       const res = await fetch(`/api/oraculo-memoria/${encodeURIComponent(clientId)}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          // Normaliza formato da tabela oraculo_memoria (content -> message)
           const normalizados = json.data.map(item => ({
             id: item.id,
             clientId: item.client_id,
@@ -440,7 +411,6 @@
   window.salvarMensagemNuvem = async function(clientId, role, message, metadata = {}) {
     if (!clientId || !message) return null;
     try {
-      // 1. Grava na tabela oraculo_memoria do Supabase (memória contínua da IA)
       const resMem = await fetch('/api/oraculo-memoria', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -448,7 +418,6 @@
       });
       const jsonMem = await resMem.json().catch(() => ({}));
 
-      // 2. Grava também no oraculo-chat para retrocompatibilidade
       fetch('/api/oraculo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -506,7 +475,7 @@
     }
 
     mensagens.forEach(msg => {
-      adicionarAoFeed(msg.role === 'user' ? 'usuario' : 'oraculo', msg.message);
+      adicionarAoFeed(msg.role === 'user' ? 'usuario' : 'oraculo', msg.message || msg.content);
     });
   };
 
@@ -518,21 +487,23 @@
                    window.ENV_GEMINI_API_KEY || '';
     
     if (!apiKey) {
-      throw new Error("Chave do Gemini não configurada em 'Configurações Master'. Insira a chave Gemini API Key para respostas da IA ao vivo.");
+      throw new Error("Chave da API do Google Gemini não configurada. Por favor, insira a chave Gemini API Key em Configurações Master.");
     }
 
-    const historicoTexto = historico.slice(-6).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message}`).join('\n');
+    const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message || h.content}`).join('\n');
 
     const promptSistema = `
-Você é o Oráculo Live Advisor, o Diretor de Performance e Inteligência de Marketing da Agência.
-Seu objetivo é analisar dados de tráfego pago, CAC, ROAS e ROI com tom executivo, direto, confiante e estratégico.
-Responda sempre em Português do Brasil com foco financeiro e de escala de negócios.
-Dados contextuais atuais da conta: ${JSON.stringify(contextoBI)}
+Você é o Oráculo Live Advisor, o Chief Marketing Officer (CMO) e Diretor de Performance e Inteligência de Marketing da Agência.
+Seu objetivo é analisar dados de tráfego pago, CAC, ROAS, ROI, LTV e conversão com tom executivo, direto, confiante e altamente estratégico.
+Responda sempre em Português do Brasil com foco em retorno financeiro, gestão de risco e escala previsível de negócios.
 
-Histórico recente de diálogo:
-${historicoTexto}
+DADOS CONTEXTUAIS ATUAIS DA CONTA DO CLIENTE:
+${JSON.stringify(contextoBI, null, 2)}
 
-Pergunta do usuário: "${perguntaUsuario}"
+HISTÓRICO RECENTE DE REUNIÃO / MEMÓRIA CONTÍNUA:
+${historicoTexto || 'Primeira interação nesta reunião.'}
+
+PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
@@ -555,14 +526,15 @@ Pergunta do usuário: "${perguntaUsuario}"
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `Erro HTTP ${response.status}`);
+      const msgErro = errorData.error?.message || `Erro HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(`API Gemini (${response.status}): ${msgErro}`);
     }
 
     const data = await response.json();
     const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!respostaTexto) {
-      throw new Error("O Gemini não retornou texto válido.");
+      throw new Error("A API do Gemini não retornou texto válido.");
     }
 
     return respostaTexto;
@@ -584,7 +556,7 @@ Pergunta do usuário: "${perguntaUsuario}"
     const contexto = extrairContextoCompletoBI();
     const clientId = contexto.cliente || 'cliente_ativo';
 
-    // Persiste pergunta do usuário na Nuvem
+    // 1º Grava a mensagem do usuário via INSERT no oraculo_memoria
     await window.salvarMensagemNuvem(clientId, 'user', texto, contexto);
 
     const btnSend = document.getElementById('btn-send-oraculo');
@@ -597,42 +569,35 @@ Pergunta do usuário: "${perguntaUsuario}"
       const loadDiv = document.createElement('div');
       loadDiv.id = loadingId;
       loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 12px; color: #C084FC; font-size: 12px; display: flex; align-items: center; gap: 8px;';
-      loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oráculo analisando métricas...</span>';
+      loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oráculo analisando métricas e executando IA real...</span>';
       feed.appendChild(loadDiv);
       feed.scrollTop = feed.scrollHeight;
     }
 
     try {
       const historicoAtual = await window.carregarHistoricoNuvem(clientId);
-      let respostaTexto = "";
-
-      try {
-        respostaTexto = await perguntarAoOraculoGemini(texto, contexto, historicoAtual);
-      } catch(geminiErr) {
-        console.warn("Consulta ao Gemini falhou, usando motor especialista de regras:", geminiErr);
-        respostaTexto = gerarRespostaInteligente(texto, contexto);
-      }
+      
+      // 2º Faz a chamada real à API do Gemini enviando o histórico completo
+      const respostaTexto = await perguntarAoOraculoGemini(texto, contexto, historicoAtual);
 
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
 
       adicionarAoFeed('oraculo', respostaTexto);
       
-      // Persiste resposta da IA na Nuvem
+      // 3º Grava a resposta gerada pela IA via INSERT no oraculo_memoria
       await window.salvarMensagemNuvem(clientId, 'assistant', respostaTexto, contexto);
 
-      // Reproduz áudio via ElevenLabs
+      // Reprodução de áudio via ElevenLabs
       window.falarTextoOraculo(respostaTexto);
 
     } catch (err) {
-      console.error("Erro no Oráculo:", err);
+      console.error("Erro real na API do Oráculo:", err);
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
 
-      const respostaFallback = gerarRespostaInteligente(texto, contexto);
-      adicionarAoFeed('oraculo', respostaFallback);
-      await window.salvarMensagemNuvem(clientId, 'assistant', respostaFallback, contexto);
-      window.falarTextoOraculo(respostaFallback);
+      // EXIBE O ERRO REAL NA TELA SEM MOCK DE FALLBACK
+      adicionarAoFeed('erro', err.message || "Falha ao conectar com o Google Gemini. Verifique sua API Key.");
     } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
