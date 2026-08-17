@@ -2135,6 +2135,122 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.getGeminiKey = async function() {
+    let key = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('custom_gemini_api_key') || localStorage.getItem('oraculum_gemini_key');
+    if (key && key.trim()) return key.trim();
+
+    try {
+      const res = await fetch('/api/agency-settings');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.settings && json.settings.GEMINI_API_KEY) {
+          const dbKey = json.settings.GEMINI_API_KEY.trim();
+          localStorage.setItem('GEMINI_API_KEY', dbKey);
+          localStorage.setItem('gemini_api_key', dbKey);
+          return dbKey;
+        }
+      }
+    } catch (err) {
+      console.warn("Erro ao buscar chave no Supabase/Backend:", err);
+    }
+
+    return (window.ENV_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : '') || '').trim();
+  };
+
+  window.salvarGeminiKey = async function(novaChave) {
+    const inputEl = document.getElementById('setting-gemini-key') || document.getElementById('gemini-api-key');
+    const chaveLimpa = (novaChave || (inputEl ? inputEl.value : '') || '').trim();
+
+    if (!chaveLimpa) {
+      alert("⚠️ Por favor, insira uma chave de API válida para o Google Gemini.");
+      return;
+    }
+
+    localStorage.setItem('GEMINI_API_KEY', chaveLimpa);
+    localStorage.setItem('gemini_api_key', chaveLimpa);
+    localStorage.setItem('custom_gemini_api_key', chaveLimpa);
+
+    try {
+      await fetch('/api/agency-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            GEMINI_API_KEY: chaveLimpa
+          }
+        })
+      });
+    } catch (err) {
+      console.error("Erro ao persistir chave no Supabase:", err);
+    }
+
+    alert("✅ Chave do Gemini salva com sucesso no Banco de Dados!");
+    await window.testarConexaoGeminiReal();
+  };
+
+  window.testarConexaoGeminiReal = async function() {
+    const statusBadge = document.getElementById('badge-gemini-status');
+    const inputKey = document.getElementById('setting-gemini-key') || document.getElementById('gemini-api-key');
+    let apiKey = inputKey ? inputKey.value.trim() : '';
+
+    if (!apiKey) {
+      apiKey = await window.getGeminiKey();
+    }
+
+    if (!apiKey) {
+      if (statusBadge) {
+        statusBadge.innerText = "● Desconectada";
+        statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+        statusBadge.style.color = "#F87171";
+        statusBadge.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      }
+      return;
+    }
+
+    if (statusBadge) {
+      statusBadge.innerText = "⏳ Validando...";
+      statusBadge.style.background = "rgba(234, 179, 8, 0.15)";
+      statusBadge.style.color = "#FACC15";
+      statusBadge.style.border = "1px solid rgba(234, 179, 8, 0.3)";
+    }
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "ping" }] }]
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+
+      if (statusBadge) {
+        statusBadge.innerText = "● Conectada & Operacional";
+        statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
+        statusBadge.style.color = "#34D399";
+        statusBadge.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+      }
+      const audit = document.getElementById('audit-log-gemini');
+      if (audit) audit.innerText = "Última verificação: Conexão com Gemini 1.5 Flash estabelecida com sucesso!";
+
+    } catch (error) {
+      if (statusBadge) {
+        statusBadge.innerText = `● Erro: ${error.message}`;
+        statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+        statusBadge.style.color = "#F87171";
+        statusBadge.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+      }
+      const audit = document.getElementById('audit-log-gemini');
+      if (audit) audit.innerText = `Última verificação: ${error.message}`;
+    }
+  };
+
+  window.testarConexaoGeminiLive = window.testarConexaoGeminiReal;
+
   window.salvarConfigElevenLabs = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
     const inputKey = document.getElementById('elevenlabs-api-key') || document.getElementById('setting-eleven-key');
