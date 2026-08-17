@@ -1004,3 +1004,19 @@ p, h1, h2, h3, h4, h5, h6, span, label, div, button, input, select, textarea, pr
     font-size: 20px;
   }
 }
+
+/* MODO APRESENTAÇÃO EM TELA CHEIA */
+body.presentation-mode-active aside,
+body.presentation-mode-active .sidebar,
+body.presentation-mode-active .sidebar-container,
+body.presentation-mode-active .top-header,
+body.presentation-mode-active .header-actions {
+  display: none !important;
+}
+
+body.presentation-mode-active .main-content {
+  padding: 24px !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  width: 100vw !important;
+}

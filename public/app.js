@@ -1229,14 +1229,160 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  // MODO APRESENTAÇÃO, SIMULADOR DE ORÇAMENTO & MEETING NOTES
+  window.alternarModoApresentacao = function() {
+    document.body.classList.add('presentation-mode-active');
+    const exitBtn = document.getElementById('btn-exit-presentation');
+    if (exitBtn) exitBtn.style.display = 'flex';
+  };
+
+  window.sairModoApresentacao = function() {
+    document.body.classList.remove('presentation-mode-active');
+    const exitBtn = document.getElementById('btn-exit-presentation');
+    if (exitBtn) exitBtn.style.display = 'none';
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      window.sairModoApresentacao();
+    }
+  });
+
+  window.customAdSpendMap = window.customAdSpendMap || {};
+
+  window.abrirSimuladorOrcamento = function() {
+    const currentClientId = window.activeClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
+    
+    if (!currentClientId) {
+      alert('⚠️ Selecione um cliente na carteira antes de ajustar a verba de tráfego.');
+      return;
+    }
+
+    const currentSpend = window.customAdSpendMap[currentClientId] || 2000;
+    const novoValorStr = prompt('💰 Simulador de Orçamento (Calculadora de ROI)\nDigite o novo valor de verba em tráfego pago (R$):', currentSpend);
+
+    if (novoValorStr !== null) {
+      const num = parseFloat(novoValorStr.replace('R$', '').replace('.', '').replace(',', '.').trim());
+      if (!isNaN(num) && num >= 0) {
+        window.customAdSpendMap[currentClientId] = num;
+        
+        const clientObj = window.clienteAtivoAtual || { id: currentClientId, name: window.activeClientName || 'Cliente Ativo' };
+        window.renderBIData(clientObj);
+      }
+    }
+  };
+
+  window.salvarAnotacoesReuniao = function() {
+    const currentClientId = window.activeClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
+    
+    if (!currentClientId) {
+      alert('⚠️ Selecione um cliente na carteira para salvar os insights de reunião.');
+      return;
+    }
+
+    const text = document.getElementById('meeting-notes-input')?.value || '';
+    localStorage.setItem(`oraculum_meeting_notes_${currentClientId}`, text);
+    
+    if (window.clienteAtivoAtual) {
+      window.clienteAtivoAtual.meeting_notes = text;
+    }
+
+    alert('✅ Insight e pautas de reunião salvos com sucesso no perfil do cliente!');
+  };
+
+  window.renderBIData = function(clientData) {
+    const titleEl = document.getElementById('bi-active-client-title');
+    const revEl = document.getElementById('bi-val-revenue');
+    const spendEl = document.getElementById('bi-val-spend');
+    const profitEl = document.getElementById('bi-val-profit');
+    const roasEl = document.getElementById('bi-val-roas');
+    const ltvcacEl = document.getElementById('bi-val-ltvcac');
+    const convRateEl = document.getElementById('bi-val-conv-rate');
+    const subConvEl = document.getElementById('bi-sub-conversions');
+
+    const fImp = document.getElementById('funnel-val-impressions');
+    const fClicks = document.getElementById('funnel-val-clicks');
+    const fLeads = document.getElementById('funnel-val-leads');
+    const fMeetings = document.getElementById('funnel-val-meetings');
+    const fSales = document.getElementById('funnel-val-sales');
+
+    if (!clientData || (!clientData.name && !clientData.company_name)) {
+      if (titleEl) titleEl.textContent = 'Selecione um cliente na Carteira para visualizar as métricas de ROI e BI';
+      if (revEl) revEl.textContent = 'R$ 0,00';
+      if (spendEl) spendEl.textContent = 'R$ 0,00';
+      if (profitEl) profitEl.textContent = 'R$ 0,00';
+      if (roasEl) roasEl.textContent = '0.00x';
+      if (ltvcacEl) ltvcacEl.textContent = '0.0 : 1';
+      if (convRateEl) convRateEl.textContent = '0.00%';
+      if (subConvEl) subConvEl.textContent = '0 Vendas (Aguardando cliente)';
+
+      if (fImp) fImp.textContent = '0';
+      if (fClicks) fClicks.textContent = '0';
+      if (fLeads) fLeads.textContent = '0';
+      if (fMeetings) fMeetings.textContent = '0';
+      if (fSales) fSales.textContent = '0 Vendas';
+
+      const notesInput = document.getElementById('meeting-notes-input');
+      if (notesInput) notesInput.value = '';
+      return;
+    }
+
+    window.clienteAtivoAtual = clientData;
+    window.activeClientId = clientData.id;
+    window.activeClientName = clientData.company_name || clientData.name;
+
+    if (titleEl) titleEl.textContent = clientData.company_name || clientData.name || 'Cliente Ativo';
+    
+    const currentAdSpend = window.customAdSpendMap && window.customAdSpendMap[clientData.id] 
+      ? window.customAdSpendMap[clientData.id] 
+      : (clientData.verba || clientData.ad_spend || 2000);
+
+    const ticket = clientData.average_ticket || clientData.ticket_medio || 1500;
+    const conversions = Math.max(1, Math.round((currentAdSpend * 3) / ticket));
+    const revenue = conversions * ticket;
+    const profit = Math.max(0, revenue - currentAdSpend);
+    const roas = currentAdSpend > 0 ? (revenue / currentAdSpend).toFixed(2) : '0.00';
+    const realCac = conversions > 0 ? Math.round(currentAdSpend / conversions) : currentAdSpend;
+    const ltvcac = realCac > 0 ? ((ticket * 1.8) / realCac).toFixed(1) : '0.0';
+
+    if (revEl) revEl.textContent = `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (spendEl) spendEl.textContent = `R$ ${currentAdSpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (profitEl) profitEl.textContent = `R$ ${profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (roasEl) roasEl.textContent = `${roas}x`;
+    if (ltvcacEl) ltvcacEl.textContent = `${ltvcac} : 1`;
+    if (convRateEl) convRateEl.textContent = '3.50%';
+    if (subConvEl) subConvEl.textContent = `${conversions} Vendas (CAC: R$ ${realCac.toLocaleString('pt-BR')})`;
+
+    const imp = Math.round(currentAdSpend * 28);
+    const clicks = Math.round(imp * 0.039);
+    const leads = Math.round(clicks * 0.078);
+    const meetings = Math.round(leads * 0.168);
+
+    if (fImp) fImp.textContent = imp.toLocaleString('pt-BR');
+    if (fClicks) fClicks.textContent = clicks.toLocaleString('pt-BR');
+    if (fLeads) fLeads.textContent = leads.toLocaleString('pt-BR');
+    if (fMeetings) fMeetings.textContent = meetings.toLocaleString('pt-BR');
+    if (fSales) fSales.textContent = `${conversions} Vendas (${((conversions / Math.max(1, meetings)) * 100).toFixed(1)}%)`;
+
+    const notesInput = document.getElementById('meeting-notes-input');
+    if (notesInput) {
+      const savedNotes = localStorage.getItem(`oraculum_meeting_notes_${clientData.id}`) || clientData.meeting_notes || '';
+      notesInput.value = savedNotes;
+    }
+  };
+
   async function loadClientBiMetrics(clientId) {
     const targetClientId = clientId || activeClientId;
-    if (!targetClientId) return;
+    if (!targetClientId) {
+      window.renderBIData(null);
+      return;
+    }
 
     const titleEl = document.getElementById('bi-active-client-title');
     if (titleEl) titleEl.textContent = activeClientName || 'Cliente Ativo';
 
-    renderBiInteractiveDashboard(currentBiPeriod);
+    const clientObj = window.clienteAtivoAtual || { id: targetClientId, name: activeClientName || 'Cliente Ativo' };
+    window.renderBIData(clientObj);
   }
 
   function renderBiInteractiveDashboard(period = '30d') {
