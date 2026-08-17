@@ -146,6 +146,22 @@ app.get('/client-management.js', (req: Request, res: Response) => {
   }
 });
 
+// SERVIR BI-LIVE-ADVISOR.JS
+app.get('/bi-live-advisor.js', (req: Request, res: Response) => {
+  try {
+    const biLiveJsPath = getStaticFilePath('bi-live-advisor.js');
+    if (fs.existsSync(biLiveJsPath)) {
+      const code = fs.readFileSync(biLiveJsPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      setNoCacheHeaders(res);
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('bi-live-advisor.js não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar bi-live-advisor.js: ' + e.message);
+  }
+});
+
 // SERVIR STYLES.CSS
 app.get('/styles.css', (req: Request, res: Response) => {
   try {
