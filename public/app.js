@@ -1777,8 +1777,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  window.exibirToastSucesso = function(mensagem) {
+    let toastContainer = document.getElementById('oraculum-toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'oraculum-toast-container';
+      toastContainer.style.cssText = 'position: fixed; top: 24px; right: 24px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.cssText = 'background: rgba(16, 185, 129, 0.95); color: #FFF; border: 1px solid rgba(52, 211, 153, 0.5); backdrop-filter: blur(10px); padding: 14px 22px; border-radius: 14px; font-family: "Inter", sans-serif; font-size: 13px; font-weight: 700; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: auto;';
+    toast.innerHTML = `<i class="fa-solid fa-circle-check" style="font-size: 18px;"></i> <span>${mensagem}</span>`;
+
+    toastContainer.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+      toast.style.transform = 'translateX(140%)';
+      setTimeout(() => toast.remove(), 350);
+    }, 3500);
+  };
+
+  window.alternarVisibilidadeChave = function(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btnEl ? btnEl.querySelector('i') : null;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (icon) {
+        icon.className = 'fa-solid fa-eye-slash';
+        icon.style.color = '#C084FC';
+      }
+    } else {
+      input.type = 'password';
+      if (icon) {
+        icon.className = 'fa-solid fa-eye';
+        icon.style.color = '#94A3B8';
+      }
+    }
+  };
+
+  window.salvarChavesAPI = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const geminiInput = document.getElementById('setting-gemini-key') || 
+                        document.getElementById('setting-gemini-key-sa') || 
+                        document.getElementById('gemini-api-key') || 
+                        document.querySelector('input[placeholder*="AIzaSy"]');
+
+    const elevenInput = document.getElementById('setting-eleven-key') || document.getElementById('setting-eleven-key-sa');
+    const voiceIdInput = document.getElementById('setting-eleven-voice-id') || document.getElementById('setting-eleven-voice-id-sa');
+
+    const geminiVal = geminiInput ? geminiInput.value.trim() : '';
+    const elevenVal = elevenInput ? elevenInput.value.trim() : '';
+    const voiceIdVal = voiceIdInput ? voiceIdInput.value.trim() : '';
+
+    if (geminiVal) {
+      localStorage.setItem('GEMINI_API_KEY', geminiVal);
+      localStorage.setItem('gemini_api_key', geminiVal);
+      localStorage.setItem('oraculum_gemini_key', geminiVal);
+    } else {
+      localStorage.removeItem('GEMINI_API_KEY');
+      localStorage.removeItem('gemini_api_key');
+      localStorage.removeItem('oraculum_gemini_key');
+    }
+
+    if (elevenVal) {
+      localStorage.setItem('ELEVENLABS_API_KEY', elevenVal);
+    }
+    if (voiceIdVal) {
+      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceIdVal);
+    }
+
+    carregarChavesSalvas();
+    window.exibirToastSucesso("✓ Chave Gemini salva com sucesso!");
+  };
+
   function carregarChavesSalvas() {
-    const savedGemini = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || '';
+    const savedGemini = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('oraculum_gemini_key') || '';
     const savedEleven = localStorage.getItem('ELEVENLABS_API_KEY') || '';
     const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
     const savedCustom = localStorage.getItem('CUSTOM_API_KEYS');
@@ -1792,6 +1871,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingGeminiKey && savedGemini) settingGeminiKey.value = savedGemini;
     if (settingGeminiKeySa && savedGemini) settingGeminiKeySa.value = savedGemini;
 
+    const extraGeminiInput = document.getElementById('gemini-api-key') || document.querySelector('input[placeholder*="AIzaSy"]');
+    if (extraGeminiInput && savedGemini) extraGeminiInput.value = savedGemini;
+
     if (settingElevenKey && savedEleven) settingElevenKey.value = savedEleven;
     if (settingElevenKeySa && savedEleven) settingElevenKeySa.value = savedEleven;
 
@@ -1801,7 +1883,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyGeminiBadge = (el) => {
       if (!el) return;
       if (savedGemini) {
-        el.innerText = 'Ativo / Configurado';
+        el.innerText = '● Conectado e Salvo';
         el.style.background = 'rgba(16, 185, 129, 0.15)';
         el.style.color = '#10B981';
       } else {
@@ -1833,6 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderCustomKeys();
   }
+  window.carregarChavesSalvas = carregarChavesSalvas;
 
   // Event Listeners nos campos de input do Super Admin para auto-save
   ['setting-gemini-key-sa', 'setting-eleven-key-sa', 'setting-eleven-voice-id-sa'].forEach(id => {
@@ -1843,6 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const val = el.value.trim();
           localStorage.setItem('GEMINI_API_KEY', val);
           localStorage.setItem('gemini_api_key', val);
+          localStorage.setItem('oraculum_gemini_key', val);
         } else if (id === 'setting-eleven-key-sa') {
           localStorage.setItem('ELEVENLABS_API_KEY', el.value.trim());
         } else if (id === 'setting-eleven-voice-id-sa') {

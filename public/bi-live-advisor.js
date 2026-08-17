@@ -411,7 +411,7 @@
 
     try {
       let respostaTexto = "";
-      const apiKey = window.ENV_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+      const apiKey = window.ENV_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('oraculum_gemini_key') || '';
 
       if (apiKey) {
         const systemPrompt = `Você é o Oráculo, Diretor de Inteligência, Growth e Performance da agência.
