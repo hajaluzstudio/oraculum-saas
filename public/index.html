@@ -35,31 +35,28 @@
 </head>
 <body>
   <!-- AUTH GATE CONTAINER (TELA DE LOGIN RESTRITA ENTERPRISE - GLASSMORPHISM) -->
-  <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 relative overflow-hidden" style="display: flex !important;">
-    <!-- Ambient Glow Effects -->
-    <div class="absolute -top-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-500/15 via-slate-950 to-slate-950 p-4 relative overflow-hidden" style="display: flex !important;">
 
     <div class="auth-glass-card w-full max-w-md bg-slate-900/90 border border-slate-700/50 p-8 rounded-2xl shadow-2xl space-y-6 relative z-10 backdrop-blur-xl">
       <div class="text-center mb-6">
         <img src="logo-oraculum-01.svg" alt="Oraculum" style="max-width: 220px; margin: 0 auto 16px auto;">
-        <p class="text-xs text-purple-400 font-semibold tracking-widest mt-1 uppercase">ACESSO RESTRITO A PARCEIROS E AGÊNCIAS ENTERPRISE</p>
+        <p class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 font-semibold tracking-widest mt-1 uppercase inline-block">ACESSO RESTRITO A PARCEIROS E AGÊNCIAS ENTERPRISE</p>
       </div>
 
       <!-- FORMULÁRIO 1: LOGIN AUTOCONTIDO -->
       <form id="form-login" onsubmit="window.executarLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">E-mail Corporativo</label>
-          <input type="email" id="login-email" required autocomplete="username" placeholder="seu@email.com" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors">
+          <input type="email" id="login-email" required autocomplete="username" placeholder="seu@email.com" class="w-full bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
         </div>
         
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Senha de Acesso</label>
-            <button type="button" id="btn-forgot-password-link" class="text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium">Esqueci minha senha</button>
+            <button type="button" id="btn-forgot-password-link" class="text-xs text-emerald-400 hover:text-emerald-300 hover:underline transition-colors font-medium">Esqueci minha senha</button>
           </div>
           <div class="relative">
-            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors">
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
             <button type="button" onclick="window.alternarVerSenha()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1" title="Mostrar/ocultar senha">
               👁️
             </button>
@@ -68,12 +65,12 @@
 
         <div class="flex items-center justify-between text-xs">
           <label class="flex items-center space-x-2 cursor-pointer text-slate-400">
-            <input type="checkbox" id="remember-me" class="rounded border-slate-700 bg-slate-900 text-purple-600 focus:ring-purple-600">
+            <input type="checkbox" id="remember-me" class="rounded border-slate-800 bg-slate-900 text-emerald-500 focus:ring-emerald-500/30">
             <span>Lembrar meu e-mail</span>
           </label>
         </div>
 
-        <button type="submit" id="btn-submit-login" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-purple-900/30 transition-all">
+        <button type="submit" id="btn-submit-login" class="w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-700 hover:from-emerald-400 hover:to-emerald-600 hover:shadow-[0_0_25px_rgba(16,185,129,0.45)] text-white font-bold tracking-wide py-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition-all duration-200">
           Entrar no Sistema
         </button>
       </form>
@@ -90,12 +87,12 @@
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">E-mail Corporativo Cadastrado</label>
           <div class="relative">
-            <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
-            <input type="email" id="forgot-email" placeholder="seu.email@agencia.com" required class="auth-input w-full bg-slate-950/80 border border-slate-700/60 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500" />
+            <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 focus-within:text-emerald-400 text-sm transition-colors"></i>
+            <input type="email" id="forgot-email" placeholder="seu.email@agencia.com" required class="auth-input w-full bg-slate-900/80 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors" />
           </div>
         </div>
 
-        <button type="submit" id="btn-submit-forgot" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 font-semibold py-3.5 rounded-xl text-sm text-white shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2">
+        <button type="submit" id="btn-submit-forgot" class="w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-700 hover:from-emerald-400 hover:to-emerald-600 hover:shadow-[0_0_25px_rgba(16,185,129,0.45)] text-white font-bold tracking-wide py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2">
           <span>Enviar link de recuperação</span>
           <i class="fa-solid fa-paper-plane text-xs"></i>
         </button>
