@@ -1,9 +1,9 @@
 ﻿// =======================================================
-// Oraculum LIVE ADVISOR - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
+// Oraculum Live - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
 // =======================================================
 
 (function () {
-  console.log("Inicializando Oraculum Live Advisor Completo...");
+  console.log("Inicializando Oraculum Live Completo...");
 
   let isProcessando = false;
   let gravando = false;
@@ -58,7 +58,7 @@
     floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
       <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
-      <span>Oraculum Live Advisor</span>
+      <span>Oraculum Live</span>
       <span style="display: inline-flex; width: 10px; height: 10px; background: #10B981; border-radius: 50%; box-shadow: 0 0 10px #10B981;"></span>
     `;
     document.body.appendChild(floatBtn);
@@ -73,7 +73,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="width: 36px; height: 36px; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); display: flex; align-items: center; justify-content: center; border-radius: 10px;"><img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;"></div>
           <div>
-            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oraculum Live Advisor</h3>
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oraculum Live</h3>
             <span style="font-size: 11px; color: #10B981; display: flex; align-items: center; gap: 4px;">
               ● Contexto de BI Ativo
             </span>
@@ -473,7 +473,7 @@
     const mensagens = await window.carregarHistoricoNuvem(clientId);
     
     if (mensagens.length === 0) {
-      adicionarAoFeed('oraculo', 'Olá! Sou o Oraculum Live Advisor. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
+      adicionarAoFeed('oraculo', 'Olá! Sou o Oraculum Live. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
       return;
     }
 
@@ -498,11 +498,11 @@
 
     const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oraculum'}: ${h.message || h.content}`).join('\n');
 
-    const systemInstructionText = "Você é o Oraculum Live Advisor, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
+    const systemInstructionText = "Você é o Oraculum Live, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
 
     const promptCompleto = `
 [INSTRUÇÃO DE SISTEMA E PERSONA DO Oraculum]
-Você é o Oraculum Live Advisor, uma inteligência artificial viva, natural, humana e estratégica.
+Você é o Oraculum Live, uma inteligência artificial viva, natural, humana e estratégica.
 Responda SEMPRE em PORTUGUÊS DO BRASIL (PT-BR).
 Converse com o usuário de forma fluida e inteligente, adaptando-se a qualquer pergunta, saudação ou análise sem usar respostas pré-programadas ou textos fixos.
 
@@ -722,6 +722,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
     injetarEstruturaLiveAdvisor();
   }
 })();
+
 
 
 

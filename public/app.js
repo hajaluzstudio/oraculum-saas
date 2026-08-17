@@ -2106,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nomeVoz = selectVoz ? selectVoz.value : null;
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance("Olá! Esta é uma demonstração da voz executiva do Oraculum Live Advisor. O sistema de BI e análise preditiva de marketing está operando com máxima eficiência.");
+    const utterance = new SpeechSynthesisUtterance("Olá! Esta é uma demonstração da voz executiva do Oraculum Live. O sistema de BI e análise preditiva de marketing está operando com máxima eficiência.");
     utterance.lang = 'pt-BR';
     utterance.rate = 1.0;
     utterance.pitch = 0.95;
@@ -2390,7 +2390,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
             apiKey: apiKey,
             voiceId: voiceId
           })
@@ -2408,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'xi-api-key': apiKey
           },
           body: JSON.stringify({
-            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
             model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.5,
@@ -2597,7 +2597,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live Advisor agora está operando com voz humana de altíssima definição.",
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live agora está operando com voz humana de altíssima definição.",
             apiKey: apiKey,
             voiceId: voiceId
           })
@@ -2608,7 +2608,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live Advisor agora está operando com voz humana de altíssima definição.",
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live agora está operando com voz humana de altíssima definição.",
             voiceId: voiceId,
             apiKey: apiKey
           })
@@ -2927,7 +2927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'xi-api-key': elevenKey
           },
           body: JSON.stringify({
-            text: "Olá! Este é um teste da voz ultra-realista no Oraculum Live Advisor. Todos os sistemas estão operacionais!",
+            text: "Olá! Este é um teste da voz ultra-realista no Oraculum Live. Todos os sistemas estão operacionais!",
             model_id: "eleven_multilingual_v2",
             voice_settings: { stability: 0.5, similarity_boost: 0.75 }
           })
@@ -4695,6 +4695,7 @@ function generateMockDossier(clientName, niche) {
 }
 
 console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
+
 
 
 
