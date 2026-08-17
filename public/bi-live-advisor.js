@@ -509,41 +509,68 @@ ${historicoTexto || 'Primeira interação nesta reunião.'}
 PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 `;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
+    const modelosParaTestar = [
+      'gemini-1.5-flash-latest',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash',
+      'gemini-1.5-pro-latest',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
+    ];
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: promptCompleto }]
+    let ultimoErro = null;
+
+    for (const modelo of modelosParaTestar) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey.trim()}`;
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: promptCompleto }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+          if (response.status === 404 || msgErro.includes('not found')) {
+            ultimoErro = `Modelo ${modelo} (${response.status}): ${msgErro}`;
+            continue;
           }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800
+          throw new Error(`Google Gemini (${response.status}): ${msgErro}`);
         }
-      })
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      throw new Error(`Google Gemini (${response.status}): ${msgErro}`);
+        const data = await response.json();
+        const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!respostaTexto) {
+          throw new Error(`O modelo ${modelo} não retornou texto válido no campo candidates[0].content.parts[0].text.`);
+        }
+
+        return respostaTexto;
+      } catch (err) {
+        if (err.message && (err.message.includes('not found') || err.message.includes('404'))) {
+          ultimoErro = err.message;
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const data = await response.json();
-    const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!respostaTexto) {
-      throw new Error("O Gemini não retornou texto válido no campo candidates[0].content.parts[0].text.");
-    }
-
-    return respostaTexto;
+    throw new Error(ultimoErro || "Nenhum modelo compatível do Google Gemini foi encontrado para a versão v1beta.");
   }
   window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
 

@@ -84,38 +84,64 @@ window.testarConexaoGeminiReal = async function() {
     statusBadge.style.border = "1px solid rgba(234, 179, 8, 0.3)";
   }
 
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "ping" }] }]
-      })
-    });
+  const modelosParaTestar = [
+    'gemini-1.5-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro'
+  ];
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
+  let conectou = false;
+  let ultimoErro = '';
+  let modeloSucesso = '';
+
+  for (const modelo of modelosParaTestar) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "ping" }] }]
+        })
+      });
+
+      if (res.ok) {
+        conectou = true;
+        modeloSucesso = modelo;
+        break;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        ultimoErro = err.error?.message || `HTTP ${res.status}`;
+        if (res.status !== 404 && !ultimoErro.includes('not found')) {
+          // Erro de autenticação/chave inválida
+          break;
+        }
+      }
+    } catch (error) {
+      ultimoErro = error.message;
     }
+  }
 
+  if (conectou) {
     if (statusBadge) {
-      statusBadge.innerText = "● Conectada & Operacional";
+      statusBadge.innerText = `● Conectada & Operacional (${modeloSucesso})`;
       statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
       statusBadge.style.color = "#34D399";
       statusBadge.style.border = "1px solid rgba(16, 185, 129, 0.3)";
     }
     const audit = document.getElementById('audit-log-gemini');
-    if (audit) audit.innerText = "Última verificação: Conexão com Gemini 1.5 Flash estabelecida com sucesso!";
-
-  } catch (error) {
+    if (audit) audit.innerText = `Última verificação: Conexão com ${modeloSucesso} estabelecida com sucesso!`;
+  } else {
     if (statusBadge) {
-      statusBadge.innerText = `● Erro: ${error.message}`;
+      statusBadge.innerText = `● Erro: ${ultimoErro}`;
       statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
       statusBadge.style.color = "#F87171";
       statusBadge.style.border = "1px solid rgba(239, 68, 68, 0.3)";
     }
     const audit = document.getElementById('audit-log-gemini');
-    if (audit) audit.innerText = `Última verificação: ${error.message}`;
+    if (audit) audit.innerText = `Última verificação: ${ultimoErro}`;
   }
 };
 
