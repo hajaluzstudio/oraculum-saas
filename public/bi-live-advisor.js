@@ -390,7 +390,93 @@
     return `Análise estratégica para **${ctx.cliente}**: Toda tomada de decisão no sistema prioriza métricas financeiras reais (CAC, LTV e ROAS). Com o investimento atual de **${ctx.gastoTrafego}** gerando **${ctx.faturamento}**, as próximas ações devem focar na escala dos criativos validados pelo AI Creative Score.`;
   }
 
-  async function perguntarAoOraculoGemini(perguntaUsuario, contextoBI = {}) {
+  // =======================================================
+  // ROTINAS DE SINCRONIZAÇÃO EM NUVEM (Supabase / Backend DB)
+  // =======================================================
+  window.carregarHistoricoNuvem = async function(clientId) {
+    if (!clientId) return [];
+    try {
+      const res = await fetch(`/api/oraculo-chat/${encodeURIComponent(clientId)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(json.data));
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar histórico da nuvem, utilizando fallback local:", err);
+    }
+    try {
+      return JSON.parse(localStorage.getItem(`ORACULO_HIST_${clientId}`) || '[]');
+    } catch(e) {
+      return [];
+    }
+  };
+
+  window.salvarMensagemNuvem = async function(clientId, role, message, metadata = {}) {
+    if (!clientId || !message) return null;
+    try {
+      const res = await fetch('/api/oraculo-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, role, message, metadata })
+      });
+      const json = await res.json().catch(() => ({}));
+
+      const localHist = JSON.parse(localStorage.getItem(`ORACULO_HIST_${clientId}`) || '[]');
+      localHist.push(json.data || { clientId, role, message, metadata, created_at: new Date().toISOString() });
+      localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(localHist));
+
+      return json.data;
+    } catch (err) {
+      console.error("Erro ao salvar mensagem na nuvem:", err);
+      return null;
+    }
+  };
+
+  window.apagarMensagemNuvem = async function(mensagemId) {
+    if (!mensagemId) return;
+    try {
+      await fetch(`/api/oraculo-chat/${encodeURIComponent(mensagemId)}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn("Erro ao apagar mensagem da nuvem:", e);
+    }
+  };
+
+  window.limparHistoricoClienteNuvem = async function(clientId) {
+    if (!clientId) return;
+    if (confirm("Tem certeza que deseja apagar todo o histórico de conversas deste cliente na nuvem?")) {
+      try {
+        await fetch(`/api/oraculo-chat/client/${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+      } catch (e) {
+        console.warn("Erro ao apagar histórico da nuvem:", e);
+      }
+      localStorage.removeItem(`ORACULO_HIST_${clientId}`);
+      const feed = document.getElementById('oraculo-chat-feed');
+      if (feed) feed.innerHTML = '';
+      alert("✅ Histórico do cliente apagado com sucesso!");
+    }
+  };
+
+  window.renderizarHistoricoNoFeed = async function(clientId) {
+    const feed = document.getElementById('oraculo-chat-feed');
+    if (!feed) return;
+    
+    feed.innerHTML = '';
+    const mensagens = await window.carregarHistoricoNuvem(clientId);
+    
+    if (mensagens.length === 0) {
+      adicionarAoFeed('oraculo', 'Olá! Sou o Oráculo Live Advisor. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
+      return;
+    }
+
+    mensagens.forEach(msg => {
+      adicionarAoFeed(msg.role === 'user' ? 'usuario' : 'oraculo', msg.message);
+    });
+  };
+
+  async function perguntarAoOraculoGemini(perguntaUsuario, contextoBI = {}, historico = []) {
     const apiKey = localStorage.getItem('GEMINI_API_KEY') || 
                    localStorage.getItem('custom_gemini_api_key') || 
                    localStorage.getItem('gemini_api_key') || 
@@ -401,11 +487,17 @@
       throw new Error("Chave do Gemini não configurada em 'Configurações Master'. Insira a chave Gemini API Key para respostas da IA ao vivo.");
     }
 
+    const historicoTexto = historico.slice(-6).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message}`).join('\n');
+
     const promptSistema = `
 Você é o Oráculo Live Advisor, o Diretor de Performance e Inteligência de Marketing da Agência.
 Seu objetivo é analisar dados de tráfego pago, CAC, ROAS e ROI com tom executivo, direto, confiante e estratégico.
 Responda sempre em Português do Brasil com foco financeiro e de escala de negócios.
 Dados contextuais atuais da conta: ${JSON.stringify(contextoBI)}
+
+Histórico recente de diálogo:
+${historicoTexto}
+
 Pergunta do usuário: "${perguntaUsuario}"
 `;
 
@@ -456,6 +548,11 @@ Pergunta do usuário: "${perguntaUsuario}"
     if (input) input.value = '';
 
     const contexto = extrairContextoCompletoBI();
+    const clientId = contexto.cliente || 'cliente_ativo';
+
+    // Persiste pergunta do usuário na Nuvem
+    await window.salvarMensagemNuvem(clientId, 'user', texto, contexto);
+
     const btnSend = document.getElementById('btn-send-oraculo');
     if (btnSend) btnSend.disabled = true;
 
@@ -472,9 +569,11 @@ Pergunta do usuário: "${perguntaUsuario}"
     }
 
     try {
+      const historicoAtual = await window.carregarHistoricoNuvem(clientId);
       let respostaTexto = "";
+
       try {
-        respostaTexto = await perguntarAoOraculoGemini(texto, contexto);
+        respostaTexto = await perguntarAoOraculoGemini(texto, contexto, historicoAtual);
       } catch(geminiErr) {
         console.warn("Consulta ao Gemini falhou, usando motor especialista de regras:", geminiErr);
         respostaTexto = gerarRespostaInteligente(texto, contexto);
@@ -484,6 +583,11 @@ Pergunta do usuário: "${perguntaUsuario}"
       if (loadEl) loadEl.remove();
 
       adicionarAoFeed('oraculo', respostaTexto);
+      
+      // Persiste resposta da IA na Nuvem
+      await window.salvarMensagemNuvem(clientId, 'assistant', respostaTexto, contexto);
+
+      // Reproduz áudio via ElevenLabs
       window.falarTextoOraculo(respostaTexto);
 
     } catch (err) {
@@ -493,6 +597,7 @@ Pergunta do usuário: "${perguntaUsuario}"
 
       const respostaFallback = gerarRespostaInteligente(texto, contexto);
       adicionarAoFeed('oraculo', respostaFallback);
+      await window.salvarMensagemNuvem(clientId, 'assistant', respostaFallback, contexto);
       window.falarTextoOraculo(respostaFallback);
     } finally {
       if (btnSend) btnSend.disabled = false;
