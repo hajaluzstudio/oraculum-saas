@@ -2027,6 +2027,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.salvarElevenLabs = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const inputKey = document.getElementById('setting-eleven-key') || 
+                     document.getElementById('setting-eleven-key-sa') || 
+                     document.getElementById('elevenlabs-api-key') || 
+                     document.querySelector('input[placeholder*="xi-"]');
+
+    const inputVoice = document.getElementById('setting-eleven-voice-id') || 
+                       document.getElementById('setting-eleven-voice-id-sa') || 
+                       document.getElementById('elevenlabs-voice-id');
+
+    const elevenKey = inputKey ? inputKey.value.trim() : '';
+    const voiceId = inputVoice ? inputVoice.value.trim() : '21m00Tcm4TlvDq8ikWAM';
+
+    if (elevenKey) {
+      localStorage.setItem('ELEVENLABS_API_KEY', elevenKey);
+      localStorage.setItem('elevenlabs_api_key', elevenKey);
+    } else {
+      localStorage.removeItem('ELEVENLABS_API_KEY');
+      localStorage.removeItem('elevenlabs_api_key');
+    }
+
+    if (voiceId) {
+      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
+      localStorage.setItem('elevenlabs_voice_id', voiceId);
+    }
+
+    if (typeof carregarChavesSalvas === 'function') {
+      carregarChavesSalvas();
+    }
+
+    window.exibirToastSucesso("✓ Configurações da ElevenLabs salvas com sucesso!");
+  };
+
   window.testarConexaoElevenLabsLive = async function() {
     const inputKey = document.getElementById('setting-eleven-key') || 
                      document.getElementById('setting-eleven-key-sa') || 
@@ -2054,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setUnset(badge);
       setUnset(badgeSa);
       if (audit) audit.innerText = 'Última verificação: Nenhuma chave da ElevenLabs informada';
-      alert('⚠️ Por favor, insira a chave da ElevenLabs antes de testar.');
+      alert('⚠️ Por favor, insira a sua API Key da ElevenLabs antes de testar.');
       return { success: false };
     }
 
