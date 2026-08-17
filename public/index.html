@@ -2458,9 +2458,8 @@
         // SEM SESSÃO -> OBRIGA A TELA DE LOGIN A FICAR VISÍVEL
         sessionStorage.removeItem('oraculum_session');
         document.documentElement.classList.remove('is-authenticated');
-          authGate.style.setProperty('display', 'flex', 'important');
-          authGate.style.setProperty('pointer-events', 'auto', 'important');
-        }
+        authGate.style.setProperty('display', 'flex', 'important');
+        authGate.style.setProperty('pointer-events', 'auto', 'important');
         window.atualizarCardUsuarioLogado(null);
       } else {
         // COM SESSÃO VÁLIDA -> EXIBE O DASHBOARD
