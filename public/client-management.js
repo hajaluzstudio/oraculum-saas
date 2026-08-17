@@ -78,6 +78,28 @@ window.abrirModalNovoCliente = function(clientId = null) {
             </div>
           </div>
 
+          <!-- BLOCO VISUAL: IDENTIFICADORES DE TRÁFEGO PAGO -->
+          <div class="p-3 bg-slate-950/70 border border-purple-500/20 rounded-xl space-y-2">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-rectangle-ad text-purple-400 text-xs"></i>
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Identificadores de Tráfego Pago & Tracking</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ID Conta Meta Ads (act_...)</label>
+                <input type="text" id="client-modal-meta-account" placeholder="Ex: act_123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Meta Pixel ID</label>
+                <input type="text" id="client-modal-meta-pixel" placeholder="Ex: 9876543210" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Google Ads Customer ID</label>
+                <input type="text" id="client-modal-google-customer" placeholder="Ex: 123-456-7890" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+              </div>
+            </div>
+          </div>
+
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Notas & Histórico da Agência Anterior</label>
             <textarea id="client-modal-notes" rows="3" placeholder="Informações relevantes do cliente, objeções do público, diferenciais e tom de voz..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-purple-500"></textarea>
@@ -110,12 +132,21 @@ window.abrirModalNovoCliente = function(clientId = null) {
       document.getElementById('client-modal-instagram').value = client.instagram || '';
       document.getElementById('client-modal-avg-ticket').value = client.avg_ticket || '';
       document.getElementById('client-modal-target-revenue').value = client.target_revenue || '';
+      document.getElementById('client-modal-meta-account').value = client.meta_ad_account_id || client.meta_account_id || '';
+      document.getElementById('client-modal-meta-pixel').value = client.meta_pixel_id || '';
+      document.getElementById('client-modal-google-customer').value = client.google_customer_id || '';
       document.getElementById('client-modal-notes').value = client.previous_agency_notes || client.notes || '';
     }
   } else {
     const titleEl = document.getElementById('modal-client-title');
     if (titleEl) titleEl.innerText = 'Cadastrar Novo Cliente da Agência';
     document.getElementById('client-modal-id').value = '';
+    const inputMetaAcc = document.getElementById('client-modal-meta-account');
+    const inputMetaPix = document.getElementById('client-modal-meta-pixel');
+    const inputGogCust = document.getElementById('client-modal-google-customer');
+    if (inputMetaAcc) inputMetaAcc.value = '';
+    if (inputMetaPix) inputMetaPix.value = '';
+    if (inputGogCust) inputGogCust.value = '';
   }
 
   modal.style.setProperty('display', 'flex', 'important');
@@ -145,6 +176,9 @@ window.salvarCliente = async function(e) {
   const instagram = document.getElementById('client-modal-instagram').value.trim();
   const avg_ticket = document.getElementById('client-modal-avg-ticket').value.trim();
   const target_revenue = document.getElementById('client-modal-target-revenue').value.trim();
+  const meta_ad_account_id = document.getElementById('client-modal-meta-account')?.value.trim() || '';
+  const meta_pixel_id = document.getElementById('client-modal-meta-pixel')?.value.trim() || '';
+  const google_customer_id = document.getElementById('client-modal-google-customer')?.value.trim() || '';
   const previous_agency_notes = document.getElementById('client-modal-notes').value.trim();
 
   const btn = document.getElementById('btn-save-client-crud');
@@ -162,13 +196,17 @@ window.salvarCliente = async function(e) {
       try {
         if (id) {
           const { error } = await client.from('clients').update({
-            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes, updated_at: new Date().toISOString()
+            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+            meta_ad_account_id, meta_pixel_id, google_customer_id,
+            updated_at: new Date().toISOString()
           }).eq('id', id);
           if (!error) savedInSupa = true;
         } else {
           const newId = 'client_' + Date.now();
           const { error } = await client.from('clients').insert([{
-            id: newId, organization_id: activeTenantId, name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes, status: 'active'
+            id: newId, organization_id: activeTenantId, name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+            meta_ad_account_id, meta_pixel_id, google_customer_id,
+            status: 'active'
           }]);
           if (!error) savedInSupa = true;
         }
@@ -181,12 +219,17 @@ window.salvarCliente = async function(e) {
       if (id) {
         const idx = (window.clientesMock || []).findIndex(c => String(c.id) === String(id));
         if (idx !== -1) {
-          window.clientesMock[idx] = { ...window.clientesMock[idx], name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes };
+          window.clientesMock[idx] = { 
+            ...window.clientesMock[idx], 
+            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+            meta_ad_account_id, meta_pixel_id, google_customer_id 
+          };
         }
       } else {
         const novoCliente = {
           id: 'client_' + Date.now(),
           name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+          meta_ad_account_id, meta_pixel_id, google_customer_id,
           status: 'active', created_at: new Date().toLocaleDateString('pt-BR')
         };
         window.clientesMock.unshift(novoCliente);

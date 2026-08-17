@@ -141,7 +141,7 @@ app.get('/api/clients', tenantAuthMiddleware, async (req: Request, res: Response
 app.post('/api/clients', tenantAuthMiddleware, async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
+    const { name, niche, sanitized_history, website, previous_agency_notes, meta_ad_account_id, meta_pixel_id, google_customer_id } = req.body;
 
     if (!name || !niche) {
       return res.status(400).json({ error: 'Nome e Nicho do cliente são obrigatórios.' });
@@ -159,6 +159,9 @@ app.post('/api/clients', tenantAuthMiddleware, async (req: Request, res: Respons
             status: 'active',
             website: website || null,
             previous_agency_notes: sanitized_history || previous_agency_notes || null,
+            meta_ad_account_id: meta_ad_account_id || null,
+            meta_pixel_id: meta_pixel_id || null,
+            google_customer_id: google_customer_id || null,
           }
         ])
         .select()
@@ -180,6 +183,9 @@ app.post('/api/clients', tenantAuthMiddleware, async (req: Request, res: Respons
         status: 'active',
         website: website || null,
         previous_agency_notes: sanitized_history || previous_agency_notes || null,
+        meta_ad_account_id: meta_ad_account_id || null,
+        meta_pixel_id: meta_pixel_id || null,
+        google_customer_id: google_customer_id || null,
         created_at: new Date().toISOString(),
       };
     }
