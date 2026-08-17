@@ -1052,6 +1052,81 @@
             </div>
           </div>
 
+          <!-- 1. CARD GOOGLE GEMINI AI API -->
+          <div class="card-glass" style="margin-bottom: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: #6366F1;"></i> Google Gemini AI API</h3>
+                <p>Motor neural para o Oráculo Live Advisor e raciocínio analítico preditivo.</p>
+              </div>
+              <span id="badge-gemini-status" class="badge-tag" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B;">Modo Fallback Local</span>
+            </div>
+            <div style="margin-top: 14px;">
+              <div class="form-group">
+                <label for="setting-gemini-key">API Key (Google AI Studio)</label>
+                <input type="password" id="setting-gemini-key" placeholder="AIzaSy... (Chave API do Google Studio)">
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px;">
+                <span style="color: #94A3B8;">Obtenha uma chave gratuita no Google AI Studio.</span>
+                <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" style="color: #818CF8; text-decoration: underline;">
+                  Gerar Chave no Google AI Studio <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. CARD ELEVENLABS TTS (VOZ HUMANA ULTRA-REALISTA) -->
+          <div class="card-glass" style="margin-bottom: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3><i class="fa-solid fa-volume-high" style="color: #A855F7;"></i> ElevenLabs TTS (Voz Humana Ultra-Realista)</h3>
+                <p>Sintetizador neural em HD com entonação humana natural para respostas faladas ao vivo.</p>
+              </div>
+              <span id="badge-eleven-status" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">Voz WebSpeech Padrão</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px;">
+              <div class="form-group">
+                <label for="setting-eleven-key">API Key ElevenLabs</label>
+                <input type="password" id="setting-eleven-key" placeholder="sk_... (Chave API ElevenLabs)">
+              </div>
+              <div class="form-group">
+                <label for="setting-eleven-voice-id">Voice ID (Identificador da Voz)</label>
+                <input type="text" id="setting-eleven-voice-id" placeholder="Ex: 21m00Tcm4TlvDq8ikWAM" value="21m00Tcm4TlvDq8ikWAM">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+              <a href="https://elevenlabs.io/" target="_blank" rel="noreferrer" style="color: #C084FC; font-size: 12px; text-decoration: underline;">
+                Criar conta na ElevenLabs <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
+              </a>
+              <button type="button" class="btn-secondary sm" id="btn-test-eleven-voice" style="background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 11px;">
+                <i class="fa-solid fa-play"></i> Testar Amostra de Voz ElevenLabs
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. CARD DINÂMICO DE APIS CUSTOMIZADAS / EXTRAS -->
+          <div class="card-glass" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div>
+                <h3><i class="fa-solid fa-key" style="color: #F59E0B;"></i> Outras Chaves APIs e Conexões Customizadas</h3>
+                <p>Cadastre integrações personalizadas (OpenAI, CRMs, Webhooks, etc.).</p>
+              </div>
+            </div>
+
+            <!-- Lista de Chaves customizadas -->
+            <div id="custom-keys-list" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;"></div>
+
+            <!-- Inputs para nova chave customizada -->
+            <div style="display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 8px; margin-top: 14px;">
+              <input type="text" id="input-new-key-name" placeholder="Nome (Ex: OpenAI, RD Station...)" style="background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
+              <input type="password" id="input-new-key-value" placeholder="Chave API / Token" style="background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
+              <button type="button" class="btn-secondary sm" id="btn-add-custom-key" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 11px;">
+                <i class="fa-solid fa-plus"></i> Adicionar
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. CREDENCIAIS META ADS E GOOGLE ADS -->
           <div class="card-glass">
             <div class="card-header">
               <div>

@@ -185,10 +185,13 @@
     feed.scrollTop = feed.scrollHeight;
   }
 
-  window.falarTextoOraculo = function(textoLimpo) {
-    if (!('speechSynthesis' in window)) return;
+  window.falarTextoOraculo = async function(textoLimpo) {
+    if (!textoLimpo) return;
     try {
-      window.speechSynthesis.cancel();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
       const formatado = textoLimpo
         .replace(/[*_#`~]/g, '')
         .replace(/ROAS/gi, 'Rôas')
@@ -197,36 +200,76 @@
         .replace(/(\d+)k\b/gi, '$1 mil')
         .replace(/(\d+)%/g, '$1 por cento');
 
-      const utterance = new SpeechSynthesisUtterance(formatado);
-      utterance.lang = 'pt-BR';
-      const vozHD = obterMelhorVozHD();
-      if (vozHD) utterance.voice = vozHD;
-      utterance.rate = 1.02;
-
       const indicador = document.getElementById('oraculo-voice-indicator');
       const statusText = document.getElementById('voice-status-text');
 
-      utterance.onstart = () => {
-        if (indicador) {
-          indicador.style.display = 'flex';
-          indicador.classList.remove('hidden');
-          if (statusText) statusText.innerText = 'Oráculo falando...';
-        }
-      };
-      utterance.onend = () => {
-        if (indicador) {
-          indicador.style.display = 'none';
-          indicador.classList.add('hidden');
-        }
-      };
-      utterance.onerror = () => {
-        if (indicador) {
-          indicador.style.display = 'none';
-          indicador.classList.add('hidden');
-        }
-      };
+      const elevenKey = localStorage.getItem('ELEVENLABS_API_KEY');
+      const elevenVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
 
-      window.speechSynthesis.speak(utterance);
+      if (elevenKey) {
+        try {
+          if (indicador) {
+            indicador.style.display = 'flex';
+            indicador.classList.remove('hidden');
+            if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
+          }
+
+          const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenVoiceId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'xi-api-key': elevenKey.trim()
+            },
+            body: JSON.stringify({
+              text: formatado,
+              model_id: "eleven_multilingual_v2",
+              voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+            })
+          });
+
+          if (res.ok) {
+            const blob = await res.blob();
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+            audio.onended = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
+            audio.onerror = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
+            await audio.play();
+            return;
+          }
+        } catch (errEleven) {
+          console.warn("Fallback ElevenLabs -> WebSpeech:", errEleven);
+        }
+      }
+
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(formatado);
+        utterance.lang = 'pt-BR';
+        const vozHD = obterMelhorVozHD();
+        if (vozHD) utterance.voice = vozHD;
+        utterance.rate = 1.02;
+
+        utterance.onstart = () => {
+          if (indicador) {
+            indicador.style.display = 'flex';
+            indicador.classList.remove('hidden');
+            if (statusText) statusText.innerText = 'Oráculo falando...';
+          }
+        };
+        utterance.onend = () => {
+          if (indicador) {
+            indicador.style.display = 'none';
+            indicador.classList.add('hidden');
+          }
+        };
+        utterance.onerror = () => {
+          if (indicador) {
+            indicador.style.display = 'none';
+            indicador.classList.add('hidden');
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
     } catch(e) {
       console.warn("Falha no áudio:", e);
     }

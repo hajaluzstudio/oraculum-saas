@@ -1728,15 +1728,178 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ============================================================================
+  // COFRE DE CONFIGURAÇÕES DE APIS (GEMINI, ELEVENLABS, META, GOOGLE, CUSTOM)
+  // ============================================================================
+  const settingGeminiKey = document.getElementById('setting-gemini-key');
+  const settingElevenKey = document.getElementById('setting-eleven-key');
+  const settingElevenVoiceId = document.getElementById('setting-eleven-voice-id');
+  const btnTestElevenVoice = document.getElementById('btn-test-eleven-voice');
+  const customKeysList = document.getElementById('custom-keys-list');
+  const inputNewKeyName = document.getElementById('input-new-key-name');
+  const inputNewKeyValue = document.getElementById('input-new-key-value');
+  const btnAddCustomKey = document.getElementById('btn-add-custom-key');
+  const badgeGeminiStatus = document.getElementById('badge-gemini-status');
+  const badgeElevenStatus = document.getElementById('badge-eleven-status');
+
+  let customKeysState = [];
+
+  function renderCustomKeys() {
+    if (!customKeysList) return;
+    customKeysList.innerHTML = '';
+    if (customKeysState.length === 0) {
+      customKeysList.innerHTML = '<p style="color: #64748B; font-size: 11px; margin: 0;">Nenhuma chave personalizada cadastrada ainda.</p>';
+      return;
+    }
+
+    customKeysState.forEach((item) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: #0F172A; border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 8px; font-size: 12px;';
+      div.innerHTML = `
+        <div>
+          <span style="font-weight: bold; color: #E2E8F0;">${item.name}:</span>
+          <span style="font-family: monospace; color: #94A3B8; margin-left: 6px;">••••••••${item.key.slice(-4)}</span>
+        </div>
+        <button type="button" data-id="${item.id}" class="btn-delete-custom-key" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 10px;">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      `;
+      customKeysList.appendChild(div);
+    });
+
+    document.querySelectorAll('.btn-delete-custom-key').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        customKeysState = customKeysState.filter(k => k.id !== id);
+        localStorage.setItem('CUSTOM_API_KEYS', JSON.stringify(customKeysState));
+        renderCustomKeys();
+      });
+    });
+  }
+
+  function carregarChavesSalvas() {
+    const savedGemini = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || '';
+    const savedEleven = localStorage.getItem('ELEVENLABS_API_KEY') || '';
+    const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
+    const savedCustom = localStorage.getItem('CUSTOM_API_KEYS');
+
+    if (settingGeminiKey && savedGemini) settingGeminiKey.value = savedGemini;
+    if (settingElevenKey && savedEleven) settingElevenKey.value = savedEleven;
+    if (settingElevenVoiceId) settingElevenVoiceId.value = savedVoiceId;
+
+    if (badgeGeminiStatus) {
+      if (savedGemini) {
+        badgeGeminiStatus.innerText = 'Ativo / Configurado';
+        badgeGeminiStatus.style.background = 'rgba(16, 185, 129, 0.15)';
+        badgeGeminiStatus.style.color = '#10B981';
+      } else {
+        badgeGeminiStatus.innerText = 'Modo Fallback Local';
+        badgeGeminiStatus.style.background = 'rgba(245, 158, 11, 0.15)';
+        badgeGeminiStatus.style.color = '#F59E0B';
+      }
+    }
+
+    if (badgeElevenStatus) {
+      if (savedEleven) {
+        badgeElevenStatus.innerText = 'Voz Humana Ativa';
+        badgeElevenStatus.style.background = 'rgba(16, 185, 129, 0.15)';
+        badgeElevenStatus.style.color = '#10B981';
+      } else {
+        badgeElevenStatus.innerText = 'Voz WebSpeech Padrão';
+        badgeElevenStatus.style.background = 'rgba(148, 163, 184, 0.15)';
+        badgeElevenStatus.style.color = '#94A3B8';
+      }
+    }
+
+    if (savedCustom) {
+      try { customKeysState = JSON.parse(savedCustom); } catch(e) {}
+    }
+    renderCustomKeys();
+  }
+
+  carregarChavesSalvas();
+
+  if (btnAddCustomKey) {
+    btnAddCustomKey.addEventListener('click', () => {
+      const name = inputNewKeyName ? inputNewKeyName.value.trim() : '';
+      const val = inputNewKeyValue ? inputNewKeyValue.value.trim() : '';
+      if (!name || !val) {
+        alert("Por favor, preencha o nome e a chave de API.");
+        return;
+      }
+      customKeysState.push({ id: Date.now().toString(), name, key: val });
+      localStorage.setItem('CUSTOM_API_KEYS', JSON.stringify(customKeysState));
+      if (inputNewKeyName) inputNewKeyName.value = '';
+      if (inputNewKeyValue) inputNewKeyValue.value = '';
+      renderCustomKeys();
+    });
+  }
+
+  if (btnTestElevenVoice) {
+    btnTestElevenVoice.addEventListener('click', async () => {
+      const elevenKey = settingElevenKey ? settingElevenKey.value.trim() : '';
+      const voiceId = settingElevenVoiceId ? settingElevenVoiceId.value.trim() : '21m00Tcm4TlvDq8ikWAM';
+      if (!elevenKey) {
+        alert('Por favor, informe a API Key do ElevenLabs primeiro.');
+        return;
+      }
+
+      btnTestElevenVoice.disabled = true;
+      btnTestElevenVoice.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando Áudio...';
+
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': elevenKey
+          },
+          body: JSON.stringify({
+            text: "Olá! Este é um teste da voz ultra-realista no Oráculo Live Advisor. Todos os sistemas estão operacionais!",
+            model_id: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          })
+        });
+
+        if (!response.ok) throw new Error('Falha ao autenticar na ElevenLabs. Verifique sua chave API.');
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+      } catch (err) {
+        alert(`Erro ao testar voz ElevenLabs: ${err.message}`);
+      } finally {
+        btnTestElevenVoice.disabled = false;
+        btnTestElevenVoice.innerHTML = '<i class="fa-solid fa-play"></i> Testar Amostra de Voz ElevenLabs';
+      }
+    });
+  }
+
   if (formAdCredentials) {
     formAdCredentials.addEventListener('submit', (e) => {
       e.preventDefault();
+
+      if (settingGeminiKey) {
+        const gKey = settingGeminiKey.value.trim();
+        localStorage.setItem('GEMINI_API_KEY', gKey);
+        localStorage.setItem('gemini_api_key', gKey);
+      }
+      if (settingElevenKey) {
+        localStorage.setItem('ELEVENLABS_API_KEY', settingElevenKey.value.trim());
+      }
+      if (settingElevenVoiceId) {
+        localStorage.setItem('ELEVENLABS_VOICE_ID', settingElevenVoiceId.value.trim());
+      }
+
+      carregarChavesSalvas();
+
       if (!settingsStatusBox) return;
       settingsStatusBox.style.display = 'block';
       settingsStatusBox.style.background = 'rgba(16, 185, 129, 0.1)';
       settingsStatusBox.style.border = '1px solid #10B981';
       settingsStatusBox.style.color = '#10B981';
-      settingsStatusBox.innerHTML = '🔒 Credenciais salvas com sucesso no Cofre da Organização (Tenant RLS)!';
+      settingsStatusBox.innerHTML = '🔒 Todas as Credenciais de API (Gemini, ElevenLabs, Meta e Google) foram salvas com sucesso!';
     });
   }
 
