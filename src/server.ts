@@ -853,10 +853,11 @@ app.post('/api/landing-pages/generate', tenantAuthMiddleware, async (req: Reques
       offerGoal
     });
 
-    return res.json({ success: true, data: landingPage });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Erro ao gerar Landing Page.' });
   }
+});
+
 /**
  * POST /api/tts - Proxy para síntese de voz da ElevenLabs (solução para CORS no browser)
  */
