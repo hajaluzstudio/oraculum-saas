@@ -871,7 +871,7 @@ app.post('/api/tts', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Chave da ElevenLabs não informada.' });
     }
 
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}`, {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}?output_format=mp3_44100_128`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',

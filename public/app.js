@@ -2072,53 +2072,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputVoice = document.getElementById('setting-eleven-voice-id') || 
                        document.getElementById('setting-eleven-voice-id-sa') || 
                        document.getElementById('elevenlabs-voice-id') || 
-                       document.querySelector('input[placeholder*="Voice ID"]') || 
-                       { value: 'pNInz6obpgDQGcFmaJgB' };
-
-    const apiKey = inputKey ? inputKey.value.trim() : (localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key'));
-    const voiceId = (inputVoice && inputVoice.value.trim()) ? inputVoice.value.trim() : 'pNInz6obpgDQGcFmaJgB';
-
-    const badge = document.getElementById('badge-eleven-status');
-    const badgeSa = document.getElementById('badge-eleven-status-sa');
-    const audit = document.getElementById('audit-log-eleven');
+                       document.querySelector('input[placeholder*="Voice ID"]');
+    
+    const apiKey = (inputKey && inputKey.value.trim()) ? inputKey.value.trim() : (localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key'));
+    const voiceId = (inputVoice && inputVoice.value.trim()) ? inputVoice.value.trim() : (localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || 'pNInz6obpgDQGcFmaJgB');
 
     if (!apiKey) {
-      alert("⚠️ Por favor, insira e salve sua API Key da ElevenLabs antes de testar.");
+      alert("⚠️ Por favor, insira a sua API Key da ElevenLabs antes de testar.");
       return;
     }
 
-    const btnTest = document.getElementById('btn-test-elevenlabs') || document.getElementById('btn-test-eleven-voice');
+    const btnTest = document.getElementById('btn-test-elevenlabs') || document.getElementById('btn-test-eleven-voice') || event?.target;
+    const textoOriginal = btnTest ? btnTest.innerText : '';
     if (btnTest) btnTest.innerText = "⏳ Gerando Áudio...";
 
     try {
-      const response = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: "Conexão estabelecida com sucesso. O Oráculo Live Advisor agora possui voz humana ultra-realista.",
-          voiceId: voiceId,
-          apiKey: apiKey
-        })
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || `Erro HTTP ${response.status}`);
+      let response;
+      try {
+        response = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: "Conexão com a ElevenLabs validada com sucesso! O Oráculo Live Advisor agora está operando com voz humana de alta definição.",
+            voiceId: voiceId,
+            apiKey: apiKey
+          })
+        });
+      } catch(proxyErr) {
+        console.warn("Proxy local indisponível, tentando chamada direta...", proxyErr);
       }
 
-      const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob);
+      if (!response || !response.ok) {
+        response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'audio/mpeg',
+            'Content-Type': 'application/json',
+            'xi-api-key': apiKey
+          },
+          body: JSON.stringify({
+            text: "Conexão com a ElevenLabs validada com sucesso! O Oráculo Live Advisor agora está operando com voz humana de alta definição.",
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.8
+            }
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail?.message || `Erro HTTP ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      audio.play();
+      
+      await audio.play();
 
       localStorage.setItem('ELEVENLABS_API_KEY', apiKey);
       localStorage.setItem('elevenlabs_api_key', apiKey);
       localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
       localStorage.setItem('elevenlabs_voice_id', voiceId);
 
+      const badge = document.getElementById('badge-eleven-status') || document.getElementById('badge-elevenlabs-status');
+      const badgeSa = document.getElementById('badge-eleven-status-sa');
+      const audit = document.getElementById('audit-log-eleven');
+
       const setOk = (el) => {
         if (!el) return;
-        el.innerText = '● ElevenLabs Validada (Proxy TTS)';
+        el.innerText = "● ElevenLabs Conectada";
         el.style.background = 'rgba(16, 185, 129, 0.15)';
         el.style.color = '#10B981';
       };
@@ -2126,15 +2151,18 @@ document.addEventListener('DOMContentLoaded', () => {
       setOk(badgeSa);
 
       const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Áudio gerado via Proxy /api/tts (${voiceId})`;
+      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Voz humana gerada em HD (${voiceId})`;
 
       if (typeof window.exibirToastSucesso === 'function') {
-        window.exibirToastSucesso("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
+        window.exibirToastSucesso("✅ Conexão ElevenLabs Validada! Voz humana reproduzida com sucesso.");
       } else {
-        alert("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
+        alert("✅ Conexão ElevenLabs Validada! Voz humana reproduzida com sucesso.");
       }
-    } catch (err) {
-      console.error("Erro ElevenLabs:", err);
+
+    } catch (error) {
+      console.error("Erro ElevenLabs:", error);
+      const badge = document.getElementById('badge-eleven-status') || document.getElementById('badge-elevenlabs-status');
+      const badgeSa = document.getElementById('badge-eleven-status-sa');
       const setErr = (el) => {
         if (!el) return;
         el.innerText = '✖ Chave ElevenLabs Inválida';
@@ -2144,9 +2172,9 @@ document.addEventListener('DOMContentLoaded', () => {
       setErr(badge);
       setErr(badgeSa);
 
-      alert(`Erro na validação ElevenLabs: ${err.message}`);
+      alert(`Erro na validação ElevenLabs: ${error.message}\nVerifique se a chave possui créditos ativos na conta.`);
     } finally {
-      if (btnTest) btnTest.innerText = "⚡ Testar Conexão";
+      if (btnTest) btnTest.innerText = textoOriginal || "⚡ Testar Conexão";
     }
   };
 

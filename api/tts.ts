@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 /**
- * POST /api/tts - Proxy para síntese de voz da ElevenLabs (solução para CORS no browser)
+ * POST /api/tts - Proxy para síntese de voz da ElevenLabs (solução para CORS e 405 Method Not Allowed)
  */
 app.post('/api/tts', async (req: Request, res: Response) => {
   try {
@@ -21,7 +21,7 @@ app.post('/api/tts', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Chave da ElevenLabs não informada.' });
     }
 
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}`, {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}?output_format=mp3_44100_128`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
