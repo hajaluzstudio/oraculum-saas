@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
@@ -3671,33 +3671,6 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(() => console.log('📱 [PWA] Service Worker registrado com sucesso.'))
       .catch((err) => console.warn('📱 [PWA] Erro ao registrar Service Worker:', err));
-  }
-
-  let deferredPwaPrompt = null;
-  const btnInstallPwa = document.getElementById('btn-install-pwa');
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPwaPrompt = e;
-    if (btnInstallPwa) {
-      btnInstallPwa.style.display = 'flex';
-    }
-  });
-
-  if (btnInstallPwa) {
-    btnInstallPwa.addEventListener('click', async () => {
-      if (deferredPwaPrompt) {
-        deferredPwaPrompt.prompt();
-        const choice = await deferredPwaPrompt.userChoice;
-        if (choice.outcome === 'accepted') {
-          console.log('📱 [PWA] Aplicativo instalado pelo usuário.');
-          btnInstallPwa.style.display = 'none';
-        }
-        deferredPwaPrompt = null;
-      } else {
-        alert('Para instalar no celular:\n\n- No Chrome/Android: Toque nos 3 pontinhos e escolha "Instalar aplicativo"\n- No Safari/iOS: Toque em Compartilhar e selecione "Adicionar à Tela de Início"');
-      }
-    });
   }
 
   // ============================================================================
