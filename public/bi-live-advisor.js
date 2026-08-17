@@ -509,20 +509,51 @@ ${historicoTexto || 'Primeira interação nesta reunião.'}
 PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 `;
 
-    const modelosParaTestar = [
-      'gemini-1.5-flash-latest',
-      'gemini-2.0-flash',
-      'gemini-2.5-flash',
-      'gemini-1.5-pro-latest',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro'
-    ];
+    const keyLimpa = apiKey.trim();
+
+    // 1. Tenta descobrir os modelos habilitados para a chave via GET /models (v1beta e v1)
+    let listaTentativas = [];
+    
+    for (const apiVer of ['v1beta', 'v1']) {
+      try {
+        const resList = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${keyLimpa}`);
+        if (resList.ok) {
+          const dataList = await resList.json();
+          if (dataList.models && Array.isArray(dataList.models)) {
+            const validos = dataList.models.filter(m => 
+              m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+            );
+            validos.forEach(m => {
+              const name = m.name.replace('models/', '');
+              listaTentativas.push({ apiVersion: apiVer, modelName: name });
+            });
+          }
+        }
+      } catch (e) {
+        console.warn(`Aviso ao consultar modelos (${apiVer}):`, e);
+      }
+    }
+
+    // Se a listagem não retornou modelos, utiliza lista exaustiva de fallbacks
+    if (listaTentativas.length === 0) {
+      listaTentativas = [
+        { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
+        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
+        { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
+        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
+        { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
+        { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-8b' },
+        { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
+        { apiVersion: 'v1beta', modelName: 'gemini-pro' },
+        { apiVersion: 'v1',     modelName: 'gemini-pro' }
+      ];
+    }
 
     let ultimoErro = null;
 
-    for (const modelo of modelosParaTestar) {
+    for (const item of listaTentativas) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey.trim()}`;
+        const url = `https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`;
 
         const response = await fetch(url, {
           method: 'POST',
@@ -547,7 +578,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
           const errorData = await response.json().catch(() => ({}));
           const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
           if (response.status === 404 || msgErro.includes('not found')) {
-            ultimoErro = `Modelo ${modelo} (${response.status}): ${msgErro}`;
+            ultimoErro = `Modelo ${item.modelName} (${response.status}): ${msgErro}`;
             continue;
           }
           throw new Error(`Google Gemini (${response.status}): ${msgErro}`);
@@ -557,7 +588,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
         const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!respostaTexto) {
-          throw new Error(`O modelo ${modelo} não retornou texto válido no campo candidates[0].content.parts[0].text.`);
+          throw new Error(`O modelo ${item.modelName} não retornou texto válido.`);
         }
 
         return respostaTexto;
@@ -570,7 +601,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       }
     }
 
-    throw new Error(ultimoErro || "Nenhum modelo compatível do Google Gemini foi encontrado para a versão v1beta.");
+    throw new Error(ultimoErro || "Nenhum modelo do Google Gemini respondeu com sucesso para esta API Key.");
   }
   window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
 

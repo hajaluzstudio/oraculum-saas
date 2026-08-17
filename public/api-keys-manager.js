@@ -84,22 +84,52 @@ window.testarConexaoGeminiReal = async function() {
     statusBadge.style.border = "1px solid rgba(234, 179, 8, 0.3)";
   }
 
-  const modelosParaTestar = [
-    'gemini-1.5-flash-latest',
-    'gemini-2.0-flash',
-    'gemini-2.5-flash',
-    'gemini-1.5-pro-latest',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro'
-  ];
+  const keyLimpa = apiKey.trim();
+
+  // 1. Tenta listar modelos diretamente da conta do usuário via GET /models
+  let listaTentativas = [];
+
+  for (const apiVer of ['v1beta', 'v1']) {
+    try {
+      const resList = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${keyLimpa}`);
+      if (resList.ok) {
+        const dataList = await resList.json();
+        if (dataList.models && Array.isArray(dataList.models)) {
+          const validos = dataList.models.filter(m => 
+            m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+          );
+          validos.forEach(m => {
+            const name = m.name.replace('models/', '');
+            listaTentativas.push({ apiVersion: apiVer, modelName: name });
+          });
+        }
+      }
+    } catch (e) {
+      console.warn(`Aviso ao consultar modelos (${apiVer}):`, e);
+    }
+  }
+
+  if (listaTentativas.length === 0) {
+    listaTentativas = [
+      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
+      { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
+      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-8b' },
+      { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
+      { apiVersion: 'v1beta', modelName: 'gemini-pro' },
+      { apiVersion: 'v1',     modelName: 'gemini-pro' }
+    ];
+  }
 
   let conectou = false;
   let ultimoErro = '';
   let modeloSucesso = '';
 
-  for (const modelo of modelosParaTestar) {
+  for (const item of listaTentativas) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -109,13 +139,12 @@ window.testarConexaoGeminiReal = async function() {
 
       if (res.ok) {
         conectou = true;
-        modeloSucesso = modelo;
+        modeloSucesso = `${item.modelName} (${item.apiVersion})`;
         break;
       } else {
         const err = await res.json().catch(() => ({}));
         ultimoErro = err.error?.message || `HTTP ${res.status}`;
         if (res.status !== 404 && !ultimoErro.includes('not found')) {
-          // Erro de autenticação/chave inválida
           break;
         }
       }
