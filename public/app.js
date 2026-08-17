@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
@@ -4668,6 +4668,7 @@ function generateMockDossier(clientName, niche) {
 }
 
 console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
+
 
 
 

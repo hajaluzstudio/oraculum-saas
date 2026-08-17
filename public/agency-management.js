@@ -1,4 +1,4 @@
-// =======================================================
+﻿// =======================================================
 // GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC & EQUIPE)
 // =======================================================
 
@@ -133,7 +133,7 @@ window.abrirModalAgencia = function(agenciaId = null) {
 
           <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
             <button type="button" onclick="window.fecharModalAgencia()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-sm transition-colors cursor-pointer">Cancelar</button>
-            <button type="submit" id="btn-save-agency" class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Agência</button>
+            <button type="submit" id="btn-save-agency" class="px-5 py-2 bg-[#10B981] hover:bg-[#059669] text-slate-950 font-extrabold shadow-none rounded-xl text-sm transition-all cursor-pointer">Salvar Agência</button>
           </div>
         </form>
       </div>
@@ -590,5 +590,6 @@ document.addEventListener('click', (e) => {
     window.abrirModalAgencia();
   }
 });
+
 
 

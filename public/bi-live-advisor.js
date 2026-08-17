@@ -54,8 +54,8 @@
     floatBtn.id = 'btn-open-oraculo-live';
     floatBtn.type = 'button';
     floatBtn.onclick = window.alternarOraculoLive;
-    floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-full shadow-2xl shadow-emerald-950/60 font-semibold text-sm transition-all transform hover:scale-105 cursor-pointer border border-emerald-500/30';
-    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
+    floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-[#10B981] hover:bg-[#059669] text-slate-950 font-extrabold rounded-full shadow-none text-sm transition-all transform hover:scale-105 cursor-pointer border border-emerald-500/30';
+    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: #10B981; color: #0f172a; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
       <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
       <span>Oraculum Live</span>
@@ -107,7 +107,7 @@
             🎙️
           </button>
           <input type="text" id="oraculo-input-text" placeholder="Pergunte sobre ROI, CAC, conversão, ROAS..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; color: #FFF; font-size: 12px; outline: none;">
-          <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
+          <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: #10B981; color: #0f172a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
             ➤
           </button>
         </form>
@@ -722,6 +722,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
     injetarEstruturaLiveAdvisor();
   }
 })();
+
 
 
 

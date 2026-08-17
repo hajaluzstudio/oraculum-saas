@@ -1,4 +1,4 @@
-/* ==============================================================================
+﻿/* ==============================================================================
    ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO - DESIGN SYSTEM & CSS
    ============================================================================== */
 
@@ -128,7 +128,7 @@ select option:checked {
 .logo-icon {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-purple));
+  background: #0A0E17; border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -143,7 +143,7 @@ select option:checked {
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 1px;
-  background: linear-gradient(90deg, #fff, var(--primary-cyan));
+  color: #FFF;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -188,16 +188,21 @@ select option:checked {
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-main);
+  background: rgba(15, 23, 42, 0.5); /* bg-slate-900/50 */
+  color: #FFF;
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), rgba(16, 185, 129, 0.1));
-  border-color: rgba(6, 182, 212, 0.3);
-  color: var(--primary-cyan);
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);
+  background: #0f172a; /* bg-slate-900 */
+  border: 1px solid transparent;
+  border-left: 4px solid #10B981;
+  color: #FFF;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-item.active i {
+  color: #00E599;
 }
 
 .sidebar-footer {
@@ -230,7 +235,7 @@ select option:checked {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10B981, #06B6D4);
+  background: #10B981;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -550,7 +555,7 @@ select option:checked {
 }
 
 .source-btn.active {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(16, 185, 129, 0.2));
+  background: #0f172a;
   border: 1px solid rgba(6, 182, 212, 0.4);
   color: var(--primary-cyan);
   font-weight: 600;
@@ -675,7 +680,7 @@ select option:checked {
 .btn-primary {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-purple));
+  background: #0A0E17; border: 1px solid rgba(16, 185, 129, 0.3);
   border: none;
   border-radius: var(--radius-md);
   color: #fff;
@@ -791,7 +796,7 @@ select option:checked {
 }
 
 .chat-msg.user .bubble {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(16, 185, 129, 0.15));
+  background: #0f172a;
   border-color: rgba(6, 182, 212, 0.3);
 }
 
@@ -1020,4 +1025,5 @@ body.presentation-mode-active .main-content {
   margin: 0 !important;
   width: 100vw !important;
 }
+
 
