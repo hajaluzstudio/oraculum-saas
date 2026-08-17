@@ -495,10 +495,15 @@
 
     const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message || h.content}`).join('\n');
 
+    const systemInstructionText = "Você é o Oráculo Live Advisor, o Chief Marketing Officer (CMO) e Diretor de Performance e Inteligência de Marketing da Agência. VOCÊ DEVE RESPONDER EXCLUSIVAMENTE E OBRIGATORIAMENTE EM PORTUGUÊS DO BRASIL (PT-BR). NUNCA escreva em inglês ou em qualquer outro idioma. Seu tom é executivo, direto, confiante e altamente estratégico. Se o usuário disser apenas 'olá', cumprimente brevemente, note o status dos dados e direcione a conversa para análise de métricas, ROI, CAC ou ROAS.";
+
     const promptCompleto = `
-Você é o Oráculo Live Advisor, o Chief Marketing Officer (CMO) e Diretor de Performance e Inteligência de Marketing da Agência.
-Seu objetivo é analisar dados de tráfego pago, CAC, ROAS, ROI, LTV e conversão com tom executivo, direto, confiante e altamente estratégico.
-Responda sempre em Português do Brasil com foco em retorno financeiro, gestão de risco e escala previsível de negócios.
+[REGRAS RÍGIDAS DE IDIOMA E PERSONA]
+1. IDIOMA: Responda 100% em PORTUGUÊS DO BRASIL (PT-BR). É expressamente proibido responder em inglês.
+2. PERSONA: Oráculo Live Advisor (CMO, Diretor de Performance & Inteligência de Marketing).
+3. TOM: Executivo, direto, confiante e altamente estratégico.
+4. FOCO: Retorno financeiro, gestão de risco, CAC, ROAS, ROI e escala previsível de negócios.
+5. SAUDAÇÕES SIMPLES (Ex: "olá"): Não faça small talk genérico. Cumprimente brevemente, observe o status dos dados atuais (se estão em R$ 0,00 ou sem cliente selecionado) e proponha um desafio estratégico de performance.
 
 DADOS CONTEXTUAIS ATUAIS DA CONTA DO CLIENTE:
 ${JSON.stringify(contextoBI, null, 2)}
@@ -507,6 +512,8 @@ HISTÓRICO RECENTE DE REUNIÃO / MEMÓRIA CONTÍNUA:
 ${historicoTexto || 'Primeira interação nesta reunião.'}
 
 PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
+
+RESPOSTA DO ORÁCULO EM PORTUGUÊS DO BRASIL:
 `;
 
     const keyLimpa = apiKey.trim();
@@ -574,23 +581,28 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       try {
         const url = `https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`;
 
+        const payloadBody = {
+          systemInstruction: {
+            parts: [{ text: systemInstructionText }]
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: promptCompleto }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 800
+          }
+        };
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: promptCompleto }]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 800
-            }
-          })
+          body: JSON.stringify(payloadBody)
         });
 
         if (!response.ok) {
