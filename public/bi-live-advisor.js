@@ -401,6 +401,59 @@
     return `Análise estratégica para **${ctx.cliente}**: Toda tomada de decisão no sistema prioriza métricas financeiras reais (CAC, LTV e ROAS). Com o investimento atual de **${ctx.gastoTrafego}** gerando **${ctx.faturamento}**, as próximas ações devem focar na escala dos criativos validados pelo AI Creative Score.`;
   }
 
+  async function perguntarAoOraculoGemini(perguntaUsuario, contextoBI = {}) {
+    const apiKey = localStorage.getItem('GEMINI_API_KEY') || 
+                   localStorage.getItem('custom_gemini_api_key') || 
+                   localStorage.getItem('gemini_api_key') || 
+                   localStorage.getItem('oraculum_gemini_key') || 
+                   window.ENV_GEMINI_API_KEY || '';
+    
+    if (!apiKey) {
+      throw new Error("Chave do Gemini não configurada em 'Configurações Master'. Insira a chave Gemini API Key para respostas da IA ao vivo.");
+    }
+
+    const promptSistema = `
+Você é o Oráculo Live Advisor, o Diretor de Performance e Inteligência de Marketing da Agência.
+Seu objetivo é analisar dados de tráfego pago, CAC, ROAS e ROI com tom executivo, direto, confiante e estratégico.
+Responda sempre em Português do Brasil com foco financeiro e de escala de negócios.
+Dados contextuais atuais da conta: ${JSON.stringify(contextoBI)}
+Pergunta do usuário: "${perguntaUsuario}"
+`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: promptSistema }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `Erro HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!respostaTexto) {
+      throw new Error("O Gemini não retornou texto válido.");
+    }
+
+    return respostaTexto;
+  }
+  window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
+
   window.enviarMensagemOraculo = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (isProcessando) return;
@@ -424,40 +477,17 @@
       const loadDiv = document.createElement('div');
       loadDiv.id = loadingId;
       loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 12px; color: #C084FC; font-size: 12px; display: flex; align-items: center; gap: 8px;';
-      loadDiv.innerHTML = '<span style="font-size: 14px;">🔮</span> <span>Oráculo analisando métricas e correlações...</span>';
+      loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oráculo analisando métricas...</span>';
       feed.appendChild(loadDiv);
       feed.scrollTop = feed.scrollHeight;
     }
 
     try {
       let respostaTexto = "";
-      const apiKey = window.ENV_GEMINI_API_KEY || localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('oraculum_gemini_key') || '';
-
-      if (apiKey) {
-        const systemPrompt = `Você é o Oráculo, Diretor de Inteligência, Growth e Performance da agência.
-Você está em uma reunião estratégica ao vivo auditando e apresentando os dados do BI Feedback Loop da conta: ${contexto.cliente}.
-
-DADOS ATUAIS DA CONTA:
-- Faturamento Total: ${contexto.faturamento}
-- Investimento em Tráfego: ${contexto.gastoTrafego}
-- ROAS Consolidado: ${contexto.roas}
-- Novos Leads / Oportunidades: ${contexto.leads}`;
-
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              { role: 'user', parts: [{ text: `${systemPrompt}\n\nPERGUNTA DO USUÁRIO: ${texto}` }] }
-            ],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 600 }
-          })
-        });
-        const data = await res.json();
-        respostaTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      }
-
-      if (!respostaTexto) {
+      try {
+        respostaTexto = await perguntarAoOraculoGemini(texto, contexto);
+      } catch(geminiErr) {
+        console.warn("Consulta ao Gemini falhou, usando motor especialista de regras:", geminiErr);
         respostaTexto = gerarRespostaInteligente(texto, contexto);
       }
 
