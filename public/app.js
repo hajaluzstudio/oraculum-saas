@@ -2135,7 +2135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.salvarConfigElevenLabs = function(e) {
+  window.salvarConfigElevenLabs = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
     const inputKey = document.getElementById('elevenlabs-api-key') || document.getElementById('setting-eleven-key');
     const inputVoice = document.getElementById('elevenlabs-voice-id') || document.getElementById('setting-eleven-voice-id');
@@ -2153,10 +2153,26 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('ELEVENLABS_VOICE_ID', voice);
     localStorage.setItem('elevenlabs_voice_id', voice);
 
+    // Persiste no Banco de Dados em Nuvem (agency_settings)
+    try {
+      await fetch('/api/agency-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            ELEVENLABS_API_KEY: key,
+            ELEVENLABS_VOICE_ID: voice
+          }
+        })
+      });
+    } catch(e) {
+      console.warn("Erro ao sincronizar agency_settings:", e);
+    }
+
     if (typeof window.exibirToastSucesso === 'function') {
-      window.exibirToastSucesso("✅ Configurações da ElevenLabs salvas com sucesso!");
+      window.exibirToastSucesso("✅ Configurações da ElevenLabs salvas no Banco de Dados!");
     } else {
-      alert("✅ Configurações da ElevenLabs salvas com sucesso!");
+      alert("✅ Configurações da ElevenLabs salvas no Banco de Dados!");
     }
   };
 

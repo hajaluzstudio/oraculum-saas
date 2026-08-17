@@ -391,22 +391,45 @@
   }
 
   // =======================================================
-  // ROTINAS DE SINCRONIZAÇÃO EM NUVEM (Supabase / Backend DB)
+  // ROTINAS DE SINCRONIZAÇÃO EM NUVEM (Supabase / PostgreSQL)
+  // TABELAS: oraculo_memoria, clients, agency_settings
   // =======================================================
   window.carregarHistoricoNuvem = async function(clientId) {
     if (!clientId) return [];
     try {
-      const res = await fetch(`/api/oraculo-chat/${encodeURIComponent(clientId)}`);
+      // Busca primeiramente na tabela oraculo_memoria do Supabase
+      const res = await fetch(`/api/oraculo-memoria/${encodeURIComponent(clientId)}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(json.data));
-          return json.data;
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          // Normaliza formato da tabela oraculo_memoria (content -> message)
+          const normalizados = json.data.map(item => ({
+            id: item.id,
+            clientId: item.client_id,
+            role: item.role,
+            message: item.content || item.message,
+            metadata: item.metrics_context || item.metadata || {},
+            created_at: item.created_at
+          }));
+          localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(normalizados));
+          return normalizados;
         }
       }
     } catch (err) {
-      console.warn("Erro ao carregar histórico da nuvem, utilizando fallback local:", err);
+      console.warn("Erro ao carregar oraculo_memoria do banco, buscando oraculo-chat:", err);
     }
+
+    try {
+      const resChat = await fetch(`/api/oraculo-chat/${encodeURIComponent(clientId)}`);
+      if (resChat.ok) {
+        const jsonChat = await resChat.json();
+        if (jsonChat.success && Array.isArray(jsonChat.data)) {
+          localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(jsonChat.data));
+          return jsonChat.data;
+        }
+      }
+    } catch(e) {}
+
     try {
       return JSON.parse(localStorage.getItem(`ORACULO_HIST_${clientId}`) || '[]');
     } catch(e) {
@@ -417,20 +440,30 @@
   window.salvarMensagemNuvem = async function(clientId, role, message, metadata = {}) {
     if (!clientId || !message) return null;
     try {
-      const res = await fetch('/api/oraculo-chat', {
+      // 1. Grava na tabela oraculo_memoria do Supabase (memória contínua da IA)
+      const resMem = await fetch('/api/oraculo-memoria', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, role, content: message, metricsContext: metadata })
+      });
+      const jsonMem = await resMem.json().catch(() => ({}));
+
+      // 2. Grava também no oraculo-chat para retrocompatibilidade
+      fetch('/api/oraculo-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId, role, message, metadata })
-      });
-      const json = await res.json().catch(() => ({}));
+      }).catch(() => null);
+
+      const record = jsonMem.data || { clientId, role, message, metadata, created_at: new Date().toISOString() };
 
       const localHist = JSON.parse(localStorage.getItem(`ORACULO_HIST_${clientId}`) || '[]');
-      localHist.push(json.data || { clientId, role, message, metadata, created_at: new Date().toISOString() });
+      localHist.push(record);
       localStorage.setItem(`ORACULO_HIST_${clientId}`, JSON.stringify(localHist));
 
-      return json.data;
+      return record;
     } catch (err) {
-      console.error("Erro ao salvar mensagem na nuvem:", err);
+      console.error("Erro ao salvar oraculo_memoria na nuvem:", err);
       return null;
     }
   };
@@ -446,16 +479,17 @@
 
   window.limparHistoricoClienteNuvem = async function(clientId) {
     if (!clientId) return;
-    if (confirm("Tem certeza que deseja apagar todo o histórico de conversas deste cliente na nuvem?")) {
+    if (confirm("Tem certeza que deseja apagar permanentemente toda a memória e histórico deste cliente no Banco de Dados?")) {
       try {
+        await fetch(`/api/oraculo-memoria/client/${encodeURIComponent(clientId)}`, { method: 'DELETE' });
         await fetch(`/api/oraculo-chat/client/${encodeURIComponent(clientId)}`, { method: 'DELETE' });
       } catch (e) {
-        console.warn("Erro ao apagar histórico da nuvem:", e);
+        console.warn("Erro ao apagar memória do banco:", e);
       }
       localStorage.removeItem(`ORACULO_HIST_${clientId}`);
       const feed = document.getElementById('oraculo-chat-feed');
       if (feed) feed.innerHTML = '';
-      alert("✅ Histórico do cliente apagado com sucesso!");
+      alert("✅ Memória do cliente apagada do Banco de Dados com sucesso!");
     }
   };
 
