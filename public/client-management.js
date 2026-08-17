@@ -1,4 +1,4 @@
-﻿// =======================================================
+// =======================================================
 // GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (MÓDULO ISOLADO)
 // =======================================================
 
@@ -211,11 +211,12 @@ window.salvarCliente = async function(e) {
           if (!error) savedInSupa = true;
         }
       } catch (supaErr) {
-        console.warn("[ClientManagement] Salvo em cache local:", supaErr);
+        console.warn("[ClientManagement] Falha ao salvar no Supabase, caindo para cache local:", supaErr);
       }
     }
 
     if (!savedInSupa) {
+      alert("⚠️ AVISO: Ocorreu um erro de comunicação com o Supabase (Nuvem). O cliente foi salvo APENAS LOCALMENTE e desaparecerá se você atualizar a página. Verifique se suas chaves do Supabase (URL e ANON_KEY) estão corretas.");
       if (id) {
         const idx = (window.clientesMock || []).findIndex(c => String(c.id) === String(id));
         if (idx !== -1) {
@@ -239,7 +240,10 @@ window.salvarCliente = async function(e) {
     window.fecharModalNovoCliente();
     window.renderizarListaClientes();
     window.atualizarSeletorClientesOnboarding();
-    alert(`✅ Cliente ${name} ${id ? 'atualizado' : 'cadastrado'} com sucesso!`);
+    
+    if (savedInSupa) {
+      alert(`✅ Cliente ${name} ${id ? 'atualizado' : 'cadastrado'} com sucesso na Nuvem!`);
+    }
   } catch (err) {
     console.error('Erro ao salvar cliente:', err);
     window.fecharModalNovoCliente();
