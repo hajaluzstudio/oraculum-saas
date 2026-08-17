@@ -1050,7 +1050,87 @@
                     <h3><i class="fa-solid fa-palette"></i> Briefings Visuais e Landing Pages</h3>
                   </div>
                   <div id="wr-design-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                    <div class="grid-2col">
+                      <!-- DESIGN: A. Simulador de Safe Zones -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-crop-simple"></i> Simulador de Mockup & Safe Zones</h3>
+                          <p>Verifique se o texto ou CTA colide com a interface do TikTok / Reels.</p>
+                        </div>
+                        <div style="margin-top: 14px;">
+                          <div class="form-group">
+                            <label>Formato do Criativo</label>
+                            <select id="mockup-format" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                              <option value="9_16">Story / Reels / TikTok (9:16)</option>
+                              <option value="4_5">Feed Vertical (4:5)</option>
+                              <option value="1_1">Feed Quadrado (1:1)</option>
+                            </select>
+                          </div>
+                          <div class="form-group" style="margin-top:10px;">
+                            <label>Upload da Arte (Imagem)</label>
+                            <input type="file" id="mockup-file" accept="image/*" class="w-full text-slate-100 text-sm">
+                          </div>
+                          <div style="margin-top: 16px; display: flex; gap: 8px;">
+                            <button type="button" class="btn-secondary sm" id="btn-toggle-safezone"><i class="fa-solid fa-layer-group"></i> Toggle Safe Zone</button>
+                          </div>
+                          
+                          <!-- Box de Preview Visual -->
+                          <div id="mockup-preview-container" style="margin-top: 16px; border: 2px dashed rgba(255,255,255,0.1); border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; width: 100%; max-width: 250px; aspect-ratio: 9/16; margin-left: auto; margin-right: auto;">
+                            <span style="color: #64748B; font-size: 12px; position: absolute; z-index: 0;">Preview da Imagem</span>
+                            <img id="mockup-image" src="" style="width: 100%; height: 100%; object-fit: contain; display: none; position: relative; z-index: 1;">
+                            <!-- Overlay de Safe Zone (CSS injetado via JS) -->
+                            <div id="mockup-safezone-overlay" style="position: absolute; inset: 0; pointer-events: none; z-index: 2; display: none; border: 4px solid rgba(239, 68, 68, 0.4);">
+                                <div style="position: absolute; top:0; left:0; right:0; height: 15%; background: rgba(239, 68, 68, 0.2);"></div>
+                                <div style="position: absolute; bottom:0; left:0; right:0; height: 25%; background: rgba(239, 68, 68, 0.2);"></div>
+                                <div style="position: absolute; right:0; top: 15%; bottom: 25%; width: 15%; background: rgba(239, 68, 68, 0.2);"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- DESIGN: B. Verificador de Contraste (WCAG) -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-eye-dropper"></i> Verificador de Contraste (WCAG 2.1)</h3>
+                          <p>Garanta que seus anúncios sejam legíveis antes de veicular.</p>
+                        </div>
+                        <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 14px;">
+                          <div style="display: flex; gap: 14px;">
+                            <div class="form-group" style="flex: 1;">
+                              <label>Cor de Fundo</label>
+                              <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="color" id="color-bg" value="#0F172A" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
+                                <input type="text" id="color-bg-hex" value="#0F172A" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
+                              </div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                              <label>Cor do Texto</label>
+                              <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="color" id="color-text" value="#10B981" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
+                                <input type="text" id="color-text-hex" value="#10B981" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Box de Preview de Contraste -->
+                          <div id="contrast-preview-box" style="padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: center; background-color: #0F172A; color: #10B981;">
+                            <h4 style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">Texto de Exemplo</h4>
+                            <p style="font-size: 12px;">Se a leitura for difícil, as conversões vão cair.</p>
+                          </div>
+
+                          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                              <span style="font-size: 11px; color: #94A3B8;">Taxa de Contraste (Ratio):</span>
+                              <p id="contrast-ratio" style="font-size: 16px; font-weight: bold; color: #fff;">- : 1</p>
+                            </div>
+                            <div>
+                              <span style="font-size: 11px; color: #94A3B8;">Legibilidade (WCAG AA):</span>
+                              <p id="contrast-status" style="font-size: 14px; font-weight: bold; color: #94A3B8;">-</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1062,7 +1142,98 @@
                     <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
                   </div>
                   <div id="wr-traffic-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                    <div class="grid-2col">
+                      <!-- TRAFFIC: A. Simulador de CPA / ROAS -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-calculator"></i> Simulador Preditivo de CPA & ROAS</h3>
+                          <p>Calcule o Breakeven e o Custo por Lead Máximo da campanha.</p>
+                        </div>
+                        <form id="form-traffic-sim" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                              <label>Orçamento Diário (R$)</label>
+                              <input type="number" id="sim-budget" value="100" step="10" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            </div>
+                            <div class="form-group">
+                              <label>Ticket Médio (R$)</label>
+                              <input type="number" id="sim-ticket" value="297" step="1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            </div>
+                            <div class="form-group">
+                              <label>Conversão da LP (%)</label>
+                              <input type="number" id="sim-conversion" value="2" step="0.5" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            </div>
+                            <div class="form-group">
+                              <label>Meta de ROAS</label>
+                              <input type="number" id="sim-roas-target" value="3" step="0.5" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            </div>
+                          </div>
+                          
+                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 8px;">
+                              <span style="font-size: 11px; color: #34D399;">CPL Máximo Tolerável:</span>
+                              <p id="res-cpl-max" style="font-size: 18px; font-weight: 700; color: #10B981; margin: 0;">R$ 0,00</p>
+                            </div>
+                            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 8px;">
+                              <span style="font-size: 11px; color: #F87171;">CPA de Equilíbrio (Breakeven):</span>
+                              <p id="res-cpa-break" style="font-size: 18px; font-weight: 700; color: #EF4444; margin: 0;">R$ 0,00</p>
+                            </div>
+                          </div>
+                          <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px; border-radius: 8px;">
+                            <span style="font-size: 11px; color: #22D3EE;">Faturamento Estimado/Dia (se atingir a conversão):</span>
+                            <p id="res-revenue" style="font-size: 16px; font-weight: 700; color: #06B6D4; margin: 0;">R$ 0,00</p>
+                          </div>
+                        </form>
+                      </div>
+
+                      <!-- TRAFFIC: B. Gerador de UTM -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-link"></i> Gerador Padronizado de UTMs</h3>
+                          <p>Evite erros de rastreio mantendo nomenclatura padrão.</p>
+                        </div>
+                        <form id="form-utm-generator" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+                          <div class="form-group">
+                            <label>URL Base</label>
+                            <input type="url" id="utm-url" placeholder="https://seudominio.com.br/oferta" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                          </div>
+                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                              <label>Source (Origem)</label>
+                              <select id="utm-source" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                                <option value="meta">Meta (FB/IG)</option>
+                                <option value="google">Google</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="youtube">YouTube</option>
+                              </select>
+                            </div>
+                            <div class="form-group">
+                              <label>Medium (Mídia)</label>
+                              <select id="utm-medium" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                                <option value="cpc">CPC (Custo por Clique)</option>
+                                <option value="organic">Orgânico</option>
+                                <option value="email">E-mail</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label>Campaign (Campanha)</label>
+                            <input type="text" id="utm-campaign" placeholder="ex: lancamento_v1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                          </div>
+                          <div class="form-group">
+                            <label>Content (Criativo)</label>
+                            <input type="text" id="utm-content" placeholder="ex: ad_01_video" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                          </div>
+
+                          <div style="background: #000; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; position: relative;">
+                            <p id="utm-result" style="font-size: 11px; color: #94A3B8; word-break: break-all; margin: 0; min-height: 28px;">O link gerado aparecerá aqui...</p>
+                            <button type="button" id="btn-copy-utm" class="btn-primary sm" style="position: absolute; right: 6px; top: 6px; padding: 4px 10px; font-size: 10px;">
+                              <i class="fa-regular fa-copy"></i> Copiar
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1074,7 +1245,75 @@
                     <h3><i class="fa-solid fa-pen-nib"></i> Headlines, Hooks e Textos Persuasivos</h3>
                   </div>
                   <div id="wr-copy-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                    <div class="grid-2col">
+                      <!-- COPY: A. Auditor Anti-Ban & Flesch Score -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-shield-halved"></i> Auditor de Políticas (Anti-Ban)</h3>
+                          <p>Cole sua Copy. Iremos checar palavras proibidas pelo Meta/Google e a legibilidade.</p>
+                        </div>
+                        <div style="margin-top: 14px;">
+                          <textarea id="copy-audit-text" rows="6" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-emerald-500" placeholder="Cole o texto do anúncio aqui... Ex: Perca 10kg em 1 semana garantido!"></textarea>
+                          
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; gap: 12px;">
+                              <div style="font-size: 12px; color: #94A3B8;"><i class="fa-solid fa-font"></i> Caracteres: <span id="copy-chars" style="color: #fff;">0</span></div>
+                              <div style="font-size: 12px; color: #94A3B8;"><i class="fa-solid fa-align-left"></i> Palavras: <span id="copy-words" style="color: #fff;">0</span></div>
+                            </div>
+                            <button type="button" id="btn-audit-copy" class="btn-primary sm"><i class="fa-solid fa-stethoscope"></i> Analisar Copy</button>
+                          </div>
+
+                          <div id="copy-audit-results" style="margin-top: 14px; display: none;">
+                            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                              <span style="font-size: 11px; color: #F87171; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Alertas Anti-Ban:</span>
+                              <div id="copy-flags" style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
+                                <!-- Flags dinâmicas -->
+                              </div>
+                            </div>
+
+                            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                              <div>
+                                <span style="font-size: 11px; color: #34D399; font-weight: bold;">Flesch Score (Legibilidade):</span>
+                                <p id="flesch-text" style="font-size: 12px; color: #E2E8F0; margin: 4px 0 0;">-</p>
+                              </div>
+                              <span id="flesch-number" style="font-size: 18px; font-weight: 800; color: #10B981;">0</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- COPY: B. Matriz de Ângulos -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-network-wired"></i> Matriz de Ângulos (Nível de Consciência)</h3>
+                          <p>Copies organizadas por temperatura do público.</p>
+                        </div>
+                        <div style="margin-top: 14px;">
+                          
+                          <!-- Tabs de Filtro Interno -->
+                          <div style="display: flex; gap: 6px; background: #000; padding: 4px; border-radius: 8px;">
+                            <button class="angle-tab-btn active" data-target="angle-frio" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #0F172A; color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">🥶 Frio (Inconsciente)</button>
+                            <button class="angle-tab-btn" data-target="angle-morno" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: transparent; color: #94A3B8; border: none; cursor: pointer;">😐 Morno (Problema)</button>
+                            <button class="angle-tab-btn" data-target="angle-quente" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: transparent; color: #94A3B8; border: none; cursor: pointer;">🔥 Quente (Oferta)</button>
+                          </div>
+
+                          <!-- Conteúdos dos Ângulos -->
+                          <div style="margin-top: 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; background: rgba(0,0,0,0.2); min-height: 180px;">
+                            <div id="angle-frio" class="angle-content active" style="display: block;">
+                              <p style="font-size: 12px; color: #E2E8F0; line-height: 1.5; font-style: italic;">"Você sente que trabalha muito mas nunca vê a cor do dinheiro no fim do mês? O verdadeiro problema não é sua falta de esforço..."</p>
+                              <span style="font-size: 10px; color: #64748B; margin-top: 10px; display: block;">Exemplo de Hook indireto para público que ainda não sabe que tem um problema.</span>
+                            </div>
+                            <div id="angle-morno" class="angle-content" style="display: none;">
+                              <p style="font-size: 12px; color: #E2E8F0; line-height: 1.5; font-style: italic;">"Cansado de perder vendas para concorrentes com preços menores? A solução é blindar o seu posicionamento."</p>
+                            </div>
+                            <div id="angle-quente" class="angle-content" style="display: none;">
+                              <p style="font-size: 12px; color: #E2E8F0; line-height: 1.5; font-style: italic;">"Última chance para acessar o Método Oraculum com 50% de desconto e bônus exclusivo de implementação. Assine agora."</p>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1086,7 +1325,104 @@
                     <h3><i class="fa-solid fa-handshake"></i> Playbook de Vendas e Quebra de Objeções</h3>
                   </div>
                   <div id="wr-sales-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="placeholder-state"><i class="fa-solid fa-hourglass-empty"></i><p>Aguardando distribuição estratégica da IA...</p></div>
+                    <div class="grid-2col">
+                      <!-- COMERCIAL: A. Battlecards de Objeções -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-khanda"></i> Battlecards de Objeções</h3>
+                          <p>Scripts táticos de reversão rápida estruturados em Validar > Isolar > Reverter.</p>
+                        </div>
+                        <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+                          
+                          <!-- Objeção 1 -->
+                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                              <span>💸 "Tá muito caro / Sem Orçamento"</span>
+                              <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
+                              <strong style="color: #34D399;">1. Validar:</strong> "Compreendo. É um investimento importante."<br>
+                              <strong style="color: #34D399;">2. Isolar:</strong> "Fora a questão do valor, tem algo a mais que te impede de avançarmos?"<br>
+                              <strong style="color: #34D399;">3. Reverter:</strong> "Se o valor não fosse problema, esse seria o produto ideal pra você? O que acha de parcelarmos para não pesar no seu fluxo de caixa mensal?"
+                              <div style="margin-top: 10px;">
+                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Objeção 2 -->
+                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                              <span>⏳ "Vou pensar / Falo com você depois"</span>
+                              <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
+                              <strong style="color: #34D399;">1. Validar:</strong> "Claro, você precisa de segurança."<br>
+                              <strong style="color: #34D399;">2. Isolar:</strong> "Geralmente, quando alguém quer pensar, é por causa de Preço ou Dúvida no Produto. Qual dos dois é o seu caso?"<br>
+                              <strong style="color: #34D399;">3. Reverter:</strong> "Vamos resolver isso agora pra você não perder o bônus de ação rápida que encerra hoje."
+                              <div style="margin-top: 10px;">
+                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Objeção 3 -->
+                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                              <span>🤝 "Preciso falar com meu sócio/esposa"</span>
+                              <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
+                              <strong style="color: #34D399;">1. Validar:</strong> "Justo, decisões em conjunto são importantes."<br>
+                              <strong style="color: #34D399;">2. Isolar:</strong> "Mas me diz, se dependesse SÓ de você, qual seria a sua decisão agora?"<br>
+                              <strong style="color: #34D399;">3. Reverter:</strong> "Ótimo! Então vamos agendar uma call rápida nós três amanhã às 14h para eu tirar as dúvidas dele(a) também. Funciona pra você?"
+                              <div style="margin-top: 10px;">
+                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      <!-- COMERCIAL: B. Calculadora BANT -->
+                      <div class="card-glass">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-temperature-three-quarters"></i> Qualificação de Lead (BANT)</h3>
+                          <p>Identifique a temperatura real do lead para priorização do CRM.</p>
+                        </div>
+                        <div style="margin-top: 14px;">
+                          <form id="form-bant" style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
+                              <span><strong>[B]udget:</strong> Tem orçamento alinhado / condição de pagamento.</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
+                              <span><strong>[A]uthority:</strong> É o decisor final ou influencia diretamente.</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
+                              <span><strong>[N]eed:</strong> Tem uma dor clara que nosso produto resolve.</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
+                              <span><strong>[T]imeframe:</strong> Tem urgência de compra (próximos 7-15 dias).</span>
+                            </label>
+                          </form>
+
+                          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                              <span style="font-size: 11px; color: #94A3B8;">Temperatura Estimada:</span>
+                              <span id="bant-status" style="font-size: 12px; font-weight: bold; color: #64748B;">Frio (0%)</span>
+                            </div>
+                            <div style="width: 100%; height: 12px; background: #0F172A; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1);">
+                              <div id="bant-progress" style="height: 100%; width: 0%; background: #64748B; transition: all 0.3s ease;"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2305,6 +2641,7 @@
   <script src="/agency-management.js?v=60.0.0"></script>
   <script src="/client-management.js?v=60.0.0"></script>
   <script src="/bi-live-advisor.js?v=60.0.0"></script>
+  <script src="/war-room-tools.js?v=1.0.0"></script>
 </body>
 </html>
 
