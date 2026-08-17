@@ -787,22 +787,30 @@ Mensagem do Usuário: "${perguntaUsuario}"
 Texto Base:
 ${textoOraculo}`;
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: promptJSON }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
-          }
-        })
-      });
+      const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro-latest'];
+      let response;
+      let lastErrData = null;
+
+      for (const model of modelsToTry) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: promptJSON }] }],
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (response.ok) break;
+        lastErrData = await response.json().catch(() => ({}));
+      }
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(`Falha na extração Gemini (HTTP ${response.status}): ${errData.error?.message || 'Erro desconhecido'}`);
+        throw new Error(`Falha na extração Gemini (HTTP ${response.status}): ${lastErrData?.error?.message || 'Erro desconhecido'}`);
       }
       const data = await response.json();
       const jsonDataString = data.candidates?.[0]?.content?.parts?.[0]?.text;
