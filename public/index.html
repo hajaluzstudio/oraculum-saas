@@ -455,11 +455,12 @@
               <form id="form-generate-script" style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
                 <div class="form-group">
                   <label for="script-format-type"><i class="fa-solid fa-film"></i> Formato do Vídeo *</label>
-                  <select id="script-format-type" required style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #FFF; padding: 10px; border-radius: 8px;">
-                    <option value="reels_30s">Reels / TikTok / Shorts (30 segundos - Foco em Retenção)</option>
-                    <option value="vsl_60s" selected>VSL de Alta Conversão (60 segundos - Dor + Solução)</option>
-                    <option value="authority_video">Vídeo de Autoridade & Demonstração Técnica</option>
-                    <option value="objection_killer">Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
+                  <select id="script-format-type" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-purple-500 text-sm" style="background-color: #0f172a; color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                    <option value="reels_30s" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
+                    <option value="vsl_60s" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
+                    <option value="authority_video" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
+                    <option value="objection_killer" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
+                    <option value="depoimento" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
                   </select>
                 </div>
 
@@ -529,10 +530,10 @@
                 
                 <div class="form-group">
                   <label for="lp-theme-select">Tema Visual & Estilo *</label>
-                  <select id="lp-theme-select" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #FFF; padding: 10px; border-radius: 8px;">
-                    <option value="dark_vip" selected>Dark Mode VIP (Alto Padrão / Luxo)</option>
-                    <option value="clinical_minimal">Minimalista Clínico (Clean & Confiança)</option>
-                    <option value="tech_growth">Tech Growth (Contraste & Dinamismo)</option>
+                  <select id="lp-theme-select" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-purple-500 text-sm" style="background-color: #0f172a; color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                    <option value="dark_vip" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Dark Mode VIP (Alto Padrão / Luxo)</option>
+                    <option value="clinical_minimal" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Minimalista Clínico (Clean & Confiança)</option>
+                    <option value="tech_growth" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Tech Growth (Contraste & Dinamismo)</option>
                   </select>
                 </div>
 
@@ -1979,8 +1980,8 @@
     })();
   </script>
 
-  <script src="app.js?v=29.0.0"></script>
-  <script src="/agency-management.js?v=29.0.0"></script>
-  <script src="/client-management.js?v=29.0.0"></script>
+  <script src="app.js?v=30.0.0"></script>
+  <script src="/agency-management.js?v=30.0.0"></script>
+  <script src="/client-management.js?v=30.0.0"></script>
 </body>
 </html>

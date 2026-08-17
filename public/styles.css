@@ -45,6 +45,27 @@ body {
   overflow-x: hidden;
 }
 
+/* ==============================================================================
+   REGRA CSS GLOBAL DE BLINDAGEM DE CONTRASTE DOS DROPDOWNS (<select> e <option>)
+   ============================================================================== */
+select {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+select option {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  padding: 8px 12px !important;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
 /* BLINDAGEM ABSOLUTA DE AUTENTICAÇÃO NO CSS */
 #main-dashboard-container,
 .app-container {
