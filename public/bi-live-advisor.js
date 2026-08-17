@@ -174,20 +174,31 @@
     }
   }
 
+  function formatarMarkdown(texto) {
+    if (!texto) return '';
+    return texto
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^\s*[\-\*]\s+/gm, '• ')
+      .replace(/\n/g, '<br>');
+  }
+
   function adicionarAoFeed(remetente, texto) {
     const feed = document.getElementById('oraculo-chat-feed');
     if (!feed) return;
 
+    const textoFormatado = formatarMarkdown(texto);
     const msgDiv = document.createElement('div');
+    
     if (remetente === 'usuario') {
       msgDiv.style.cssText = 'background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${textoFormatado}</p>`;
     } else if (remetente === 'erro') {
       msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px; color: #FCA5A5; margin-right: 16px;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oraculum</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oraculum</p><p style="margin: 0; line-height: 1.5;">${textoFormatado}</p>`;
     } else {
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
-      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum</span></div><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum</span></div><p style="margin: 0; line-height: 1.5;">${textoFormatado}</p>`;
       msgDiv.innerHTML += `<button onclick="window.distribuirParaWarRoom(this.dataset.textoOriginal, event)" data-texto-original="${texto.replace(/"/g, '&quot;')}" style="margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34D399; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s;"><i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação</button>`;
     }
 
@@ -789,7 +800,10 @@ ${textoOraculo}`;
         })
       });
 
-      if (!response.ok) throw new Error("Falha na extração Gemini");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(`Falha na extração Gemini (HTTP ${response.status}): ${errData.error?.message || 'Erro desconhecido'}`);
+      }
       const data = await response.json();
       const jsonDataString = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
@@ -821,11 +835,20 @@ ${textoOraculo}`;
 
     } catch (err) {
       console.error(err);
-      alert('Erro ao extrair JSON: ' + err.message);
+      
+      let errMsg = err.message;
+      if (errMsg.includes('HTTP 400') || errMsg.includes('HTTP 403')) {
+        errMsg += "\\n\\nA chave de API do Gemini inserida pode ser inválida. Verifique em 'Configurações APIs'.";
+      }
+
+      alert('Erro na IA: ' + errMsg);
       const btn = event?.currentTarget;
       if (btn) {
-        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação';
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Tentar Novamente';
         btn.disabled = false;
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.color = '#F87171';
+        btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
       }
     }
   };
