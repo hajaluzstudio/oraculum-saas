@@ -54,8 +54,8 @@
     floatBtn.id = 'btn-open-oraculo-live';
     floatBtn.type = 'button';
     floatBtn.onclick = window.alternarOraculoLive;
-    floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full shadow-2xl shadow-purple-950/60 font-semibold text-sm transition-all transform hover:scale-105 cursor-pointer border border-purple-400/30';
-    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #7f00ff, #e100ff); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(127,0,255,0.4); backdrop-filter: blur(10px);';
+    floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-full shadow-2xl shadow-emerald-950/60 font-semibold text-sm transition-all transform hover:scale-105 cursor-pointer border border-emerald-500/30';
+    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(127,0,255,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
       <span style="font-size: 18px;">🔮</span>
       <span>Oráculo Live Advisor</span>
@@ -80,7 +80,7 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(127,0,255,0.2); color: #C084FC; border: 1px solid rgba(127,0,255,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
+          <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(127,0,255,0.2); color: #34D399; border: 1px solid rgba(127,0,255,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
             ⚡ Resumo Geral
           </button>
           <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 22px; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -93,9 +93,9 @@
         </div>
       </div>
 
-      <div id="oraculo-voice-indicator" style="display: none; padding: 10px 16px; background: rgba(88, 28, 135, 0.4); border-top: 1px solid rgba(168, 85, 247, 0.3); font-size: 12px; color: #E9D5FF; justify-content: space-between; align-items: center;">
+      <div id="oraculo-voice-indicator" style="display: none; padding: 10px 16px; background: rgba(2, 44, 34, 0.4); border-top: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; color: #E9D5FF; justify-content: space-between; align-items: center;">
         <span style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 8px; height: 8px; background: #C084FC; border-radius: 50%;"></span>
+          <span style="width: 8px; height: 8px; background: #34D399; border-radius: 50%;"></span>
           <span id="voice-status-text">Ouvindo sua pergunta...</span>
         </span>
         <span style="font-size: 10px; background: rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px; color: #FFF;">Live Audio</span>
@@ -107,13 +107,13 @@
             🎙️
           </button>
           <input type="text" id="oraculo-input-text" placeholder="Pergunte sobre ROI, CAC, conversão, ROAS..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; color: #FFF; font-size: 12px; outline: none;">
-          <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: linear-gradient(135deg, #7F00FF, #E100FF); color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
+          <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
             ➤
           </button>
         </form>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B; padding: 0 4px;">
           <span>Gemini Live Neural Engine</span>
-          <button type="button" onclick="window.salvarConversaNaAta()" style="background: transparent; border: none; color: #C084FC; cursor: pointer; text-decoration: underline;">Salvar na Ata</button>
+          <button type="button" onclick="window.salvarConversaNaAta()" style="background: transparent; border: none; color: #34D399; cursor: pointer; text-decoration: underline;">Salvar na Ata</button>
         </div>
       </div>
     `;
@@ -181,8 +181,8 @@
 
     const msgDiv = document.createElement('div');
     if (remetente === 'usuario') {
-      msgDiv.style.cssText = 'background: rgba(127, 0, 255, 0.2); border: 1px solid rgba(127, 0, 255, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #C084FC; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
+      msgDiv.style.cssText = 'background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
     } else if (remetente === 'erro') {
       msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px; color: #FCA5A5; margin-right: 16px;';
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
@@ -660,7 +660,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
     if (feed) {
       const loadDiv = document.createElement('div');
       loadDiv.id = loadingId;
-      loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 12px; color: #C084FC; font-size: 12px; display: flex; align-items: center; gap: 8px;';
+      loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 12px; color: #34D399; font-size: 12px; display: flex; align-items: center; gap: 8px;';
       loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oráculo analisando métricas e executando IA real...</span>';
       feed.appendChild(loadDiv);
       feed.scrollTop = feed.scrollHeight;
@@ -722,3 +722,4 @@ Mensagem do Usuário: "${perguntaUsuario}"
     injetarEstruturaLiveAdvisor();
   }
 })();
+

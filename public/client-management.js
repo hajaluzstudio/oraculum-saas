@@ -25,7 +25,7 @@ window.abrirModalNovoCliente = function(clientId = null) {
       <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
         <div class="flex justify-between items-center border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2">
-            <span class="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><i class="fa-solid fa-user-plus"></i></span>
+            <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><i class="fa-solid fa-user-plus"></i></span>
             <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente da Agência</h3>
           </div>
           <button type="button" onclick="window.fecharModalNovoCliente()" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
@@ -37,77 +37,77 @@ window.abrirModalNovoCliente = function(clientId = null) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome / Razão Social *</label>
-              <input type="text" id="client-modal-name" required placeholder="Ex: Clínica Viana Plastia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-name" required placeholder="Ex: Clínica Viana Plastia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nicho de Mercado / Especialidade *</label>
-              <input type="text" id="client-modal-niche" required placeholder="Ex: Médico Cirurgião Plástico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-niche" required placeholder="Ex: Médico Cirurgião Plástico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Responsável / Contato</label>
-              <input type="text" id="client-modal-contact-name" placeholder="Ex: Dr. Alexandre Viana" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-contact-name" placeholder="Ex: Dr. Alexandre Viana" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Telefone / WhatsApp</label>
-              <input type="text" id="client-modal-phone" placeholder="(11) 99999-8888" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-phone" placeholder="(11) 99999-8888" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Site Oficial (URL)</label>
-              <input type="url" id="client-modal-website" placeholder="https://exemplo.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="url" id="client-modal-website" placeholder="https://exemplo.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Instagram (@)</label>
-              <input type="text" id="client-modal-instagram" placeholder="@nomedaclinica" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-instagram" placeholder="@nomedaclinica" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Ticket Médio Estimado (R$)</label>
-              <input type="text" id="client-modal-avg-ticket" placeholder="Ex: 15.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-avg-ticket" placeholder="Ex: 15.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Meta de Faturamento (R$)</label>
-              <input type="text" id="client-modal-target-revenue" placeholder="Ex: 150.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="client-modal-target-revenue" placeholder="Ex: 150.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <!-- BLOCO VISUAL: IDENTIFICADORES DE TRÁFEGO PAGO -->
-          <div class="p-3 bg-slate-950/70 border border-purple-500/20 rounded-xl space-y-2">
+          <div class="p-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl space-y-2">
             <div class="flex items-center gap-2 mb-1">
-              <i class="fa-solid fa-rectangle-ad text-purple-400 text-xs"></i>
+              <i class="fa-solid fa-rectangle-ad text-emerald-400 text-xs"></i>
               <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Identificadores de Tráfego Pago & Tracking</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ID Conta Meta Ads (act_...)</label>
-                <input type="text" id="client-modal-meta-account" placeholder="Ex: act_123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+                <input type="text" id="client-modal-meta-account" placeholder="Ex: act_123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500">
               </div>
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Meta Pixel ID</label>
-                <input type="text" id="client-modal-meta-pixel" placeholder="Ex: 9876543210" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+                <input type="text" id="client-modal-meta-pixel" placeholder="Ex: 9876543210" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500">
               </div>
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Google Ads Customer ID</label>
-                <input type="text" id="client-modal-google-customer" placeholder="Ex: 123-456-7890" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500">
+                <input type="text" id="client-modal-google-customer" placeholder="Ex: 123-456-7890" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500">
               </div>
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Notas & Histórico da Agência Anterior</label>
-            <textarea id="client-modal-notes" rows="3" placeholder="Informações relevantes do cliente, objeções do público, diferenciais e tom de voz..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-purple-500"></textarea>
+            <textarea id="client-modal-notes" rows="3" placeholder="Informações relevantes do cliente, objeções do público, diferenciais e tom de voz..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500"></textarea>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
             <button type="button" onclick="window.fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-sm transition-colors cursor-pointer">Cancelar</button>
-            <button type="submit" id="btn-save-client-crud" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Cliente</button>
+            <button type="submit" id="btn-save-client-crud" class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Cliente</button>
           </div>
         </form>
       </div>
@@ -383,8 +383,8 @@ window.renderizarListaClientes = function() {
         <div>${c.name}</div>
         <div class="text-xs text-slate-400 font-normal">${c.contact_name ? 'Resp: ' + c.contact_name : 'Sem responsável'}</div>
       </td>
-      <td class="py-3 px-4 text-purple-400">
-        <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs">${c.niche || 'Geral'}</span>
+      <td class="py-3 px-4 text-emerald-400">
+        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs">${c.niche || 'Geral'}</span>
       </td>
       <td class="py-3 px-4 text-slate-400 font-sans">
         <div>${c.phone || '-'}</div>
@@ -395,7 +395,7 @@ window.renderizarListaClientes = function() {
         <div class="text-xs text-emerald-400">${c.target_revenue ? 'Meta: R$ ' + c.target_revenue : ''}</div>
       </td>
       <td class="py-3 px-4 text-xs text-slate-400">
-        <div>${c.website ? `<a href="${c.website}" target="_blank" class="text-purple-400 hover:underline"><i class="fa-solid fa-globe"></i> ${c.website.replace('https://','')}</a>` : '-'}</div>
+        <div>${c.website ? `<a href="${c.website}" target="_blank" class="text-emerald-400 hover:underline"><i class="fa-solid fa-globe"></i> ${c.website.replace('https://','')}</a>` : '-'}</div>
         <div class="text-xs text-slate-500">${c.instagram ? `<i class="fa-brands fa-instagram"></i> ${c.instagram}` : ''}</div>
       </td>
       <td class="py-3 px-4 text-right space-x-2">
@@ -427,3 +427,4 @@ window.carregarClientesDoSupabase = async function() {
 document.addEventListener('DOMContentLoaded', () => {
   window.carregarClientesDoSupabase();
 });
+

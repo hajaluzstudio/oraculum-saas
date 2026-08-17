@@ -281,8 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sanitizedHistory = document.getElementById('previous-agency-notes').value;
 
     dossierBadge.textContent = '1/2 - Cadastrando cliente no Supabase...';
-    dossierBadge.style.background = 'rgba(0, 242, 254, 0.2)';
-    dossierBadge.style.color = '#00F2FE';
+    dossierBadge.style.background = 'rgba(6, 182, 212, 0.2)';
+    dossierBadge.style.color = '#06B6D4';
 
     dossierContent.innerHTML = `
       <div class="placeholder-state">
@@ -446,9 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     targetContent.innerHTML = `
       <div class="dossier-rendered" style="display: flex; flex-direction: column; gap: 16px;">
-        <div style="background: linear-gradient(90deg, rgba(0,242,254,0.15), rgba(127,0,255,0.15)); border: 1px solid rgba(0,242,254,0.3); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="background: linear-gradient(90deg, rgba(6, 182, 212,0.15), rgba(127,0,255,0.15)); border: 1px solid rgba(6, 182, 212,0.3); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
           <div>
-            <h3 style="color: #00F2FE; margin: 0; font-size: 16px; font-weight: 700;"><i class="fa-solid fa-building-user"></i> Cliente: ${dossier.clientName || 'Cliente Ativo'}</h3>
+            <h3 style="color: #06B6D4; margin: 0; font-size: 16px; font-weight: 700;"><i class="fa-solid fa-building-user"></i> Cliente: ${dossier.clientName || 'Cliente Ativo'}</h3>
             <span style="font-size: 12px; color: #94A3B8;">Nicho Estratégico: <strong style="color: #E2E8F0;">${dossier.niche || 'Geral'}</strong></span>
           </div>
           <span style="background: rgba(0,245,160,0.2); color: #00F5A0; border: 1px solid rgba(0,245,160,0.4); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">
@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p style="color: var(--text-muted); margin-top: 2px;">${dossier.traditionalAndOfflineMedia?.offlineRoiAttribution || 'Atribuição via QR Codes dinâmicos, cupons no CRM e linhas dedicadas'}</p>
           </div>
 
-          <div style="margin-top: 12px; font-size: 13px; background: rgba(127, 0, 255, 0.08); border: 1px solid rgba(127, 0, 255, 0.2); padding: 10px; border-radius: 8px;">
+          <div style="margin-top: 12px; font-size: 13px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 8px;">
             <p><strong style="color: var(--primary-purple);"><i class="fa-solid fa-podcast"></i> Parcerias com Influenciadores & Podcasts:</strong></p>
             <p style="margin-top: 4px;"><strong>Podcasts & Programas Alvo:</strong> ${(dossier.influencerAndPodcastPartnerships?.targetPodcastCategoriesOrShows || ['Podcasts de Saúde & Negócios']).join(', ')}</p>
             <p><strong>Perfil de Influenciador:</strong> ${dossier.influencerAndPodcastPartnerships?.influencerTierAndProfile || 'Autoridades de Nicho e Micro-influenciadores de Alta Afinidade'}</p>
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p style="color: var(--accent-emerald); font-weight: bold; margin-top: 2px;">Impacto & ROI Esperado: ${dossier.influencerAndPodcastPartnerships?.expectedRoiOrImpact || 'Elevação do ticket médio em 40% e redução do CAC.'}</p>
           </div>
 
-          <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.2); padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 12px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 12px;">
             <p style="color: var(--primary-cyan); font-weight: bold; margin-bottom: 4px;">📊 Divisão Orçamentária Recomendada:</p>
             <p>💻 Tráfego Digital: <strong style="color: var(--accent-emerald);">${dossier.budgetAllocation?.digitalTrafficPercent ?? 50}%</strong> | 📻 Mídia Tradicional: <strong style="color: var(--primary-cyan);">${dossier.budgetAllocation?.traditionalMediaPercent ?? 25}%</strong> | 🤝 Eventos Presenciais: <strong style="color: var(--accent-gold);">${dossier.budgetAllocation?.offlineEventsPercent ?? 25}%</strong></p>
             <p style="margin-top: 6px; color: var(--text-muted);"><strong>Justificativa Financeira:</strong> ${dossier.budgetAllocation?.financialJustification || 'Maximização de captação de alta intenção e ancoragem de autoridade no mercado local.'}</p>
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reply.suggestedBriefing) {
       const b = reply.suggestedBriefing;
       html += `
-        <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); padding: 12px; border-radius: 8px; margin-top: 10px;">
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px; border-radius: 8px; margin-top: 10px;">
           <h5 style="color: var(--primary-cyan);"><i class="fa-solid fa-clapperboard"></i> Briefing Sugerido: ${b.campaignObjective}</h5>
           <p style="font-size: 12px; margin-top: 4px;"><strong>Visual Hook (3s):</strong> ${b.visualHookPrompt}</p>
           <p style="font-size: 12px;"><strong>Ângulo de Copy:</strong> ${b.copyAngle}</p>
@@ -876,8 +876,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const driveUrl = document.getElementById('inspect-drive-url')?.value;
 
       verdictBadge.textContent = 'Analisando via Visão Computacional...';
-      verdictBadge.style.background = 'rgba(0, 242, 254, 0.2)';
-      verdictBadge.style.color = '#00F2FE';
+      verdictBadge.style.background = 'rgba(6, 182, 212, 0.2)';
+      verdictBadge.style.color = '#06B6D4';
 
       reportContent.innerHTML = `
         <div class="placeholder-state">
@@ -965,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     reportContent.innerHTML = `
       <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-        <div style="flex: 1; background: rgba(0,242,254,0.06); padding: 16px; border-radius: 10px; border: 1px solid rgba(0,242,254,0.2); text-align: center;">
+        <div style="flex: 1; background: rgba(6, 182, 212,0.06); padding: 16px; border-radius: 10px; border: 1px solid rgba(6, 182, 212,0.2); text-align: center;">
           <span style="font-size: 12px; color: var(--text-muted);">AI Hook Score (Primeiros 3s)</span>
           <h2 style="font-size: 32px; color: var(--primary-cyan); font-family: var(--font-heading); margin-top: 4px;">${report.aiHookScore}/100</h2>
         </div>
@@ -1036,8 +1036,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <!-- COLUNA 2: ANÁLISE DA IA -->
       <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00F2FE; padding-bottom: 8px; margin-bottom: 14px;">
-          <span style="font-weight: 600; font-size: 13px; color: #00F2FE;">2. Análise da IA [Hook Score]</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #06B6D4; padding-bottom: 8px; margin-bottom: 14px;">
+          <span style="font-weight: 600; font-size: 13px; color: #06B6D4;">2. Análise da IA [Hook Score]</span>
           <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${col2.length}</span>
         </div>
         <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px;">
@@ -1091,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4 style="font-size: 13px; margin: 2px 0; color: #F1F5F9; font-weight: 600;">${card.title}</h4>
         
         ${card.ai_feedback && card.ai_feedback.length > 0 ? `
-          <div style="background: rgba(255,255,255,0.03); border-left: 2px solid ${card.hook_score >= 80 ? '#10B981' : '#00F2FE'}; padding: 6px 8px; border-radius: 4px; font-size: 11px; color: #CBD5E1;">
+          <div style="background: rgba(255,255,255,0.03); border-left: 2px solid ${card.hook_score >= 80 ? '#10B981' : '#06B6D4'}; padding: 6px 8px; border-radius: 4px; font-size: 11px; color: #CBD5E1;">
             ${card.ai_feedback[0]}
           </div>
         ` : ''}
@@ -1441,12 +1441,12 @@ document.addEventListener('DOMContentLoaded', () => {
               {
                 label: 'Faturamento (R$)',
                 data: data.revenueTimeline,
-                borderColor: '#00F2FE',
-                backgroundColor: 'rgba(0, 242, 254, 0.12)',
+                borderColor: '#06B6D4',
+                backgroundColor: 'rgba(6, 182, 212, 0.12)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.35,
-                pointBackgroundColor: '#00F2FE',
+                pointBackgroundColor: '#06B6D4',
                 pointRadius: 4
               },
               {
@@ -1490,7 +1490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             labels: ['Meta Ads (Reels/VSL)', 'Google Search (Fundo)', 'Mídias OOH / Ancoragem', 'Podcasts VIP'],
             datasets: [{
               data: data.channels,
-              backgroundColor: ['#1877F2', '#EA4335', '#FDE047', '#C084FC'],
+              backgroundColor: ['#1877F2', '#EA4335', '#FDE047', '#34D399'],
               borderWidth: 0
             }]
           },
@@ -1519,7 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
               {
                 label: 'CAC Real (R$)',
                 data: data.cacCreatives,
-                backgroundColor: ['#00F5A0', '#00F2FE', '#FDE047', '#FF4B4B'],
+                backgroundColor: ['#00F5A0', '#06B6D4', '#FDE047', '#FF4B4B'],
                 borderRadius: 6
               }
             ]
@@ -1557,9 +1557,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btn.classList.add('active');
-    btn.style.background = 'rgba(0,242,254,0.2)';
-    btn.style.border = '1px solid #00F2FE';
-    btn.style.color = '#00F2FE';
+    btn.style.background = 'rgba(6, 182, 212,0.2)';
+    btn.style.border = '1px solid #06B6D4';
+    btn.style.color = '#06B6D4';
 
     const selectedPeriod = btn.getAttribute('data-period');
     console.log(`[BI Dashboard] 📊 Alternando período do ciclo para: ${selectedPeriod}`);
@@ -1610,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 {
                   label: 'Investimento (R$)',
                   data: data.spendTimeline,
-                  borderColor: '#00F2FE',
+                  borderColor: '#06B6D4',
                   borderWidth: 2,
                   fill: false,
                   tension: 0.35
@@ -1638,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', () => {
               labels: ['Meta Ads', 'Google Ads', 'Mídias OOH', 'Podcasts VIP'],
               datasets: [{
                 data: data.channels,
-                backgroundColor: ['#1877F2', '#EA4335', '#FDE047', '#C084FC']
+                backgroundColor: ['#1877F2', '#EA4335', '#FDE047', '#34D399']
               }]
             },
             options: {
@@ -1714,9 +1714,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTestApiCredentials.addEventListener('click', () => {
       if (!settingsStatusBox) return;
       settingsStatusBox.style.display = 'block';
-      settingsStatusBox.style.background = 'rgba(0, 242, 254, 0.1)';
-      settingsStatusBox.style.border = '1px solid #00F2FE';
-      settingsStatusBox.style.color = '#00F2FE';
+      settingsStatusBox.style.background = 'rgba(6, 182, 212, 0.1)';
+      settingsStatusBox.style.border = '1px solid #06B6D4';
+      settingsStatusBox.style.color = '#06B6D4';
       settingsStatusBox.innerHTML = '⚡ Testando comunicação via API com Meta Marketing API & Google Ads Developer Token...';
 
       setTimeout(() => {
@@ -1809,7 +1809,7 @@ document.addEventListener('DOMContentLoaded', () => {
       input.type = 'text';
       if (icon) {
         icon.className = 'fa-solid fa-eye-slash';
-        icon.style.color = '#C084FC';
+        icon.style.color = '#34D399';
       }
     } else {
       input.type = 'password';
@@ -3012,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (scriptContentBody) {
         scriptContentBody.innerHTML = `
           <div style="text-align: center; padding: 40px 20px;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: #00F2FE; margin-bottom: 12px;"></i>
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: #06B6D4; margin-bottom: 12px;"></i>
             <p style="color: #FFF; font-weight: 600;">O Diretor Criativo de IA está estruturando o roteiro segundo a segundo com gatilhos de Neuromarketing...</p>
           </div>
         `;
@@ -3056,7 +3056,7 @@ document.addEventListener('DOMContentLoaded', () => {
       scenesHtml = script.timelineScenes.map((scene, idx) => `
         <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-size: 11px; font-weight: 700; color: #00F2FE; background: rgba(0,242,254,0.1); padding: 2px 8px; border-radius: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: #06B6D4; background: rgba(6, 182, 212,0.1); padding: 2px 8px; border-radius: 4px;">
               ⏱️ ${scene.timestamp} - Cena ${idx + 1}
             </span>
             <span style="font-size: 11px; color: #FDE047; font-weight: 600;">
@@ -3076,7 +3076,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scriptContentBody.innerHTML = `
       <div style="margin-bottom: 14px; background: rgba(127,0,255,0.1); border: 1px solid rgba(127,0,255,0.3); border-radius: 8px; padding: 12px 16px;">
-        <span style="font-size: 11px; color: #C084FC; font-weight: 700;">🎯 HOOK DOS PRIMEIROS 3 SEGUNDOS (VISÃO COMPUTACIONAL):</span>
+        <span style="font-size: 11px; color: #34D399; font-weight: 700;">🎯 HOOK DOS PRIMEIROS 3 SEGUNDOS (VISÃO COMPUTACIONAL):</span>
         <h4 style="color: #FFF; margin: 4px 0 2px; font-size: 14px;">"${script.hook0to3s?.spokenWords || ''}"</h4>
         <span style="font-size: 11px; color: #94A3B8;">Legenda na tela: <strong>${script.hook0to3s?.onScreenText || ''}</strong></span>
       </div>
@@ -3151,8 +3151,8 @@ document.addEventListener('DOMContentLoaded', () => {
     prompterMirrorToggle.addEventListener('click', () => {
       isPrompterMirrored = !isPrompterMirrored;
       prompterTextBody.style.transform = isPrompterMirrored ? 'scaleX(-1)' : 'none';
-      prompterMirrorToggle.style.background = isPrompterMirrored ? 'rgba(0,242,254,0.2)' : 'rgba(255,255,255,0.08)';
-      prompterMirrorToggle.style.color = isPrompterMirrored ? '#00F2FE' : '#FFF';
+      prompterMirrorToggle.style.background = isPrompterMirrored ? 'rgba(6, 182, 212,0.2)' : 'rgba(255,255,255,0.08)';
+      prompterMirrorToggle.style.color = isPrompterMirrored ? '#06B6D4' : '#FFF';
     });
   }
 
@@ -3376,7 +3376,7 @@ document.addEventListener('DOMContentLoaded', () => {
           window.speechSynthesis.cancel();
           isAudioGuidePlaying = false;
           btnPlayAudioGuide.innerHTML = '<i class="fa-solid fa-volume-high"></i> 🔊 Ouvir Áudio-Guia';
-          btnPlayAudioGuide.style.background = 'rgba(127, 0, 255, 0.15)';
+          btnPlayAudioGuide.style.background = 'rgba(16, 185, 129, 0.15)';
         } else {
           window.speechSynthesis.cancel();
           const cleanText = currentTeleprompterText.replace(/[\n\r]+/g, ' ');
@@ -3388,7 +3388,7 @@ document.addEventListener('DOMContentLoaded', () => {
           utterance.onend = () => {
             isAudioGuidePlaying = false;
             btnPlayAudioGuide.innerHTML = '<i class="fa-solid fa-volume-high"></i> 🔊 Ouvir Áudio-Guia';
-            btnPlayAudioGuide.style.background = 'rgba(127, 0, 255, 0.15)';
+            btnPlayAudioGuide.style.background = 'rgba(16, 185, 129, 0.15)';
           };
 
           utterance.onerror = () => {
@@ -3473,7 +3473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const counterHooksHtml = (spy.counterAttackHooks || []).map(hook => `
       <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-size: 11px; font-weight: 700; color: #00F2FE;">🎯 ${hook.hookTitle}</span>
+          <span style="font-size: 11px; font-weight: 700; color: #06B6D4;">🎯 ${hook.hookTitle}</span>
           <span style="font-size: 10px; color: #FDE047; font-weight: 600;">${hook.neuromarketingAdvantage}</span>
         </div>
         <p style="color: #FFF; font-size: 13px; font-weight: 600; margin: 4px 0;">Hook Proposto: "${hook.recommendedScriptHook}"</p>
@@ -3496,7 +3496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #E2E8F0;">
+      <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #E2E8F0;">
         <strong>Veredito da Agência:</strong> ${spy.strategicAdvantageVerdict || ''}
       </div>
     `;
@@ -3623,8 +3623,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnDeviceDesktop && btnDeviceMobile && lpIframeWrapper) {
     btnDeviceDesktop.addEventListener('click', () => {
       btnDeviceDesktop.classList.add('active');
-      btnDeviceDesktop.style.background = 'rgba(0,242,254,0.15)';
-      btnDeviceDesktop.style.color = '#00F2FE';
+      btnDeviceDesktop.style.background = 'rgba(6, 182, 212,0.15)';
+      btnDeviceDesktop.style.color = '#06B6D4';
       btnDeviceMobile.classList.remove('active');
       btnDeviceMobile.style.background = 'transparent';
       btnDeviceMobile.style.color = '#94A3B8';
@@ -3633,8 +3633,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnDeviceMobile.addEventListener('click', () => {
       btnDeviceMobile.classList.add('active');
-      btnDeviceMobile.style.background = 'rgba(0,242,254,0.15)';
-      btnDeviceMobile.style.color = '#00F2FE';
+      btnDeviceMobile.style.background = 'rgba(6, 182, 212,0.15)';
+      btnDeviceMobile.style.color = '#06B6D4';
       btnDeviceDesktop.classList.remove('active');
       btnDeviceDesktop.style.background = 'transparent';
       btnDeviceDesktop.style.color = '#94A3B8';
@@ -3716,7 +3716,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Alternar abas no Modal de Auth
   if (authTabBtnLogin && authTabBtnRegister) {
     authTabBtnLogin.addEventListener('click', () => {
-      authTabBtnLogin.style.background = '#7F00FF';
+      authTabBtnLogin.style.background = '#10B981';
       authTabBtnLogin.style.color = '#FFF';
       authTabBtnRegister.style.background = 'transparent';
       authTabBtnRegister.style.color = '#94A3B8';
@@ -4055,7 +4055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setTimeout(() => {
         if (forgotFeedbackMsg) {
-          forgotFeedbackMsg.className = 'p-3 rounded-xl text-xs text-center bg-purple-900/40 border border-purple-500/50 text-purple-200 block';
+          forgotFeedbackMsg.className = 'p-3 rounded-xl text-xs text-center bg-emerald-900/40 border border-emerald-500/50 text-emerald-200 block';
           forgotFeedbackMsg.innerHTML = '✨ Se o e-mail estiver cadastrado em nossa base Enterprise, você receberá o link de redefinição de senha em instantes.';
         }
 
@@ -4525,7 +4525,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td style="padding: 14px 18px;">
           <div style="font-weight: 700; color: #FFF; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-building" style="color: #C084FC;"></i> ${ag.name}
+            <i class="fa-solid fa-building" style="color: #34D399;"></i> ${ag.name}
           </div>
           <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">CNPJ: ${formattedCnpj}</div>
         </td>
@@ -4540,13 +4540,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td style="padding: 14px 18px;">${statusHtml}</td>
         <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
-          <button type="button" class="btn-edit-agency" data-id="${ag.id}" title="Editar Dados da Agência" style="background: rgba(0, 242, 254, 0.15); color: #00F2FE; border: 1px solid rgba(0, 242, 254, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; margin-right: 4px;">
+          <button type="button" class="btn-edit-agency" data-id="${ag.id}" title="Editar Dados da Agência" style="background: rgba(6, 182, 212, 0.15); color: #06B6D4; border: 1px solid rgba(6, 182, 212, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; margin-right: 4px;">
             <i class="fa-solid fa-pen-to-square"></i> Editar
           </button>
           <button type="button" class="btn-delete-agency" data-id="${ag.id}" data-name="${ag.name}" title="Excluir Agência" style="background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; margin-right: 4px;">
             <i class="fa-solid fa-trash-can"></i> Excluir
           </button>
-          <button type="button" class="btn-toggle-agency" data-id="${ag.id}" data-status="${ag.status}" title="${isActive ? 'Bloquear Acesso' : 'Desbloquear Acesso'}" style="background: ${isActive ? 'rgba(168, 85, 247, 0.15)' : 'rgba(0, 245, 160, 0.15)'}; color: ${isActive ? '#C084FC' : '#00F5A0'}; border: 1px solid ${isActive ? 'rgba(168, 85, 247, 0.3)' : 'rgba(0, 245, 160, 0.3)'}; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+          <button type="button" class="btn-toggle-agency" data-id="${ag.id}" data-status="${ag.status}" title="${isActive ? 'Bloquear Acesso' : 'Desbloquear Acesso'}" style="background: ${isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 245, 160, 0.15)'}; color: ${isActive ? '#34D399' : '#00F5A0'}; border: 1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(0, 245, 160, 0.3)'}; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
             <i class="fa-solid ${isActive ? 'fa-lock' : 'fa-unlock'}"></i> ${isActive ? 'Bloquear' : 'Desbloquear'}
           </button>
         </td>
@@ -4693,3 +4693,5 @@ function generateMockDossier(clientName, niche) {
 }
 
 console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
+
+

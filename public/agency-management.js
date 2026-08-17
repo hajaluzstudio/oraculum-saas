@@ -52,7 +52,7 @@ window.abrirModalAgencia = function(agenciaId = null) {
       <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
         <div class="flex justify-between items-center border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2">
-            <span class="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><i class="fa-solid fa-building"></i></span>
+            <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><i class="fa-solid fa-building"></i></span>
             <h3 id="modal-agency-title" class="text-lg font-bold text-white">Cadastrar Nova Agência</h3>
           </div>
           <button type="button" onclick="window.fecharModalAgencia()" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
@@ -63,28 +63,28 @@ window.abrirModalAgencia = function(agenciaId = null) {
           
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome da Agência / Razão Social</label>
-            <input type="text" id="agency-name-input" required placeholder="Ex: Agência Alfa Digital" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            <input type="text" id="agency-name-input" required placeholder="Ex: Agência Alfa Digital" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">CNPJ</label>
-              <input type="text" id="agency-cnpj-input" placeholder="00.000.000/0001-00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="agency-cnpj-input" placeholder="00.000.000/0001-00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Telefone / WhatsApp</label>
-              <input type="text" id="agency-phone-input" placeholder="(00) 00000-0000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="agency-phone-input" placeholder="(00) 00000-0000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">E-mail do Administrador (Login)</label>
-            <input type="email" id="agency-admin-email" required placeholder="admin@agencia.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+            <input type="email" id="agency-admin-email" required placeholder="admin@agencia.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
           </div>
 
           <!-- ENDEREÇO COM VIA CEP -->
           <div class="border-t border-slate-800/80 pt-3 mt-3 space-y-3">
-            <span class="block text-xs font-semibold text-purple-400 uppercase tracking-wider">Endereço da Sede (ViaCEP)</span>
+            <span class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider">Endereço da Sede (ViaCEP)</span>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
@@ -92,26 +92,26 @@ window.abrirModalAgencia = function(agenciaId = null) {
                 <input type="text" id="agency-zip" placeholder="00000-000" 
                        onblur="window.buscarEnderecoPorCEP(this.value)" 
                        oninput="if(this.value.replace(/\\D/g,'').length===8) window.buscarEnderecoPorCEP(this.value)" 
-                       class="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                       class="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
               <div class="md:col-span-2">
                 <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Logradouro / Rua</label>
-                <input type="text" id="agency-street" placeholder="Rua, Avenida, Alameda..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                <input type="text" id="agency-street" placeholder="Rua, Avenida, Alameda..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Bairro</label>
-                <input type="text" id="agency-neighborhood" placeholder="Bairro" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                <input type="text" id="agency-neighborhood" placeholder="Bairro" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cidade</label>
-                <input type="text" id="agency-city" placeholder="Cidade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+                <input type="text" id="agency-city" placeholder="Cidade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">UF / Estado</label>
-                <input type="text" id="agency-state" placeholder="UF" maxlength="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm uppercase focus:outline-none focus:border-purple-500">
+                <input type="text" id="agency-state" placeholder="UF" maxlength="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm uppercase focus:outline-none focus:border-emerald-500">
               </div>
             </div>
           </div>
@@ -119,7 +119,7 @@ window.abrirModalAgencia = function(agenciaId = null) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Plano SaaS</label>
-              <select id="agency-plan-input" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <select id="agency-plan-input" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
                 <option value="Starter">Starter (Até 5 clientes)</option>
                 <option value="Pro Growth">Pro Growth (Até 20 clientes)</option>
                 <option value="Enterprise Pro">Enterprise Pro (Ilimitado)</option>
@@ -127,13 +127,13 @@ window.abrirModalAgencia = function(agenciaId = null) {
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Mensalidade (R$)</label>
-              <input type="text" id="agency-fee-input" placeholder="Ex: 997,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500">
+              <input type="text" id="agency-fee-input" placeholder="Ex: 997,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
             <button type="button" onclick="window.fecharModalAgencia()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-sm transition-colors cursor-pointer">Cancelar</button>
-            <button type="submit" id="btn-save-agency" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Agência</button>
+            <button type="submit" id="btn-save-agency" class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-xl font-semibold text-white text-sm shadow-lg transition-all cursor-pointer">Salvar Agência</button>
           </div>
         </form>
       </div>
@@ -301,7 +301,7 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div>
           <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>👥 Equipe & Cargos:</span> <span class="text-purple-400">${agencyName}</span>
+            <span>👥 Equipe & Cargos:</span> <span class="text-emerald-400">${agencyName}</span>
           </h3>
           <p class="text-xs text-slate-400">Gerencie os acessos RBAC e colaboradores desta agência.</p>
         </div>
@@ -310,27 +310,27 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
 
       <!-- FORMULÁRIO NOVO MEMBRO -->
       <form onsubmit="window.salvarUsuarioAgencia(event, '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 text-left">
-        <h4 class="text-xs font-semibold text-purple-400 uppercase tracking-wider">+ Cadastrar Novo Colaborador</h4>
+        <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">+ Cadastrar Novo Colaborador</h4>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Colaborador</label>
-            <input type="text" id="user-name-input" required placeholder="Ex: Ana Silva" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+            <input type="text" id="user-name-input" required placeholder="Ex: Ana Silva" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">E-mail de Acesso</label>
-            <input type="email" id="user-email-input" required placeholder="colaborador@agencia.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+            <input type="email" id="user-email-input" required placeholder="colaborador@agencia.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Senha Provisória</label>
-            <input type="password" id="user-password-input" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+            <input type="password" id="user-password-input" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cargo / Função (RBAC)</label>
-            <select id="user-role-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
+            <select id="user-role-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
               <option value="Master da Agência">👑 Master da Agência (Total)</option>
               <option value="Coordenador de Marketing">🎯 Coordenador de Marketing / Estrategista</option>
               <option value="Designer Gráfico">🎨 Designer Gráfico (Visual)</option>
@@ -340,7 +340,7 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
         </div>
 
         <div class="flex justify-end pt-1">
-          <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all cursor-pointer">
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all cursor-pointer">
             + Adicionar Colaborador
           </button>
         </div>
@@ -369,7 +369,7 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
                     <div class="text-xs text-slate-400">${u.email}</div>
                   </td>
                   <td class="py-2.5 px-3">
-                    <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md text-xs">${u.role}</span>
+                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs">${u.role}</span>
                   </td>
                   <td class="py-2.5 px-3 text-right">
                     <button onclick="window.excluirUsuarioAgencia('${u.id}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded text-xs transition-colors cursor-pointer">Excluir</button>
@@ -493,8 +493,8 @@ window.renderizarListaAgencias = function() {
         <div>${ag.name}</div>
         <div class="text-xs text-slate-400 font-normal">CNPJ: ${ag.cnpj || '-'} ${ag.city ? `• ${ag.city}/${ag.state || ''}` : ''}</div>
       </td>
-      <td class="py-3 px-4 text-purple-400">
-        <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs">${ag.plan || 'Starter'}</span>
+      <td class="py-3 px-4 text-emerald-400">
+        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs">${ag.plan || 'Starter'}</span>
       </td>
       <td class="py-3 px-4 text-slate-400 font-sans">
         <div>${ag.admin_email || '-'}</div>
@@ -509,7 +509,7 @@ window.renderizarListaAgencias = function() {
         </span>
       </td>
       <td class="py-3 px-4 text-right space-x-2">
-        <button onclick="window.abrirModalUsuarios('${ag.id}', '${ag.name.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg text-xs transition-colors cursor-pointer">👥 Usuários</button>
+        <button onclick="window.abrirModalUsuarios('${ag.id}', '${ag.name.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs transition-colors cursor-pointer">👥 Usuários</button>
         <button onclick="window.abrirModalAgencia('${ag.id}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer">Editar</button>
         <button onclick="window.excluirAgencia('${ag.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
       </td>
@@ -590,3 +590,5 @@ document.addEventListener('click', (e) => {
     window.abrirModalAgencia();
   }
 });
+
+
