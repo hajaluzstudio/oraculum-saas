@@ -2062,11 +2062,89 @@ document.addEventListener('DOMContentLoaded', () => {
     window.exibirToastSucesso("✓ Configurações da ElevenLabs salvas com sucesso!");
   };
 
+  window.carregarVozesNativas = function() {
+    const selectVozes = [
+      document.getElementById('select-voz-oraculo'),
+      document.getElementById('select-voz-oraculo-sa')
+    ].filter(Boolean);
+
+    if (selectVozes.length === 0 || !('speechSynthesis' in window)) return;
+
+    const vozes = window.speechSynthesis.getVoices();
+    const vozesPt = vozes.filter(v => v.lang.replace('_', '-').startsWith('pt'));
+
+    const vozSalva = localStorage.getItem('ORACULO_VOICE_NAME') || '';
+
+    selectVozes.forEach(selectVoz => {
+      selectVoz.innerHTML = '';
+
+      if (vozesPt.length === 0) {
+        selectVoz.innerHTML = '<option value="">Carregando vozes do sistema...</option>';
+        return;
+      }
+
+      vozesPt.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        const tagNeural = (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Google')) ? ' [Recomendada - HD]' : '';
+        opt.innerText = `${v.name} (${v.lang})${tagNeural}`;
+        if (v.name === vozSalva) opt.selected = true;
+        selectVoz.appendChild(opt);
+      });
+    });
+  };
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = window.carregarVozesNativas;
+    setTimeout(window.carregarVozesNativas, 500);
+  }
+
+  window.testarVozSelecionada = function() {
+    const selectVoz = document.getElementById('select-voz-oraculo') || document.getElementById('select-voz-oraculo-sa');
+    const nomeVoz = selectVoz ? selectVoz.value : null;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance("Olá! Esta é uma demonstração da voz executiva do Oráculo Live Advisor. O sistema de BI e análise preditiva de marketing está operando com máxima eficiência.");
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.0;
+    utterance.pitch = 0.95;
+
+    if (nomeVoz) {
+      const vozObj = window.speechSynthesis.getVoices().find(v => v.name === nomeVoz);
+      if (vozObj) utterance.voice = vozObj;
+      localStorage.setItem('ORACULO_VOICE_NAME', nomeVoz);
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  window.salvarVozEscolhida = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const selectVoz = document.getElementById('select-voz-oraculo') || document.getElementById('select-voz-oraculo-sa');
+    const nomeVoz = selectVoz ? selectVoz.value : '';
+
+    if (nomeVoz) {
+      localStorage.setItem('ORACULO_VOICE_NAME', nomeVoz);
+      if (typeof window.exibirToastSucesso === 'function') {
+        window.exibirToastSucesso(`✓ Voz Executiva "${nomeVoz}" salva com sucesso!`);
+      } else {
+        alert(`✅ Voz Executiva "${nomeVoz}" salva com sucesso!`);
+      }
+    } else {
+      alert("⚠️ Nenhuma voz selecionada.");
+    }
+  };
+
   function reproduzirVozNativaHD(texto) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = 'pt-BR';
+    const vozSalva = localStorage.getItem('ORACULO_VOICE_NAME');
+    if (vozSalva) {
+      const vozObj = window.speechSynthesis.getVoices().find(v => v.name === vozSalva);
+      if (vozObj) utterance.voice = vozObj;
+    }
     utterance.rate = 1.02;
     window.speechSynthesis.speak(utterance);
   }

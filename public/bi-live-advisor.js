@@ -25,6 +25,13 @@
       if (!vozesNavegador.length && 'speechSynthesis' in window) {
         vozesNavegador = window.speechSynthesis.getVoices();
       }
+
+      const vozSalva = localStorage.getItem('ORACULO_VOICE_NAME');
+      if (vozSalva && vozesNavegador.length) {
+        const vozEncontrada = vozesNavegador.find(v => v.name === vozSalva);
+        if (vozEncontrada) return vozEncontrada;
+      }
+
       const preferenciais = [
         v => v.name.includes("Francisca") || v.name.includes("Antonio") || (v.name.includes("Natural") && v.lang.includes("pt-BR")),
         v => v.name.includes("Google") && (v.lang === "pt-BR" || v.lang === "pt_BR"),
