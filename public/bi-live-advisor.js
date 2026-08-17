@@ -480,14 +480,19 @@
   };
 
   async function perguntarAoOraculoGemini(perguntaUsuario, contextoBI = {}, historico = []) {
-    const apiKey = localStorage.getItem('GEMINI_API_KEY') || 
-                   localStorage.getItem('custom_gemini_api_key') || 
-                   localStorage.getItem('gemini_api_key') || 
-                   localStorage.getItem('oraculum_gemini_key') || 
-                   window.ENV_GEMINI_API_KEY || '';
+    let apiKey = '';
+    if (typeof window.getGeminiKey === 'function') {
+      apiKey = await window.getGeminiKey();
+    } else {
+      apiKey = localStorage.getItem('GEMINI_API_KEY') || 
+               localStorage.getItem('custom_gemini_api_key') || 
+               localStorage.getItem('gemini_api_key') || 
+               localStorage.getItem('oraculum_gemini_key') || 
+               window.ENV_GEMINI_API_KEY || '';
+    }
     
     if (!apiKey) {
-      throw new Error("Chave da API do Google Gemini não configurada. Por favor, insira a chave Gemini API Key em Configurações Master.");
+      throw new Error("Chave da API do Gemini não configurada em Configurações API.");
     }
 
     const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message || h.content}`).join('\n');

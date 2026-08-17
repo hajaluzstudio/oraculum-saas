@@ -1080,11 +1080,11 @@
                   </a>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                  <button type="button" onclick="window.testarConexaoGeminiLive()" class="btn-secondary sm" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <button type="button" onclick="window.testarConexaoGeminiReal()" class="btn-secondary sm" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-bolt"></i> ⚡ Testar Conexão
                   </button>
-                  <button id="btn-save-api-keys" type="button" onclick="window.salvarChavesAPI(event)" style="background: linear-gradient(135deg, #7F00FF, #4F46E5); border: none; border-radius: 10px; padding: 8px 16px; color: #FFF; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
-                    <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Chaves de API
+                  <button type="button" onclick="window.salvarGeminiKey(document.getElementById('setting-gemini-key').value)" style="background: linear-gradient(135deg, #7F00FF, #4F46E5); border: none; border-radius: 10px; padding: 8px 16px; color: #FFF; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+                    <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Gemini API Key
                   </button>
                 </div>
               </div>
@@ -2220,9 +2220,10 @@
     })();
   </script>
 
-  <script src="app.js?v=32.0.0"></script>
-  <script src="/agency-management.js?v=32.0.0"></script>
-  <script src="/client-management.js?v=32.0.0"></script>
-  <script src="/bi-live-advisor.js?v=32.0.0"></script>
+  <script src="/api-keys-manager.js?v=60.0.0"></script>
+  <script src="app.js?v=60.0.0"></script>
+  <script src="/agency-management.js?v=60.0.0"></script>
+  <script src="/client-management.js?v=60.0.0"></script>
+  <script src="/bi-live-advisor.js?v=60.0.0"></script>
 </body>
 </html>
