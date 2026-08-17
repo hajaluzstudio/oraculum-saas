@@ -209,6 +209,23 @@ app.get('/sw.js', (req: Request, res: Response) => {
 });
 
 // HEALTH CHECK
+// SERVIR ARQUIVOS SVG
+app.get('/*.svg', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const svgPath = getStaticFilePath(filename);
+    if (fs.existsSync(svgPath)) {
+      const code = fs.readFileSync(svgPath);
+      res.setHeader('Content-Type', 'image/svg+xml');
+      setNoCacheHeaders(res);
+      return res.status(200).send(code);
+    }
+    return res.status(404).send('SVG não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar SVG: ' + e.message);
+  }
+});
+
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
