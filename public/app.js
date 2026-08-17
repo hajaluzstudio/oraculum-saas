@@ -2062,113 +2062,106 @@ document.addEventListener('DOMContentLoaded', () => {
     window.exibirToastSucesso("✓ Configurações da ElevenLabs salvas com sucesso!");
   };
 
-  window.testarConexaoElevenLabsLive = async function() {
+  window.testarConexaoElevenLabs = async function() {
     const inputKey = document.getElementById('setting-eleven-key') || 
                      document.getElementById('setting-eleven-key-sa') || 
                      document.getElementById('elevenlabs-api-key') || 
+                     document.querySelector('input[placeholder*="sk_"]') || 
                      document.querySelector('input[placeholder*="xi-"]');
 
     const inputVoice = document.getElementById('setting-eleven-voice-id') || 
                        document.getElementById('setting-eleven-voice-id-sa') || 
-                       document.getElementById('elevenlabs-voice-id');
+                       document.getElementById('elevenlabs-voice-id') || 
+                       document.querySelector('input[placeholder*="Voice ID"]') || 
+                       { value: 'pNInz6obpgDQGcFmaJgB' };
 
-    const elevenKey = inputKey ? inputKey.value.trim() : '';
-    const voiceId = inputVoice ? inputVoice.value.trim() : '21m00Tcm4TlvDq8ikWAM';
+    const apiKey = inputKey ? inputKey.value.trim() : (localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key'));
+    const voiceId = (inputVoice && inputVoice.value.trim()) ? inputVoice.value.trim() : 'pNInz6obpgDQGcFmaJgB';
 
     const badge = document.getElementById('badge-eleven-status');
     const badgeSa = document.getElementById('badge-eleven-status-sa');
     const audit = document.getElementById('audit-log-eleven');
 
-    if (!elevenKey) {
-      const setUnset = (el) => {
-        if (!el) return;
-        el.innerText = '○ Voz WebSpeech Padrão';
-        el.style.background = 'rgba(148, 163, 184, 0.15)';
-        el.style.color = '#94A3B8';
-      };
-      setUnset(badge);
-      setUnset(badgeSa);
-      if (audit) audit.innerText = 'Última verificação: Nenhuma chave da ElevenLabs informada';
-      alert('⚠️ Por favor, insira a sua API Key da ElevenLabs antes de testar.');
-      return { success: false };
+    if (!apiKey) {
+      alert("⚠️ Por favor, insira e salve sua API Key da ElevenLabs antes de testar.");
+      return;
     }
 
-    const setTesting = (el) => {
-      if (!el) return;
-      el.innerText = '⏳ Validando ElevenLabs...';
-      el.style.background = 'rgba(168, 85, 247, 0.15)';
-      el.style.color = '#C084FC';
-    };
-    setTesting(badge);
-    setTesting(badgeSa);
-    if (audit) audit.innerText = 'Consultando plano e cota de caracteres na ElevenLabs...';
+    // Feedback de carregamento
+    const btnTest = document.getElementById('btn-test-elevenlabs') || document.getElementById('btn-test-eleven-voice');
+    if (btnTest) btnTest.innerText = "⏳ Gerando Áudio Neural...";
 
     try {
-      const res = await fetch('https://api.elevenlabs.io/v1/user', {
-        method: 'GET',
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
         headers: {
-          'xi-api-key': elevenKey
-        }
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+          text: "Conexão estabelecida com sucesso. O Oráculo Live Advisor agora possui voz humana ultra-realista.",
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.8
+          }
+        })
       });
 
-      const data = await res.json();
-      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-      if (res.ok && data.subscription) {
-        const sub = data.subscription;
-        const tier = sub.tier || 'Starter';
-        const limit = sub.character_limit || 0;
-        const used = sub.character_count || 0;
-        const remaining = limit > 0 ? (limit - used) : 0;
-        const remainingFormatted = remaining.toLocaleString('pt-BR');
-
-        const setOk = (el) => {
-          if (!el) return;
-          el.innerText = `● ElevenLabs Ativa (${remainingFormatted} chars)`;
-          el.style.background = 'rgba(16, 185, 129, 0.15)';
-          el.style.color = '#10B981';
-        };
-        setOk(badge);
-        setOk(badgeSa);
-
-        const auditText = `Última verificação: Hoje às ${now} | Plano: ${tier} | Restantes: ${remainingFormatted} / ${limit.toLocaleString('pt-BR')} caracteres`;
-        if (audit) audit.innerText = auditText;
-
-        localStorage.setItem('ELEVENLABS_API_KEY', elevenKey);
-        localStorage.setItem('elevenlabs_api_key', elevenKey);
-        localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
-        localStorage.setItem('elevenlabs_voice_id', voiceId);
-        localStorage.setItem('elevenlabs_last_ping', now);
-
-        window.exibirToastSucesso(`✓ Conexão com ElevenLabs validada com sucesso! (${remainingFormatted} caracteres restantes)`);
-        return { success: true, tier, remaining };
-      } else {
-        const errMsg = data.detail?.message || data.message || 'Chave da ElevenLabs inválida ou sem permissão.';
-        const setErr = (el) => {
-          if (!el) return;
-          el.innerText = '✖ Chave ElevenLabs Inválida';
-          el.style.background = 'rgba(239, 68, 68, 0.15)';
-          el.style.color = '#EF4444';
-        };
-        setErr(badge);
-        setErr(badgeSa);
-        if (audit) audit.innerText = `Última verificação: Erro em ${now} (${errMsg.substring(0, 45)}...)`;
-        alert(`❌ Falha na validação ElevenLabs:\n${errMsg}`);
-        return { success: false, error: errMsg };
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.detail?.message || `Status HTTP ${response.status}`);
       }
-    } catch (err) {
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.play();
+
+      // Salva automaticamente após validação positiva
+      localStorage.setItem('ELEVENLABS_API_KEY', apiKey);
+      localStorage.setItem('elevenlabs_api_key', apiKey);
+      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
+      localStorage.setItem('elevenlabs_voice_id', voiceId);
+
+      const setOk = (el) => {
+        if (!el) return;
+        el.innerText = '● ElevenLabs Validada (Voz Ativa)';
+        el.style.background = 'rgba(16, 185, 129, 0.15)';
+        el.style.color = '#10B981';
+      };
+      setOk(badge);
+      setOk(badgeSa);
+
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (audit) audit.innerText = `Última verificação: Hoje às ${now} | Amostra de áudio gerada com sucesso (${voiceId})`;
+
+      if (typeof window.exibirToastSucesso === 'function') {
+        window.exibirToastSucesso("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
+      } else {
+        alert("✅ Conexão ElevenLabs Validada! Voz reproduzida com sucesso.");
+      }
+
+    } catch (error) {
+      console.error("Erro ElevenLabs:", error);
       const setErr = (el) => {
         if (!el) return;
-        el.innerText = '✖ Erro de Conexão ElevenLabs';
+        el.innerText = '✖ Chave ElevenLabs Inválida';
         el.style.background = 'rgba(239, 68, 68, 0.15)';
         el.style.color = '#EF4444';
       };
       setErr(badge);
       setErr(badgeSa);
-      alert(`❌ Erro ao comunicar com a API da ElevenLabs: ${err.message}`);
-      return { success: false, error: err.message };
+
+      alert(`Erro na validação ElevenLabs: ${error.message}\nVerifique se a chave possui créditos gratuitos ativos.`);
+    } finally {
+      if (btnTest) btnTest.innerText = "⚡ Testar Conexão / Ouvir Amostra";
     }
   };
+
+  window.testarConexaoElevenLabsLive = window.testarConexaoElevenLabs;
 
   window.testarTodasConexoes = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
