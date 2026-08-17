@@ -55,9 +55,9 @@
     floatBtn.type = 'button';
     floatBtn.onclick = window.alternarOraculoLive;
     floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-full shadow-2xl shadow-emerald-950/60 font-semibold text-sm transition-all transform hover:scale-105 cursor-pointer border border-emerald-500/30';
-    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(127,0,255,0.4); backdrop-filter: blur(10px);';
+    floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
-      <span style="font-size: 18px;">🔮</span>
+      <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
       <span>Oráculo Live Advisor</span>
       <span style="display: inline-flex; width: 10px; height: 10px; background: #10B981; border-radius: 50%; box-shadow: 0 0 10px #10B981;"></span>
     `;
@@ -67,11 +67,11 @@
     const drawer = document.createElement('div');
     drawer.id = 'oraculo-live-drawer';
     drawer.className = 'fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/80 shadow-2xl flex flex-col transition-transform duration-300 translate-x-full text-white';
-    drawer.style.cssText = 'position: fixed; top: 0; bottom: 0; right: 0; z-index: 99999; width: 100%; max-width: 420px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-left: 1px solid rgba(168,85,247,0.3); box-shadow: -10px 0 40px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease; transform: translateX(100%); color: #FFF; font-family: "Inter", sans-serif;';
+    drawer.style.cssText = 'position: fixed; top: 0; bottom: 0; right: 0; z-index: 99999; width: 100%; max-width: 420px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-left: 1px solid rgba(16,185,129,0.3); box-shadow: -10px 0 40px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease; transform: translateX(100%); color: #FFF; font-family: "Inter", sans-serif;';
     drawer.innerHTML = `
       <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(8, 11, 17, 0.8);">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 36px; height: 36px; background: rgba(127,0,255,0.2); border: 1px solid rgba(127,0,255,0.4); display: flex; align-items: center; justify-content: center; font-size: 18px; border-radius: 10px;">🔮</div>
+          <div style="width: 36px; height: 36px; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); display: flex; align-items: center; justify-content: center; border-radius: 10px;"><img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;"></div>
           <div>
             <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oráculo Live Advisor</h3>
             <span style="font-size: 11px; color: #10B981; display: flex; align-items: center; gap: 4px;">
@@ -80,7 +80,7 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(127,0,255,0.2); color: #34D399; border: 1px solid rgba(127,0,255,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
+          <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(16,185,129,0.2); color: #34D399; border: 1px solid rgba(16,185,129,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">
             ⚡ Resumo Geral
           </button>
           <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 22px; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -98,7 +98,7 @@
           <span style="width: 8px; height: 8px; background: #34D399; border-radius: 50%;"></span>
           <span id="voice-status-text">Ouvindo sua pergunta...</span>
         </span>
-        <span style="font-size: 10px; background: rgba(168,85,247,0.3); padding: 2px 6px; border-radius: 4px; color: #FFF;">Live Audio</span>
+        <span style="font-size: 10px; background: rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px; color: #FFF;">Live Audio</span>
       </div>
 
       <div style="padding: 14px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(8, 11, 17, 0.9); display: flex; flex-direction: column; gap: 10px;">
@@ -188,7 +188,7 @@
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
     } else {
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #38BDF8; font-weight: bold; margin: 0 0 4px;">🔮 Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oráculo</span></div><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
     }
 
     feed.appendChild(msgDiv);
@@ -722,4 +722,6 @@ Mensagem do Usuário: "${perguntaUsuario}"
     injetarEstruturaLiveAdvisor();
   }
 })();
+
+
 
