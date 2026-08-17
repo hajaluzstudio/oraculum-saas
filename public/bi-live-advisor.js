@@ -1,4 +1,4 @@
-﻿// =======================================================
+// =======================================================
 // Oraculum Live - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
 // =======================================================
 
@@ -57,9 +57,9 @@
     floatBtn.className = 'fixed bottom-6 right-6 z-40 hidden items-center gap-2.5 px-5 py-3.5 bg-[#10B981] hover:bg-[#059669] text-slate-950 font-extrabold rounded-full shadow-none text-sm transition-all transform hover:scale-105 cursor-pointer border border-emerald-500/30';
     floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: #10B981; color: #0f172a; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
-      <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
+      <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain; filter: brightness(0) opacity(0.85);">
       <span>Oraculum Live</span>
-      <span style="display: inline-flex; width: 10px; height: 10px; background: #10B981; border-radius: 50%; box-shadow: 0 0 10px #10B981;"></span>
+      <span style="display: inline-flex; width: 8px; height: 8px; background: #0f172a; border-radius: 50%; opacity: 0.85;"></span>
     `;
     document.body.appendChild(floatBtn);
 
