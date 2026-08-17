@@ -130,20 +130,19 @@
 
       const biSection = document.getElementById('tab-bi') || 
                         document.getElementById('feedback-loop-section') || 
-                        document.getElementById('bi-section') || 
-                        document.querySelector('[data-section="feedback-loop"]') ||
-                        document.querySelector('[data-section="bi"]');
+                        document.getElementById('bi-section');
 
+      // Verifica se a aba BI está com classe 'active' ou display 'block'
       const isBiVisible = biSection && 
-                          !biSection.classList.contains('hidden') && 
-                          (biSection.classList.contains('active') || biSection.style.display === 'block' || biSection.offsetParent !== null);
+                          (biSection.classList.contains('active') || 
+                           window.getComputedStyle(biSection).display !== 'none');
 
       if (isBiVisible) {
         btn.classList.remove('hidden');
-        btn.style.display = 'flex';
+        btn.style.setProperty('display', 'flex', 'important');
       } else {
         btn.classList.add('hidden');
-        btn.style.display = 'none';
+        btn.style.setProperty('display', 'none', 'important');
         if (drawer && (drawer.style.transform === 'translateX(0px)' || drawer.style.transform === 'none')) {
           drawer.style.transform = 'translateX(100%)';
         }
