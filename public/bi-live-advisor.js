@@ -164,30 +164,103 @@
     feed.scrollTop = feed.scrollHeight;
   }
 
-  // Síntese de Voz (O Oráculo responde falando em áudio)
-  window.falarTextoOraculo = function(textoLimpo) {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textoLimpo);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      
-      const indicador = document.getElementById('oraculo-voice-indicator');
-      const statusText = document.getElementById('voice-status-text');
-      
-      utterance.onstart = () => {
-        if (indicador) {
-          indicador.style.display = 'flex';
-          if (statusText) statusText.innerText = 'Oráculo falando ao vivo...';
-        }
-      };
-      utterance.onend = () => {
-        if (indicador) indicador.style.display = 'none';
-      };
+  // =======================================================
+  // MOTOR DE VOZ NEURAL HUMANA (PT-BR) - ORÁCULO LIVE
+  // =======================================================
 
-      window.speechSynthesis.speak(utterance);
+  let vozesDisponiveis = [];
+
+  function carregarVozes() {
+    if ('speechSynthesis' in window) {
+      vozesDisponiveis = window.speechSynthesis.getVoices();
     }
+  }
+
+  if ('speechSynthesis' in window) {
+    carregarVozes();
+    window.speechSynthesis.onvoiceschanged = carregarVozes;
+  }
+
+  // Busca a voz neural mais humana e natural disponível em PT-BR
+  function obterMelhorVozNeuralPTBR() {
+    if (!vozesDisponiveis.length) {
+      vozesDisponiveis = window.speechSynthesis.getVoices();
+    }
+
+    // Hierarquia de qualidade: Vozes Neurais/Naturais do Chrome/Edge
+    const vozesPreferenciais = [
+      // Microsoft Natural (Edge/Windows) - Qualidade de estúdio humana
+      v => v.name.includes("Francisca") || v.name.includes("Antonio") || (v.name.includes("Natural") && v.lang.includes("pt-BR")),
+      // Google Neural (Chrome)
+      v => v.name.includes("Google") && v.lang.includes("pt-BR"),
+      // Apple Luciana / Felipe (Mac/iOS)
+      v => (v.name.includes("Luciana") || v.name.includes("Felipe") || v.name.includes("Siri")) && v.lang.includes("pt"),
+      // Qualquer voz PT-BR instalada
+      v => v.lang === "pt-BR" || v.lang === "pt_BR",
+      v => v.lang.startsWith("pt")
+    ];
+
+    for (const criterio of vozesPreferenciais) {
+      const vozEncontrada = vozesDisponiveis.find(criterio);
+      if (vozEncontrada) return vozEncontrada;
+    }
+
+    return null;
+  }
+
+  // Síntese com modulação natural de cadência e pausas humanas
+  window.falarTextoOraculo = function(textoLimpo) {
+    if (!('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel(); // Interrompe qualquer áudio anterior
+
+    // Limpeza de caracteres Markdown para pronúncia limpa
+    const textoFormatado = textoLimpo
+      .replace(/[*_#`~]/g, '')
+      .replace(/ROAS/gi, 'Rôas')
+      .replace(/CAC/gi, 'Caque')
+      .replace(/ICP/gi, 'I C P')
+      .replace(/(\d+)k\b/gi, '$1 mil');
+
+    const utterance = new SpeechSynthesisUtterance(textoFormatado);
+    utterance.lang = 'pt-BR';
+    
+    // Seleciona a melhor voz neural humana
+    const melhorVoz = obterMelhorVozNeuralPTBR();
+    if (melhorVoz) {
+      utterance.voice = melhorVoz;
+    }
+
+    // Calibração de entonação executiva humana
+    utterance.rate = 1.02;  // Velocidade de fala corporativa fluida
+    utterance.pitch = 1.0;  // Tom natural sem distorção metálica
+
+    const indicador = document.getElementById('oraculo-voice-indicator');
+    const statusText = document.getElementById('voice-status-text');
+
+    utterance.onstart = () => {
+      if (indicador) {
+        indicador.style.display = 'flex';
+        indicador.classList.remove('hidden');
+        if (statusText) statusText.innerText = 'Oráculo falando ao vivo...';
+      }
+    };
+
+    utterance.onend = () => {
+      if (indicador) {
+        indicador.style.display = 'none';
+        indicador.classList.add('hidden');
+      }
+    };
+
+    utterance.onerror = () => {
+      if (indicador) {
+        indicador.style.display = 'none';
+        indicador.classList.add('hidden');
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
   // Reconhecimento de Fala (Microfone ao vivo)
