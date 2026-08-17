@@ -2206,17 +2206,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let response;
       try {
+        response = await fetch('/api/elevenlabs-tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oráculo Live Advisor agora está operando com voz humana de altíssima definição.",
+            apiKey: apiKey,
+            voiceId: voiceId
+          })
+        });
+      } catch(proxyErr) {
+        console.warn("Proxy /api/elevenlabs-tts indisponível, tentando /api/tts...", proxyErr);
         response = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs validada com sucesso! O Oráculo agora está operando com voz humana de alta performance.",
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oráculo Live Advisor agora está operando com voz humana de altíssima definição.",
             voiceId: voiceId,
             apiKey: apiKey
           })
-        });
-      } catch(proxyErr) {
-        console.warn("Proxy local indisponível, tentando chamada direta...", proxyErr);
+        }).catch(() => null);
       }
 
       if (!response || !response.ok) {

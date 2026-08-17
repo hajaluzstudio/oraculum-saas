@@ -865,7 +865,7 @@ app.post('/api/landing-pages/generate', tenantAuthMiddleware, async (req: Reques
 });
 
 /**
- * POST /api/tts - Proxy para síntese de voz da ElevenLabs (solução para CORS no browser)
+ * POST /api/tts - Proxy para síntese de voz da ElevenLabs
  */
 app.post('/api/tts', async (req: Request, res: Response) => {
   try {
@@ -902,6 +902,56 @@ app.post('/api/tts', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Erro proxy ElevenLabs:', error);
     res.status(500).json({ error: error.message || 'Erro no Proxy ElevenLabs' });
+  }
+});
+
+/**
+ * POST /api/elevenlabs-tts - Endpoint oficial para síntese de voz ElevenLabs (Proxy Server-to-Server)
+ */
+app.post('/api/elevenlabs-tts', async (req: Request, res: Response) => {
+  try {
+    const { text, voiceId, apiKey } = req.body;
+    
+    const key = (apiKey && apiKey.trim()) || process.env.ELEVENLABS_API_KEY;
+    const vId = (voiceId && voiceId.trim()) || process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
+
+    if (!key) {
+      return res.status(400).json({ error: 'API Key da ElevenLabs não configurada.' });
+    }
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': key
+      },
+      body: JSON.stringify({
+        text: text || "Teste de conexão com a ElevenLabs realizado com sucesso.",
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.85
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res.status(response.status).send(errText);
+    }
+
+    const audioArrayBuffer = await response.arrayBuffer();
+    
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': String(audioArrayBuffer.byteLength)
+    });
+    return res.send(Buffer.from(audioArrayBuffer));
+
+  } catch (error: any) {
+    console.error('Erro no servidor ElevenLabs:', error);
+    return res.status(500).json({ error: error.message || 'Erro no servidor ElevenLabs' });
   }
 });
 

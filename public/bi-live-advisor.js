@@ -221,7 +221,7 @@
             if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
           }
 
-          const res = await fetch('/api/tts', {
+          let res = await fetch('/api/elevenlabs-tts', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -231,7 +231,21 @@
               voiceId: elevenVoiceId,
               apiKey: elevenKey.trim()
             })
-          });
+          }).catch(() => null);
+
+          if (!res || !res.ok) {
+            res = await fetch('/api/tts', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                text: formatado,
+                voiceId: elevenVoiceId,
+                apiKey: elevenKey.trim()
+              })
+            }).catch(() => null);
+          }
 
           if (res.ok) {
             const blob = await res.blob();
