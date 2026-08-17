@@ -2135,6 +2135,115 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.salvarConfigElevenLabs = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const inputKey = document.getElementById('elevenlabs-api-key') || document.getElementById('setting-eleven-key');
+    const inputVoice = document.getElementById('elevenlabs-voice-id') || document.getElementById('setting-eleven-voice-id');
+
+    const key = inputKey ? inputKey.value.trim() : '';
+    const voice = (inputVoice && inputVoice.value.trim()) ? inputVoice.value.trim() : 'pNInz6obpgDQGcFmaJgB';
+
+    if (!key) {
+      alert("⚠️ Por favor, insira a sua API Key da ElevenLabs.");
+      return;
+    }
+
+    localStorage.setItem('ELEVENLABS_API_KEY', key);
+    localStorage.setItem('elevenlabs_api_key', key);
+    localStorage.setItem('ELEVENLABS_VOICE_ID', voice);
+    localStorage.setItem('elevenlabs_voice_id', voice);
+
+    if (typeof window.exibirToastSucesso === 'function') {
+      window.exibirToastSucesso("✅ Configurações da ElevenLabs salvas com sucesso!");
+    } else {
+      alert("✅ Configurações da ElevenLabs salvas com sucesso!");
+    }
+  };
+
+  window.testarVozElevenLabsExclusiva = async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const inputKey = document.getElementById('elevenlabs-api-key') || document.getElementById('setting-eleven-key');
+    const inputVoice = document.getElementById('elevenlabs-voice-id') || document.getElementById('setting-eleven-voice-id');
+
+    const apiKey = (inputKey && inputKey.value.trim()) ? inputKey.value.trim() : (localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key'));
+    const voiceId = (inputVoice && inputVoice.value.trim()) ? inputVoice.value.trim() : (localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || 'pNInz6obpgDQGcFmaJgB');
+
+    if (!apiKey) {
+      alert("⚠️ Cole a sua API Key da ElevenLabs antes de testar.");
+      return;
+    }
+
+    const btn = document.getElementById('btn-test-elevenlabs-exclusiva') || event?.target;
+    const txtOriginal = btn ? btn.innerText : '';
+    if (btn) btn.innerText = "⏳ Gerando Áudio ElevenLabs...";
+
+    try {
+      let response;
+      try {
+        response = await fetch('/api/elevenlabs-tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oráculo Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            apiKey: apiKey,
+            voiceId: voiceId
+          })
+        });
+      } catch (proxyErr) {
+        console.warn("Proxy /api/elevenlabs-tts indisponível, tentando chamada direta...", proxyErr);
+      }
+
+      if (!response || !response.ok) {
+        response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'audio/mpeg',
+            'Content-Type': 'application/json',
+            'xi-api-key': apiKey
+          },
+          body: JSON.stringify({
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oráculo Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.8
+            }
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail?.message || `Erro HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      
+      await audio.play();
+
+      localStorage.setItem('ELEVENLABS_API_KEY', apiKey);
+      localStorage.setItem('elevenlabs_api_key', apiKey);
+      localStorage.setItem('ELEVENLABS_VOICE_ID', voiceId);
+      localStorage.setItem('elevenlabs_voice_id', voiceId);
+      
+      const badge = document.getElementById('badge-elevenlabs-status') || document.getElementById('badge-eleven-status');
+      if (badge) {
+        badge.innerText = "● ElevenLabs 100% Conectada";
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = '#10B981';
+      }
+
+      alert("✅ Conexão ElevenLabs 100% Ativa! Áudio neural reproduzido com sucesso.");
+    } catch (error) {
+      console.error("Erro ElevenLabs:", error);
+      alert(`❌ Falha na ElevenLabs: ${error.message}\nVerifique se a chave está correta.`);
+    } finally {
+      if (btn) btn.innerText = txtOriginal || "🔊 Testar e Ouvir Voz ElevenLabs";
+    }
+  };
+
   async function testarVozElevenLabs(textoDemo, voiceId, apiKey) {
     if (!apiKey || apiKey.trim() === '') {
       alert("⚠️ Chave de API da ElevenLabs não encontrada! Verifique as configurações.");

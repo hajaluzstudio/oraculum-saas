@@ -210,88 +210,77 @@
       const indicador = document.getElementById('oraculo-voice-indicator');
       const statusText = document.getElementById('voice-status-text');
 
-      const elevenKey = localStorage.getItem('ELEVENLABS_API_KEY');
-      const elevenVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
+      const elevenKey = localStorage.getItem('ELEVENLABS_API_KEY') || localStorage.getItem('elevenlabs_api_key');
+      const elevenVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || 'pNInz6obpgDQGcFmaJgB';
 
-      if (elevenKey) {
-        try {
-          if (indicador) {
-            indicador.style.display = 'flex';
-            indicador.classList.remove('hidden');
-            if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
-          }
-
-          let res = await fetch('/api/elevenlabs-tts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              text: formatado,
-              voiceId: elevenVoiceId,
-              apiKey: elevenKey.trim()
-            })
-          }).catch(() => null);
-
-          if (!res || !res.ok) {
-            res = await fetch('/api/tts', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                text: formatado,
-                voiceId: elevenVoiceId,
-                apiKey: elevenKey.trim()
-              })
-            }).catch(() => null);
-          }
-
-          if (res.ok) {
-            const blob = await res.blob();
-            const audioUrl = URL.createObjectURL(blob);
-            const audio = new Audio(audioUrl);
-            audio.onended = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
-            audio.onerror = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
-            await audio.play();
-            return;
-          }
-        } catch (errEleven) {
-          console.warn("Fallback ElevenLabs -> WebSpeech:", errEleven);
-        }
+      if (!elevenKey) {
+        console.warn("[Oráculo Live] Chave da ElevenLabs não configurada. Configure em Configurações > ElevenLabs API Key.");
+        return;
       }
 
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(formatado);
-        utterance.lang = 'pt-BR';
-        const vozHD = obterMelhorVozHD();
-        if (vozHD) utterance.voice = vozHD;
-        utterance.rate = 1.02;
+      if (indicador) {
+        indicador.style.display = 'flex';
+        indicador.classList.remove('hidden');
+        if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
+      }
 
-        utterance.onstart = () => {
-          if (indicador) {
-            indicador.style.display = 'flex';
-            indicador.classList.remove('hidden');
-            if (statusText) statusText.innerText = 'Oráculo falando...';
-          }
-        };
-        utterance.onend = () => {
-          if (indicador) {
-            indicador.style.display = 'none';
-            indicador.classList.add('hidden');
-          }
-        };
-        utterance.onerror = () => {
-          if (indicador) {
-            indicador.style.display = 'none';
-            indicador.classList.add('hidden');
-          }
-        };
+      let res = await fetch('/api/elevenlabs-tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: formatado,
+          voiceId: elevenVoiceId,
+          apiKey: elevenKey.trim()
+        })
+      }).catch(() => null);
 
-        window.speechSynthesis.speak(utterance);
+      if (!res || !res.ok) {
+        res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: formatado,
+            voiceId: elevenVoiceId,
+            apiKey: elevenKey.trim()
+          })
+        }).catch(() => null);
+      }
+
+      if (!res || !res.ok) {
+        res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenVoiceId}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'audio/mpeg',
+            'Content-Type': 'application/json',
+            'xi-api-key': elevenKey.trim()
+          },
+          body: JSON.stringify({
+            text: formatado,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: { stability: 0.5, similarity_boost: 0.8 }
+          })
+        }).catch(() => null);
+      }
+
+      if (res && res.ok) {
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.onended = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
+        audio.onerror = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
+        await audio.play();
+      } else {
+        console.error("[Oráculo Live] Falha na síntese de voz ElevenLabs.");
+        if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); }
       }
     } catch(e) {
-      console.warn("Falha no áudio:", e);
+      console.warn("Falha no áudio ElevenLabs:", e);
+      const indicador = document.getElementById('oraculo-voice-indicator');
+      if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); }
     }
   };
 
