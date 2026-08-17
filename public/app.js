@@ -671,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chatHistory = [];
       chatMessagesList.innerHTML = `
         <div class="chat-msg model">
-          <div class="avatar"><i class="fa-solid fa-brain"></i></div>
+          <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><img src="logo-oraculum-03.svg" alt="AI" style="width: 20px; height: 20px; object-fit: contain; transform: translateY(1px);"></div>
           <div class="bubble"><p>Histórico limpo. Como posso ajudar nas estratégias deste cliente?</p></div>
         </div>
       `;
@@ -749,7 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
     msgDiv.id = msgId;
 
     msgDiv.innerHTML = `
-      <div class="avatar"><i class="fa-solid ${role === 'user' ? 'fa-user' : 'fa-brain'}"></i></div>
+      <div class="avatar" style="display: flex; align-items: center; justify-content: center;">
+        ${role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<img src="logo-oraculum-03.svg" alt="AI" style="width: 20px; height: 20px; object-fit: contain; transform: translateY(1px);">'}
+      </div>
       <div class="bubble"><p>${content}</p></div>
     `;
 
