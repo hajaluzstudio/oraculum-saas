@@ -769,7 +769,7 @@ select option:checked {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--primary-purple);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;

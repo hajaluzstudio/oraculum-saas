@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     'tab-chat': {
       title: 'Chat Estratégico de Co-Criação',
-      subtitle: 'Interaja diretamente com o Oráculo de IA para justificar táticas, briefings e orçamento.'
+      subtitle: 'Interaja diretamente com o Oraculum de IA para justificar táticas, briefings e orçamento.'
     },
     'tab-scripts': {
       title: 'Gerador Autônomo de Roteiros & Teleprompter',
@@ -331,12 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory) {
-    dossierBadge.textContent = '2/2 - Disparando Oráculo Gemini (Dossiê)...';
+    dossierBadge.textContent = '2/2 - Disparando Oraculum Gemini (Dossiê)...';
 
     dossierContent.innerHTML = `
       <div class="placeholder-state">
         <i class="fa-solid fa-brain fa-pulse"></i>
-        <p>2/2 - O Oráculo Gemini está gerando o Dossiê Estratégico Exaustivo para o Cliente: ${clientName} (${niche})...</p>
+        <p>2/2 - O Oraculum Gemini está gerando o Dossiê Estratégico Exaustivo para o Cliente: ${clientName} (${niche})...</p>
       </div>
     `;
 
@@ -384,10 +384,10 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(resData.error || 'Falha na geração do Dossiê');
       }
     } catch (error) {
-      console.warn('⚠️ Geração via Oráculo de simulação...', error);
+      console.warn('⚠️ Geração via Oraculum de simulação...', error);
 
       const mockDossier = generateMockDossier(clientName, niche);
-      dossierBadge.textContent = 'Dossiê Gerado (Modo Oráculo)';
+      dossierBadge.textContent = 'Dossiê Gerado (Modo Oraculum)';
       dossierBadge.style.background = 'rgba(0, 245, 160, 0.2)';
       dossierBadge.style.color = '#00F5A0';
       renderDossierOutput(mockDossier);
@@ -671,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chatHistory = [];
       chatMessagesList.innerHTML = `
         <div class="chat-msg model">
-          <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><img src="logo-oraculum-03.svg" alt="AI" style="width: 20px; height: 20px; object-fit: contain; transform: translateY(1px);"></div>
+          <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><img src="logo-oraculum-03.svg" alt="AI" style="width: 26px; height: 26px; object-fit: contain; transform: translateY(1px);"></div>
           <div class="bubble"><p>Histórico limpo. Como posso ajudar nas estratégias deste cliente?</p></div>
         </div>
       `;
@@ -685,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appendChatMessage('user', text);
     chatUserInput.value = '';
 
-    const typingId = appendChatMessage('model', '<i class="fa-solid fa-spinner fa-spin"></i> O Oráculo está consultando a base do nicho e formulando a recomendação...');
+    const typingId = appendChatMessage('model', '<i class="fa-solid fa-spinner fa-spin"></i> O Oraculum está consultando a base do nicho e formulando a recomendação...');
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     msgDiv.innerHTML = `
       <div class="avatar" style="display: flex; align-items: center; justify-content: center;">
-        ${role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<img src="logo-oraculum-03.svg" alt="AI" style="width: 20px; height: 20px; object-fit: contain; transform: translateY(1px);">'}
+        ${role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<img src="logo-oraculum-03.svg" alt="AI" style="width: 26px; height: 26px; object-fit: contain; transform: translateY(1px);">'}
       </div>
       <div class="bubble"><p>${content}</p></div>
     `;
@@ -2106,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nomeVoz = selectVoz ? selectVoz.value : null;
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance("Olá! Esta é uma demonstração da voz executiva do Oráculo Live Advisor. O sistema de BI e análise preditiva de marketing está operando com máxima eficiência.");
+    const utterance = new SpeechSynthesisUtterance("Olá! Esta é uma demonstração da voz executiva do Oraculum Live Advisor. O sistema de BI e análise preditiva de marketing está operando com máxima eficiência.");
     utterance.lang = 'pt-BR';
     utterance.rate = 1.0;
     utterance.pitch = 0.95;
@@ -2390,7 +2390,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oráculo Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
             apiKey: apiKey,
             voiceId: voiceId
           })
@@ -2408,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'xi-api-key': apiKey
           },
           body: JSON.stringify({
-            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oráculo Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
+            text: "Olá! A conexão com a ElevenLabs foi estabelecida com sucesso. O Oraculum Live Advisor agora está operando com voz humana de altíssima fidelidade para reuniões executivas.",
             model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.5,
@@ -2597,7 +2597,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oráculo Live Advisor agora está operando com voz humana de altíssima definição.",
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live Advisor agora está operando com voz humana de altíssima definição.",
             apiKey: apiKey,
             voiceId: voiceId
           })
@@ -2608,7 +2608,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oráculo Live Advisor agora está operando com voz humana de altíssima definição.",
+            text: "Conexão com a ElevenLabs estabelecida com sucesso! O Oraculum Live Advisor agora está operando com voz humana de altíssima definição.",
             voiceId: voiceId,
             apiKey: apiKey
           })
@@ -2624,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'xi-api-key': apiKey
           },
           body: JSON.stringify({
-            text: "Conexão com a ElevenLabs validada com sucesso! O Oráculo agora está operando com voz humana de alta performance.",
+            text: "Conexão com a ElevenLabs validada com sucesso! O Oraculum agora está operando com voz humana de alta performance.",
             model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.5,
@@ -2927,7 +2927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'xi-api-key': elevenKey
           },
           body: JSON.stringify({
-            text: "Olá! Este é um teste da voz ultra-realista no Oráculo Live Advisor. Todos os sistemas estão operacionais!",
+            text: "Olá! Este é um teste da voz ultra-realista no Oraculum Live Advisor. Todos os sistemas estão operacionais!",
             model_id: "eleven_multilingual_v2",
             voice_settings: { stability: 0.5, similarity_boost: 0.75 }
           })
@@ -4695,5 +4695,8 @@ function generateMockDossier(clientName, niche) {
 }
 
 console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
+
+
+
 
 

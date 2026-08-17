@@ -1,9 +1,9 @@
-// =======================================================
-// ORÁCULO LIVE ADVISOR - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
+﻿// =======================================================
+// Oraculum LIVE ADVISOR - BI FEEDBACK LOOP (COMPLETO & UNIFICADO)
 // =======================================================
 
 (function () {
-  console.log("Inicializando Oráculo Live Advisor Completo...");
+  console.log("Inicializando Oraculum Live Advisor Completo...");
 
   let isProcessando = false;
   let gravando = false;
@@ -58,7 +58,7 @@
     floatBtn.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; align-items: center; gap: 10px; padding: 12px 20px; background: linear-gradient(135deg, #10B981, #06B6D4); color: #fff; border-radius: 50px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(16,185,129,0.4); backdrop-filter: blur(10px);';
     floatBtn.innerHTML = `
       <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
-      <span>Oráculo Live Advisor</span>
+      <span>Oraculum Live Advisor</span>
       <span style="display: inline-flex; width: 10px; height: 10px; background: #10B981; border-radius: 50%; box-shadow: 0 0 10px #10B981;"></span>
     `;
     document.body.appendChild(floatBtn);
@@ -73,7 +73,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="width: 36px; height: 36px; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); display: flex; align-items: center; justify-content: center; border-radius: 10px;"><img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;"></div>
           <div>
-            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oráculo Live Advisor</h3>
+            <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oraculum Live Advisor</h3>
             <span style="font-size: 11px; color: #10B981; display: flex; align-items: center; gap: 4px;">
               ● Contexto de BI Ativo
             </span>
@@ -89,7 +89,7 @@
 
       <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
         <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px; color: #CBD5E1; line-height: 1.5;">
-          👋 Olá! Sou o <strong>Oráculo</strong>. Estou acompanhando os dados de BI desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo.
+          👋 Olá! Sou o <strong>Oraculum</strong>. Estou acompanhando os dados de BI desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo.
         </div>
       </div>
 
@@ -185,10 +185,10 @@
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
     } else if (remetente === 'erro') {
       msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px; color: #FCA5A5; margin-right: 16px;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oráculo</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oraculum</p><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
     } else {
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
-      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oráculo</span></div><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
+      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum</span></div><p style="margin: 0; line-height: 1.5; white-space: pre-line;">${texto}</p>`;
     }
 
     feed.appendChild(msgDiv);
@@ -217,14 +217,14 @@
       const elevenVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || localStorage.getItem('elevenlabs_voice_id') || 'pNInz6obpgDQGcFmaJgB';
 
       if (!elevenKey) {
-        console.warn("[Oráculo Live] Chave da ElevenLabs não configurada. Configure em Configurações > ElevenLabs API Key.");
+        console.warn("[Oraculum Live] Chave da ElevenLabs não configurada. Configure em Configurações > ElevenLabs API Key.");
         return;
       }
 
       if (indicador) {
         indicador.style.display = 'flex';
         indicador.classList.remove('hidden');
-        if (statusText) statusText.innerText = 'Oráculo falando (ElevenLabs HD)...';
+        if (statusText) statusText.innerText = 'Oraculum falando (ElevenLabs HD)...';
       }
 
       let res = await fetch('/api/elevenlabs-tts', {
@@ -277,7 +277,7 @@
         audio.onerror = () => { if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); } };
         await audio.play();
       } else {
-        console.error("[Oráculo Live] Falha na síntese de voz ElevenLabs.");
+        console.error("[Oraculum Live] Falha na síntese de voz ElevenLabs.");
         if (indicador) { indicador.style.display = 'none'; indicador.classList.add('hidden'); }
       }
     } catch(e) {
@@ -473,7 +473,7 @@
     const mensagens = await window.carregarHistoricoNuvem(clientId);
     
     if (mensagens.length === 0) {
-      adicionarAoFeed('oraculo', 'Olá! Sou o Oráculo Live Advisor. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
+      adicionarAoFeed('oraculo', 'Olá! Sou o Oraculum Live Advisor. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
       return;
     }
 
@@ -496,13 +496,13 @@
       throw new Error("Chave da API do Gemini não configurada em Configurações API.");
     }
 
-    const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oráculo'}: ${h.message || h.content}`).join('\n');
+    const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oraculum'}: ${h.message || h.content}`).join('\n');
 
-    const systemInstructionText = "Você é o Oráculo Live Advisor, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
+    const systemInstructionText = "Você é o Oraculum Live Advisor, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
 
     const promptCompleto = `
-[INSTRUÇÃO DE SISTEMA E PERSONA DO ORÁCULO]
-Você é o Oráculo Live Advisor, uma inteligência artificial viva, natural, humana e estratégica.
+[INSTRUÇÃO DE SISTEMA E PERSONA DO Oraculum]
+Você é o Oraculum Live Advisor, uma inteligência artificial viva, natural, humana e estratégica.
 Responda SEMPRE em PORTUGUÊS DO BRASIL (PT-BR).
 Converse com o usuário de forma fluida e inteligente, adaptando-se a qualquer pergunta, saudação ou análise sem usar respostas pré-programadas ou textos fixos.
 
@@ -661,7 +661,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
       const loadDiv = document.createElement('div');
       loadDiv.id = loadingId;
       loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 12px; color: #34D399; font-size: 12px; display: flex; align-items: center; gap: 8px;';
-      loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oráculo analisando métricas e executando IA real...</span>';
+      loadDiv.innerHTML = '<span style="font-size: 14px;">⏳</span> <span>Oraculum analisando métricas e executando IA real...</span>';
       feed.appendChild(loadDiv);
       feed.scrollTop = feed.scrollHeight;
     }
@@ -684,12 +684,12 @@ Mensagem do Usuário: "${perguntaUsuario}"
       window.falarTextoOraculo(respostaTexto);
 
     } catch (err) {
-      console.error("Erro real na API do Oráculo:", err);
+      console.error("Erro real na API do Oraculum:", err);
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
 
       // EXIBE O ERRO REAL NA TELA EM VERMELHO SEM MOCK
-      adicionarAoFeed('erro', `Erro na API do Oráculo: ${err.message}`);
+      adicionarAoFeed('erro', `Erro na API do Oraculum: ${err.message}`);
     } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
@@ -707,7 +707,7 @@ Mensagem do Usuário: "${perguntaUsuario}"
     const feed = document.getElementById('oraculo-chat-feed');
     const meetingNotes = document.getElementById('meeting-notes-input') || document.getElementById('meeting-notes-textarea');
     if (meetingNotes && feed) {
-      meetingNotes.value += `\n\n--- [Ata Oráculo Live - ${new Date().toLocaleTimeString('pt-BR')}] ---\n` + feed.innerText;
+      meetingNotes.value += `\n\n--- [Ata Oraculum Live - ${new Date().toLocaleTimeString('pt-BR')}] ---\n` + feed.innerText;
       if (typeof window.salvarAnotacoesReuniao === 'function') {
         window.salvarAnotacoesReuniao();
       }
@@ -722,6 +722,8 @@ Mensagem do Usuário: "${perguntaUsuario}"
     injetarEstruturaLiveAdvisor();
   }
 })();
+
+
 
 
 
