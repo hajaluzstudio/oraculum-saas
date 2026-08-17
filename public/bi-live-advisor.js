@@ -513,7 +513,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
 
     // 1. Tenta descobrir os modelos habilitados para GERAR TEXTO na chave via GET /models (v1beta e v1)
     let listaTentativas = [];
-    const modelosExcluidos = ['-tts', '-audio', '-embed', 'embedding', 'bidi', 'imagen'];
+    const modelosExcluidos = ['tts', 'audio', 'embed', 'embedding', 'bidi', 'imagen', 'realtime', 'speech', 'transcribe'];
     
     for (const apiVer of ['v1beta', 'v1']) {
       try {
@@ -528,7 +528,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
               return hasGenerate && !isExcluded;
             });
 
-            // Prioriza gemini-1.5-flash e gemini-2.0-flash para resposta de texto rapida
+            // Prioriza gemini-1.5-flash e gemini-2.0-flash para resposta de texto rápida
             validos.sort((a, b) => {
               const nameA = a.name.toLowerCase();
               const nameB = b.name.toLowerCase();
@@ -550,7 +550,7 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
       }
     }
 
-    // Fallbacks de modelos de texto seguros caso a listagem falhe
+    // Fallbacks de modelos de texto ultra seguros caso a listagem falhe ou venha vazia
     const fallbacksSeguros = [
       { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
       { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
@@ -596,27 +596,22 @@ PERGUNTA DO USUÁRIO: "${perguntaUsuario}"
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-          if (response.status === 404 || msgErro.includes('not found') || msgErro.includes('modalities') || msgErro.includes('TEXT')) {
-            ultimoErro = `Modelo ${item.modelName} (${response.status}): ${msgErro}`;
-            continue;
-          }
-          throw new Error(`Google Gemini (${response.status}): ${msgErro}`);
+          ultimoErro = `Google Gemini (${response.status}): ${msgErro}`;
+          continue; // TENTA O PRÓXIMO MODELO DA LISTA AUTOMATICAMENTE
         }
 
         const data = await response.json();
         const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!respostaTexto) {
-          throw new Error(`O modelo ${item.modelName} não retornou texto válido.`);
+          ultimoErro = `O modelo ${item.modelName} não retornou texto válido.`;
+          continue;
         }
 
         return respostaTexto;
       } catch (err) {
-        if (err.message && (err.message.includes('not found') || err.message.includes('404') || err.message.includes('modalities') || err.message.includes('TEXT'))) {
-          ultimoErro = err.message;
-          continue;
-        }
-        throw err;
+        ultimoErro = err.message;
+        continue;
       }
     }
 

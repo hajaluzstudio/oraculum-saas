@@ -88,7 +88,7 @@ window.testarConexaoGeminiReal = async function() {
 
   // 1. Tenta listar modelos de GERAR TEXTO diretamente da conta do usuário via GET /models
   let listaTentativas = [];
-  const modelosExcluidos = ['-tts', '-audio', '-embed', 'embedding', 'bidi', 'imagen'];
+  const modelosExcluidos = ['tts', 'audio', 'embed', 'embedding', 'bidi', 'imagen', 'realtime', 'speech', 'transcribe'];
 
   for (const apiVer of ['v1beta', 'v1']) {
     try {
@@ -162,12 +162,11 @@ window.testarConexaoGeminiReal = async function() {
       } else {
         const err = await res.json().catch(() => ({}));
         ultimoErro = err.error?.message || `HTTP ${res.status}`;
-        if (res.status !== 404 && !ultimoErro.includes('not found') && !ultimoErro.includes('modalities') && !ultimoErro.includes('TEXT')) {
-          break;
-        }
+        continue;
       }
     } catch (error) {
       ultimoErro = error.message;
+      continue;
     }
   }
 

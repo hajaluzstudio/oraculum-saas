@@ -2292,12 +2292,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           const err = await res.json().catch(() => ({}));
           ultimoErro = err.error?.message || `HTTP ${res.status}`;
-          if (res.status !== 404 && !ultimoErro.includes('not found') && !ultimoErro.includes('modalities') && !ultimoErro.includes('TEXT')) {
-            break;
-          }
+          continue;
         }
       } catch (error) {
         ultimoErro = error.message;
+        continue;
       }
     }
 
