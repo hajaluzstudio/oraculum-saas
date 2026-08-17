@@ -1,15 +1,45 @@
 // =======================================================
-// ORÁCULO LIVE ADVISOR - BI FEEDBACK LOOP (VOZ + CHAT AO VIVO)
+// ORÁCULO LIVE ADVISOR - BI FEEDBACK LOOP (ULTRA-REALISTA & ANTI-DUPLICAÇÃO)
 // =======================================================
 
 (function () {
-  console.log("Inicializando Oráculo Live Advisor (Exclusivo BI)...");
+  console.log("Inicializando Oráculo Live Advisor HD...");
 
-  // Injeta o Drawer lateral e o Botão Flutuante do Oráculo no DOM
+  let isProcessando = false;
+  let vozesNavegador = [];
+
+  function carregarVozes() {
+    if ('speechSynthesis' in window) {
+      vozesNavegador = window.speechSynthesis.getVoices();
+    }
+  }
+  if ('speechSynthesis' in window) {
+    carregarVozes();
+    window.speechSynthesis.onvoiceschanged = carregarVozes;
+  }
+
+  function obterMelhorVozHD() {
+    if (!vozesNavegador.length && 'speechSynthesis' in window) {
+      vozesNavegador = window.speechSynthesis.getVoices();
+    }
+    // Procura vozes neurais de alta fidelidade
+    const preferenciais = [
+      v => v.name.includes("Francisca") || v.name.includes("Antonio") || (v.name.includes("Natural") && v.lang.includes("pt-BR")),
+      v => v.name.includes("Google") && (v.lang === "pt-BR" || v.lang === "pt_BR"),
+      v => v.lang === "pt-BR" || v.lang === "pt_BR",
+      v => v.lang.startsWith("pt")
+    ];
+    for (const check of preferenciais) {
+      const encontrada = vozesNavegador.find(check);
+      if (encontrada) return encontrada;
+    }
+    return null;
+  }
+
   function injetarEstruturaLiveAdvisor() {
     if (document.getElementById('oraculo-live-drawer')) return;
 
-    // 1. Botão Flutuante no BI (inicia oculto e só aparece na aba do BI)
+    // Botão Flutuante (Exclusivo BI)
     const floatBtn = document.createElement('button');
     floatBtn.id = 'btn-open-oraculo-live';
     floatBtn.type = 'button';
@@ -23,7 +53,7 @@
     `;
     document.body.appendChild(floatBtn);
 
-    // 2. Drawer Retrátil
+    // Drawer Retrátil
     const drawer = document.createElement('div');
     drawer.id = 'oraculo-live-drawer';
     drawer.className = 'fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/80 shadow-2xl flex flex-col transition-transform duration-300 translate-x-full text-white';
@@ -49,7 +79,7 @@
 
       <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
         <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px; color: #CBD5E1; line-height: 1.5;">
-          👋 Olá! Sou o <strong>Oráculo</strong>. Estou acompanhando os dados de BI desta conta em tempo real. Você pode me fazer perguntas por texto ou clicar no microfone para conversar ao vivo durante a apresentação com o cliente.
+          👋 Olá! Sou o <strong>Oráculo</strong>. Estou acompanhando os dados desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo.
         </div>
       </div>
 
@@ -72,26 +102,23 @@
           </button>
         </form>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B; padding: 0 4px;">
-          <span>Gemini Live Engine</span>
+          <span>Neural Audio Core</span>
           <button type="button" onclick="window.salvarConversaNaAta()" style="background: transparent; border: none; color: #C084FC; cursor: pointer; text-decoration: underline;">Salvar na Ata de Reunião</button>
         </div>
       </div>
     `;
     document.body.appendChild(drawer);
 
-    // Inicia monitoramento de visibilidade por aba
     monitorarAbaAtivaBI();
   }
 
-  // Monitora se o usuário está na aba de BI / Feedback Loop para exibir ou ocultar o botão
   function monitorarAbaAtivaBI() {
-    function atualizarVisibilidade() {
+    setInterval(() => {
       const btn = document.getElementById('btn-open-oraculo-live');
       const drawer = document.getElementById('oraculo-live-drawer');
       if (!btn) return;
 
-      // Verifica se a seção de BI / Feedback Loop está visível na tela
-      const biSection = document.getElementById('tab-bi') ||
+      const biSection = document.getElementById('tab-bi') || 
                         document.getElementById('feedback-loop-section') || 
                         document.getElementById('bi-section') || 
                         document.querySelector('[data-section="feedback-loop"]') ||
@@ -111,13 +138,9 @@
           drawer.style.transform = 'translateX(100%)';
         }
       }
-    }
-
-    // Executa a cada 400ms para acompanhar trocas de abas suavemente
-    setInterval(atualizarVisibilidade, 400);
+    }, 400);
   }
 
-  // Alternar visibilidade do Drawer
   window.alternarOraculoLive = function () {
     const drawer = document.getElementById('oraculo-live-drawer');
     if (!drawer) return;
@@ -128,25 +151,16 @@
     }
   };
 
-  // Coleta dados em tempo real da tela de BI
   function obterContextoAtualBI() {
-    const clienteAtivo = document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente Selecionado';
-    const faturamento = document.getElementById('bi-val-revenue')?.innerText || document.getElementById('bi-total-revenue')?.innerText || 'R$ 0,00';
-    const gastoTrafego = document.getElementById('bi-val-spend')?.innerText || document.getElementById('bi-ad-spend')?.innerText || 'R$ 0,00';
-    const roas = document.getElementById('bi-val-roas')?.innerText || document.getElementById('bi-roas-val')?.innerText || '0.0x';
-    const leads = document.getElementById('funnel-val-leads')?.innerText || document.getElementById('bi-leads-count')?.innerText || '0';
-
     return {
-      cliente: clienteAtivo,
-      faturamento,
-      investimento: gastoTrafego,
-      roas,
-      leads,
-      periodo: 'Último Mês / Período Ativo'
+      cliente: document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente Ativo',
+      faturamento: document.getElementById('bi-val-revenue')?.innerText || document.getElementById('bi-total-revenue')?.innerText || 'R$ 0,00',
+      investimento: document.getElementById('bi-val-spend')?.innerText || document.getElementById('bi-ad-spend')?.innerText || 'R$ 0,00',
+      roas: document.getElementById('bi-val-roas')?.innerText || document.getElementById('bi-roas-val')?.innerText || '0.0x',
+      leads: document.getElementById('funnel-val-leads')?.innerText || document.getElementById('bi-leads-count')?.innerText || '0'
     };
   }
 
-  // Adiciona mensagem ao feed
   function adicionarAoFeed(remetente, texto) {
     const feed = document.getElementById('oraculo-chat-feed');
     if (!feed) return;
@@ -164,24 +178,14 @@
     feed.scrollTop = feed.scrollHeight;
   }
 
-  // =======================================================
-  // MOTOR DE ÁUDIO NEURAL ULTRA-REALISTA (VOZ HUMANA HD)
-  // =======================================================
+  // Reprodução com Modulação e Eliminação de Eco Duplo
+  window.falarTextoOraculo = function(textoLimpo) {
+    if (!('speechSynthesis' in window)) return;
 
-  let audioPlayerAtual = null;
+    // Cancela imediatamente qualquer fala pendente para evitar eco ou repetição
+    window.speechSynthesis.cancel();
 
-  window.falarTextoOraculo = async function(textoLimpo) {
-    // Interrompe qualquer fala anterior
-    if (audioPlayerAtual) {
-      audioPlayerAtual.pause();
-      audioPlayerAtual.currentTime = 0;
-    }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    // Tratamento de termos de marketing para pronúncia humana perfeita
-    const textoFormatado = textoLimpo
+    const formatado = textoLimpo
       .replace(/[*_#`~]/g, '')
       .replace(/ROAS/gi, 'Rôas')
       .replace(/CAC/gi, 'Caque')
@@ -189,50 +193,28 @@
       .replace(/(\d+)k\b/gi, '$1 mil')
       .replace(/(\d+)%/g, '$1 por cento');
 
+    const utterance = new SpeechSynthesisUtterance(formatado);
+    utterance.lang = 'pt-BR';
+
+    const vozHD = obterMelhorVozHD();
+    if (vozHD) {
+      utterance.voice = vozHD;
+    }
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
     const indicador = document.getElementById('oraculo-voice-indicator');
     const statusText = document.getElementById('voice-status-text');
 
-    if (indicador) {
-      indicador.style.display = 'flex';
-      indicador.classList.remove('hidden');
-      if (statusText) statusText.innerText = 'Oráculo falando (Voz Neural)...';
-    }
+    utterance.onstart = () => {
+      if (indicador) {
+        indicador.style.display = 'flex';
+        indicador.classList.remove('hidden');
+        if (statusText) statusText.innerText = 'Oráculo falando...';
+      }
+    };
 
-    try {
-      // Stream de Voz Neural Humana em Português Brasileiro (Alta Definição)
-      // Utiliza o endpoint de voz neural natural com pitch e velocidade calibrados para tom executivo
-      const urlVozNeural = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(textoFormatado)}&tl=pt-BR&total=1&idx=0&textlen=${textoFormatado.length}&client=tw-ob&prev=input`;
-
-      audioPlayerAtual = new Audio(urlVozNeural);
-      audioPlayerAtual.playbackRate = 1.05;
-
-      audioPlayerAtual.onended = () => {
-        if (indicador) {
-          indicador.style.display = 'none';
-          indicador.classList.add('hidden');
-        }
-      };
-
-      audioPlayerAtual.onerror = () => {
-        // Fallback para sintetizador nativo caso haja bloqueio de rede
-        reproduzirFallbackNativo(textoFormatado);
-      };
-
-      await audioPlayerAtual.play();
-
-    } catch (err) {
-      console.warn("Usando motor de voz alternativo:", err);
-      reproduzirFallbackNativo(textoFormatado);
-    }
-  };
-
-  function reproduzirFallbackNativo(texto) {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1.03;
-
-    const indicador = document.getElementById('oraculo-voice-indicator');
     utterance.onend = () => {
       if (indicador) {
         indicador.style.display = 'none';
@@ -240,17 +222,23 @@
       }
     };
 
-    window.speechSynthesis.speak(utterance);
-  }
+    utterance.onerror = () => {
+      if (indicador) {
+        indicador.style.display = 'none';
+        indicador.classList.add('hidden');
+      }
+    };
 
-  // Reconhecimento de Fala (Microfone ao vivo)
+    window.speechSynthesis.speak(utterance);
+  };
+
   let recognition = null;
   let gravando = false;
 
   window.alternarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Seu navegador não suporta reconhecimento de voz direto. Use o Chrome ou Edge.");
+      alert("Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.");
       return;
     }
 
@@ -290,11 +278,11 @@
       const transcricao = event.results[0][0].transcript;
       const input = document.getElementById('oraculo-input-text');
       if (input) input.value = transcricao;
+      // Dispara envio UMA única vez
       window.enviarMensagemOraculo();
     };
 
-    recognition.onerror = (event) => {
-      console.warn("Erro no reconhecimento de voz:", event.error);
+    recognition.onerror = () => {
       gravando = false;
       if (btnMic) {
         btnMic.style.background = '#1E293B';
@@ -315,13 +303,16 @@
     recognition.start();
   };
 
-  // Enviar Mensagem para o Cérebro do Oráculo
+  // Envio com Trava Anti-Duplicação
   window.enviarMensagemOraculo = async function(e) {
     if (e) e.preventDefault();
+    if (isProcessando) return; // Bloqueia chamada simultânea dupla
+
     const input = document.getElementById('oraculo-input-text');
     const texto = input ? input.value.trim() : '';
     if (!texto) return;
 
+    isProcessando = true;
     adicionarAoFeed('usuario', texto);
     if (input) input.value = '';
 
@@ -334,48 +325,48 @@
       const lower = texto.toLowerCase();
       
       if (lower.includes('resumo') || lower.includes('apresente') || lower.includes('geral')) {
-        respostaTexto = `Analisando o período do cliente **${contexto.cliente}**: Tivemos um faturamento total de **${contexto.faturamento}** contra um investimento em tráfego de **${contexto.investimento}**, resultando em um ROAS consolidado de **${contexto.roas}**. O volume total de novos leads foi de **${contexto.leads}**. O desempenho superou a meta de ROI estabelecida.`;
+        respostaTexto = `Analisando o período da conta **${contexto.cliente}**: Tivemos um faturamento consolidado de **${contexto.faturamento}** contra um investimento em mídia de **${contexto.investimento}**, atingindo um ROAS de **${contexto.roas}** com **${contexto.leads}** novos leads gerados.`;
       } else if (lower.includes('aumentar') || lower.includes('verba') || lower.includes('investir')) {
-        respostaTexto = `Com base no ROAS atual de **${contexto.roas}**, a elasticidade de campanha permite uma escala gradual de 20% a 30% no orçamento para manter o CAC controlado antes da saturação de público.`;
+        respostaTexto = `Considerando a taxa de conversão e o ROAS atual de **${contexto.roas}**, recomendo um incremento controlado de 20% no orçamento, monitorando a estabilidade do CAC semanal.`;
       } else {
-        respostaTexto = `Para a conta de **${contexto.cliente}**, com base no investimento de ${contexto.investimento} e ROAS de ${contexto.roas}, a recomendação estratégica é concentrar os testes criativos nos ganchos de maior retenção identificados no AI Creative Score.`;
+        respostaTexto = `Com base no investimento de **${contexto.investimento}** na conta de **${contexto.cliente}**, o foco para o próximo ciclo deve ser a otimização dos criativos validados pelo Score de IA para maximizar o retorno direto.`;
       }
 
       setTimeout(() => {
         adicionarAoFeed('oraculo', respostaTexto);
-        window.falarTextoOraculo(respostaTexto.replace(/[*_#]/g, ''));
+        window.falarTextoOraculo(respostaTexto);
         if (btnSend) btnSend.disabled = false;
-      }, 600);
+        isProcessando = false;
+      }, 500);
 
     } catch (err) {
-      adicionarAoFeed('oraculo', 'Erro ao processar consulta com o modelo.');
+      adicionarAoFeed('oraculo', 'Não foi possível consultar os dados neste momento.');
       if (btnSend) btnSend.disabled = false;
+      isProcessando = false;
     }
   };
 
-  // Botão 1-Clique: Síntese Executiva Automática
   window.solicitarApresentacaoExecutiva = function() {
+    if (isProcessando) return;
     const input = document.getElementById('oraculo-input-text');
-    if (input) input.value = 'Faça a apresentação executiva e o balanço financeiro dos números da conta.';
+    if (input) input.value = 'Apresente o resumo geral dos dados da conta.';
     window.enviarMensagemOraculo();
   };
 
-  // Salvar Conversa na Ata de Reunião
   window.salvarConversaNaAta = function() {
     const feed = document.getElementById('oraculo-chat-feed');
     const meetingNotes = document.getElementById('meeting-notes-input') || document.getElementById('meeting-notes-textarea');
     if (meetingNotes && feed) {
-      meetingNotes.value += `\n\n--- [Transcrição Oráculo Live - ${new Date().toLocaleTimeString('pt-BR')}] ---\n` + feed.innerText;
+      meetingNotes.value += `\n\n--- [Ata Oráculo Live - ${new Date().toLocaleTimeString('pt-BR')}] ---\n` + feed.innerText;
       if (typeof window.salvarAnotacoesReuniao === 'function') {
         window.salvarAnotacoesReuniao();
       }
-      alert("✅ Transcrição do Oráculo adicionada às Pautas de Reunião com sucesso!");
+      alert("✅ Insights salvos na Ata de Reunião!");
     } else {
-      alert("✅ Insights copiados para a memória da conta.");
+      alert("✅ Insights copiados com sucesso!");
     }
   };
 
-  // Inicialização segura
   document.addEventListener('DOMContentLoaded', injetarEstruturaLiveAdvisor);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     injetarEstruturaLiveAdvisor();
