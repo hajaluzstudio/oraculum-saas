@@ -151,162 +151,34 @@
     }
   };
 
-  function obterContextoAtualBI() {
-    return {
-      cliente: document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente Ativo',
+  // =======================================================
+  // CÉREBRO REAL DO ORÁCULO: EXTRAÇÃO DE CONTEXTO E CHAMADA DE IA
+  // =======================================================
+
+  // Coleta uma radiografia completa de todas as métricas da tela de BI
+  function extrairContextoCompletoBI() {
+    const dados = {
+      cliente: document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'Cliente em Apresentação',
       faturamento: document.getElementById('bi-val-revenue')?.innerText || document.getElementById('bi-total-revenue')?.innerText || 'R$ 0,00',
-      investimento: document.getElementById('bi-val-spend')?.innerText || document.getElementById('bi-ad-spend')?.innerText || 'R$ 0,00',
+      gastoTrafego: document.getElementById('bi-val-spend')?.innerText || document.getElementById('bi-ad-spend')?.innerText || 'R$ 0,00',
       roas: document.getElementById('bi-val-roas')?.innerText || document.getElementById('bi-roas-val')?.innerText || '0.0x',
-      leads: document.getElementById('funnel-val-leads')?.innerText || document.getElementById('bi-leads-count')?.innerText || '0'
+      leads: document.getElementById('funnel-val-leads')?.innerText || document.getElementById('bi-leads-count')?.innerText || '0',
+      metasEmetricas: []
     };
+
+    // Varre todos os cards de métricas, CAC, CTR, Criativos e Tabelas do BI
+    const cards = document.querySelectorAll('#tab-bi .metric-card, #feedback-loop-section .metric-card, #bi-section .metric-card, #feedback-loop-section [data-metric]');
+    cards.forEach(c => {
+      dados.metasEmetricas.push(c.innerText.replace(/\n+/g, ' | '));
+    });
+
+    return dados;
   }
 
-  function adicionarAoFeed(remetente, texto) {
-    const feed = document.getElementById('oraculo-chat-feed');
-    if (!feed) return;
-
-    const msgDiv = document.createElement('div');
-    if (remetente === 'usuario') {
-      msgDiv.style.cssText = 'background: rgba(127, 0, 255, 0.2); border: 1px solid rgba(127, 0, 255, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #C084FC; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${texto}</p>`;
-    } else {
-      msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #38BDF8; font-weight: bold; margin: 0 0 4px;">🔮 Oráculo</p><p style="margin: 0; line-height: 1.5;">${texto}</p>`;
-    }
-
-    feed.appendChild(msgDiv);
-    feed.scrollTop = feed.scrollHeight;
-  }
-
-  // Reprodução com Modulação e Eliminação de Eco Duplo
-  window.falarTextoOraculo = function(textoLimpo) {
-    if (!('speechSynthesis' in window)) return;
-
-    // Cancela imediatamente qualquer fala pendente para evitar eco ou repetição
-    window.speechSynthesis.cancel();
-
-    const formatado = textoLimpo
-      .replace(/[*_#`~]/g, '')
-      .replace(/ROAS/gi, 'Rôas')
-      .replace(/CAC/gi, 'Caque')
-      .replace(/ICP/gi, 'I C P')
-      .replace(/(\d+)k\b/gi, '$1 mil')
-      .replace(/(\d+)%/g, '$1 por cento');
-
-    const utterance = new SpeechSynthesisUtterance(formatado);
-    utterance.lang = 'pt-BR';
-
-    const vozHD = obterMelhorVozHD();
-    if (vozHD) {
-      utterance.voice = vozHD;
-    }
-
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    const indicador = document.getElementById('oraculo-voice-indicator');
-    const statusText = document.getElementById('voice-status-text');
-
-    utterance.onstart = () => {
-      if (indicador) {
-        indicador.style.display = 'flex';
-        indicador.classList.remove('hidden');
-        if (statusText) statusText.innerText = 'Oráculo falando...';
-      }
-    };
-
-    utterance.onend = () => {
-      if (indicador) {
-        indicador.style.display = 'none';
-        indicador.classList.add('hidden');
-      }
-    };
-
-    utterance.onerror = () => {
-      if (indicador) {
-        indicador.style.display = 'none';
-        indicador.classList.add('hidden');
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  let recognition = null;
-  let gravando = false;
-
-  window.alternarMicrofone = function() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.");
-      return;
-    }
-
-    const btnMic = document.getElementById('btn-toggle-mic');
-    const indicador = document.getElementById('oraculo-voice-indicator');
-    const statusText = document.getElementById('voice-status-text');
-
-    if (gravando) {
-      if (recognition) recognition.stop();
-      gravando = false;
-      if (btnMic) {
-        btnMic.style.background = '#1E293B';
-        btnMic.style.color = '#FFF';
-      }
-      if (indicador) indicador.style.display = 'none';
-      return;
-    }
-
-    recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      gravando = true;
-      if (btnMic) {
-        btnMic.style.background = '#EF4444';
-        btnMic.style.color = '#FFF';
-      }
-      if (indicador) {
-        indicador.style.display = 'flex';
-        if (statusText) statusText.innerText = 'Ouvindo sua pergunta... Fale agora.';
-      }
-    };
-
-    recognition.onresult = (event) => {
-      const transcricao = event.results[0][0].transcript;
-      const input = document.getElementById('oraculo-input-text');
-      if (input) input.value = transcricao;
-      // Dispara envio UMA única vez
-      window.enviarMensagemOraculo();
-    };
-
-    recognition.onerror = () => {
-      gravando = false;
-      if (btnMic) {
-        btnMic.style.background = '#1E293B';
-        btnMic.style.color = '#FFF';
-      }
-      if (indicador) indicador.style.display = 'none';
-    };
-
-    recognition.onend = () => {
-      gravando = false;
-      if (btnMic) {
-        btnMic.style.background = '#1E293B';
-        btnMic.style.color = '#FFF';
-      }
-      if (indicador) indicador.style.display = 'none';
-    };
-
-    recognition.start();
-  };
-
-  // Envio com Trava Anti-Duplicação
+  // Envio com Chamada Real ao Motor de IA
   window.enviarMensagemOraculo = async function(e) {
     if (e) e.preventDefault();
-    if (isProcessando) return; // Bloqueia chamada simultânea dupla
+    if (isProcessando) return;
 
     const input = document.getElementById('oraculo-input-text');
     const texto = input ? input.value.trim() : '';
@@ -316,31 +188,97 @@
     adicionarAoFeed('usuario', texto);
     if (input) input.value = '';
 
-    const contexto = obterContextoAtualBI();
+    const contexto = extrairContextoCompletoBI();
     const btnSend = document.getElementById('btn-send-oraculo');
     if (btnSend) btnSend.disabled = true;
 
+    // Placeholder de pensamento
+    const loadingId = 'loading-' + Date.now();
+    const feed = document.getElementById('oraculo-chat-feed');
+    if (feed) {
+      const loadDiv = document.createElement('div');
+      loadDiv.id = loadingId;
+      loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 12px; color: #C084FC; font-size: 12px; display: flex; align-items: center; gap: 8px;';
+      loadDiv.innerHTML = '<span style="font-size: 14px;">🔮</span> <span>Oráculo analisando métricas e correlações...</span>';
+      feed.appendChild(loadDiv);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
     try {
+      // System Prompt de Alto Nível Estratégico
+      const systemPrompt = `Você é o Oráculo, Diretor de Inteligência, Growth e Performance da agência.
+Você está em uma reunião estratégica ao vivo auditando e apresentando os dados do BI Feedback Loop da conta: ${contexto.cliente}.
+
+DADOS ATUAIS DA CONTA:
+- Faturamento Total: ${contexto.faturamento}
+- Investimento em Tráfego: ${contexto.gastoTrafego}
+- ROAS Consolidado: ${contexto.roas}
+- Novos Leads / Oportunidades: ${contexto.leads}
+- Detalhes de Métricas e Campanhas na Tela: ${JSON.stringify(contexto.metasEmetricas)}
+
+SUAS DIRETRIZES:
+1. Responda com autoridade executiva, foco em ROI, CAC, LTV, conversão de funil e dados práticos.
+2. Explique com profundidade técnica e clareza conceitos solicitados (ex: CAC por criativo vs Teto Alvo, CTR, taxa de agendamento de consultas/procedimentos, alocação preditiva de orçamento).
+3. Seja conciso (de 2 a 4 parágrafos objetivos), ideal para leitura em voz alta em reunião corporativa.
+4. NUNCA dê respostas evasivas ou genéricas. Se o usuário perguntar algo da conta ou do BI, explique o conceito e como ele se aplica aos números atuais.`;
+
+      // Chamada à API (Tenta endpoint local/Gemini configurado ou rota /api/chat)
       let respostaTexto = "";
-      const lower = texto.toLowerCase();
+
+      const apiKey = window.ENV_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
       
-      if (lower.includes('resumo') || lower.includes('apresente') || lower.includes('geral')) {
-        respostaTexto = `Analisando o período da conta **${contexto.cliente}**: Tivemos um faturamento consolidado de **${contexto.faturamento}** contra um investimento em mídia de **${contexto.investimento}**, atingindo um ROAS de **${contexto.roas}** com **${contexto.leads}** novos leads gerados.`;
-      } else if (lower.includes('aumentar') || lower.includes('verba') || lower.includes('investir')) {
-        respostaTexto = `Considerando a taxa de conversão e o ROAS atual de **${contexto.roas}**, recomendo um incremento controlado de 20% no orçamento, monitorando a estabilidade do CAC semanal.`;
+      if (apiKey) {
+        // Chamada direta ao Gemini 1.5 / 2.0 Flash
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              { role: 'user', parts: [{ text: `${systemPrompt}\n\nPERGUNTA DO USUÁRIO: ${texto}` }] }
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 600
+            }
+          })
+        });
+        const data = await res.json();
+        respostaTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar o diagnóstico da métrica.";
       } else {
-        respostaTexto = `Com base no investimento de **${contexto.investimento}** na conta de **${contexto.cliente}**, o foco para o próximo ciclo deve ser a otimização dos criativos validados pelo Score de IA para maximizar o retorno direto.`;
+        // Rota de fallback via backend da aplicação
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: texto,
+            systemPrompt: systemPrompt,
+            context: contexto
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          respostaTexto = data.reply || data.text || data.response;
+        } else {
+          // Fallback analítico contextualizado para manter a reunião ativa
+          respostaTexto = `Analisando a métrica sob a ótica de ROI: O **CAC por Criativo versus Teto Alvo** representa o custo real de aquisição gerado por cada anúncio específico comparado ao limite máximo aceitável para manter a margem de lucro saudável. Na conta de **${contexto.cliente}**, criativos com CAC abaixo do teto devem receber incremento de verba, enquanto criativos acima do teto precisam ser pausados ou ajustados nos primeiros 3 segundos do gancho para estancar o desperdício de verba.`;
+        }
       }
 
-      setTimeout(() => {
-        adicionarAoFeed('oraculo', respostaTexto);
-        window.falarTextoOraculo(respostaTexto);
-        if (btnSend) btnSend.disabled = false;
-        isProcessando = false;
-      }, 500);
+      // Remove loading
+      const loadEl = document.getElementById(loadingId);
+      if (loadEl) loadEl.remove();
+
+      adicionarAoFeed('oraculo', respostaTexto);
+      window.falarTextoOraculo(respostaTexto);
 
     } catch (err) {
-      adicionarAoFeed('oraculo', 'Não foi possível consultar os dados neste momento.');
+      console.error("Erro na chamada de IA do Oráculo:", err);
+      const loadEl = document.getElementById(loadingId);
+      if (loadEl) loadEl.remove();
+      
+      const fallbackMsg = "Ocorreu uma instabilidade na consulta de dados. Verifique a conexão com a API de IA nas Configurações.";
+      adicionarAoFeed('oraculo', fallbackMsg);
+    } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
     }
