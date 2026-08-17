@@ -498,22 +498,23 @@
 
     const historicoTexto = historico.slice(-10).map(h => `${h.role === 'user' ? 'Usuário' : 'Oraculum'}: ${h.message || h.content}`).join('\n');
 
-    const systemInstructionText = "Você é o Oraculum Live, um consultor inteligente de marketing, estratégia e inteligência de negócios. Responda sempre de forma natural, humana, fluida e viva em Português do Brasil (PT-BR). Converse livremente e de forma inteligente com o usuário sobre saudações, dúvidas ou análises de BI, sem usar textos prontos, scripts ou respostas engessadas.";
+    const systemInstructionText = "Você é o Oraculum Live, um consultor de marketing, estratégia e inteligência de negócios. REGRAS CRÍTICAS: 1) NUNCA exiba pensamentos internos, passos de raciocínio, ou metadados da persona. 2) Forneça APENAS a resposta final direta, como se estivesse falando com o usuário. 3) Responda sempre de forma natural, humana, fluida e estratégica em Português do Brasil (PT-BR).";
 
-    const promptCompleto = `
-[INSTRUÇÃO DE SISTEMA E PERSONA DO Oraculum]
-Você é o Oraculum Live, uma inteligência artificial viva, natural, humana e estratégica.
-Responda SEMPRE em PORTUGUÊS DO BRASIL (PT-BR).
-Converse com o usuário de forma fluida e inteligente, adaptando-se a qualquer pergunta, saudação ou análise sem usar respostas pré-programadas ou textos fixos.
+    const promptCompleto = `[INSTRUÇÕES ESTRITAS]
+Você é o Oraculum Live.
+ATENÇÃO: Você está conversando diretamente com o usuário final no chat.
+NÃO escreva "User Input:", "Persona:", "Tone:", "Goal:", "Greeting:", nem qualquer tipo de análise interna ou rascunho de como você planeja responder.
+Escreva APENAS e EXCLUSIVAMENTE a resposta final falada que será entregue ao usuário no chat, em Português do Brasil (PT-BR).
 
-[DADOS CONTEXTUAIS DA CONTA DO CLIENTE]
+[DADOS DA CONTA]
 ${JSON.stringify(contextoBI, null, 2)}
 
-[HISTÓRICO DA CONVERSA]
-${historicoTexto || 'Início da conversa.'}
+[HISTÓRICO]
+${historicoTexto || 'Vazio'}
 
 Mensagem do Usuário: "${perguntaUsuario}"
-`;
+
+-> Escreva abaixo APENAS a sua resposta direta para o usuário:`;
 
     const keyLimpa = apiKey.trim();
 
