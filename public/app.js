@@ -1783,39 +1783,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedVoiceId = localStorage.getItem('ELEVENLABS_VOICE_ID') || '21m00Tcm4TlvDq8ikWAM';
     const savedCustom = localStorage.getItem('CUSTOM_API_KEYS');
 
+    const settingGeminiKeySa = document.getElementById('setting-gemini-key-sa');
+    const settingElevenKeySa = document.getElementById('setting-eleven-key-sa');
+    const settingElevenVoiceIdSa = document.getElementById('setting-eleven-voice-id-sa');
+    const badgeGeminiStatusSa = document.getElementById('badge-gemini-status-sa');
+    const badgeElevenStatusSa = document.getElementById('badge-eleven-status-sa');
+
     if (settingGeminiKey && savedGemini) settingGeminiKey.value = savedGemini;
+    if (settingGeminiKeySa && savedGemini) settingGeminiKeySa.value = savedGemini;
+
     if (settingElevenKey && savedEleven) settingElevenKey.value = savedEleven;
+    if (settingElevenKeySa && savedEleven) settingElevenKeySa.value = savedEleven;
+
     if (settingElevenVoiceId) settingElevenVoiceId.value = savedVoiceId;
+    if (settingElevenVoiceIdSa) settingElevenVoiceIdSa.value = savedVoiceId;
 
-    if (badgeGeminiStatus) {
+    const applyGeminiBadge = (el) => {
+      if (!el) return;
       if (savedGemini) {
-        badgeGeminiStatus.innerText = 'Ativo / Configurado';
-        badgeGeminiStatus.style.background = 'rgba(16, 185, 129, 0.15)';
-        badgeGeminiStatus.style.color = '#10B981';
+        el.innerText = 'Ativo / Configurado';
+        el.style.background = 'rgba(16, 185, 129, 0.15)';
+        el.style.color = '#10B981';
       } else {
-        badgeGeminiStatus.innerText = 'Modo Fallback Local';
-        badgeGeminiStatus.style.background = 'rgba(245, 158, 11, 0.15)';
-        badgeGeminiStatus.style.color = '#F59E0B';
+        el.innerText = 'Modo Fallback Local';
+        el.style.background = 'rgba(245, 158, 11, 0.15)';
+        el.style.color = '#F59E0B';
       }
-    }
+    };
+    applyGeminiBadge(badgeGeminiStatus);
+    applyGeminiBadge(badgeGeminiStatusSa);
 
-    if (badgeElevenStatus) {
+    const applyElevenBadge = (el) => {
+      if (!el) return;
       if (savedEleven) {
-        badgeElevenStatus.innerText = 'Voz Humana Ativa';
-        badgeElevenStatus.style.background = 'rgba(16, 185, 129, 0.15)';
-        badgeElevenStatus.style.color = '#10B981';
+        el.innerText = 'Voz Humana Ativa';
+        el.style.background = 'rgba(16, 185, 129, 0.15)';
+        el.style.color = '#10B981';
       } else {
-        badgeElevenStatus.innerText = 'Voz WebSpeech Padrão';
-        badgeElevenStatus.style.background = 'rgba(148, 163, 184, 0.15)';
-        badgeElevenStatus.style.color = '#94A3B8';
+        el.innerText = 'Voz WebSpeech Padrão';
+        el.style.background = 'rgba(148, 163, 184, 0.15)';
+        el.style.color = '#94A3B8';
       }
-    }
+    };
+    applyElevenBadge(badgeElevenStatus);
+    applyElevenBadge(badgeElevenStatusSa);
 
     if (savedCustom) {
       try { customKeysState = JSON.parse(savedCustom); } catch(e) {}
     }
     renderCustomKeys();
   }
+
+  // Event Listeners nos campos de input do Super Admin para auto-save
+  ['setting-gemini-key-sa', 'setting-eleven-key-sa', 'setting-eleven-voice-id-sa'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', () => {
+        if (id === 'setting-gemini-key-sa') {
+          const val = el.value.trim();
+          localStorage.setItem('GEMINI_API_KEY', val);
+          localStorage.setItem('gemini_api_key', val);
+        } else if (id === 'setting-eleven-key-sa') {
+          localStorage.setItem('ELEVENLABS_API_KEY', el.value.trim());
+        } else if (id === 'setting-eleven-voice-id-sa') {
+          localStorage.setItem('ELEVENLABS_VOICE_ID', el.value.trim());
+        }
+        carregarChavesSalvas();
+      });
+    }
+  });
 
   carregarChavesSalvas();
 
@@ -2257,26 +2293,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTabDrive = document.getElementById('btn-tab-drive');
     const btnTabBi = document.getElementById('btn-tab-bi');
     const btnTabSettings = document.getElementById('btn-tab-settings');
+    const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
     const btnTabScripts = document.getElementById('btn-tab-scripts');
     const btnTabChat = document.getElementById('btn-tab-chat');
 
+    const isMaster = window.isUserMasterAdmin ? window.isUserMasterAdmin() : false;
+
+    // TRAVA DE SEGURANÇA ESTRITA: Apenas Master Admin visualiza Configurações e Gestão Master
+    if (btnTabSettings) btnTabSettings.style.display = isMaster ? 'flex' : 'none';
+    if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = isMaster ? 'flex' : 'none';
+
     if (role === 'CLIENTE_FINAL') {
       // Modo Portal do Cliente: visualização limpa e restrita
-      if (btnTabSettings) btnTabSettings.style.display = 'none';
       if (btnTabScripts) btnTabScripts.style.display = 'none';
       if (btnTabChat) btnTabChat.style.display = 'none';
       pageTitle.textContent = 'Portal Executivo de Resultados (White-Label)';
       pageSubtitle.textContent = 'Acompanhe as métricas de faturamento, aprovações de criativos e ROI da sua empresa.';
     } else if (role === 'VIDEOMAKER_DESIGNER') {
       // Modo Videomaker: focado em roteiros, inspeção de criativos e kanban
-      if (btnTabSettings) btnTabSettings.style.display = 'none';
       if (btnTabBi) btnTabBi.style.display = 'none';
       if (btnTabScripts) btnTabScripts.style.display = 'flex';
       if (btnTabVision) btnTabVision.style.display = 'flex';
       if (btnTabDrive) btnTabDrive.style.display = 'flex';
     } else {
-      // Admin ou Gestor de Tráfego: acesso total
-      if (btnTabSettings) btnTabSettings.style.display = 'flex';
+      // Outros perfis de agência
       if (btnTabBi) btnTabBi.style.display = 'flex';
       if (btnTabScripts) btnTabScripts.style.display = 'flex';
       if (btnTabVision) btnTabVision.style.display = 'flex';

@@ -1250,6 +1250,49 @@
               </table>
             </div>
           </div>
+
+          <!-- SEÇÃO MASTER: COFRE DE CONFIGURAÇÕES & APIS GLOBAL -->
+          <div class="card-glass" style="margin-top: 24px; border: 1px solid rgba(168, 85, 247, 0.3);">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="badge-tag" style="background: rgba(168, 85, 247, 0.2); color: #C084FC; margin-bottom: 6px;">🔐 EXCLUSIVO MASTER ADMIN</span>
+                <h3><i class="fa-solid fa-key" style="color: #FDE047;"></i> Cofre Central de APIs & Motores de IA Global</h3>
+                <p>Configurações de infraestrutura compartilhadas com todos os operadores e serviços em segundo plano.</p>
+              </div>
+            </div>
+
+            <!-- 1. CARD GOOGLE GEMINI AI API -->
+            <div style="background: rgba(255,255,255,0.03); padding: 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-top: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="color: #818CF8; margin: 0;"><i class="fa-solid fa-wand-magic-sparkles"></i> Google Gemini AI API</h4>
+                <span id="badge-gemini-status-sa" class="badge-tag" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B;">Modo Fallback Local</span>
+              </div>
+              <div style="margin-top: 12px;">
+                <div class="form-group">
+                  <label for="setting-gemini-key-sa">API Key (Google AI Studio)</label>
+                  <input type="password" id="setting-gemini-key-sa" placeholder="AIzaSy... (Chave API do Google Studio)">
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. CARD ELEVENLABS TTS -->
+            <div style="background: rgba(255,255,255,0.03); padding: 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); margin-top: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="color: #C084FC; margin: 0;"><i class="fa-solid fa-volume-high"></i> ElevenLabs TTS (Voz Humana HD)</h4>
+                <span id="badge-eleven-status-sa" class="badge-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">Voz WebSpeech Padrão</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px;">
+                <div class="form-group">
+                  <label for="setting-eleven-key-sa">API Key ElevenLabs</label>
+                  <input type="password" id="setting-eleven-key-sa" placeholder="sk_... (Chave API ElevenLabs)">
+                </div>
+                <div class="form-group">
+                  <label for="setting-eleven-voice-id-sa">Voice ID</label>
+                  <input type="text" id="setting-eleven-voice-id-sa" placeholder="21m00Tcm4TlvDq8ikWAM" value="21m00Tcm4TlvDq8ikWAM">
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
     <!-- MODAL DE CADASTRO E EDIÇÃO DE AGÊNCIA (SUPER ADMIN CRUD) -->
@@ -1770,6 +1813,19 @@
       alert('✅ Perfil atualizado com sucesso!');
     };
 
+    window.isUserMasterAdmin = function() {
+      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+      if (!sessionStr) return false;
+      try {
+        const session = JSON.parse(sessionStr);
+        const email = (session.email || '').toLowerCase();
+        const role = (session.role || '').toLowerCase();
+        return role === 'master_admin' || role === 'super_admin' || role === 'master' || role === 'admin' || email.includes('admin');
+      } catch(e) {
+        return false;
+      }
+    };
+
     window.abrirModalSenha = function() {
       const menu = document.getElementById('user-dropdown-menu');
       if (menu) menu.classList.remove('active');
@@ -1780,8 +1836,12 @@
     window.abrirConfiguracoes = function() {
       const menu = document.getElementById('user-dropdown-menu');
       if (menu) menu.classList.remove('active');
-      const btnSettings = document.getElementById('btn-tab-settings');
-      if (btnSettings) btnSettings.click();
+      if (window.isUserMasterAdmin()) {
+        const btnSettings = document.getElementById('btn-tab-settings');
+        if (btnSettings) btnSettings.click();
+      } else {
+        alert('🔒 Acesso Restrito: A seção de Configurações & APIs é exclusiva para Administradores Master.');
+      }
     };
 
     window.fazerLogout = function(e) {
@@ -1805,6 +1865,8 @@
       const headerEmailEl = document.getElementById('header-user-email');
       const dropdownFullName = document.getElementById('dropdown-full-name');
       const dropdownEmail = document.getElementById('dropdown-email');
+      const btnTabSettings = document.getElementById('btn-tab-settings');
+      const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
 
       if (!session || !session.email) {
         if (nomeEl) nomeEl.textContent = 'Visitante';
@@ -1814,12 +1876,17 @@
         if (headerEmailEl) headerEmailEl.textContent = 'Desconectado';
         if (dropdownFullName) dropdownFullName.textContent = 'Visitante';
         if (dropdownEmail) dropdownEmail.textContent = 'não autenticado';
+        if (btnTabSettings) btnTabSettings.style.display = 'none';
+        if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'none';
         return;
       }
 
       const email = session.email || 'usuario@oraculum.com';
-      const role = session.role || (email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner');
-      const isMaster = role === 'super_admin' || role === 'master';
+      const isMaster = window.isUserMasterAdmin();
+
+      // CONTROLE DE VISIBILIDADE NA SIDEBAR (APENAS MASTER ADMIN)
+      if (btnTabSettings) btnTabSettings.style.display = isMaster ? 'flex' : 'none';
+      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = isMaster ? 'flex' : 'none';
 
       if (headerEmailEl) headerEmailEl.textContent = email;
       if (dropdownEmail) dropdownEmail.textContent = email;
@@ -1877,7 +1944,7 @@
         }
       }
 
-      console.log(`[UserCard] Card de perfil e dropdown atualizados: ${displayName} (${role})`);
+      console.log(`[UserCard] Card de perfil e dropdown atualizados: ${displayName} (Master: ${isMaster})`);
     };
 
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
@@ -1898,9 +1965,6 @@
         // SEM SESSÃO -> OBRIGA A TELA DE LOGIN A FICAR VISÍVEL
         sessionStorage.removeItem('oraculum_session');
         document.documentElement.classList.remove('is-authenticated');
-        if (mainDash) mainDash.style.setProperty('display', 'none', 'important');
-        if (appContainer) appContainer.style.setProperty('display', 'none', 'important');
-        if (authGate) {
           authGate.style.setProperty('display', 'flex', 'important');
           authGate.style.setProperty('pointer-events', 'auto', 'important');
         }
