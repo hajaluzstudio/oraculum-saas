@@ -2617,24 +2617,18 @@
         });
       };
 
-      // 3. Listener universal de cliques em itens do menu lateral
+      // 3. Listener universal de cliques em itens do menu lateral (Apenas navegação real)
       document.addEventListener('click', function(e) {
-        const itemMenu = e.target.closest('aside a, aside button, nav a, nav button, [data-section], [data-tab], [data-view]');
+        const itemMenu = e.target.closest('.nav-menu .nav-item, [data-section], [data-tab], [data-view]');
         
         if (itemMenu) {
-          // Impede comportamento padrão se for link <a>
-          if (itemMenu.tagName === 'A' && (itemMenu.getAttribute('href') === '#' || !itemMenu.getAttribute('href')?.startsWith('http'))) {
-            e.preventDefault();
-          }
-
-          // Identifica o destino
           const target = itemMenu.getAttribute('data-section') || 
                          itemMenu.getAttribute('data-tab') || 
                          itemMenu.getAttribute('data-view') || 
-                         itemMenu.getAttribute('href')?.replace('#', '') ||
-                         itemMenu.id?.replace('btn-nav-', '')?.replace('nav-', '');
+                         (itemMenu.getAttribute('href')?.startsWith('#') ? itemMenu.getAttribute('href').replace('#', '') : null);
 
           if (target) {
+            if (itemMenu.tagName === 'A') e.preventDefault();
             window.navegarParaSecao(target);
             itemMenu.classList.add('bg-emerald-500/20', 'text-emerald-400', 'active');
           }
