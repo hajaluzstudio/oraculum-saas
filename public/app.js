@@ -3488,9 +3488,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // TRAVA DE SEGURANÇA ESTRITA: Apenas Master Admin visualiza Configurações e Gestão Master
     if (btnTabSettings) btnTabSettings.style.display = isMaster ? 'flex' : 'none';
     const btnTabMaster = document.getElementById('btn-tab-master');
-    const btnTabApiVault = document.getElementById('btn-tab-api-vault');
     if (btnTabMaster) btnTabMaster.style.display = isMaster ? 'flex' : 'none';
-    if (btnTabApiVault) btnTabApiVault.style.display = isMaster ? 'flex' : 'none';
 
     if (role === 'CLIENTE_FINAL') {
       // Modo Portal do Cliente: visualização limpa e restrita
