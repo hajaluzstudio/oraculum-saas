@@ -180,15 +180,30 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadOrganizationClients() {
     let clientsList = [];
     try {
-      const res = await fetch(`${API_BASE_URL}/api/clients`, {
-        headers: { 'x-organization-id': activeTenantId }
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
-        clientsList = data.data;
+      if (window.supabaseClient) {
+        const { data: clientsFromDb, error } = await window.supabaseClient
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Erro ao carregar do Supabase (Client):", error.message);
+        } else if (clientsFromDb && clientsFromDb.length > 0) {
+          clientsList = clientsFromDb;
+        }
+      }
+
+      if (clientsList.length === 0) {
+        const res = await fetch(`${API_BASE_URL}/api/clients`, {
+          headers: { 'x-organization-id': activeTenantId }
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          clientsList = data.data;
+        }
       }
     } catch (err) {
-      console.warn('[Clients] Falha na requisição. Populando clientes em memória.');
+      console.warn('[Clients] Falha na requisição. Populando clientes em memória.', err);
     }
 
     if (activeClientSelect) {
@@ -394,24 +409,57 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     try {
-      // 1. Cadastra o cliente no Supabase via backend
-      const clientResponse = await fetch(`${API_BASE_URL}/api/clients`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-organization-id': activeTenantId
-        },
-        body: JSON.stringify({ name: clientName, niche, sanitized_history: sanitizedHistory })
-      });
+      let clientId = 'client_' + Date.now();
+      let clientResultSuccess = false;
 
-      const clientResult = await clientResponse.json();
-      if (!clientResult.success) {
-        console.error('Erro ao salvar o cliente:', clientResult.error);
-        return;
+      if (window.supabaseClient) {
+        const { data, error } = await window.supabaseClient
+          .from('clients')
+          .insert([{
+            id: clientId,
+            name: clientName,
+            niche: niche || 'Geral',
+            previous_agency_notes: sanitizedHistory || null,
+            organization_id: activeTenantId,
+            status: 'active',
+            created_at: new Date().toISOString()
+          }])
+          .select();
+
+        if (error) {
+          console.error('Erro ao salvar o cliente no Supabase:', error.message);
+          alert("Erro ao salvar no Supabase: " + error.message);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          clientId = data[0].id;
+          clientResultSuccess = true;
+          console.log('Cliente salvo com sucesso no Supabase! ID:', clientId);
+        }
       }
 
-      const clientId = clientResult.client.id;
-      console.log('Cliente salvo com sucesso! ID:', clientId);
+      if (!clientResultSuccess) {
+        // Fallback: Cadastra o cliente no Supabase via backend
+        const clientResponse = await fetch(`${API_BASE_URL}/api/clients`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-organization-id': activeTenantId
+          },
+          body: JSON.stringify({ name: clientName, niche, sanitized_history: sanitizedHistory })
+        });
+
+        const clientResult = await clientResponse.json();
+        if (!clientResult.success) {
+          console.error('Erro ao salvar o cliente:', clientResult.error);
+          alert("Erro ao salvar no backend: " + (clientResult.error || 'Erro desconhecido'));
+          return;
+        }
+
+        clientId = clientResult.client.id;
+        console.log('Cliente salvo com sucesso via backend! ID:', clientId);
+      }
 
       // Define e seleciona IMEDIATAMENTE o novo cliente no topo durante o cadastro
       activeClientId = clientId;
