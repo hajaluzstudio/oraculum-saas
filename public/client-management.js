@@ -430,12 +430,12 @@ window.renderizarListaClientes = function() {
 // 8. BUSCAR CLIENTES DO SUPABASE / BACKEND
 window.carregarClientesDoSupabase = async function() {
   try {
-    const activeTenantId = document.getElementById('tenant-select')?.value || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const res = await fetch(`${window.location.origin}/api/clients`, {
       headers: { 'x-organization-id': activeTenantId }
     });
     const data = await res.json();
-    if (data.success && data.data) {
+    if (data.success && Array.isArray(data.data)) {
       window.clientesMock = data.data;
     }
   } catch(e) {

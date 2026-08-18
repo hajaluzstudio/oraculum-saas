@@ -261,8 +261,8 @@ app.get('/api/clients', async (req: Request, res: Response) => {
 
 app.post('/api/clients', async (req: Request, res: Response) => {
   try {
-    const organizationId = (req as any).organizationId;
-    const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
+    const organizationId = (req as any).organizationId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const { name, niche, sanitized_history, website, previous_agency_notes, contact_name, phone, avg_ticket, target_revenue } = req.body;
     if (!name || !niche) return res.status(400).json({ error: 'Nome e Nicho são obrigatórios.' });
 
     const clientRecord: any = {
@@ -270,19 +270,30 @@ app.post('/api/clients', async (req: Request, res: Response) => {
       organization_id: organizationId,
       name,
       niche,
+      contact_name: contact_name || null,
+      phone: phone || null,
+      avg_ticket: avg_ticket ? parseFloat(avg_ticket) : null,
+      target_revenue: target_revenue ? parseFloat(target_revenue) : null,
       status: 'active',
       website: website || null,
       previous_agency_notes: sanitized_history || previous_agency_notes || null,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     // Salva no Supabase (persistência permanente na nuvem)
     if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
       try {
-        const { error: sbError } = await supabase.from('clients').insert([clientRecord]);
-        if (sbError) console.warn('[Supabase] Aviso ao salvar cliente:', sbError.message);
-        else console.log('[Supabase] ✅ Cliente salvo na nuvem:', clientRecord.id);
-      } catch (e: any) { console.warn('[Supabase] Erro ao inserir cliente:', e.message); }
+        const { data: insertedData, error: sbError } = await supabase.from('clients').insert([clientRecord]).select();
+        if (sbError) {
+          console.error('[Supabase] Erro ao salvar cliente:', sbError.message);
+          return res.status(500).json({ error: `Erro no Supabase ao salvar cliente: ${sbError.message}` });
+        }
+        console.log('[Supabase] ✅ Cliente salvo com sucesso na nuvem:', insertedData);
+      } catch (e: any) {
+        console.error('[Supabase] Exceção ao inserir cliente:', e.message);
+        return res.status(500).json({ error: `Exceção Supabase: ${e.message}` });
+      }
     }
 
     // Salva também em disco (fallback local)
