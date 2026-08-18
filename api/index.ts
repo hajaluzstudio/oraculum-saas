@@ -477,18 +477,72 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
 // WORKFLOW & KANBAN
 app.get(['/api/workflow/:clientId', '/api/kanban/:clientId', '/api/kanban'], async (req: Request, res: Response) => {
-  const { clientId } = req.params;
-  const assets = loadAssetsFromDisk();
-  const clientAssets = clientId ? assets.filter(a => a.clientId === clientId || a.client_id === clientId) : assets;
-  return res.json({ success: true, data: clientAssets.length > 0 ? clientAssets : assets.slice(0, 4) });
+  try {
+    const organizationId = (req as any).organizationId;
+    const { clientId } = req.params;
+    
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      let query = supabase.from('kanban_cards').select('*').order('created_at', { ascending: false });
+      if (organizationId) query = query.eq('organization_id', organizationId);
+      if (clientId) query = query.eq('client_id', clientId);
+      
+      const { data, error } = await query;
+      if (!error && data) {
+        // Mapeia para o formato que o frontend espera (se necessário)
+        const mappedData = data.map(d => ({
+          id: d.id,
+          clientId: d.client_id,
+          title: d.title,
+          description: d.description,
+          status: d.status,
+          assetType: d.asset_type,
+          filePath: d.file_path,
+          timestamp: d.created_at
+        }));
+        return res.json({ success: true, data: mappedData });
+      }
+    }
+
+    const assets = loadAssetsFromDisk();
+    const clientAssets = clientId ? assets.filter(a => a.clientId === clientId || a.client_id === clientId) : assets;
+    return res.json({ success: true, data: clientAssets.length > 0 ? clientAssets : assets.slice(0, 4) });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/workflow', async (req: Request, res: Response) => {
-  const { card } = req.body;
-  const assets = loadAssetsFromDisk();
-  assets.unshift(card);
-  saveAssetsToDisk(assets);
-  return res.json({ success: true, data: card });
+  try {
+    const organizationId = (req as any).organizationId;
+    const { card } = req.body;
+    
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      const payload = {
+        organization_id: organizationId,
+        client_id: card.clientId || card.client_id,
+        title: card.title || 'Sem título',
+        description: card.description || '',
+        status: card.status || 'backlog',
+        asset_type: card.assetType || card.asset_type || '',
+        file_path: card.filePath || card.file_path || ''
+      };
+      
+      if (card.id && String(card.id).includes('-')) {
+        // Update
+        await supabase.from('kanban_cards').update(payload).eq('id', card.id);
+      } else {
+        // Insert
+        await supabase.from('kanban_cards').insert([payload]);
+      }
+    }
+
+    const assets = loadAssetsFromDisk();
+    assets.unshift(card);
+    saveAssetsToDisk(assets);
+    return res.json({ success: true, data: card });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/creatives/workflow', async (req: Request, res: Response) => {

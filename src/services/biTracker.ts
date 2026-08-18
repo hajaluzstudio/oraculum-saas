@@ -106,18 +106,39 @@ export async function processMetaWebhook(organizationId: string, payload: any) {
   const leadData = payload?.entry?.[0]?.changes?.[0]?.value || payload;
   const clientId = leadData?.clientId || leadData?.client_id || 'client_01';
   
-  // Atualiza métricas locais
-  const biStore = loadBiMetricsFromDisk();
-  const current = biStore[clientId] || {
-    totalSpend: 3400.00,
-    totalRevenue: 45000.00,
-    conversions: 3,
-    impressions: 52000,
-    clicks: 1980,
-    averageLtv: 20000.00
-  };
+  if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+    try {
+      const { data } = await supabase.from('bi_metrics').select('*').eq('client_id', clientId).eq('period', '30d').limit(1).single();
+      if (data) {
+        let { total_revenue, total_spent, cac, ltv } = data;
+        let conversions = Math.max(1, Math.round(Number(total_spent) / Number(cac)));
+        
+        if (leadData?.event === 'purchase' || leadData?.event === 'conversion' || payload?.leadgen_id) {
+          conversions += 1;
+          total_revenue = Number(total_revenue) + (payload?.value || 15000.00);
+        } else {
+          total_spent = Number(total_spent) + parseFloat((Math.random() * 50 + 10).toFixed(2));
+        }
+        
+        const newCac = conversions > 0 ? Number(total_spent) / conversions : Number(total_spent);
+        const newRoi = (Number(total_revenue) - Number(total_spent)) / Number(total_spent);
+        
+        await supabase.from('bi_metrics').update({
+          total_revenue,
+          total_spent,
+          cac: newCac,
+          roi: newRoi,
+          updated_at: new Date().toISOString()
+        }).eq('id', data.id);
+        
+        return { success: true, clientId };
+      }
+    } catch(e) {}
+  }
 
-  // Se for um evento de conversão ou lead pago
+  // Fallback
+  const biStore = loadBiMetricsFromDisk();
+  const current = biStore[clientId] || { totalSpend: 3400.00, totalRevenue: 45000.00, conversions: 3, impressions: 52000, clicks: 1980, averageLtv: 20000.00 };
   if (leadData?.event === 'purchase' || leadData?.event === 'conversion' || payload?.leadgen_id) {
     current.conversions += 1;
     current.totalRevenue += (payload?.value || 15000.00);
@@ -126,7 +147,6 @@ export async function processMetaWebhook(organizationId: string, payload: any) {
     current.clicks += Math.floor(Math.random() * 25) + 5;
     current.totalSpend += parseFloat((Math.random() * 50 + 10).toFixed(2));
   }
-
   biStore[clientId] = current;
   saveBiMetricsToDisk(biStore);
 
@@ -140,16 +160,40 @@ export async function processGoogleAdsWebhook(organizationId: string, payload: a
   console.log(`[Webhook Google Ads] 📥 Evento recebido para organização ${organizationId}:`, JSON.stringify(payload).slice(0, 150));
   
   const clientId = payload?.clientId || payload?.customer_id || 'client_01';
-  const biStore = loadBiMetricsFromDisk();
-  const current = biStore[clientId] || {
-    totalSpend: 2800.00,
-    totalRevenue: 30000.00,
-    conversions: 2,
-    impressions: 38000,
-    clicks: 1240,
-    averageLtv: 20000.00
-  };
+  
+  if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+    try {
+      const { data } = await supabase.from('bi_metrics').select('*').eq('client_id', clientId).eq('period', '30d').limit(1).single();
+      if (data) {
+        let { total_revenue, total_spent, cac, ltv } = data;
+        let conversions = Math.max(1, Math.round(Number(total_spent) / Number(cac)));
+        
+        if (payload?.conversion_action || payload?.event === 'conversion') {
+          conversions += 1;
+          total_revenue = Number(total_revenue) + (payload?.conversion_value || 15000.00);
+        } else {
+          total_spent = Number(total_spent) + parseFloat((Math.random() * 40 + 15).toFixed(2));
+        }
+        
+        const newCac = conversions > 0 ? Number(total_spent) / conversions : Number(total_spent);
+        const newRoi = (Number(total_revenue) - Number(total_spent)) / Number(total_spent);
+        
+        await supabase.from('bi_metrics').update({
+          total_revenue,
+          total_spent,
+          cac: newCac,
+          roi: newRoi,
+          updated_at: new Date().toISOString()
+        }).eq('id', data.id);
+        
+        return { success: true, clientId };
+      }
+    } catch(e) {}
+  }
 
+  // Fallback
+  const biStore = loadBiMetricsFromDisk();
+  const current = biStore[clientId] || { totalSpend: 2800.00, totalRevenue: 30000.00, conversions: 2, impressions: 38000, clicks: 1240, averageLtv: 20000.00 };
   if (payload?.conversion_action || payload?.event === 'conversion') {
     current.conversions += 1;
     current.totalRevenue += (payload?.conversion_value || 15000.00);
@@ -158,7 +202,6 @@ export async function processGoogleAdsWebhook(organizationId: string, payload: a
     current.clicks += Math.floor(Math.random() * 20) + 4;
     current.totalSpend += parseFloat((Math.random() * 40 + 15).toFixed(2));
   }
-
   biStore[clientId] = current;
   saveBiMetricsToDisk(biStore);
 
@@ -169,35 +212,86 @@ export async function processGoogleAdsWebhook(organizationId: string, payload: a
  * 3. Recupera Métricas Consolidadas de BI de um Cliente
  */
 export async function getClientBiMetrics(organizationId: string, clientId: string, period: string = '30d'): Promise<CampaignRoiAnalysis> {
-  const clients = loadClientsFromDisk();
-  const client = clients.find(c => c.id === clientId) || { name: 'Cliente Ativo', niche: 'Geral' };
-  
-  const biStore = loadBiMetricsFromDisk();
-  let clientData = biStore[clientId];
+  let totalSpend = 4200.00;
+  let totalRevenue = 60000.00;
+  let averageLtv = 22000.00;
+  let conversions = 4;
+  let clientName = 'Cliente Ativo';
+  let niche = 'Geral';
 
-  if (!clientData) {
-    // Valores iniciais calculados por nicho para demonstração realista
-    clientData = {
-      totalSpend: 4200.00,
-      totalRevenue: 60000.00,
-      conversions: 4,
-      impressions: 73000,
-      clicks: 2770,
-      averageLtv: 22000.00
-    };
-    biStore[clientId] = clientData;
-    saveBiMetricsToDisk(biStore);
+  // 1. Tenta buscar nome e nicho no DB (opcional/fallback de disco local pra não quebrar tudo de uma vez)
+  try {
+    const clients = loadClientsFromDisk();
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      clientName = client.name;
+      niche = client.niche;
+    }
+  } catch (e) {}
+
+  // 2. Busca métricas no Supabase
+  if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+    try {
+      const { data, error } = await supabase
+        .from('bi_metrics')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('organization_id', organizationId)
+        .eq('period', period)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        totalSpend = Number(data.total_spent);
+        totalRevenue = Number(data.total_revenue);
+        averageLtv = Number(data.ltv);
+        // Podemos derivar conversions ou assumir 4
+        conversions = Math.max(1, Math.round(totalSpend / Number(data.cac)));
+      } else {
+        // Se não tem, insere inicial
+        await supabase.from('bi_metrics').insert([{
+          organization_id: organizationId,
+          client_id: clientId,
+          total_spent: totalSpend,
+          total_revenue: totalRevenue,
+          ltv: averageLtv,
+          cac: totalSpend / conversions,
+          roi: (totalRevenue - totalSpend) / totalSpend,
+          period: period
+        }]);
+      }
+    } catch (e) {
+      console.warn('[BI] Erro ao buscar bi_metrics no supabase:', e);
+    }
+  } else {
+    // FALLBACK DISK
+    const biStore = loadBiMetricsFromDisk();
+    let clientData = biStore[clientId];
+
+    if (!clientData) {
+      clientData = {
+        totalSpend: 4200.00,
+        totalRevenue: 60000.00,
+        conversions: 4,
+        impressions: 73000,
+        clicks: 2770,
+        averageLtv: 22000.00
+      };
+      biStore[clientId] = clientData;
+      saveBiMetricsToDisk(biStore);
+    }
+    
+    let multiplier = 1.0;
+    if (period === '7d') multiplier = 0.25;
+    else if (period === '90d') multiplier = 3.1;
+    else if (period === '365d') multiplier = 12.4;
+
+    totalSpend = Math.round(clientData.totalSpend * multiplier);
+    totalRevenue = Math.round(clientData.totalRevenue * multiplier);
+    conversions = Math.max(1, Math.round(clientData.conversions * multiplier));
+    averageLtv = clientData.averageLtv || 20000.00;
   }
-
-  let multiplier = 1.0;
-  if (period === '7d') multiplier = 0.25;
-  else if (period === '90d') multiplier = 3.1;
-  else if (period === '365d') multiplier = 12.4;
-
-  const totalSpend = Math.round(clientData.totalSpend * multiplier);
-  const totalRevenue = Math.round(clientData.totalRevenue * multiplier);
-  const conversions = Math.max(1, Math.round(clientData.conversions * multiplier));
-  const averageLtv = clientData.averageLtv || 20000.00;
 
   const netProfit = totalRevenue - totalSpend;
   const realCac = conversions > 0 ? parseFloat((totalSpend / conversions).toFixed(2)) : totalSpend;
@@ -209,8 +303,8 @@ export async function getClientBiMetrics(organizationId: string, clientId: strin
     campaignId: `camp_${clientId}`,
     organizationId,
     clientId,
-    campaignName: `Campanha Omnichannel - ${client.name} (${period.toUpperCase()})`,
-    niche: client.niche,
+    campaignName: `Campanha Omnichannel - ${clientName} (${period.toUpperCase()})`,
+    niche: niche,
     totalSpend,
     totalRevenue,
     netProfit,
