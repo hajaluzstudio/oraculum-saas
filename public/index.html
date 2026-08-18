@@ -128,6 +128,14 @@
           <i class="fa-solid fa-users"></i>
           <span>Carteira de Clientes</span>
         </button>
+        <button class="nav-item" data-tab="tab-master-panel" id="btn-tab-master" data-tooltip="Painel Master Admin" style="display: none; color: #F87171;">
+          <i class="fa-solid fa-crown"></i>
+          <span>Painel Master</span>
+        </button>
+        <button class="nav-item" data-tab="tab-api-vault" id="btn-tab-api-vault" data-tooltip="Cofre de APIs (Admin)" style="display: none; color: #FDE047;">
+          <i class="fa-solid fa-key"></i>
+          <span>Cofre de APIs</span>
+        </button>
         <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding" data-tooltip="Onboarding Autônomo">
           <i class="fa-solid fa-user-plus"></i>
           <span>Onboarding Autônomo</span>
@@ -1713,9 +1721,11 @@
               </table>
             </div>
           </div>
+        </section>
 
-          <!-- SEÇÃO MASTER: COFRE DE CONFIGURAÇÕES & APIS GLOBAL -->
-          <div class="card-glass" style="margin-top: 24px; border: 1px solid rgba(16, 185, 129, 0.3);">
+        <!-- SEÇÃO MASTER: COFRE DE CONFIGURAÇÕES & APIS GLOBAL -->
+        <section id="tab-api-vault" class="tab-content" style="display: none;">
+          <div class="card-glass" style="border: 1px solid rgba(16, 185, 129, 0.3);">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <span class="badge-tag" style="background: rgba(16, 185, 129, 0.2); color: #34D399; margin-bottom: 6px;">🔐 EXCLUSIVO MASTER ADMIN</span>

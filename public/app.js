@@ -96,6 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     'tab-war-room': {
       title: 'Sala de Operação (War Room)',
       subtitle: 'Central de distribuição autônoma de tarefas geradas pelo Oraculum para as 5 equipes (Vídeo, Design, Tráfego, Copy e Comercial).'
+    },
+    'tab-api-vault': {
+      title: 'Cofre Central de APIs & Motores de IA Global',
+      subtitle: 'Configurações de infraestrutura compartilhadas com todos os operadores e serviços em segundo plano.'
     }
   };
 
@@ -3435,7 +3439,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TRAVA DE SEGURANÇA ESTRITA: Apenas Master Admin visualiza Configurações e Gestão Master
     if (btnTabSettings) btnTabSettings.style.display = isMaster ? 'flex' : 'none';
-    if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = isMaster ? 'flex' : 'none';
+    const btnTabMaster = document.getElementById('btn-tab-master');
+    const btnTabApiVault = document.getElementById('btn-tab-api-vault');
+    if (btnTabMaster) btnTabMaster.style.display = isMaster ? 'flex' : 'none';
+    if (btnTabApiVault) btnTabApiVault.style.display = isMaster ? 'flex' : 'none';
 
     if (role === 'CLIENTE_FINAL') {
       // Modo Portal do Cliente: visualização limpa e restrita
