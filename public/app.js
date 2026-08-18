@@ -4857,6 +4857,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>`;
     }
+    
+    // Ligar funções do War Room
+    initWarRoomInteractiveTools();
   };
 
 });
@@ -4889,9 +4892,312 @@ function generateMockDossier(clientName, niche) {
 
 console.log("✅ Oraculum Engine carregado com sucesso sem erros de sintaxe!");
 
+// ==========================================
+// MÓDULO: WAR ROOM INTERACTIVE TOOLS
+// ==========================================
+function initWarRoomInteractiveTools() {
+  initMockupSimulator();
+  initContrastChecker();
+  initTrafficSimulator();
+  initUtmGenerator();
+  initCopyAuditor();
+  initAngleMatrix();
+}
 
+// 1. DESIGN: Simulador de Safe Zones
+function initMockupSimulator() {
+  const fileInput = document.getElementById('mockup-file');
+  const formatSelect = document.getElementById('mockup-format');
+  const previewImg = document.getElementById('mockup-image');
+  const previewContainer = document.getElementById('mockup-preview-container');
+  const btnToggle = document.getElementById('btn-toggle-safezone');
+  const safezoneOverlay = document.getElementById('mockup-safezone-overlay');
 
+  if (!fileInput || !btnToggle) return;
 
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        previewImg.src = evt.target.result;
+        previewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
 
+  formatSelect.addEventListener('change', (e) => {
+    const format = e.target.value;
+    if (format === '9_16') {
+      previewContainer.style.aspectRatio = '9/16';
+      safezoneOverlay.innerHTML = `
+        <div style="position: absolute; top:0; left:0; right:0; height: 15%; background: rgba(239, 68, 68, 0.2);"></div>
+        <div style="position: absolute; bottom:0; left:0; right:0; height: 25%; background: rgba(239, 68, 68, 0.2);"></div>
+        <div style="position: absolute; right:0; top: 15%; bottom: 25%; width: 15%; background: rgba(239, 68, 68, 0.2);"></div>
+      `;
+    } else if (format === '4_5') {
+      previewContainer.style.aspectRatio = '4/5';
+      safezoneOverlay.innerHTML = '';
+    } else {
+      previewContainer.style.aspectRatio = '1/1';
+      safezoneOverlay.innerHTML = '';
+    }
+  });
 
+  let safeZoneActive = false;
+  btnToggle.addEventListener('click', () => {
+    safeZoneActive = !safeZoneActive;
+    if (safeZoneActive) {
+      safezoneOverlay.style.display = 'block';
+      btnToggle.innerHTML = '<i class="fa-solid fa-layer-group"></i> Safe Zone ATIVA';
+      btnToggle.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+      btnToggle.style.color = '#EF4444';
+      btnToggle.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    } else {
+      safezoneOverlay.style.display = 'none';
+      btnToggle.innerHTML = '<i class="fa-solid fa-layer-group"></i> Toggle Safe Zone';
+      btnToggle.style.backgroundColor = 'transparent';
+      btnToggle.style.color = '#f8fafc';
+      btnToggle.style.borderColor = 'rgba(255,255,255,0.2)';
+    }
+  });
+}
 
+// 2. DESIGN: Verificador de Contraste WCAG
+function initContrastChecker() {
+  const bgPicker = document.getElementById('color-bg');
+  const bgHex = document.getElementById('color-bg-hex');
+  const txtPicker = document.getElementById('color-text');
+  const txtHex = document.getElementById('color-text-hex');
+  const previewBox = document.getElementById('contrast-preview-box');
+  const ratioText = document.getElementById('contrast-ratio');
+  const statusText = document.getElementById('contrast-status');
+
+  if (!bgPicker) return;
+
+  function hexToRgb(hex) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  function luminance(r, g, b) {
+    let a = [r, g, b].map(function (v) {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow( (v + 0.055) / 1.055, 2.4 );
+    });
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+
+  function updateContrast() {
+    let bg = bgPicker.value;
+    let txt = txtPicker.value;
+    bgHex.value = bg;
+    txtHex.value = txt;
+
+    previewBox.style.backgroundColor = bg;
+    previewBox.style.color = txt;
+
+    let rgb1 = hexToRgb(bg);
+    let rgb2 = hexToRgb(txt);
+    
+    if (rgb1 && rgb2) {
+      let l1 = luminance(rgb1.r, rgb1.g, rgb1.b);
+      let l2 = luminance(rgb2.r, rgb2.g, rgb2.b);
+      let ratio = l1 > l2 ? ((l1 + 0.05) / (l2 + 0.05)) : ((l2 + 0.05) / (l1 + 0.05));
+      ratioText.innerText = ratio.toFixed(2) + ' : 1';
+
+      if (ratio >= 4.5) {
+        statusText.innerText = '✅ Passa (AA)';
+        statusText.style.color = '#10B981';
+      } else if (ratio >= 3.0) {
+        statusText.innerText = '⚠️ Apenas Textos Grandes';
+        statusText.style.color = '#F59E0B';
+      } else {
+        statusText.innerText = '❌ Falha (Ilegível)';
+        statusText.style.color = '#EF4444';
+      }
+    }
+  }
+
+  bgPicker.addEventListener('input', updateContrast);
+  txtPicker.addEventListener('input', updateContrast);
+  bgHex.addEventListener('input', (e) => { bgPicker.value = e.target.value; updateContrast(); });
+  txtHex.addEventListener('input', (e) => { txtPicker.value = e.target.value; updateContrast(); });
+  updateContrast();
+}
+
+// 3. TRÁFEGO: Simulador de CPA e ROAS
+function initTrafficSimulator() {
+  const inputs = ['sim-budget', 'sim-ticket', 'sim-conversion', 'sim-roas-target'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', calcTrafficSim);
+  });
+
+  function calcTrafficSim() {
+    const budget = parseFloat(document.getElementById('sim-budget')?.value || 0);
+    const ticket = parseFloat(document.getElementById('sim-ticket')?.value || 0);
+    const conv = parseFloat(document.getElementById('sim-conversion')?.value || 0) / 100;
+    const roasTarget = parseFloat(document.getElementById('sim-roas-target')?.value || 0);
+
+    const elCplMax = document.getElementById('res-cpl-max');
+    const elCpaBreak = document.getElementById('res-cpa-break');
+    const elRevenue = document.getElementById('res-revenue');
+
+    if (!elCplMax) return;
+
+    // CPA Breakeven = Ticket
+    elCpaBreak.innerText = 'R$ ' + ticket.toFixed(2).replace('.', ',');
+
+    // CPL Max = (Ticket / ROAS Desejado) * Conv%
+    const cpaTarget = roasTarget > 0 ? (ticket / roasTarget) : ticket;
+    const cplMax = cpaTarget * conv;
+    elCplMax.innerText = 'R$ ' + cplMax.toFixed(2).replace('.', ',');
+
+    let vendas = cpaTarget > 0 ? budget / cpaTarget : 0;
+    let rev = vendas * ticket;
+    elRevenue.innerText = 'R$ ' + rev.toFixed(2).replace('.', ',');
+  }
+}
+
+// 4. TRÁFEGO: Gerador de UTM
+function initUtmGenerator() {
+  const inputs = ['utm-url', 'utm-source', 'utm-medium', 'utm-campaign', 'utm-content'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', generateUTM);
+  });
+
+  const btnCopy = document.getElementById('btn-copy-utm');
+  if (btnCopy) {
+    btnCopy.addEventListener('click', () => {
+      const res = document.getElementById('utm-result').innerText;
+      if (res && res.startsWith('http')) {
+        navigator.clipboard.writeText(res);
+        btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+        setTimeout(() => { btnCopy.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar'; }, 2000);
+      }
+    });
+  }
+
+  function generateUTM() {
+    let url = document.getElementById('utm-url')?.value.trim() || '';
+    if (!url) {
+      document.getElementById('utm-result').innerText = 'O link gerado aparecerá aqui...';
+      return;
+    }
+    if (!url.startsWith('http')) url = 'https://' + url;
+
+    const source = document.getElementById('utm-source')?.value || '';
+    const medium = document.getElementById('utm-medium')?.value || '';
+    const campaign = document.getElementById('utm-campaign')?.value.trim() || '';
+    const content = document.getElementById('utm-content')?.value.trim() || '';
+
+    let urlObj;
+    try {
+      urlObj = new URL(url);
+    } catch(e) {
+      document.getElementById('utm-result').innerText = 'URL Inválida';
+      return;
+    }
+    if (source) urlObj.searchParams.set('utm_source', source);
+    if (medium) urlObj.searchParams.set('utm_medium', medium);
+    if (campaign) urlObj.searchParams.set('utm_campaign', campaign);
+    if (content) urlObj.searchParams.set('utm_content', content);
+
+    document.getElementById('utm-result').innerText = urlObj.toString();
+  }
+}
+
+// 5. COPYWRITING: Auditor Anti-Ban
+function initCopyAuditor() {
+  const copyInput = document.getElementById('copy-audit-text');
+  const btnAudit = document.getElementById('btn-audit-copy');
+  const resultsDiv = document.getElementById('copy-audit-results');
+  const flagsDiv = document.getElementById('copy-flags');
+  const charSpan = document.getElementById('copy-chars');
+  const wordSpan = document.getElementById('copy-words');
+
+  const fleschNumber = document.getElementById('flesch-number');
+  const fleschText = document.getElementById('flesch-text');
+
+  if (!copyInput || !btnAudit) return;
+
+  const bannedWords = ['garantido', 'cura', 'perca peso', 'fique rico', 'cripto', 'milagre', 'rápido', 'doença', 'médico'];
+
+  copyInput.addEventListener('input', () => {
+    let text = copyInput.value;
+    charSpan.innerText = text.length;
+    wordSpan.innerText = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  });
+
+  btnAudit.addEventListener('click', () => {
+    let text = copyInput.value.toLowerCase();
+    if (!text) return;
+
+    let foundFlags = [];
+    bannedWords.forEach(w => {
+      if (text.includes(w)) {
+        foundFlags.push(w);
+      }
+    });
+
+    if (foundFlags.length > 0) {
+      flagsDiv.innerHTML = foundFlags.map(f => `<span style="background: rgba(239,68,68,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid rgba(239,68,68,0.4); color: #FCA5A5;">${f.toUpperCase()}</span>`).join('');
+    } else {
+      flagsDiv.innerHTML = `<span style="color: #34D399; font-size: 11px;">Sem flags evidentes.</span>`;
+    }
+
+    const words = text.trim().split(/\s+/).length;
+    const sentences = text.split(/[.?!]/).filter(s => s.trim().length > 0).length || 1;
+    const syllables = words * 1.5;
+    const score = 206.835 - (1.015 * (words / sentences)) - (84.6 * (syllables / words));
+    
+    let finalScore = Math.max(0, Math.min(100, Math.round(score)));
+    
+    fleschNumber.innerText = finalScore;
+    if (finalScore >= 70) {
+      fleschText.innerText = "Muito Fácil (Bom para B2C)";
+      fleschNumber.style.color = '#10B981';
+    } else if (finalScore >= 50) {
+      fleschText.innerText = "Médio (Bom para B2B)";
+      fleschNumber.style.color = '#F59E0B';
+    } else {
+      fleschText.innerText = "Difícil (Risco de baixa conversão)";
+      fleschNumber.style.color = '#EF4444';
+    }
+
+    resultsDiv.style.display = 'block';
+  });
+}
+
+// 6. MATRIZ DE ÂNGULOS
+function initAngleMatrix() {
+  const angleBtns = document.querySelectorAll('.angle-tab-btn');
+  const angleContents = document.querySelectorAll('.angle-content');
+
+  angleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      angleBtns.forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'transparent';
+        b.style.color = '#94A3B8';
+        b.style.border = 'none';
+      });
+      btn.classList.add('active');
+      btn.style.background = '#0F172A';
+      btn.style.color = '#fff';
+      btn.style.border = '1px solid rgba(255,255,255,0.1)';
+
+      const target = btn.getAttribute('data-target');
+      angleContents.forEach(c => {
+        c.style.display = c.id === target ? 'block' : 'none';
+      });
+    });
+  });
+}
