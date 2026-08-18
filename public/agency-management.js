@@ -1,4 +1,4 @@
-﻿// =======================================================
+// =======================================================
 // GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC & EQUIPE)
 // =======================================================
 
@@ -229,24 +229,47 @@ window.salvarAgencia = async function(e) {
   }
 
   try {
-    const client = getSupabaseClient();
     let savedInSupa = false;
 
-    if (client) {
-      try {
-        if (id) {
-          const { error } = await client.from('agencies').update({
-            name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, updated_at: new Date().toISOString()
-          }).eq('id', id);
-          if (!error) savedInSupa = true;
-        } else {
-          const { error } = await client.from('agencies').insert([{
-            name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, status: 'active'
-          }]);
-          if (!error) savedInSupa = true;
+    // 1. Tenta salvar via API backend (com Super Admin / Service Role Key)
+    try {
+      const endpoint = id ? `/api/admin/agencies/${id}` : '/api/admin/agencies';
+      const method = id ? 'PUT' : 'POST';
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id, name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, status: 'active'
+        })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        savedInSupa = true;
+      } else if (resData.error) {
+        console.error("Erro no backend ao salvar agência:", resData.error);
+      }
+    } catch (apiErr) {
+      console.warn("Aviso API Backend ao salvar agência:", apiErr);
+    }
+
+    if (!savedInSupa) {
+      const client = getSupabaseClient();
+      if (client) {
+        try {
+          if (id) {
+            const { error } = await client.from('agencies').update({
+              name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, updated_at: new Date().toISOString()
+            }).eq('id', id);
+            if (!error) savedInSupa = true;
+          } else {
+            const { error } = await client.from('agencies').insert([{
+              name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, status: 'active'
+            }]);
+            if (!error) savedInSupa = true;
+          }
+        } catch (supaErr) {
+          console.warn("Aviso Supabase client:", supaErr);
         }
-      } catch (supaErr) {
-        console.warn("Aviso Supabase: salvando agência localmente:", supaErr);
       }
     }
 
@@ -521,50 +544,68 @@ window.renderizarListaAgencias = function() {
 
 // 7. LEITURA INICIAL E PERSISTÊNCIA REAL DO SUPABASE
 window.carregarAgenciasDoSupabase = async function() {
-  const client = getSupabaseClient();
-  if (client) {
-    try {
-      const { data, error } = await client.from('agencies').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        window.agenciasMock = data.map(ag => ({
-          id: ag.id,
-          name: ag.name,
-          cnpj: ag.cnpj || '-',
-          phone: ag.phone || '-',
-          admin_email: ag.admin_email || ag.email_billing || '-',
-          zip: ag.zip || '',
-          street: ag.street || '',
-          neighborhood: ag.neighborhood || '',
-          city: ag.city || '',
-          state: ag.state || '',
-          plan: ag.plan || 'Starter',
-          monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : '997.00',
-          users_count: ag.users_count || 1,
-          active: ag.status === 'active',
-          created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
-        }));
+  let agencias = [];
+
+  // Tenta via backend API primeiro
+  try {
+    const res = await fetch('/api/admin/agencies');
+    const resData = await res.json();
+    if (resData.success && Array.isArray(resData.data)) {
+      agencias = resData.data;
+    }
+  } catch (err) {
+    console.warn("Aviso ao carregar agências via API backend:", err);
+  }
+
+  // Fallback direct Supabase SDK
+  if (agencias.length === 0) {
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        const { data, error } = await client.from('agencies').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          agencias = data;
+        }
+      } catch(e) {
+        console.warn('Usando dados em memória para agências:', e);
       }
-    } catch(e) {
-      console.warn('Usando dados em memória para agências:', e);
     }
   }
+
+  if (agencias.length > 0) {
+    window.agenciasMock = agencias.map(ag => ({
+      id: ag.id,
+      name: ag.name,
+      cnpj: ag.cnpj || '-',
+      phone: ag.phone || '-',
+      admin_email: ag.admin_email || ag.email_billing || '-',
+      zip: ag.zip || '',
+      street: ag.street || '',
+      neighborhood: ag.neighborhood || '',
+      city: ag.city || '',
+      state: ag.state || '',
+      plan: ag.plan || 'Starter',
+      monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : '997.00',
+      users_count: ag.users_count || 1,
+      active: ag.status === 'active',
+      created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
+    }));
+  }
+
   window.renderizarListaAgencias();
 };
 
 window.excluirAgencia = async function(agenciaId) {
   if (confirm('Tem certeza que deseja excluir esta agência? Todos os dados e clientes associados serão desativados.')) {
     try {
+      await fetch(`/api/admin/agencies/${agenciaId}`, { method: 'DELETE' });
+    } catch(e) {
       const client = getSupabaseClient();
       if (client) {
         await client.from('agencies').delete().eq('id', agenciaId);
       }
-      window.agenciasMock = window.agenciasMock.filter(a => String(a.id) !== String(agenciaId));
-      window.renderizarListaAgencias();
-      alert('🗑️ Agência excluída com sucesso!');
-    } catch(err) {
-      window.agenciasMock = window.agenciasMock.filter(a => String(a.id) !== String(agenciaId));
-      window.renderizarListaAgencias();
     }
+    window.carregarAgenciasDoSupabase();
   }
 };
 
