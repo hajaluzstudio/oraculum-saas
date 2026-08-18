@@ -188,22 +188,21 @@ window.salvarCliente = async function(e) {
   }
 
   try {
-    const activeTenantId = document.getElementById('tenant-select')?.value || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const client = getSupabaseClient();
     let savedInSupa = false;
+    let errDetail = '';
 
     try {
       if (id) {
-        // A API atual não tem PUT /api/clients/:id, então vamos tentar direto no supabase
-        // Mas como RLS bloqueia anon, enviamos via POST para a API ou usamos o mock
         const { error } = await client.from('clients').update({
           name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
           meta_ad_account_id, meta_pixel_id, google_customer_id,
           updated_at: new Date().toISOString()
         }).eq('id', id);
         if (!error) savedInSupa = true;
+        else errDetail = error.message;
       } else {
-        // Para novo cliente, usamos a API Backend que roda com SERVICE_ROLE e burla o RLS
         const response = await fetch('/api/clients', {
           method: 'POST',
           headers: {
@@ -217,49 +216,43 @@ window.salvarCliente = async function(e) {
         });
         
         const data = await response.json();
-        if (response.ok && !data.error) {
+        if (response.ok && data.success) {
           savedInSupa = true;
         } else {
-          console.error("Erro da API ao salvar cliente:", data.error);
-          alert(`❌ ERRO DA API AO SALVAR CLIENTE:\n${data.error || JSON.stringify(data)}`);
+          errDetail = data.error || JSON.stringify(data);
         }
       }
     } catch (supaErr) {
-      alert(`❌ EXCEÇÃO CLIENT MANAGEMENT: ${supaErr.message}`);
+      errDetail = supaErr.message;
+    }
+
+    // Se a API não respondeu ok, tenta direto pelo cliente Supabase com a Anon key
+    if (!savedInSupa && client) {
+      try {
+        const payloadDirect = {
+          name, niche, contact_name, phone, website, instagram,
+          organization_id: activeTenantId,
+          status: 'active',
+          updated_at: new Date().toISOString()
+        };
+        if (id) {
+          const { error } = await client.from('clients').update(payloadDirect).eq('id', id);
+          if (!error) savedInSupa = true;
+        } else {
+          const { error } = await client.from('clients').insert([{ id: 'client_' + Date.now(), ...payloadDirect }]);
+          if (!error) savedInSupa = true;
+        }
+      } catch (e) {}
     }
 
     if (!savedInSupa) {
-      alert("⚠️ AVISO: Ocorreu um erro de comunicação com o Supabase (Nuvem). O cliente foi salvo APENAS LOCALMENTE e desaparecerá se você atualizar a página. Verifique se suas chaves do Supabase (URL e ANON_KEY) estão corretas.");
-      if (id) {
-        const idx = (window.clientesMock || []).findIndex(c => String(c.id) === String(id));
-        if (idx !== -1) {
-          window.clientesMock[idx] = { 
-            ...window.clientesMock[idx], 
-            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-            meta_ad_account_id, meta_pixel_id, google_customer_id 
-          };
-        }
-      } else {
-        const novoCliente = {
-          id: 'client_' + Date.now(),
-          name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-          meta_ad_account_id, meta_pixel_id, google_customer_id,
-          status: 'active', created_at: new Date().toLocaleDateString('pt-BR')
-        };
-        window.clientesMock.unshift(novoCliente);
-      }
-      
-      window.fecharModalNovoCliente();
-      window.renderizarListaClientes();
-      window.atualizarSeletorClientesOnboarding();
-    } else {
-      window.fecharModalNovoCliente();
-      
-      // Recarregar a lista diretamente do banco para garantir sincronia
-      await window.carregarClientesDoSupabase();
-      
-      alert(`✅ Cliente ${name} ${id ? 'atualizado' : 'cadastrado'} com sucesso na Nuvem!`);
+      alert(`⚠️ FALHA NO SUPABASE: Não foi possível salvar na Nuvem.\nDetalhamento: ${errDetail || 'Erro desconhecido'}`);
+      return;
     }
+
+    window.fecharModalNovoCliente();
+    await window.carregarClientesDoSupabase();
+    alert(`🎉 Cliente "${name}" gravado no Supabase do Oraculum!`);
     
   } catch (err) {
     console.error('Erro ao salvar cliente:', err);
