@@ -194,6 +194,18 @@ window.abrirModalNovaAgencia = function(event) {
     event.preventDefault();
     event.stopPropagation();
   }
+  const modalComplete = document.getElementById('modal-nova-agencia') || document.getElementById('agency-crud-modal');
+  if (modalComplete) {
+    const form = document.getElementById('form-agency-crud');
+    if (form) form.reset();
+    const idInput = document.getElementById('agency-modal-id');
+    if (idInput) idInput.value = '';
+    const titleEl = document.getElementById('agency-modal-title');
+    if (titleEl) titleEl.textContent = 'Cadastrar Nova Agência';
+    modalComplete.style.setProperty('display', 'flex', 'important');
+    modalComplete.classList.remove('hidden');
+    return;
+  }
   if (typeof window.abrirModalAgencia === 'function') {
     window.abrirModalAgencia();
   }
@@ -208,21 +220,45 @@ window.fecharModalNovaAgencia = function(event) {
 window.salvarAgencia = async function(e) {
   if (e) e.preventDefault();
   
-  const id = document.getElementById('agency-id-input').value;
-  const name = document.getElementById('agency-name-input').value.trim();
-  const cnpj = document.getElementById('agency-cnpj-input').value.trim();
-  const phone = document.getElementById('agency-phone-input').value.trim();
-  const admin_email = document.getElementById('agency-admin-email').value.trim();
-  const zip = document.getElementById('agency-zip').value.trim();
-  const street = document.getElementById('agency-street').value.trim();
-  const neighborhood = document.getElementById('agency-neighborhood').value.trim();
-  const city = document.getElementById('agency-city').value.trim();
-  const state = document.getElementById('agency-state').value.trim();
-  const plan = document.getElementById('agency-plan-input').value;
-  const monthly_fee_raw = document.getElementById('agency-fee-input').value.trim();
-  const monthly_fee = parseFloat(monthly_fee_raw.replace(',', '.')) || 997.00;
+  const formCrud = document.getElementById('form-agency-crud');
+  const isFormCrud = Boolean(formCrud && e && e.target === formCrud);
 
-  const btn = document.getElementById('btn-save-agency');
+  let id = '', name = '', cnpj = '', phone = '', admin_email = '', zip = '', street = '', neighborhood = '', city = '', state = '', plan = 'Starter', monthly_fee = 497, responsible_name = '', due_day = 10, status = 'active';
+
+  if (isFormCrud || document.getElementById('agency-input-name')) {
+    id = document.getElementById('agency-modal-id')?.value || '';
+    name = document.getElementById('agency-input-name')?.value?.trim() || '';
+    cnpj = document.getElementById('agency-input-cnpj')?.value?.trim() || '';
+    responsible_name = document.getElementById('agency-input-responsible')?.value?.trim() || '';
+    admin_email = document.getElementById('agency-input-email')?.value?.trim() || '';
+    phone = document.getElementById('agency-input-phone')?.value?.trim() || '';
+    zip = document.getElementById('agency-input-zip')?.value?.trim() || '';
+    street = document.getElementById('agency-input-street')?.value?.trim() || '';
+    neighborhood = document.getElementById('agency-input-neighborhood')?.value?.trim() || '';
+    city = document.getElementById('agency-input-city')?.value?.trim() || '';
+    state = document.getElementById('agency-input-state')?.value?.trim() || '';
+    plan = document.getElementById('agency-input-plan')?.value || 'enterprise';
+    const feeVal = document.getElementById('agency-input-fee')?.value || '497';
+    monthly_fee = parseFloat(String(feeVal).replace(',', '.')) || 497;
+    due_day = parseInt(document.getElementById('agency-input-due-day')?.value || '10');
+    status = document.getElementById('agency-input-status')?.value || 'active';
+  } else {
+    id = document.getElementById('agency-id-input')?.value || '';
+    name = document.getElementById('agency-name-input')?.value?.trim() || '';
+    cnpj = document.getElementById('agency-cnpj-input')?.value?.trim() || '';
+    phone = document.getElementById('agency-phone-input')?.value?.trim() || '';
+    admin_email = document.getElementById('agency-admin-email')?.value?.trim() || '';
+    zip = document.getElementById('agency-zip')?.value?.trim() || '';
+    street = document.getElementById('agency-street')?.value?.trim() || '';
+    neighborhood = document.getElementById('agency-neighborhood')?.value?.trim() || '';
+    city = document.getElementById('agency-city')?.value?.trim() || '';
+    state = document.getElementById('agency-state')?.value?.trim() || '';
+    plan = document.getElementById('agency-plan-input')?.value || 'Starter';
+    const monthly_fee_raw = document.getElementById('agency-fee-input')?.value?.trim() || '497';
+    monthly_fee = parseFloat(monthly_fee_raw.replace(',', '.')) || 497.00;
+  }
+
+  const btn = document.getElementById('btn-submit-agency-modal') || document.getElementById('btn-save-agency');
   if (btn) {
     btn.innerText = 'Salvando...';
     btn.disabled = true;
@@ -230,23 +266,24 @@ window.salvarAgencia = async function(e) {
 
   try {
     let savedInSupa = false;
+    const payload = {
+      name, cnpj, phone, email_billing: admin_email, admin_email, zip, street, neighborhood, city, state,
+      address_street: street, address_neighborhood: neighborhood, address_city: city, address_state: state, zip_code: zip,
+      plan, plan_tier: plan, monthly_fee, responsible_name, due_day, status, active: status === 'active'
+    };
 
-    // 1. Tenta salvar via API backend (com Super Admin / Service Role Key)
+    // 1. Tenta salvar via API backend
     try {
       const endpoint = id ? `/api/admin/agencies/${id}` : '/api/admin/agencies';
       const method = id ? 'PUT' : 'POST';
       const res = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id, name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, status: 'active'
-        })
+        body: JSON.stringify({ id, ...payload })
       });
       const resData = await res.json();
       if (resData.success) {
         savedInSupa = true;
-      } else if (resData.error) {
-        console.error("Erro no backend ao salvar agência:", resData.error);
       }
     } catch (apiErr) {
       console.warn("Aviso API Backend ao salvar agência:", apiErr);
@@ -258,12 +295,13 @@ window.salvarAgencia = async function(e) {
         try {
           if (id) {
             const { error } = await client.from('agencies').update({
-              name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, updated_at: new Date().toISOString()
+              ...payload, updated_at: new Date().toISOString()
             }).eq('id', id);
             if (!error) savedInSupa = true;
           } else {
+            const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36);
             const { error } = await client.from('agencies').insert([{
-              name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee, status: 'active'
+              ...payload, slug
             }]);
             if (!error) savedInSupa = true;
           }
@@ -273,23 +311,24 @@ window.salvarAgencia = async function(e) {
       }
     }
 
-    if (!savedInSupa) {
-      if (id) {
-        const index = window.agenciasMock.findIndex(a => String(a.id) === String(id));
-        if (index !== -1) {
-          window.agenciasMock[index] = { ...window.agenciasMock[index], name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee: monthly_fee.toFixed(2) };
-        }
-      } else {
-        const novaAgencia = {
-          id: String(Date.now()),
-          name, cnpj, phone, admin_email, zip, street, neighborhood, city, state, plan, monthly_fee: monthly_fee.toFixed(2),
-          users_count: 1, active: true, created_at: new Date().toLocaleDateString('pt-BR')
-        };
-        window.agenciasMock.unshift(novaAgencia);
+    // Atualiza estado local agenciasMock
+    if (id) {
+      const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(id));
+      if (index !== -1) {
+        window.agenciasMock[index] = { ...window.agenciasMock[index], ...payload, monthly_fee: monthly_fee.toFixed(2) };
       }
+    } else {
+      const novaAgencia = {
+        id: String(Date.now()),
+        ...payload,
+        monthly_fee: monthly_fee.toFixed(2),
+        users_count: 1,
+        created_at: new Date().toLocaleDateString('pt-BR')
+      };
+      if (!window.agenciasMock) window.agenciasMock = [];
+      window.agenciasMock.unshift(novaAgencia);
     }
 
-    // Fechamento automático e atualização em tempo real
     window.fecharModalAgencia();
     window.renderizarListaAgencias();
     alert(`✅ Agência ${id ? 'atualizada' : 'cadastrada'} com sucesso!`);
