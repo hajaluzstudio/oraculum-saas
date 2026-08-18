@@ -238,24 +238,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log(`[Workspace] Cliente ativo alterado para: ${activeClientId}`);
 
-    // Busca instantânea do Dossiê e Workflow do Cliente Selecionado
+    // Busca instantânea do Dossiê do Cliente Selecionado
     try {
-      const res = await fetch(`${API_BASE_URL}/api/clients/${clientId}/workflow`, {
+      const res = await fetch(`${API_BASE_URL}/api/niche-dossier/${clientId}`, {
         headers: { 'x-organization-id': activeTenantId }
       });
       const result = await res.json();
 
-      if (result.success && result.data && result.data.dossier) {
-        renderDossierOutput(result.data.dossier);
-        const badge = document.getElementById('dossier-status-badge');
+      const badge = document.getElementById('dossier-status-badge');
+      if (result.success && result.data) {
+        renderDossierOutput(result.data);
         if (badge) {
-          badge.textContent = `DOSSIÊ ATIVO: ${result.data.client?.name || activeClientName}`;
+          badge.textContent = `DOSSIÊ ATIVO: ${activeClientName}`;
           badge.style.background = 'rgba(0, 245, 160, 0.2)';
           badge.style.color = '#00F5A0';
         }
+      } else {
+        // Limpa o dossiê se não existir
+        const targetContent = document.getElementById('dossier-content');
+        if (targetContent) targetContent.innerHTML = `
+          <div class="placeholder-state">
+            <i class="fa-solid fa-folder-open"></i>
+            <p>Nenhum dossiê estratégico gerado para este cliente ainda.</p>
+          </div>
+        `;
+        if (badge) {
+          badge.textContent = `Aguardando Onboarding...`;
+          badge.style.background = 'rgba(255, 255, 255, 0.05)';
+          badge.style.color = '#94A3B8';
+        }
       }
     } catch (e) {
-      console.warn('[Workspace] Erro ao carregar dados do cliente selecionado.');
+      console.warn('[Workspace] Erro ao carregar dossiê do cliente selecionado.');
+    }
+
+    // Busca Histórico de Chat
+    try {
+      const resChat = await fetch(`${API_BASE_URL}/api/chat-history/${clientId}`, {
+        headers: { 'x-organization-id': activeTenantId }
+      });
+      const chatResult = await resChat.json();
+      const chatMessagesList = document.getElementById('chat-messages-list');
+      
+      if (chatMessagesList) {
+        // Limpa chat
+        chatMessagesList.innerHTML = `
+          <div class="chat-msg model">
+            <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+            <div class="chat-bubble">Olá! Eu sou o Oraculum. Já carreguei o dossiê de <strong>${activeClientName}</strong>. Como posso te ajudar na operação hoje?</div>
+          </div>
+        `;
+        chatHistory = [];
+        
+        if (chatResult.success && chatResult.data && chatResult.data.length > 0) {
+          // Preenche com o histórico
+          chatResult.data.forEach(msg => {
+            const role = msg.role;
+            const content = msg.content;
+            
+            // Adiciona na UI
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-msg ${role}`;
+            
+            if (role === 'model' || role === 'assistant') {
+              msgDiv.className = 'chat-msg model';
+              // Tenta parsear se for JSON
+              let displayContent = content;
+              try {
+                const parsed = JSON.parse(content);
+                if (parsed.response) displayContent = parsed.response;
+              } catch (e) { /* ignore */ }
+              
+              msgDiv.innerHTML = `
+                <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="chat-bubble markdown-body">${marked.parse ? marked.parse(displayContent) : displayContent}</div>
+              `;
+            } else {
+              msgDiv.innerHTML = `
+                <div class="chat-bubble">${content}</div>
+                <div class="chat-avatar user-avatar"><i class="fa-solid fa-user"></i></div>
+              `;
+            }
+            chatMessagesList.appendChild(msgDiv);
+            chatHistory.push({ role, content, timestamp: msg.created_at });
+          });
+          chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        }
+      }
+    } catch (e) {
+      console.warn('[Workspace] Erro ao carregar histórico de chat.');
     }
 
     // Carrega o Kanban e o BI do cliente selecionado

@@ -247,15 +247,19 @@ window.salvarCliente = async function(e) {
         };
         window.clientesMock.unshift(novoCliente);
       }
-    }
-
-    window.fecharModalNovoCliente();
-    window.renderizarListaClientes();
-    window.atualizarSeletorClientesOnboarding();
-    
-    if (savedInSupa) {
+      
+      window.fecharModalNovoCliente();
+      window.renderizarListaClientes();
+      window.atualizarSeletorClientesOnboarding();
+    } else {
+      window.fecharModalNovoCliente();
+      
+      // Recarregar a lista diretamente do banco para garantir sincronia
+      await window.carregarClientesDoSupabase();
+      
       alert(`✅ Cliente ${name} ${id ? 'atualizado' : 'cadastrado'} com sucesso na Nuvem!`);
     }
+    
   } catch (err) {
     console.error('Erro ao salvar cliente:', err);
     window.fecharModalNovoCliente();

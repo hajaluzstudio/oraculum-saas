@@ -374,12 +374,23 @@ app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
     const { clientId } = req.params;
-    const dossiers = loadDossiersFromDisk();
-    let dossierData = dossiers[clientId];
-    if (!dossierData) {
-      const kbData = await getNicheKnowledgeBase(organizationId, clientId);
-      dossierData = kbData?.dossier_data || null;
+    
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      const { data, error } = await supabase
+        .from('niche_knowledge_base')
+        .select('dossier_data')
+        .eq('client_id', clientId)
+        .eq('organization_id', organizationId)
+        .single();
+        
+      if (!error && data) {
+        return res.json({ success: true, data: data.dossier_data });
+      }
     }
+
+    // Fallback disk se não tiver no supabase
+    const dossiers = loadDossiersFromDisk();
+    const dossierData = dossiers[clientId] || null;
     return res.json({ success: true, data: dossierData });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -388,11 +399,51 @@ app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
 
 app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   try {
-    const { clientId, dossier } = req.body;
+    const organizationId = (req as any).organizationId;
+    const { clientId, dossier, niche } = req.body;
+    
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      // Upsert no banco
+      const { error } = await supabase
+        .from('niche_knowledge_base')
+        .upsert({
+          organization_id: organizationId,
+          client_id: clientId,
+          niche: niche || 'Geral',
+          dossier_data: dossier,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'client_id' }); // Supondo que client_id é unique ou usamos isso pra garantir update
+        
+      if (error) console.warn('[Supabase] Erro ao salvar dossiê:', error);
+    }
+
+    // Mantém fallback no disco local temporário
     const dossiers = loadDossiersFromDisk();
     dossiers[clientId] = dossier;
     saveDossiersToDisk(dossiers);
     return res.json({ success: true, message: 'Dossiê salvo!' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// NOVO ENDPOINT: Puxar Histórico de Chat
+app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
+  try {
+    const { clientId } = req.params;
+    
+    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('role, content, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true });
+        
+      if (!error && data) {
+        return res.json({ success: true, data });
+      }
+    }
+    return res.json({ success: true, data: [] });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
