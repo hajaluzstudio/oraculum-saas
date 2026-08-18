@@ -220,11 +220,12 @@ window.salvarCliente = async function(e) {
         if (response.ok && !data.error) {
           savedInSupa = true;
         } else {
-          console.error("Erro da API:", data.error);
+          console.error("Erro da API ao salvar cliente:", data.error);
+          alert(`❌ ERRO DA API AO SALVAR CLIENTE:\n${data.error || JSON.stringify(data)}`);
         }
       }
     } catch (supaErr) {
-      console.warn("[ClientManagement] Falha ao salvar no Supabase (Backend/RLS), caindo para cache local:", supaErr);
+      alert(`❌ EXCEÇÃO CLIENT MANAGEMENT: ${supaErr.message}`);
     }
 
     if (!savedInSupa) {

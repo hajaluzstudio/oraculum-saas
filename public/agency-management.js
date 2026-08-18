@@ -284,9 +284,12 @@ window.salvarAgencia = async function(e) {
       const resData = await res.json();
       if (resData.success) {
         savedInSupa = true;
+      } else {
+        console.error("❌ ERRO BACKEND VERCEL ao salvar agência:", resData.error || resData);
+        alert(`❌ ERRO BACKEND VERCEL ao salvar agência:\n${resData.error || JSON.stringify(resData)}`);
       }
     } catch (apiErr) {
-      console.warn("Aviso API Backend ao salvar agência:", apiErr);
+      console.warn("⚠️ Falha na chamada da API Backend Vercel:", apiErr);
     }
 
     if (!savedInSupa) {
@@ -298,15 +301,17 @@ window.salvarAgencia = async function(e) {
               ...payload, updated_at: new Date().toISOString()
             }).eq('id', id);
             if (!error) savedInSupa = true;
+            else alert(`❌ ERRO SUPABASE CLIENT (UPDATE): ${error.message}`);
           } else {
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36);
             const { error } = await client.from('agencies').insert([{
               ...payload, slug
             }]);
             if (!error) savedInSupa = true;
+            else alert(`❌ ERRO SUPABASE CLIENT (INSERT): ${error.message}`);
           }
         } catch (supaErr) {
-          console.warn("Aviso Supabase client:", supaErr);
+          alert(`❌ EXCEÇÃO SUPABASE CLIENT: ${supaErr.message}`);
         }
       }
     }
