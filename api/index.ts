@@ -259,49 +259,39 @@ app.get('/api/clients', async (req: Request, res: Response) => {
   }
 });
 
+// SCHEMA REAL clients: id, agency_id, organization_id, name, niche, website, previous_agency_notes, status, created_at, user_id, monthly_budget
 app.post('/api/clients', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-    const { name, niche, sanitized_history, website, previous_agency_notes, contact_name, phone, avg_ticket, target_revenue } = req.body;
+    const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
     if (!name || !niche) return res.status(400).json({ error: 'Nome e Nicho são obrigatórios.' });
 
-    const clientRecord: any = {
-      id: 'client_' + Date.now(),
+    // Payload alinhado 100% com o schema real do Supabase
+    const clientPayload: Record<string, any> = {
       organization_id: organizationId,
       name,
       niche,
-      contact_name: contact_name || null,
-      phone: phone || null,
-      avg_ticket: avg_ticket ? parseFloat(avg_ticket) : null,
-      target_revenue: target_revenue ? parseFloat(target_revenue) : null,
       status: 'active',
       website: website || null,
       previous_agency_notes: sanitized_history || previous_agency_notes || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
     };
 
+    console.log('[API] Criando cliente com payload:', JSON.stringify(clientPayload));
+
     // Salva no Supabase (persistência permanente na nuvem)
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      try {
-        const { data: insertedData, error: sbError } = await supabase.from('clients').insert([clientRecord]).select();
-        if (sbError) {
-          console.error('[Supabase] Erro ao salvar cliente:', sbError.message);
-          return res.status(500).json({ error: `Erro no Supabase ao salvar cliente: ${sbError.message}` });
-        }
-        console.log('[Supabase] ✅ Cliente salvo com sucesso na nuvem:', insertedData);
-      } catch (e: any) {
-        console.error('[Supabase] Exceção ao inserir cliente:', e.message);
-        return res.status(500).json({ error: `Exceção Supabase: ${e.message}` });
-      }
+    const { data: insertedData, error: sbError } = await supabase.from('clients').insert([clientPayload]).select().single();
+    if (sbError) {
+      console.error('[Supabase] Erro ao salvar cliente:', sbError.message, sbError.details);
+      return res.status(500).json({ error: `Erro no Supabase: ${sbError.message}`, details: sbError.details });
     }
+    console.log('[Supabase] ✅ Cliente salvo com sucesso na nuvem:', insertedData?.id);
 
     // Salva também em disco (fallback local)
     const localClients = loadClientsFromDisk();
-    localClients.unshift(clientRecord);
+    localClients.unshift(insertedData);
     saveClientsToDisk(localClients);
 
-    return res.status(201).json({ success: true, message: 'Cliente salvo!', client: clientRecord });
+    return res.status(201).json({ success: true, message: 'Cliente salvo!', client: insertedData });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
@@ -330,11 +320,11 @@ app.delete('/api/clients/:id', async (req: Request, res: Response) => {
   }
 });
 
-// ONBOARDING
+// ONBOARDING — Gera o Dossiê Estratégico para um cliente já cadastrado
 app.post('/api/onboarding', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    const { clientName, niche, sanitized_history, website, previous_agency_notes } = req.body;
+    const { clientId, clientName, niche, sanitized_history, website, previous_agency_notes, previousAgencyNotes } = req.body;
     if (!clientName || !niche) return res.status(400).json({ error: 'clientName e niche são obrigatórios.' });
 
     const result = await registerClientAndGenerateDossier({
@@ -342,64 +332,71 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
       clientName,
       niche,
       website,
-      previousAgencyNotes: sanitized_history || previous_agency_notes,
+      previousAgencyNotes: sanitized_history || previous_agency_notes || previousAgencyNotes,
     });
 
-    // Salva cliente no Supabase
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      try {
-        await supabase.from('clients').upsert([{
-          id: result.client.id,
-          organization_id: organizationId,
-          name: clientName,
-          niche,
-          website: website || null,
-          previous_agency_notes: sanitized_history || previous_agency_notes || null,
-          status: 'active',
-        }], { onConflict: 'id' });
+    // Usa o clientId que veio do frontend (já salvo no Supabase) ou o gerado pelo service
+    const effectiveClientId = clientId || result.client.id;
+    console.log('[Onboarding] Salvando dossiê para clientId:', effectiveClientId);
 
-        // Salva dossiê no Supabase
-        await supabase.from('niche_knowledge_base').upsert([{
-          client_id: result.client.id,
-          organization_id: organizationId,
+    // Salva dossiê na niche_knowledge_base usando o INSERT/UPDATE correto
+    try {
+      const { data: existing } = await supabase
+        .from('niche_knowledge_base')
+        .select('id')
+        .eq('client_id', effectiveClientId)
+        .maybeSingle();
+
+      if (existing?.id) {
+        await supabase.from('niche_knowledge_base')
+          .update({ niche, dossier_data: result.dossier, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('niche_knowledge_base').insert([{
+          client_id: effectiveClientId,
+          organization_id: organizationId || null,
           niche,
           dossier_data: result.dossier,
           updated_at: new Date().toISOString(),
-        }], { onConflict: 'client_id' });
-        console.log('[Supabase] ✅ Onboarding + Dossiê salvos na nuvem para:', clientName);
-      } catch (e: any) { console.warn('[Supabase] Aviso ao salvar onboarding:', e.message); }
+        }]);
+      }
+      console.log('[Supabase] ✅ Dossiê salvo na nuvem para clientId:', effectiveClientId);
+    } catch (e: any) {
+      console.warn('[Supabase] Aviso ao salvar dossiê no onboarding:', e.message);
     }
 
     // Salva em disco (fallback)
     const dossiers = loadDossiersFromDisk();
-    dossiers[result.client.id] = result.dossier;
+    dossiers[effectiveClientId] = result.dossier;
     saveDossiersToDisk(dossiers);
 
-    return res.status(201).json({ success: true, data: result });
+    // Retorna com o clientId correto
+    return res.status(201).json({ success: true, data: { ...result, client: { ...result.client, id: effectiveClientId } } });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
 });
 
+// GET dossiê do cliente — schema real: id, agency_id, client_id, organization_id, niche, dossier_data
 app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
   try {
-    const organizationId = (req as any).organizationId;
     const { clientId } = req.params;
     
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      const { data, error } = await supabase
-        .from('niche_knowledge_base')
-        .select('dossier_data')
-        .eq('client_id', clientId)
-        .eq('organization_id', organizationId)
-        .single();
-        
-      if (!error && data) {
-        return res.json({ success: true, data: data.dossier_data });
-      }
+    // Busca apenas por client_id (não filtra por organization_id pois pode ser null)
+    const { data, error } = await supabase
+      .from('niche_knowledge_base')
+      .select('dossier_data, niche, updated_at')
+      .eq('client_id', clientId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    if (!error && data) {
+      console.log('[API] Dossiê carregado do Supabase para cliente:', clientId);
+      return res.json({ success: true, data: data.dossier_data });
     }
 
-    // Fallback disk se não tiver no supabase
+    // Fallback disco local
     const dossiers = loadDossiersFromDisk();
     const dossierData = dossiers[clientId] || null;
     return res.json({ success: true, data: dossierData });
@@ -408,27 +405,53 @@ app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
   }
 });
 
+// POST salvar dossiê — upsert por client_id
 app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
     const { clientId, dossier, niche } = req.body;
+    if (!clientId) return res.status(400).json({ error: 'clientId é obrigatório.' });
     
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      // Upsert no banco
-      const { error } = await supabase
+    // Verifica se já existe para decidir entre insert e update
+    const { data: existing } = await supabase
+      .from('niche_knowledge_base')
+      .select('id')
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    let result;
+    if (existing?.id) {
+      // UPDATE
+      result = await supabase
         .from('niche_knowledge_base')
-        .upsert({
-          organization_id: organizationId,
+        .update({
+          niche: niche || 'Geral',
+          dossier_data: dossier,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select();
+    } else {
+      // INSERT
+      result = await supabase
+        .from('niche_knowledge_base')
+        .insert([{
+          organization_id: organizationId || null,
           client_id: clientId,
           niche: niche || 'Geral',
           dossier_data: dossier,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'client_id' }); // Supondo que client_id é unique ou usamos isso pra garantir update
-        
-      if (error) console.warn('[Supabase] Erro ao salvar dossiê:', error);
+        }])
+        .select();
     }
 
-    // Mantém fallback no disco local temporário
+    if (result.error) {
+      console.error('[Supabase] Erro ao salvar dossiê:', result.error.message);
+    } else {
+      console.log('[Supabase] ✅ Dossiê salvo para client_id:', clientId);
+    }
+
+    // Fallback disco
     const dossiers = loadDossiersFromDisk();
     dossiers[clientId] = dossier;
     saveDossiersToDisk(dossiers);
@@ -438,21 +461,19 @@ app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   }
 });
 
-// NOVO ENDPOINT: Puxar Histórico de Chat
+// GET histórico de chat por cliente — schema real: id, agency_id, client_id, role, content, created_at
 app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   try {
     const { clientId } = req.params;
     
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      const { data, error } = await supabase
-        .from('chat_history')
-        .select('role, content, created_at')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: true });
-        
-      if (!error && data) {
-        return res.json({ success: true, data });
-      }
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('role, content, created_at')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+      
+    if (!error && data) {
+      return res.json({ success: true, data });
     }
     return res.json({ success: true, data: [] });
   } catch (error: any) {
@@ -460,7 +481,7 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   }
 });
 
-// CHAT
+// POST chat — schema real chat_history: id, agency_id, client_id, role, content, created_at
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
@@ -469,15 +490,18 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
     const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
 
-    // Salva histórico do chat no Supabase
-    if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
-      try {
-        await supabase.from('chat_history').insert([
-          { client_id: clientId, role: 'user', content: message },
-          { client_id: clientId, role: 'assistant', content: typeof response === 'string' ? response : JSON.stringify(response) }
-        ]);
-        console.log('[Supabase] ✅ Histórico de chat salvo para client:', clientId);
-      } catch (e: any) { console.warn('[Supabase] Aviso ao salvar chat:', e.message); }
+    // Salva histórico no Supabase com schema correto (coluna: content, não message)
+    try {
+      const replyText = typeof response === 'string' ? response :
+        (response as any)?.replyText || (response as any)?.response || JSON.stringify(response);
+
+      await supabase.from('chat_history').insert([
+        { client_id: clientId, role: 'user', content: message },
+        { client_id: clientId, role: 'assistant', content: replyText }
+      ]);
+      console.log('[Supabase] ✅ Chat salvo para client_id:', clientId);
+    } catch (e: any) {
+      console.warn('[Supabase] Aviso ao salvar chat:', e.message);
     }
 
     return res.json({ success: true, data: response });
@@ -749,54 +773,43 @@ app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, re
 });
 
 // CRIAR AGÊNCIA COMPLETA
+// SCHEMA REAL agencies: id, name, slug, cnpj_cpf, email_billing, phone, status, plan_tier, monthly_fee, due_day, created_at, updated_at
 app.post(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, res: Response) => {
   try {
     const {
       name,
       slug,
       email_billing,
-      cnpj,
-      responsible_name,
+      cnpj, cnpj_cpf,       // aceita ambos os nomes do frontend
       phone,
-      zip_code,
-      address_street,
-      address_number,
-      address_neighborhood,
-      address_city,
-      address_state,
       monthly_fee,
       due_day,
-      client_limit,
       status,
       plan_tier
     } = req.body;
 
     const agencySlug = slug || (name ? name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36) : 'agencia-' + Date.now());
 
-    const payload = {
+    // Payload alinhado 100% com o schema real do Supabase
+    const payload: Record<string, any> = {
       name: name || 'Nova Agência Enterprise',
       slug: agencySlug,
       email_billing: email_billing || 'financeiro@agencia.com',
-      cnpj: cnpj || null,
-      responsible_name: responsible_name || null,
+      cnpj_cpf: cnpj_cpf || cnpj || null,
       phone: phone || null,
-      zip_code: zip_code || null,
-      address_street: address_street || null,
-      address_number: address_number || null,
-      address_neighborhood: address_neighborhood || null,
-      address_city: address_city || null,
-      address_state: address_state || null,
-      monthly_fee: monthly_fee ? parseFloat(monthly_fee) : 0,
-      due_day: due_day ? parseInt(due_day) : 10,
-      client_limit: client_limit ? parseInt(client_limit) : 10,
+      monthly_fee: monthly_fee ? parseFloat(String(monthly_fee)) : 0,
+      due_day: due_day ? parseInt(String(due_day)) : 10,
       status: status || 'active',
-      plan_tier: plan_tier || 'enterprise',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      plan_tier: plan_tier || 'standard',
     };
 
+    console.log('[API] Criando agência com payload:', JSON.stringify(payload));
     const { data, error } = await supabase.from('agencies').insert([payload]).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase] Erro ao criar agência:', error);
+      throw error;
+    }
+    console.log('[Supabase] ✅ Agência criada com sucesso:', data?.id);
     return res.json({ success: true, data });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
@@ -813,12 +826,13 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
       updated_at: new Date().toISOString()
     };
 
+    // Somente campos que existem de fato na tabela agencies do Supabase
     const allowedFields = [
-      'name', 'slug', 'email_billing', 'cnpj', 'responsible_name', 'phone',
-      'zip_code', 'address_street', 'address_number', 'address_neighborhood',
-      'address_city', 'address_state', 'monthly_fee', 'due_day', 'client_limit',
-      'status', 'plan_tier'
+      'name', 'slug', 'email_billing', 'cnpj_cpf', 'phone',
+      'monthly_fee', 'due_day', 'status', 'plan_tier'
     ];
+    // Mapeamento de nomes legados do frontend → coluna real
+    if (body['cnpj'] !== undefined && body['cnpj_cpf'] === undefined) body['cnpj_cpf'] = body['cnpj'];
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

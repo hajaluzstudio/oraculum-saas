@@ -543,7 +543,7 @@ window.atualizarKPIsMaster = function() {
 
 // 6. RENDERIZAR TABELA DO SUPER ADMIN (COM BOTÃO DE USUÁRIOS)
 window.renderizarListaAgencias = function() {
-  const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body, #view-master tbody, tbody');
+  const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body');
   if (!container) return;
 
   const list = window.agenciasMock || [];

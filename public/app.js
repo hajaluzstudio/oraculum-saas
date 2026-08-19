@@ -177,6 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const activeClientSelect = document.getElementById('active-client-select');
   const savedClientId = localStorage.getItem('oraculum_active_client_id');
 
+  if (activeClientSelect) {
+    activeClientSelect.addEventListener('change', (e) => {
+      if (window.selectActiveClient) {
+        window.selectActiveClient(e.target.value);
+      }
+    });
+  }
+
   async function loadOrganizationClients() {
     let clientsList = [];
     try {
@@ -247,8 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!clientId) return;
     activeClientId = clientId;
     localStorage.setItem('oraculum_active_client_id', clientId);
+    window.oraculum_active_client_id = clientId; // Keep it globally accessible
 
-    const selectedOption = activeClientSelect?.selectedOptions[0];
+    const selectedOption = activeClientSelect?.querySelector(`option[value="${clientId}"]`) || activeClientSelect?.selectedOptions[0];
     if (selectedOption) {
       activeClientName = selectedOption.textContent;
       const chatLabel = document.getElementById('chat-active-client-label');
@@ -310,10 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory = [];
         
         if (chatResult.success && chatResult.data && chatResult.data.length > 0) {
-          // Preenche com o histórico
+          // Preenche com o histórico — usa campo 'content' (schema real do Supabase)
           chatResult.data.forEach(msg => {
             const role = msg.role;
-            const content = msg.content;
+            const content = msg.content || msg.message || '';  // 'content' é o campo real
             
             // Adiciona na UI
             const msgDiv = document.createElement('div');
@@ -325,12 +334,13 @@ document.addEventListener('DOMContentLoaded', () => {
               let displayContent = content;
               try {
                 const parsed = JSON.parse(content);
-                if (parsed.response) displayContent = parsed.response;
+                if (parsed.replyText) displayContent = parsed.replyText;
+                else if (parsed.response) displayContent = parsed.response;
               } catch (e) { /* ignore */ }
               
               msgDiv.innerHTML = `
                 <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="chat-bubble markdown-body">${marked.parse ? marked.parse(displayContent) : displayContent}</div>
+                <div class="chat-bubble markdown-body">${typeof marked !== 'undefined' && marked.parse ? marked.parse(displayContent) : displayContent}</div>
               `;
             } else {
               msgDiv.innerHTML = `
@@ -353,6 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
     await loadClientBiMetrics(clientId);
   }
 
+  // Expõe a função globalmente para ser usada por outros scripts e abas
+  window.selectActiveClient = selectActiveClient;
+
   if (activeClientSelect) {
     activeClientSelect.addEventListener('change', (e) => {
       selectActiveClient(e.target.value);
@@ -372,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Função para garantir o salvamento automático no banco após a IA gerar o dossiê
   async function saveClientDossierToSupabase(clientId, dossierData, niche) {
     try {
-      const response = await fetch('/api/niche-dossier', {
+      const response = await fetch(`${API_BASE_URL}/api/niche-dossier`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -389,94 +402,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 1. Cadastra o cliente no Supabase via backend e recupera seu clientId
+  // 1. Apenas gera o dossiê para o cliente selecionado
   async function handleOnboardingSubmit(event) {
     event.preventDefault();
+
+    const selectEl = document.getElementById('select-onboarding-client');
+    const clientId = selectEl ? selectEl.value : null;
+
+    if (!clientId) {
+      alert("Por favor, selecione um cliente da carteira primeiro.");
+      return;
+    }
 
     const clientName = document.getElementById('client-name').value;
     const niche = document.getElementById('client-niche').value;
     const sanitizedHistory = document.getElementById('previous-agency-notes').value;
 
-    dossierBadge.textContent = '1/2 - Cadastrando cliente no Supabase...';
+    dossierBadge.textContent = '1/1 - Preparando Dossiê...';
     dossierBadge.style.background = 'rgba(6, 182, 212, 0.2)';
     dossierBadge.style.color = '#06B6D4';
 
     dossierContent.innerHTML = `
       <div class="placeholder-state">
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>1/2 - Gravando o cliente "${clientName}" na tabela 'clients' do Supabase...</p>
+        <p>1/1 - Inicializando geração de dossiê para "${clientName}"...</p>
       </div>
     `;
 
     try {
-      let clientId = 'client_' + Date.now();
-      let clientResultSuccess = false;
-
-      if (window.supabaseClient) {
-        const { data, error } = await window.supabaseClient
-          .from('clients')
-          .insert([{
-            id: clientId,
-            name: clientName,
-            niche: niche || 'Geral',
-            previous_agency_notes: sanitizedHistory || null,
-            organization_id: activeTenantId,
-            status: 'active',
-            created_at: new Date().toISOString()
-          }])
-          .select();
-
-        if (error) {
-          console.error('Erro ao salvar o cliente no Supabase:', error.message);
-          alert("Erro ao salvar no Supabase: " + error.message);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          clientId = data[0].id;
-          clientResultSuccess = true;
-          console.log('Cliente salvo com sucesso no Supabase! ID:', clientId);
-        }
-      }
-
-      if (!clientResultSuccess) {
-        // Fallback: Cadastra o cliente no Supabase via backend
-        const clientResponse = await fetch(`${API_BASE_URL}/api/clients`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-organization-id': activeTenantId
-          },
-          body: JSON.stringify({ name: clientName, niche, sanitized_history: sanitizedHistory })
-        });
-
-        const clientResult = await clientResponse.json();
-        if (!clientResult.success) {
-          console.error('Erro ao salvar o cliente:', clientResult.error);
-          alert("Erro ao salvar no backend: " + (clientResult.error || 'Erro desconhecido'));
-          return;
-        }
-
-        clientId = clientResult.client.id;
-        console.log('Cliente salvo com sucesso via backend! ID:', clientId);
-      }
-
-      // Define e seleciona IMEDIATAMENTE o novo cliente no topo durante o cadastro
-      activeClientId = clientId;
-      activeClientName = `${clientName} (${niche})`;
-      localStorage.setItem('oraculum_active_client_id', clientId);
-
-      await loadOrganizationClients();
-      if (activeClientSelect) {
-        activeClientSelect.value = clientId;
-      }
-      const chatLabel = document.getElementById('chat-active-client-label');
-      if (chatLabel) chatLabel.textContent = `${clientName} (${niche})`;
-
-      // 2. Dispara a geração do Dossiê Estratégico usando o ID gerado
+      // Dispara a geração do Dossiê Estratégico usando o ID selecionado
       await generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory);
     } catch (error) {
-      console.error('Erro no fluxo de cadastro do cliente:', error);
+      console.error('Erro no fluxo de geração de dossiê:', error);
+      alert('Erro inesperado: ' + error.message);
     }
   }
 

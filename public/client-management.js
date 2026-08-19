@@ -195,14 +195,26 @@ window.salvarCliente = async function(e) {
 
     try {
       if (id) {
-        const { error } = await client.from('clients').update({
-          name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-          meta_ad_account_id, meta_pixel_id, google_customer_id,
-          updated_at: new Date().toISOString()
-        }).eq('id', id);
-        if (!error) savedInSupa = true;
-        else errDetail = error.message;
+        // UPDATE (PUT) via API
+        const response = await fetch(`/api/clients/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-organization-id': activeTenantId
+          },
+          body: JSON.stringify({
+            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
+            meta_ad_account_id, meta_pixel_id, google_customer_id
+          })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          savedInSupa = true;
+        } else {
+          errDetail = data.error || JSON.stringify(data);
+        }
       } else {
+        // INSERT (POST) via API
         const response = await fetch('/api/clients', {
           method: 'POST',
           headers: {
@@ -222,27 +234,8 @@ window.salvarCliente = async function(e) {
           errDetail = data.error || JSON.stringify(data);
         }
       }
-    } catch (supaErr) {
-      errDetail = supaErr.message;
-    }
-
-    // Se a API não respondeu ok, tenta direto pelo cliente Supabase com a Anon key
-    if (!savedInSupa && client) {
-      try {
-        const payloadDirect = {
-          name, niche, contact_name, phone, website, instagram,
-          organization_id: activeTenantId,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        };
-        if (id) {
-          const { error } = await client.from('clients').update(payloadDirect).eq('id', id);
-          if (!error) savedInSupa = true;
-        } else {
-          const { error } = await client.from('clients').insert([{ id: 'client_' + Date.now(), ...payloadDirect }]);
-          if (!error) savedInSupa = true;
-        }
-      } catch (e) {}
+    } catch (apiErr) {
+      errDetail = apiErr.message;
     }
 
     if (!savedInSupa) {
@@ -323,6 +316,10 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
     if (chatLabel) chatLabel.textContent = `${client.name} (${client.niche})`;
     
     console.log(`[Onboarding] Cliente "${client.name}" carregado para Onboarding.`);
+    
+    if (window.selectActiveClient) {
+      window.selectActiveClient(client.id);
+    }
   }
 };
 

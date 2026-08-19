@@ -137,61 +137,49 @@ app.get('/api/clients', tenantAuthMiddleware, async (req: Request, res: Response
 
 /**
  * POST /api/clients - Cadastra um novo cliente na tabela 'clients' do Supabase e retorna seu ID
+ * SCHEMA REAL: id, agency_id, organization_id, name, niche, website, previous_agency_notes, status, created_at, user_id, monthly_budget
  */
 app.post('/api/clients', tenantAuthMiddleware, async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    const { name, niche, sanitized_history, website, previous_agency_notes, meta_ad_account_id, meta_pixel_id, google_customer_id } = req.body;
+    const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
 
     if (!name || !niche) {
       return res.status(400).json({ error: 'Nome e Nicho do cliente são obrigatórios.' });
     }
 
+    // Payload alinhado 100% com o schema real do Supabase
+    const insertPayload = {
+      organization_id: organizationId,
+      name,
+      niche,
+      status: 'active',
+      website: website || null,
+      previous_agency_notes: sanitized_history || previous_agency_notes || null,
+    };
+
+    console.log('[Server] Inserindo cliente:', JSON.stringify(insertPayload));
+
     let clientRecord: any = null;
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([
-          {
-            organization_id: organizationId,
-            name,
-            niche,
-            status: 'active',
-            website: website || null,
-            previous_agency_notes: sanitized_history || previous_agency_notes || null,
-            meta_ad_account_id: meta_ad_account_id || null,
-            meta_pixel_id: meta_pixel_id || null,
-            google_customer_id: google_customer_id || null,
-          }
-        ])
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([insertPayload])
+      .select()
+      .single();
 
-      if (!error && data) {
-        clientRecord = data;
-      }
-    } catch (e) {
-      console.warn('[Server] Supabase fallback na gravação de cliente.');
-    }
-
-    if (!clientRecord) {
-      clientRecord = {
-        id: 'client_' + Date.now(),
-        organization_id: organizationId,
-        name,
-        niche,
-        status: 'active',
-        website: website || null,
-        previous_agency_notes: sanitized_history || previous_agency_notes || null,
-        meta_ad_account_id: meta_ad_account_id || null,
-        meta_pixel_id: meta_pixel_id || null,
-        google_customer_id: google_customer_id || null,
-        created_at: new Date().toISOString(),
-      };
+    if (!error && data) {
+      clientRecord = data;
+      console.log('[Server] ✅ Cliente salvo no Supabase:', clientRecord.id);
+    } else {
+      console.error('[Server] Supabase ERRO ao salvar cliente:', error?.message, error?.details);
+      return res.status(500).json({
+        error: `Erro Supabase: ${error?.message}`,
+        details: error?.details
+      });
     }
 
     // Adiciona o novo cliente no topo do repositório local para disponibilização imediata
-    if (!localClientsStore.some(c => c.id === clientRecord.id)) {
+    if (!localClientsStore.some((c: any) => c.id === clientRecord.id)) {
       localClientsStore.unshift(clientRecord);
       saveClientsToDisk(localClientsStore);
     }
