@@ -80,31 +80,7 @@
         user-select: none;
       }
 
-      /* BOTÃO DISCRETO PARA ATIVAR O MODO ADMIN/CALIBRAÇÃO NA TELA */
-      .admin-trigger-btn {
-        position: fixed;
-        top: 12px;
-        right: 12px;
-        z-index: 10001;
-        background: rgba(0, 255, 170, 0.1);
-        border: 1px solid var(--neon-color);
-        color: var(--neon-color);
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: bold;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        transition: all 0.2s ease;
-        box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
-        font-family: 'Consolas', 'Courier New', monospace;
-      }
-      .admin-trigger-btn:hover {
-        background: rgba(0, 255, 170, 0.25);
-        box-shadow: 0 0 15px var(--neon-color);
-      }
-
-      /* BARRA DE MODO DE TESTE NO TOPO */
+      /* BARRA DE MODO DE TESTE NO TOPO (SECRETA) */
       .test-toolbar {
         position: fixed;
         top: 10px;
@@ -126,11 +102,10 @@
       }
       .test-toolbar.active-admin { display: flex; }
       .test-toolbar label, .test-toolbar button { color: var(--neon-color); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-      .file-btn, .toggle-btn { background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.35); color: var(--neon-color); padding: 5px 12px; border-radius: 14px; font-size: 11px; cursor: pointer; transition: all 0.2s ease; }
-      .file-btn:hover, .toggle-btn:hover { background: rgba(0, 255, 170, 0.3); border-color: var(--neon-color); box-shadow: 0 0 10px rgba(0, 255, 170, 0.5); }
-      .hidden-input { display: none; }
+      .toggle-btn { background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.35); color: var(--neon-color); padding: 5px 12px; border-radius: 14px; font-size: 11px; cursor: pointer; transition: all 0.2s ease; }
+      .toggle-btn:hover { background: rgba(0, 255, 170, 0.3); border-color: var(--neon-color); box-shadow: 0 0 10px rgba(0, 255, 170, 0.5); }
 
-      /* PAINEL LATERAL ESQUERDO */
+      /* PAINEL LATERAL ESQUERDO SECRETO */
       .calibration-panel {
         display: none; position: fixed; top: 60px; left: 15px; z-index: 9999; background: rgba(2, 10, 18, var(--panel-opacity));
         border: 1px solid var(--neon-color); border-radius: 16px; padding: 14px 18px; gap: 10px; backdrop-filter: blur(16px);
@@ -145,65 +120,32 @@
       .control-group input[type="color"] { width: 110px; height: 22px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
       .control-group input[type="checkbox"] { accent-color: var(--neon-color); width: 16px; height: 16px; cursor: pointer; }
 
-      /* 1. CAMADA DE FUNDO REAL */
-      .bg-layer { position: fixed; inset: -40px; background-image: url('fundo.jpg.jpg'), url('fundo.jpg'), url('fundo.png'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; transform: translateZ(-40px) scale(1.06); transition: transform 0.08s ease-out; filter: brightness(0.9) contrast(1.1); }
+      /* 1. CAMADA DE FUNDO REAL PUXANDO DA PASTA */
+      .bg-layer { position: fixed; inset: -40px; background-image: url('fundo.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; transform: translateZ(-40px) scale(1.06); transition: transform 0.08s ease-out; filter: brightness(0.9) contrast(1.1); }
       .scanlines { position: fixed; inset: 0; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.35)); background-size: 100% 4px; z-index: 2; pointer-events: none; opacity: 0.4; }
       .radial-overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(0, 255, 170, 0.05) 0%, rgba(2, 7, 13, 0.8) 80%); z-index: 3; pointer-events: none; }
 
       /* 2. ETAPA DE CENTRALIZAÇÃO ABSOLUTA NO CENTRO DA TELA */
       .terminal-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; perspective: 1200px; }
       .terminal-container { position: relative; display: inline-flex; align-items: center; justify-content: center; height: var(--terminal-max-height); max-height: 860px; pointer-events: auto; transform-style: preserve-3d; transition: transform 0.08s ease-out; container-type: size; }
+      
+      /* PUXANDO O TERMINAL DA PASTA */
       .terminal-base-img { display: block; height: 100%; width: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 25px rgba(0, 255, 170, 0.25)); z-index: 10; }
 
-      /* 3. LOGO DO SISTEMA POSICIONADA ACIMA DO TERMINAL */
+      /* 3. LOGO DO SISTEMA PUXANDO DA PASTA */
       .logo-box { position: absolute; top: calc(var(--logo-top) + var(--logo-offset-y)); left: calc(50% + var(--logo-offset-x)); transform: translateX(-50%); width: var(--logo-width); z-index: 35; display: var(--logo-display); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; transition: all 0.08s ease-out; font-family: 'Consolas', 'Courier New', monospace;}
-      .logo-img { width: 100%; height: auto; max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-color)) drop-shadow(0 0 22px var(--neon-color)); display: none; }
-      .logo-text-fallback { color: var(--neon-color); font-size: clamp(14px, 3vh, 26px); font-weight: 900; letter-spacing: 5px; text-transform: uppercase; text-shadow: 0 0 10px var(--neon-color), 0 0 22px var(--neon-color); white-space: nowrap; }
+      .logo-img { width: 100%; height: auto; max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-color)) drop-shadow(0 0 22px var(--neon-color)); display: block; }
 
       /* 4. OLHO / PUPILA / SCANNER DESTACADO */
       .eye-scanner-box { 
-        position: absolute; 
-        top: calc(var(--eye-top) + var(--eye-offset-y)); 
-        left: calc(50% + var(--eye-offset-x)); 
-        transform: translateX(-50%); 
-        width: var(--eye-width); 
-        aspect-ratio: 1 / 1; 
-        border-radius: 50%; 
-        z-index: 30; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        overflow: hidden; 
-        pointer-events: none; 
-        box-shadow: inset 0 0 12px var(--neon-color), 0 0 18px var(--neon-color); 
-        border: 1px solid var(--neon-color);
+        position: absolute; top: calc(var(--eye-top) + var(--eye-offset-y)); left: calc(50% + var(--eye-offset-x)); 
+        transform: translateX(-50%); width: var(--eye-width); aspect-ratio: 1 / 1; border-radius: 50%; z-index: 30; 
+        display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; 
+        box-shadow: inset 0 0 12px var(--neon-color), 0 0 18px var(--neon-color); border: 1px solid var(--neon-color);
       }
-      .eye-glow { 
-        position: absolute; 
-        inset: 0; 
-        border-radius: 50%; 
-        background: radial-gradient(circle at center, var(--neon-color) 0%, rgba(0, 255, 170, 0.35) 60%, transparent 100%); 
-        box-shadow: 0 0 20px var(--neon-color); 
-        animation: eyePulse 2.5s infinite ease-in-out; 
-      }
-      .eye-pupil-center {
-        position: absolute;
-        width: 38%;
-        height: 38%;
-        border-radius: 50%;
-        background: #ffffff;
-        box-shadow: 0 0 12px #ffffff, 0 0 25px var(--neon-color);
-        animation: pupilFlicker 3s infinite ease-in-out;
-      }
-      .eye-laser { 
-        position: absolute; 
-        width: 100%; 
-        height: 3px; 
-        background: linear-gradient(90deg, transparent, var(--neon-color), #ffffff, var(--neon-color), transparent); 
-        box-shadow: 0 0 10px var(--neon-color), 0 0 20px #ffffff; 
-        top: 0; 
-        animation: sweepLaser 1.8s infinite alternate ease-in-out; 
-      }
+      .eye-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at center, var(--neon-color) 0%, rgba(0, 255, 170, 0.35) 60%, transparent 100%); box-shadow: 0 0 20px var(--neon-color); animation: eyePulse 2.5s infinite ease-in-out; }
+      .eye-pupil-center { position: absolute; width: 38%; height: 38%; border-radius: 50%; background: #ffffff; box-shadow: 0 0 12px #ffffff, 0 0 25px var(--neon-color); animation: pupilFlicker 3s infinite ease-in-out; }
+      .eye-laser { position: absolute; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--neon-color), #ffffff, var(--neon-color), transparent); box-shadow: 0 0 10px var(--neon-color), 0 0 20px #ffffff; top: 0; animation: sweepLaser 1.8s infinite alternate ease-in-out; }
 
       /* 5. VISOR COM FORMULÁRIO DE LOGIN INTEGRADO */
       .visor-overlay { position: absolute; top: calc(var(--visor-top) + var(--visor-offset-y)); left: calc(50% + var(--visor-offset-x)); transform: translateX(-50%); width: var(--visor-width); height: var(--visor-height); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; font-family: 'Consolas', 'Courier New', monospace; }
@@ -233,13 +175,8 @@
       @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
     </style>
 
-    <button class="admin-trigger-btn" onclick="toggleAdminMode()">🎛️ CALIBRAÇÃO / ADMIN</button>
-
     <div class="test-toolbar" id="testToolbar">
-      <label class="file-btn">🖼️ Fundo <input type="file" id="bgFileInput" accept="image/*" class="hidden-input"></label>
-      <label class="file-btn">📟 Terminal <input type="file" id="terminalFileInput" accept="image/*" class="hidden-input"></label>
-      <label class="file-btn">🏷️ Logo <input type="file" id="logoFileInput" accept="image/*" class="hidden-input"></label>
-      <button class="toggle-btn" onclick="toggleCalib()">🎛️ Painel de Calibração</button>
+      <button class="toggle-btn" onclick="toggleCalib()">🎛️ Abrir Painel de Calibração</button>
     </div>
 
     <div class="calibration-panel" id="calibPanel">
@@ -354,14 +291,13 @@
       <div class="terminal-container" id="terminal">
 
         <div class="logo-box" id="logoBox">
-          <img id="logoImgElement" class="logo-img" alt="Logo do Sistema">
-          <span id="logoTextFallback" class="logo-text-fallback">ORACULUM</span>
+          <img id="logoImgElement" src="logo.png" class="logo-img" alt="Logo do Sistema" onerror="this.style.display='none'; document.getElementById('logoTextFallback').style.display='block';">
+          <span id="logoTextFallback" class="logo-text-fallback" style="display: none;">ORACULUM</span>
         </div>
 
         <img 
           id="terminalImgElement"
-          src="terminal.png.jpg" 
-          onerror="this.onerror=null; this.src='Security_login_terminal_Prancheta-1.jpg';" 
+          src="terminal.png" 
           class="terminal-base-img" 
           alt="Terminal de Segurança"
         >
@@ -421,7 +357,7 @@
       const calibPanel = document.getElementById('calibPanel');
       const testToolbar = document.getElementById('testToolbar');
 
-      // ATIVAÇÃO DO MODO ADMINISTRADOR
+      // ATIVAÇÃO DO MODO ADMINISTRADOR SECRETO (Ctrl + Shift + A ou duplo clique na mensagem inferior)
       let isAdmin = false;
       function toggleAdminMode() {
         isAdmin = !isAdmin;
@@ -433,36 +369,6 @@
           calibPanel.classList.remove('active');
         }
       }
-      if (window.location.search.includes('admin=true')) toggleAdminMode();
-
-      // UPLOADS LOCAIS DE CALIBRAÇÃO PREVIEW (Logo, Fundo, Terminal)
-      document.getElementById('bgFileInput').addEventListener('change', function(e) {
-        if (e.target.files && e.target.files[0]) {
-          const reader = new FileReader();
-          reader.onload = (evt) => bgLayer.style.backgroundImage = `url('${evt.target.result}')`;
-          reader.readAsDataURL(e.target.files[0]);
-        }
-      });
-      document.getElementById('terminalFileInput').addEventListener('change', function(e) {
-        if (e.target.files && e.target.files[0]) {
-          const reader = new FileReader();
-          reader.onload = (evt) => document.getElementById('terminalImgElement').src = evt.target.result;
-          reader.readAsDataURL(e.target.files[0]);
-        }
-      });
-      document.getElementById('logoFileInput').addEventListener('change', function(e) {
-        if (e.target.files && e.target.files[0]) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            const img = document.getElementById('logoImgElement');
-            const fallback = document.getElementById('logoTextFallback');
-            img.src = evt.target.result;
-            img.style.display = 'block';
-            if (fallback) fallback.style.display = 'none';
-          };
-          reader.readAsDataURL(e.target.files[0]);
-        }
-      });
 
       // SISTEMA DE CALIBRAÇÃO COM ATUALIZAÇÃO EM TEMPO REAL DE TODOS OS VALORES NO DOM
       function toggleCalib() { calibPanel.classList.toggle('active'); }
@@ -595,7 +501,7 @@
       function submitPin() {
         if (pinCode.length === 0) return;
 
-        // --- MÁGICA DO TOKEN ÚNICO (OPÇÃO 1) ---
+        // --- MÁGICA DO TOKEN ÚNICO ---
         const emailGerado = pinCode + "@oraculum.com";
         
         document.getElementById('login-email').value = emailGerado;
