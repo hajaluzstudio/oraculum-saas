@@ -226,6 +226,68 @@ app.get('/*.svg', (req: Request, res: Response) => {
   }
 });
 
+// SERVIR IMAGENS (fundo.jpg, logo.png, terminal.png e qualquer .png/.jpg/.jpeg/.gif/.webp/.ico)
+app.get('/*.jpg', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const imgPath = getStaticFilePath(filename);
+    if (fs.existsSync(imgPath)) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      setNoCacheHeaders(res);
+      return res.status(200).sendFile(imgPath);
+    }
+    return res.status(404).send(`Imagem não encontrada: ${filename}`);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar imagem: ' + e.message);
+  }
+});
+
+app.get('/*.jpeg', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const imgPath = getStaticFilePath(filename);
+    if (fs.existsSync(imgPath)) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      setNoCacheHeaders(res);
+      return res.status(200).sendFile(imgPath);
+    }
+    return res.status(404).send(`Imagem não encontrada: ${filename}`);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar imagem: ' + e.message);
+  }
+});
+
+app.get('/*.png', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const imgPath = getStaticFilePath(filename);
+    if (fs.existsSync(imgPath)) {
+      res.setHeader('Content-Type', 'image/png');
+      setNoCacheHeaders(res);
+      return res.status(200).sendFile(imgPath);
+    }
+    return res.status(404).send(`Imagem não encontrada: ${filename}`);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar imagem: ' + e.message);
+  }
+});
+
+app.get('/*.webp', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const imgPath = getStaticFilePath(filename);
+    if (fs.existsSync(imgPath)) {
+      res.setHeader('Content-Type', 'image/webp');
+      setNoCacheHeaders(res);
+      return res.status(200).sendFile(imgPath);
+    }
+    return res.status(404).send(`Imagem não encontrada: ${filename}`);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar imagem: ' + e.message);
+  }
+});
+
+
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
