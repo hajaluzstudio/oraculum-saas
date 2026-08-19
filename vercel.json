@@ -16,6 +16,9 @@
     }
   ],
   "routes": [
+    { "src": "/favicon.ico", "dest": "/public/favicon.ico" },
+    { "src": "/robots.txt", "dest": "/public/robots.txt" },
+    { "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2))$", "dest": "/public/$1" },
     { "src": "/api/onboarding(.*)", "dest": "/api/index" },
     { "src": "/api/niche-dossier(.*)", "dest": "/api/index" },
     { "src": "/api/bi(.*)", "dest": "/api/index" },
