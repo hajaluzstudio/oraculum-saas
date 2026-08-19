@@ -7,15 +7,12 @@
   <link rel="icon" type="image/svg+xml" href="logo-oraculum-03.svg">
   <meta name="description" content="Plataforma SaaS proprietária de Marketing Híbrido orientada a lucro líquido, previsibilidade e relação LTV/CAC mínima de 3:1.">
   
-  <!-- Fonts Google: Outfit & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Icones FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Chart.js para Gráficos Interativos de BI -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -24,12 +21,15 @@
 
   <link rel="stylesheet" href="styles.css?v=12.0.0">
   
-  <!-- Configurações de PWA Mobile -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0B0F19">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Oraculum">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
 
   <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-[#02070d] relative overflow-hidden" style="display: flex !important;">
 
@@ -37,25 +37,29 @@
       /* VARIÁVEIS DE CALIBRAÇÃO PROPORCIONAIS */
       :root {
         --neon-color: #00ffaa;
-        --panel-opacity: 0.92;
+        --panel-opacity: 0.95;
 
+        /* Logo do Sistema */
         --logo-display: flex;
         --logo-top: -18%;
         --logo-width: 42%;
         --logo-offset-x: 0%;
         --logo-offset-y: 0%;
 
+        /* Olho / Pupila */
         --eye-top: 10.8%;
-        --eye-width: 12%;           
+        --eye-width: 14%;           
         --eye-offset-x: 0%;
         --eye-offset-y: 0%;
 
+        /* Visor do Terminal */
         --visor-top: 36.8%;
         --visor-width: 58%;
         --visor-height: 12.5%;
         --visor-offset-x: 0%;
         --visor-offset-y: 0%;
 
+        /* Teclado Numérico */
         --keypad-top: 56.2%;
         --keypad-width: 38%;         
         --keypad-height: 33%;
@@ -65,27 +69,60 @@
         --keypad-offset-y: 0%;
         --font-size-num: 2.8cqh;
 
+        /* Tamanho da Imagem do Terminal */
         --terminal-max-height: 82vh;
       }
 
-      /* BARRA DE MODO DE TESTE NO TOPO (OCULTA POR PADRÃO PARA O USUÁRIO) */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        user-select: none;
+      }
+
+      /* BOTÃO DISCRETO PARA ATIVAR O MODO ADMIN/CALIBRAÇÃO NA TELA */
+      .admin-trigger-btn {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 10001;
+        background: rgba(0, 255, 170, 0.1);
+        border: 1px solid var(--neon-color);
+        color: var(--neon-color);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        transition: all 0.2s ease;
+        box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+        font-family: 'Consolas', 'Courier New', monospace;
+      }
+      .admin-trigger-btn:hover {
+        background: rgba(0, 255, 170, 0.25);
+        box-shadow: 0 0 15px var(--neon-color);
+      }
+
+      /* BARRA DE MODO DE TESTE NO TOPO */
       .test-toolbar {
         position: fixed;
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 1000;
+        z-index: 10000;
         background: rgba(4, 15, 24, 0.95);
         border: 1px solid var(--neon-color);
         border-radius: 20px;
         padding: 6px 16px;
-        display: none; /* Oculto para usuários comuns */
+        display: none;
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
         gap: 10px;
         backdrop-filter: blur(12px);
         box-shadow: 0 0 20px rgba(0, 255, 170, 0.3);
+        font-family: 'Consolas', 'Courier New', monospace;
       }
       .test-toolbar.active-admin { display: flex; }
       .test-toolbar label, .test-toolbar button { color: var(--neon-color); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
@@ -95,9 +132,10 @@
 
       /* PAINEL LATERAL ESQUERDO */
       .calibration-panel {
-        display: none; position: fixed; top: 60px; left: 20px; z-index: 999; background: rgba(2, 10, 18, var(--panel-opacity));
+        display: none; position: fixed; top: 60px; left: 15px; z-index: 9999; background: rgba(2, 10, 18, var(--panel-opacity));
         border: 1px solid var(--neon-color); border-radius: 16px; padding: 14px 18px; gap: 10px; backdrop-filter: blur(16px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 255, 170, 0.2); max-height: 82vh; width: 310px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--neon-color) transparent;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 255, 170, 0.25); max-height: 85vh; width: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--neon-color) transparent;
+        font-family: 'Consolas', 'Courier New', monospace;
       }
       .calibration-panel.active { display: flex; flex-direction: column; }
       .panel-section-title { font-size: 11px; font-weight: 800; color: var(--neon-color); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(0, 255, 170, 0.25); padding-bottom: 3px; margin-top: 6px; }
@@ -115,35 +153,76 @@
       /* 2. ETAPA DE CENTRALIZAÇÃO ABSOLUTA NO CENTRO DA TELA */
       .terminal-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; perspective: 1200px; }
       .terminal-container { position: relative; display: inline-flex; align-items: center; justify-content: center; height: var(--terminal-max-height); max-height: 860px; pointer-events: auto; transform-style: preserve-3d; transition: transform 0.08s ease-out; container-type: size; }
-      .terminal-base-img { display: block; height: 100%; width: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 25px rgba(0, 255, 170, 0.25)); }
+      .terminal-base-img { display: block; height: 100%; width: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 25px rgba(0, 255, 170, 0.25)); z-index: 10; }
 
       /* 3. LOGO DO SISTEMA POSICIONADA ACIMA DO TERMINAL */
-      .logo-box { position: absolute; top: calc(var(--logo-top) + var(--logo-offset-y)); left: calc(50% + var(--logo-offset-x)); transform: translateX(-50%); width: var(--logo-width); z-index: 25; display: var(--logo-display); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; transition: all 0.08s ease-out; }
-      .logo-img { width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-color)) drop-shadow(0 0 22px var(--neon-color)); display: none; }
+      .logo-box { position: absolute; top: calc(var(--logo-top) + var(--logo-offset-y)); left: calc(50% + var(--logo-offset-x)); transform: translateX(-50%); width: var(--logo-width); z-index: 35; display: var(--logo-display); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; transition: all 0.08s ease-out; font-family: 'Consolas', 'Courier New', monospace;}
+      .logo-img { width: 100%; height: auto; max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-color)) drop-shadow(0 0 22px var(--neon-color)); display: none; }
       .logo-text-fallback { color: var(--neon-color); font-size: clamp(14px, 3vh, 26px); font-weight: 900; letter-spacing: 5px; text-transform: uppercase; text-shadow: 0 0 10px var(--neon-color), 0 0 22px var(--neon-color); white-space: nowrap; }
 
-      /* A) OLHO / SCANNER DENTRO DA PUPILA */
-      .eye-scanner-box { position: absolute; top: calc(var(--eye-top) + var(--eye-offset-y)); left: calc(50% + var(--eye-offset-x)); transform: translateX(-50%); width: var(--eye-width); aspect-ratio: 1 / 1; border-radius: 50%; z-index: 12; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; box-shadow: inset 0 0 8px var(--neon-color); }
-      .eye-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at center, var(--neon-color) 0%, rgba(0, 255, 170, 0.25) 60%, transparent 100%); box-shadow: 0 0 12px var(--neon-color); animation: eyePulse 3s infinite ease-in-out; }
-      .eye-laser { position: absolute; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--neon-color), #ffffff, transparent); box-shadow: 0 0 6px var(--neon-color); top: 0; animation: sweepLaser 2.2s infinite alternate ease-in-out; }
+      /* 4. OLHO / PUPILA / SCANNER DESTACADO */
+      .eye-scanner-box { 
+        position: absolute; 
+        top: calc(var(--eye-top) + var(--eye-offset-y)); 
+        left: calc(50% + var(--eye-offset-x)); 
+        transform: translateX(-50%); 
+        width: var(--eye-width); 
+        aspect-ratio: 1 / 1; 
+        border-radius: 50%; 
+        z-index: 30; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        overflow: hidden; 
+        pointer-events: none; 
+        box-shadow: inset 0 0 12px var(--neon-color), 0 0 18px var(--neon-color); 
+        border: 1px solid var(--neon-color);
+      }
+      .eye-glow { 
+        position: absolute; 
+        inset: 0; 
+        border-radius: 50%; 
+        background: radial-gradient(circle at center, var(--neon-color) 0%, rgba(0, 255, 170, 0.35) 60%, transparent 100%); 
+        box-shadow: 0 0 20px var(--neon-color); 
+        animation: eyePulse 2.5s infinite ease-in-out; 
+      }
+      .eye-pupil-center {
+        position: absolute;
+        width: 38%;
+        height: 38%;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 0 12px #ffffff, 0 0 25px var(--neon-color);
+        animation: pupilFlicker 3s infinite ease-in-out;
+      }
+      .eye-laser { 
+        position: absolute; 
+        width: 100%; 
+        height: 3px; 
+        background: linear-gradient(90deg, transparent, var(--neon-color), #ffffff, var(--neon-color), transparent); 
+        box-shadow: 0 0 10px var(--neon-color), 0 0 20px #ffffff; 
+        top: 0; 
+        animation: sweepLaser 1.8s infinite alternate ease-in-out; 
+      }
 
-      /* B) VISOR COM O FORMULÁRIO DE LOGIN INTEGRADO */
-      .visor-overlay { position: absolute; top: calc(var(--visor-top) + var(--visor-offset-y)); left: calc(50% + var(--visor-offset-x)); transform: translateX(-50%); width: var(--visor-width); height: var(--visor-height); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; }
+      /* 5. VISOR COM FORMULÁRIO DE LOGIN INTEGRADO */
+      .visor-overlay { position: absolute; top: calc(var(--visor-top) + var(--visor-offset-y)); left: calc(50% + var(--visor-offset-x)); transform: translateX(-50%); width: var(--visor-width); height: var(--visor-height); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; font-family: 'Consolas', 'Courier New', monospace; }
       .visor-text { color: var(--neon-color); font-size: clamp(10px, 2.2cqh, 16px); font-weight: 900; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 8px var(--neon-color), 0 0 16px var(--neon-color); animation: glitchFlicker 3.5s infinite ease-in-out; white-space: nowrap; }
       .pin-display { display: flex; justify-content: center; gap: 10px; margin-top: 6px; }
       .pin-dot { width: clamp(8px, 1.4cqh, 14px); height: clamp(8px, 1.4cqh, 14px); border: 1.5px solid var(--neon-color); border-radius: 50%; background: transparent; box-shadow: inset 0 0 4px rgba(0, 255, 170, 0.3); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
       .pin-dot.active { background: var(--neon-color); box-shadow: 0 0 12px var(--neon-color), 0 0 20px var(--neon-color); transform: scale(1.25); }
 
-      /* C) GRID DO TECLADO NUMÉRICO SOBREPOSTO */
-      .keypad-overlay { position: absolute; top: calc(var(--keypad-top) + var(--keypad-offset-y)); left: calc(50% + var(--keypad-offset-x)); transform: translateX(-50%); width: var(--keypad-width); height: var(--keypad-height); z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); column-gap: var(--keypad-gap-x); row-gap: var(--keypad-gap-y); pointer-events: auto; }
+      /* 6. GRID DO TECLADO NUMÉRICO SOBREPOSTO */
+      .keypad-overlay { position: absolute; top: calc(var(--keypad-top) + var(--keypad-offset-y)); left: calc(50% + var(--keypad-offset-x)); transform: translateX(-50%); width: var(--keypad-width); height: var(--keypad-height); z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); column-gap: var(--keypad-gap-x); row-gap: var(--keypad-gap-y); pointer-events: auto; font-family: 'Consolas', 'Courier New', monospace;}
       .key-btn { background: rgba(0, 255, 170, 0.02); border: 1px solid rgba(0, 255, 170, 0.18); border-radius: 8px; color: var(--neon-color); font-size: var(--font-size-num); font-weight: 700; cursor: pointer; backdrop-filter: blur(1px); text-shadow: 0 0 8px var(--neon-color); display: flex; align-items: center; justify-content: center; transition: all 0.12s ease; }
       .key-btn:hover { border-color: var(--neon-color); background: rgba(0, 255, 170, 0.22); box-shadow: 0 0 16px var(--neon-color), inset 0 0 10px rgba(0, 255, 170, 0.3); color: #ffffff; transform: scale(1.05); }
       .key-btn:active { transform: scale(0.92); background: rgba(0, 255, 170, 0.5); box-shadow: 0 0 25px var(--neon-color); }
       .key-btn.action-btn { font-size: calc(var(--font-size-num) * 0.85); color: var(--neon-color); }
-      .status-msg { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: 2px; color: var(--neon-color); text-transform: uppercase; text-align: center; white-space: nowrap; opacity: 0.8; cursor: pointer; }
+      .status-msg { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: 2px; color: var(--neon-color); text-transform: uppercase; text-align: center; white-space: nowrap; opacity: 0.8; cursor: pointer; font-family: 'Consolas', 'Courier New', monospace;}
 
       /* ANIMAÇÕES DE EFEITO VISUAL */
       @keyframes eyePulse { 0%, 100% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.1); } }
+      @keyframes pupilFlicker { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 1; } }
       @keyframes sweepLaser { 0% { top: 0%; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.2; } }
       @keyframes glitchFlicker { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px var(--neon-color)); } 18% { opacity: 0.9; } 19% { opacity: 0.2; transform: scaleY(0.92); } 20% { opacity: 1; transform: scaleY(1); } 58% { opacity: 1; } 59% { opacity: 0.1; filter: none; } 60% { opacity: 0.8; } 61% { opacity: 0.3; } 62% { opacity: 1; filter: drop-shadow(0 0 10px var(--neon-color)); } }
       
@@ -153,6 +232,8 @@
       .terminal-container.error-shake .pin-dot { border-color: #ff3344; background: #ff3344; box-shadow: 0 0 15px #ff3344; }
       @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
     </style>
+
+    <button class="admin-trigger-btn" onclick="toggleAdminMode()">🎛️ CALIBRAÇÃO / ADMIN</button>
 
     <div class="test-toolbar" id="testToolbar">
       <label class="file-btn">🖼️ Fundo <input type="file" id="bgFileInput" accept="image/*" class="hidden-input"></label>
@@ -168,8 +249,8 @@
         <input type="color" id="neonColorPicker" value="#00ffaa" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Opacidade Painel (<span id="panelOpacityVal">0.92</span>)</label>
-        <input type="range" id="panelOpacitySlider" min="0.2" max="1.0" step="0.05" value="0.92" oninput="updateCalib()">
+        <label>Opacidade Painel (<span id="panelOpacityVal">0.95</span>)</label>
+        <input type="range" id="panelOpacitySlider" min="0.2" max="1.0" step="0.05" value="0.95" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Altura Terminal (<span id="heightVal">82vh</span>)</label>
@@ -183,61 +264,61 @@
       </div>
       <div class="control-group">
         <label>Logo Y (Subir/Descer) (<span id="logoOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="logoOffsetYSlider" min="-50" max="40" step="0.5" value="0.0" oninput="updateCalib()">
+        <input type="range" id="logoOffsetYSlider" min="-60" max="60" step="0.5" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Logo X (<span id="logoOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="logoOffsetXSlider" min="-30" max="30" step="0.5" value="0.0" oninput="updateCalib()">
+        <label>Logo X (Esquerda/Direita) (<span id="logoOffsetXVal">0.0%</span>)</label>
+        <input type="range" id="logoOffsetXSlider" min="-50" max="50" step="0.5" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Logo Largura (<span id="logoWidthVal">42.0%</span>)</label>
-        <input type="range" id="logoWidthSlider" min="10" max="100" step="0.5" value="42.0" oninput="updateCalib()">
+        <input type="range" id="logoWidthSlider" min="5" max="100" step="0.5" value="42.0" oninput="updateCalib()">
       </div>
 
       <div class="panel-section-title">Ajuste da Pupila / Olho</div>
       <div class="control-group">
-        <label>Olho Topo (<span id="eyeTopVal">10.8%</span>)</label>
-        <input type="range" id="eyeTopSlider" min="-20" max="80" step="0.1" value="10.8" oninput="updateCalib()">
+        <label>Olho Topo Y (<span id="eyeTopVal">10.8%</span>)</label>
+        <input type="range" id="eyeTopSlider" min="-50" max="100" step="0.1" value="10.8" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Olho Tamanho (<span id="eyeWidthVal">12.0%</span>)</label>
-        <input type="range" id="eyeWidthSlider" min="1" max="50" step="0.1" value="12.0" oninput="updateCalib()">
+        <label>Olho Tamanho (<span id="eyeWidthVal">14.0%</span>)</label>
+        <input type="range" id="eyeWidthSlider" min="1" max="60" step="0.1" value="14.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Olho X (<span id="eyeOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="eyeOffsetXSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Olho X (Esquerda/Direita) (<span id="eyeOffsetXVal">0.0%</span>)</label>
+        <input type="range" id="eyeOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Olho Y (Subir/Descer) (<span id="eyeOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="eyeOffsetYSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Olho Y Offset (<span id="eyeOffsetYVal">0.0%</span>)</label>
+        <input type="range" id="eyeOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
 
       <div class="panel-section-title">Ajuste do Visor</div>
       <div class="control-group">
-        <label>Visor Topo (<span id="visorTopVal">36.8%</span>)</label>
-        <input type="range" id="visorTopSlider" min="-20" max="80" step="0.1" value="36.8" oninput="updateCalib()">
+        <label>Visor Topo Y (<span id="visorTopVal">36.8%</span>)</label>
+        <input type="range" id="visorTopSlider" min="-50" max="100" step="0.1" value="36.8" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Visor Largura (<span id="visorWidthVal">58.0%</span>)</label>
         <input type="range" id="visorWidthSlider" min="5" max="100" step="0.5" value="58.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Visor X (<span id="visorOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="visorOffsetXSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Visor X (Esquerda/Direita) (<span id="visorOffsetXVal">0.0%</span>)</label>
+        <input type="range" id="visorOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Visor Y (Subir/Descer) (<span id="visorOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="visorOffsetYSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Visor Y Offset (<span id="visorOffsetYVal">0.0%</span>)</label>
+        <input type="range" id="visorOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
 
       <div class="panel-section-title">Ajuste do Teclado Numérico</div>
       <div class="control-group">
-        <label>Teclado Topo (<span id="keypadTopVal">56.2%</span>)</label>
-        <input type="range" id="keypadTopSlider" min="-20" max="90" step="0.1" value="56.2" oninput="updateCalib()">
+        <label>Teclado Topo Y (<span id="keypadTopVal">56.2%</span>)</label>
+        <input type="range" id="keypadTopSlider" min="-50" max="100" step="0.1" value="56.2" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Teclado Altura (<span id="keypadHeightVal">33.0%</span>)</label>
-        <input type="range" id="keypadHeightSlider" min="5" max="70" step="0.5" value="33.0" oninput="updateCalib()">
+        <input type="range" id="keypadHeightSlider" min="5" max="80" step="0.5" value="33.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Teclado Largura (<span id="keypadWidthVal">38.0%</span>)</label>
@@ -245,19 +326,19 @@
       </div>
       <div class="control-group">
         <label>Espaço Horiz (Gap X) (<span id="keypadGapXVal">0.5%</span>)</label>
-        <input type="range" id="keypadGapXSlider" min="0" max="15" step="0.1" value="0.5" oninput="updateCalib()">
+        <input type="range" id="keypadGapXSlider" min="0" max="20" step="0.1" value="0.5" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Espaço Vert (Gap Y) (<span id="keypadGapYVal">1.5%</span>)</label>
-        <input type="range" id="keypadGapYSlider" min="0" max="15" step="0.1" value="1.5" oninput="updateCalib()">
+        <input type="range" id="keypadGapYSlider" min="0" max="20" step="0.1" value="1.5" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Teclado X (<span id="keypadOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="keypadOffsetXSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Teclado X (Esquerda/Direita) (<span id="keypadOffsetXVal">0.0%</span>)</label>
+        <input type="range" id="keypadOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
-        <label>Teclado Y (Subir/Descer) (<span id="keypadOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="keypadOffsetYSlider" min="-30" max="30" step="0.1" value="0.0" oninput="updateCalib()">
+        <label>Teclado Y Offset (<span id="keypadOffsetYVal">0.0%</span>)</label>
+        <input type="range" id="keypadOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
       </div>
       <div class="control-group">
         <label>Tamanho Fonte (<span id="fontSizeNumVal">2.8cqh</span>)</label>
@@ -285,8 +366,9 @@
           alt="Terminal de Segurança"
         >
 
-        <div class="eye-scanner-box">
+        <div class="eye-scanner-box" id="eyeScannerBox">
           <div class="eye-glow"></div>
+          <div class="eye-pupil-center"></div>
           <div class="eye-laser"></div>
         </div>
 
@@ -339,7 +421,7 @@
       const calibPanel = document.getElementById('calibPanel');
       const testToolbar = document.getElementById('testToolbar');
 
-      // ATIVAÇÃO DO MODO ADMINISTRADOR (SÓ APARECE QUANDO VOCÊ QUISER)
+      // ATIVAÇÃO DO MODO ADMINISTRADOR
       let isAdmin = false;
       function toggleAdminMode() {
         isAdmin = !isAdmin;
@@ -355,67 +437,122 @@
 
       // UPLOADS LOCAIS DE CALIBRAÇÃO PREVIEW (Logo, Fundo, Terminal)
       document.getElementById('bgFileInput').addEventListener('change', function(e) {
-        if (e.target.files[0]) {
+        if (e.target.files && e.target.files[0]) {
           const reader = new FileReader();
           reader.onload = (evt) => bgLayer.style.backgroundImage = `url('${evt.target.result}')`;
           reader.readAsDataURL(e.target.files[0]);
         }
       });
       document.getElementById('terminalFileInput').addEventListener('change', function(e) {
-        if (e.target.files[0]) {
+        if (e.target.files && e.target.files[0]) {
           const reader = new FileReader();
           reader.onload = (evt) => document.getElementById('terminalImgElement').src = evt.target.result;
           reader.readAsDataURL(e.target.files[0]);
         }
       });
       document.getElementById('logoFileInput').addEventListener('change', function(e) {
-        if (e.target.files[0]) {
+        if (e.target.files && e.target.files[0]) {
           const reader = new FileReader();
           reader.onload = (evt) => {
-            document.getElementById('logoImgElement').src = evt.target.result;
-            document.getElementById('logoImgElement').style.display = 'block';
-            document.getElementById('logoTextFallback').style.display = 'none';
+            const img = document.getElementById('logoImgElement');
+            const fallback = document.getElementById('logoTextFallback');
+            img.src = evt.target.result;
+            img.style.display = 'block';
+            if (fallback) fallback.style.display = 'none';
           };
           reader.readAsDataURL(e.target.files[0]);
         }
       });
 
-      // SISTEMA DE CALIBRAÇÃO
+      // SISTEMA DE CALIBRAÇÃO COM ATUALIZAÇÃO EM TEMPO REAL DE TODOS OS VALORES NO DOM
       function toggleCalib() { calibPanel.classList.toggle('active'); }
+
       function updateCalib() {
         const root = document.documentElement;
-        root.style.setProperty('--terminal-max-height', document.getElementById('heightSlider').value + 'vh');
-        root.style.setProperty('--panel-opacity', document.getElementById('panelOpacitySlider').value);
+
+        const height = document.getElementById('heightSlider').value;
+        const panelOpacity = document.getElementById('panelOpacitySlider').value;
+        const neonColor = document.getElementById('neonColorPicker').value;
+
+        const showLogo = document.getElementById('showLogoCheckbox').checked;
+        const logoOffsetY = document.getElementById('logoOffsetYSlider').value;
+        const logoOffsetX = document.getElementById('logoOffsetXSlider').value;
+        const logoWidth = document.getElementById('logoWidthSlider').value;
+
+        const eyeTop = document.getElementById('eyeTopSlider').value;
+        const eyeWidth = document.getElementById('eyeWidthSlider').value;
+        const eyeOffsetX = document.getElementById('eyeOffsetXSlider').value;
+        const eyeOffsetY = document.getElementById('eyeOffsetYSlider').value;
         
-        root.style.setProperty('--logo-display', document.getElementById('showLogoCheckbox').checked ? 'flex' : 'none');
-        root.style.setProperty('--logo-offset-y', document.getElementById('logoOffsetYSlider').value + '%');
-        root.style.setProperty('--logo-offset-x', document.getElementById('logoOffsetXSlider').value + '%');
-        root.style.setProperty('--logo-width', document.getElementById('logoWidthSlider').value + '%');
+        const visorTop = document.getElementById('visorTopSlider').value;
+        const visorWidth = document.getElementById('visorWidthSlider').value;
+        const visorOffsetX = document.getElementById('visorOffsetXSlider').value;
+        const visorOffsetY = document.getElementById('visorOffsetYSlider').value;
 
-        root.style.setProperty('--eye-top', document.getElementById('eyeTopSlider').value + '%');
-        root.style.setProperty('--eye-width', document.getElementById('eyeWidthSlider').value + '%');
-        root.style.setProperty('--eye-offset-x', document.getElementById('eyeOffsetXSlider').value + '%');
-        root.style.setProperty('--eye-offset-y', document.getElementById('eyeOffsetYSlider').value + '%');
+        const keypadTop = document.getElementById('keypadTopSlider').value;
+        const keypadHeight = document.getElementById('keypadHeightSlider').value;
+        const keypadWidth = document.getElementById('keypadWidthSlider').value;
+        const keypadGapX = document.getElementById('keypadGapXSlider').value;
+        const keypadGapY = document.getElementById('keypadGapYSlider').value;
+        const keypadOffsetX = document.getElementById('keypadOffsetXSlider').value;
+        const keypadOffsetY = document.getElementById('keypadOffsetYSlider').value;
+        const fontSizeNum = document.getElementById('fontSizeNumSlider').value;
 
-        root.style.setProperty('--visor-top', document.getElementById('visorTopSlider').value + '%');
-        root.style.setProperty('--visor-width', document.getElementById('visorWidthSlider').value + '%');
-        root.style.setProperty('--visor-offset-x', document.getElementById('visorOffsetXSlider').value + '%');
-        root.style.setProperty('--visor-offset-y', document.getElementById('visorOffsetYSlider').value + '%');
+        // Atualiza CSS Variables no root
+        root.style.setProperty('--terminal-max-height', height + 'vh');
+        root.style.setProperty('--panel-opacity', panelOpacity);
+        root.style.setProperty('--neon-color', neonColor);
 
-        root.style.setProperty('--keypad-top', document.getElementById('keypadTopSlider').value + '%');
-        root.style.setProperty('--keypad-height', document.getElementById('keypadHeightSlider').value + '%');
-        root.style.setProperty('--keypad-width', document.getElementById('keypadWidthSlider').value + '%');
-        root.style.setProperty('--keypad-gap-x', document.getElementById('keypadGapXSlider').value + '%');
-        root.style.setProperty('--keypad-gap-y', document.getElementById('keypadGapYSlider').value + '%');
-        root.style.setProperty('--keypad-offset-x', document.getElementById('keypadOffsetXSlider').value + '%');
-        root.style.setProperty('--keypad-offset-y', document.getElementById('keypadOffsetYSlider').value + '%');
-        root.style.setProperty('--font-size-num', document.getElementById('fontSizeNumSlider').value + 'cqh');
+        root.style.setProperty('--logo-display', showLogo ? 'flex' : 'none');
+        root.style.setProperty('--logo-offset-y', logoOffsetY + '%');
+        root.style.setProperty('--logo-offset-x', logoOffsetX + '%');
+        root.style.setProperty('--logo-width', logoWidth + '%');
 
-        root.style.setProperty('--neon-color', document.getElementById('neonColorPicker').value);
+        root.style.setProperty('--eye-top', eyeTop + '%');
+        root.style.setProperty('--eye-width', eyeWidth + '%');
+        root.style.setProperty('--eye-offset-x', eyeOffsetX + '%');
+        root.style.setProperty('--eye-offset-y', eyeOffsetY + '%');
 
-        // Atualizar valores nos labels do painel
-        document.getElementById('heightVal').innerText = document.getElementById('heightSlider').value + 'vh';
-        document.getElementById('panelOpacityVal').innerText = document.getElementById('panelOpacitySlider').value;
+        root.style.setProperty('--visor-top', visorTop + '%');
+        root.style.setProperty('--visor-width', visorWidth + '%');
+        root.style.setProperty('--visor-offset-x', visorOffsetX + '%');
+        root.style.setProperty('--visor-offset-y', visorOffsetY + '%');
+
+        root.style.setProperty('--keypad-top', keypadTop + '%');
+        root.style.setProperty('--keypad-height', keypadHeight + '%');
+        root.style.setProperty('--keypad-width', keypadWidth + '%');
+        root.style.setProperty('--keypad-gap-x', keypadGapX + '%');
+        root.style.setProperty('--keypad-gap-y', keypadGapY + '%');
+        root.style.setProperty('--keypad-offset-x', keypadOffsetX + '%');
+        root.style.setProperty('--keypad-offset-y', keypadOffsetY + '%');
+        root.style.setProperty('--font-size-num', fontSizeNum + 'cqh');
+
+        // Atualiza os textos dos labels no painel
+        if (document.getElementById('heightVal')) document.getElementById('heightVal').innerText = height + 'vh';
+        if (document.getElementById('panelOpacityVal')) document.getElementById('panelOpacityVal').innerText = panelOpacity;
+
+        if (document.getElementById('logoOffsetYVal')) document.getElementById('logoOffsetYVal').innerText = logoOffsetY + '%';
+        if (document.getElementById('logoOffsetXVal')) document.getElementById('logoOffsetXVal').innerText = logoOffsetX + '%';
+        if (document.getElementById('logoWidthVal')) document.getElementById('logoWidthVal').innerText = logoWidth + '%';
+
+        if (document.getElementById('eyeTopVal')) document.getElementById('eyeTopVal').innerText = eyeTop + '%';
+        if (document.getElementById('eyeWidthVal')) document.getElementById('eyeWidthVal').innerText = eyeWidth + '%';
+        if (document.getElementById('eyeOffsetXVal')) document.getElementById('eyeOffsetXVal').innerText = eyeOffsetX + '%';
+        if (document.getElementById('eyeOffsetYVal')) document.getElementById('eyeOffsetYVal').innerText = eyeOffsetY + '%';
+
+        if (document.getElementById('visorTopVal')) document.getElementById('visorTopVal').innerText = visorTop + '%';
+        if (document.getElementById('visorWidthVal')) document.getElementById('visorWidthVal').innerText = visorWidth + '%';
+        if (document.getElementById('visorOffsetXVal')) document.getElementById('visorOffsetXVal').innerText = visorOffsetX + '%';
+        if (document.getElementById('visorOffsetYVal')) document.getElementById('visorOffsetYVal').innerText = visorOffsetY + '%';
+
+        if (document.getElementById('keypadTopVal')) document.getElementById('keypadTopVal').innerText = keypadTop + '%';
+        if (document.getElementById('keypadHeightVal')) document.getElementById('keypadHeightVal').innerText = keypadHeight + '%';
+        if (document.getElementById('keypadWidthVal')) document.getElementById('keypadWidthVal').innerText = keypadWidth + '%';
+        if (document.getElementById('keypadGapXVal')) document.getElementById('keypadGapXVal').innerText = keypadGapX + '%';
+        if (document.getElementById('keypadGapYVal')) document.getElementById('keypadGapYVal').innerText = keypadGapY + '%';
+        if (document.getElementById('keypadOffsetXVal')) document.getElementById('keypadOffsetXVal').innerText = keypadOffsetX + '%';
+        if (document.getElementById('keypadOffsetYVal')) document.getElementById('keypadOffsetYVal').innerText = keypadOffsetY + '%';
+        if (document.getElementById('fontSizeNumVal')) document.getElementById('fontSizeNumVal').innerText = fontSizeNum + 'cqh';
       }
 
       // EFEITO 3D PARALLAX SUAVE AO MOVER O MOUSE
@@ -434,8 +571,9 @@
 
       function updateDots() {
         const container = document.getElementById('pin-display-container');
+        if (!container) return;
         container.innerHTML = '';
-        const totalDots = Math.max(4, pinCode.length); // Mantém no mínimo 4 bolinhas vazias
+        const totalDots = Math.max(4, pinCode.length);
         for (let i = 0; i < totalDots; i++) {
           const dot = document.createElement('div');
           dot.className = 'pin-dot';
@@ -458,22 +596,18 @@
         if (pinCode.length === 0) return;
 
         // --- MÁGICA DO TOKEN ÚNICO (OPÇÃO 1) ---
-        // Pega os números digitados e transforma em um e-mail do sistema
         const emailGerado = pinCode + "@oraculum.com";
         
-        // Preenche os campos ocultos invisivelmente
         document.getElementById('login-email').value = emailGerado;
         document.getElementById('login-password').value = pinCode;
         
         visorText.innerText = "AUTENTICANDO...";
 
-        // Dispara o clique no botão do seu formulário para ativar a função executarLogin do app.js
         document.getElementById('btn-submit-login').click();
 
-        // Checagem de Falha: se a tela não sumiu após 1.5s, o login falhou
         setTimeout(() => {
           const authGate = document.getElementById('auth-gate-container');
-          if (authGate.style.display !== 'none' && !authGate.style.cssText.includes('display: none')) {
+          if (authGate && authGate.style.display !== 'none' && !authGate.style.cssText.includes('display: none')) {
             terminal.classList.add('error-shake');
             visorText.innerText = "ACESSO NEGADO";
             statusMsg.innerText = "CHAVE INCORRETA. TENTE NOVAMENTE.";
@@ -487,11 +621,10 @@
               visorText.style.textShadow = "0 0 8px " + currentNeon;
               statusMsg.innerText = "DIGITE A CHAVE NUMÉRICA DE ACESSO";
               statusMsg.style.color = currentNeon;
-              pinCode = ""; // Limpa a chave errada
+              pinCode = "";
               updateDots();
             }, 1800);
           } else {
-             // Deu certo! Limpamos o visual
              pinCode = "";
              updateDots();
           }
@@ -500,14 +633,12 @@
 
       // SUPORTE A TECLADO FÍSICO E ATALHO SECRETO
       window.addEventListener('keydown', (e) => {
-        // ATALHO SECRETO: Ctrl + Shift + A para o modo Admin
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
           e.preventDefault();
           toggleAdminMode();
           return;
         }
 
-        // Permite qualquer número do teclado para preencher a senha
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key >= '0' && e.key <= '9') {
           press(e.key);
         }
