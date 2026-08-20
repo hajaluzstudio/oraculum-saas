@@ -349,6 +349,24 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// DIAGNÓSTICO: verifica onde as imagens estão no ambiente Vercel
+app.get('/debug-images', (req: Request, res: Response) => {
+  const images = ['logo.png', 'terminal.png', 'fundo.jpg'];
+  const result: any = { cwd: process.cwd(), dirname: __dirname, files: {} };
+  for (const img of images) {
+    const paths = [
+      path.join(process.cwd(), 'public', img),
+      path.join(__dirname, '../public', img),
+      path.join(__dirname, 'public', img),
+      path.join(process.cwd(), img),
+      path.join(__dirname, img),
+    ];
+    result.files[img] = paths.map(p => ({ path: p, exists: fs.existsSync(p) }));
+  }
+  return res.json(result);
+});
+
+
 // CLIENTS
 app.get('/api/clients', async (req: Request, res: Response) => {
   try {
