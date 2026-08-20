@@ -35,6 +35,13 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// ✅ SERVIR ARQUIVOS ESTÁTICOS - Express native (mais confiável que rotas manuais)
+// O express.static DEVE vir ANTES do tenantAuthMiddleware para não interceptar imagens
+const staticOpts = { maxAge: 0, etag: false };
+app.use(express.static(path.join(process.cwd(), 'public'), staticOpts));
+app.use(express.static(path.join(__dirname, '../public'), staticOpts));
+app.use(express.static(path.join(__dirname, 'public'), staticOpts));
+
 const DEFAULT_TENANT_ID = 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
 
 const tenantAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
