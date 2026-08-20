@@ -227,14 +227,62 @@ app.get('/*.svg', (req: Request, res: Response) => {
 });
 
 // SERVIR IMAGENS (fundo.jpg, logo.png, terminal.png e qualquer .png/.jpg/.jpeg/.gif/.webp/.ico)
+// Rotas explícitas nomeadas primeiro para garantir match
+app.get('/logo.png', (req: Request, res: Response) => {
+  try {
+    const imgPath = getStaticFilePath('logo.png');
+    if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
+      res.setHeader('Content-Type', 'image/png');
+      setNoCacheHeaders(res);
+      return res.status(200).send(data);
+    }
+    return res.status(404).send('logo.png não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar logo.png: ' + e.message);
+  }
+});
+
+app.get('/terminal.png', (req: Request, res: Response) => {
+  try {
+    const imgPath = getStaticFilePath('terminal.png');
+    if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
+      res.setHeader('Content-Type', 'image/png');
+      setNoCacheHeaders(res);
+      return res.status(200).send(data);
+    }
+    return res.status(404).send('terminal.png não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar terminal.png: ' + e.message);
+  }
+});
+
+app.get('/fundo.jpg', (req: Request, res: Response) => {
+  try {
+    const imgPath = getStaticFilePath('fundo.jpg');
+    if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
+      res.setHeader('Content-Type', 'image/jpeg');
+      setNoCacheHeaders(res);
+      return res.status(200).send(data);
+    }
+    return res.status(404).send('fundo.jpg não encontrado.');
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar fundo.jpg: ' + e.message);
+  }
+});
+
+// Rotas genéricas por extensão (fallback)
 app.get('/*.jpg', (req: Request, res: Response) => {
   try {
     const filename = path.basename(req.path);
     const imgPath = getStaticFilePath(filename);
     if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
       res.setHeader('Content-Type', 'image/jpeg');
       setNoCacheHeaders(res);
-      return res.status(200).sendFile(imgPath);
+      return res.status(200).send(data);
     }
     return res.status(404).send(`Imagem não encontrada: ${filename}`);
   } catch (e: any) {
@@ -247,9 +295,10 @@ app.get('/*.jpeg', (req: Request, res: Response) => {
     const filename = path.basename(req.path);
     const imgPath = getStaticFilePath(filename);
     if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
       res.setHeader('Content-Type', 'image/jpeg');
       setNoCacheHeaders(res);
-      return res.status(200).sendFile(imgPath);
+      return res.status(200).send(data);
     }
     return res.status(404).send(`Imagem não encontrada: ${filename}`);
   } catch (e: any) {
@@ -262,9 +311,10 @@ app.get('/*.png', (req: Request, res: Response) => {
     const filename = path.basename(req.path);
     const imgPath = getStaticFilePath(filename);
     if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
       res.setHeader('Content-Type', 'image/png');
       setNoCacheHeaders(res);
-      return res.status(200).sendFile(imgPath);
+      return res.status(200).send(data);
     }
     return res.status(404).send(`Imagem não encontrada: ${filename}`);
   } catch (e: any) {
@@ -277,9 +327,10 @@ app.get('/*.webp', (req: Request, res: Response) => {
     const filename = path.basename(req.path);
     const imgPath = getStaticFilePath(filename);
     if (fs.existsSync(imgPath)) {
+      const data = fs.readFileSync(imgPath);
       res.setHeader('Content-Type', 'image/webp');
       setNoCacheHeaders(res);
-      return res.status(200).sendFile(imgPath);
+      return res.status(200).send(data);
     }
     return res.status(404).send(`Imagem não encontrada: ${filename}`);
   } catch (e: any) {
