@@ -390,4 +390,39 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', forcarRenderizacaoOraculumLive);
   }
+
+  function sincronizarVisibilidadeAbaBI() {
+    const btn = document.getElementById('btn-open-oraculo-live');
+    const drawer = document.getElementById('oraculo-live-drawer');
+    if (!btn) return;
+
+    // Localiza a view ou seção de BI no DOM
+    const biView = document.getElementById('view-bi') || 
+                   document.getElementById('tab-bi') || 
+                   document.querySelector('[data-view="bi"]') ||
+                   document.querySelector('#section-bi');
+
+    // Verifica se a tela de BI está ativa e sem classe hidden / style display:none
+    let isBiAtivo = false;
+    if (biView) {
+      const isHidden = biView.classList.contains('hidden') || 
+                       biView.style.display === 'none' || 
+                       biView.getAttribute('aria-hidden') === 'true';
+      isBiAtivo = !isHidden;
+    }
+
+    if (isBiAtivo) {
+      btn.style.setProperty('display', 'flex', 'important');
+    } else {
+      btn.style.setProperty('display', 'none', 'important');
+      if (drawer && drawer.style.transform === 'translateX(0px)') {
+        drawer.style.transform = 'translateX(100%)';
+      }
+    }
+  }
+
+  // Executa o check em ciclos rápidos e nos cliques de navegação do menu lateral
+  setInterval(sincronizarVisibilidadeAbaBI, 250);
+  window.addEventListener('hashchange', sincronizarVisibilidadeAbaBI);
+  document.addEventListener('click', () => setTimeout(sincronizarVisibilidadeAbaBI, 50));
 })();
