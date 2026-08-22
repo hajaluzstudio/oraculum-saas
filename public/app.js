@@ -807,23 +807,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const typingEl = document.getElementById(typingId);
       if (typingEl) typingEl.remove();
 
-      const mockChatReply = {
-        replyText: `Para o nicho de alta performance, recomendo focar em campanhas de VSL curta com Hook de quebra de padrão nos primeiros 3s. A meta de LTV/CAC deve se manter acima de 4:1.`,
-        suggestedBriefing: {
-          campaignObjective: 'Conversão de Consultas VIP',
-          targetAudienceAngle: 'Público Alta Renda buscando exclusividade',
-          visualHookPrompt: 'Médico em ambiente cirúrgico refinado ajustando a luva e olhando diretamente para a câmera',
-          copyAngle: 'O fim das incertezas e a garantia de simetria natural.',
-          expectedRoiMultiplier: '6.5x ROAS'
-        },
-        actionableNextSteps: [
-          'Gravar 3 variações de Hook de 3 segundos',
-          'Injetar metadados EXIF/XMP no arquivo final',
-          'Alocar 70% da verba em Tráfego Frio e 30% em Remarketing'
-        ]
-      };
-
-      renderChatReply(mockChatReply);
+      console.error('❌ Erro na comunicação com IA:', error);
+      appendChatMessage('model', `<div style="color: #F87171; font-weight: 600;">Ocorreu um erro ao processar sua mensagem. A IA não pôde responder. Tente novamente em alguns segundos.</div>`);
     }
   }
 

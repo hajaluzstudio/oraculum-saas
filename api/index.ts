@@ -683,9 +683,11 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    const { clientId, message, history } = req.body || {};
+    const userMessage = req.body.message || req.body.prompt || '';
+    const clientId = req.body.clientId || req.body.client_id;
+    const history = req.body.history || [];
     
-    if (!clientId || !message) {
+    if (!clientId || !userMessage) {
       return res.status(400).json({ status: 'error', error: 'clientId e message são obrigatórios.' });
     }
 
@@ -699,8 +701,8 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       client_id: clientId,
       role: 'user',
       sender: 'user',
-      content: message,
-      message: message,
+      content: userMessage,
+      message: userMessage,
       created_at: new Date().toISOString()
     };
     
@@ -711,7 +713,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     }
 
     // 2. Chamada da IA Gemini
-    const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
+    const response = await sendStrategicChatMessage(organizationId, clientId, userMessage, history);
 
     const assistantContent = typeof response === 'string' ? response : (typeof (response as any)?.replyText === 'string' ? (response as any).replyText : JSON.stringify(response));
 
@@ -734,7 +736,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       console.log('[Supabase] ✅ Resposta do assistente salva com sucesso para o cliente:', clientId);
     }
 
-    return res.json({ success: true, data: response });
+    return res.json({ status: 'ok', success: true, data: response, reply: assistantContent });
   } catch (error: any) {
     console.error('❌ [API /api/chat Error]:', error);
     return res.status(500).json({ status: 'error', error: error.message || 'Erro interno no Chat.' });
