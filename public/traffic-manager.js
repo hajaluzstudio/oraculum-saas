@@ -68,47 +68,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('traffic-creatives-list');
     if (!container) return;
 
-    // 1. Tenta buscar no Supabase
     let cards = [];
     if (window.supabaseClient) {
       const { data, error } = await window.supabaseClient
         .from('kanban_cards')
         .select('*')
-        .or('status.eq.archived_traffic,stage.eq.archived_traffic');
-      
+        .eq('status', 'archived_traffic')
+        .order('updated_at', { ascending: false });
+
       if (!error && data) {
-        cards = data.filter(c => 
-          !window.currentClientId || 
-          c.client_id === window.currentClientId || 
-          c.client_name === window.currentClientName
-        );
+        cards = data;
       }
     }
 
-    // 2. Fallback de localStorage se vazio
     if (!cards || cards.length === 0) {
-      const localCards = JSON.parse(localStorage.getItem('kanban_cards') || '[]');
-      cards = localCards.filter(c => 
-        (c.status === 'archived_traffic' || c.stage === 'archived_traffic') &&
-        (!window.currentClientId || c.client_id === window.currentClientId || c.client_name === window.currentClientName)
-      );
-    }
-
-    // 3. Renderização
-    if (cards.length === 0) {
       container.innerHTML = '<p class="text-sm text-gray-400">Nenhum criativo aguardando veiculação no momento.</p>';
       return;
     }
 
     container.innerHTML = cards.map(c => `
-      <div class="card-glass p-3 rounded-lg flex justify-between items-center border border-emerald-500/20 mb-2">
+      <div class="card-glass p-4 rounded-lg flex justify-between items-center border border-emerald-500/30 mb-3 bg-black/40">
         <div>
-          <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
-          <h4 class="text-sm font-semibold text-white mt-1">${c.title || c.headline || 'Criativo sem título'}</h4>
-          <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-2">${c.description || c.copy || ''}</p>
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
+          <h4 class="text-sm font-semibold text-white mt-1.5">${c.title}</h4>
+          <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-3">${c.description}</p>
         </div>
-        <div class="flex gap-2">
-          <button onclick="navigator.clipboard.writeText('${(c.description || c.copy || '').replace(/'/g, "\\'")}'); alert('Copy copiada!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
+        <div class="flex gap-2 shrink-0">
+          <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('Copy copiada com sucesso!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
           <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary">✅ Marcar Veiculado</button>
         </div>
       </div>

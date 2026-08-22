@@ -1523,27 +1523,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (window.supabaseClient) {
-        try {
-          let updatePayload = { status: stage, updated_at: new Date().toISOString() };
-          if (stage === 'archived_traffic') {
-            updatePayload = {
-              status: 'archived_traffic',
-              stage: 'archived_traffic',
-              client_id: window.currentClientId || cards[cardIndex].clientId || 'default',
-              client_name: window.currentClientName || cards[cardIndex].clientName || 'N/A',
-              headline: cards[cardIndex].title || cards[cardIndex].headline,
-              copy: cards[cardIndex].description || cards[cardIndex].copy,
-              type: cards[cardIndex].type || 'video',
-              updated_at: new Date().toISOString()
-            };
+        if (stage === 'archived_traffic') {
+          const cardPayload = {
+            id: cards[cardIndex].id || crypto.randomUUID(),
+            client_id: window.currentClientId || 'default-client',
+            title: cards[cardIndex].title || cards[cardIndex].headline || 'Criativo de Campanha',
+            description: cards[cardIndex].description || cards[cardIndex].copy || '',
+            status: 'archived_traffic',
+            stage: 'archived_traffic',
+            type: cards[cardIndex].type || 'video',
+            updated_at: new Date().toISOString()
+          };
+
+          try {
+            const { error } = await window.supabaseClient
+              .from('kanban_cards')
+              .upsert(cardPayload);
+            if (error) console.error("Erro ao salvar card no Supabase:", error);
+          } catch(e) {
+            console.warn('Erro ao realizar upsert no supabase kanban_cards:', e);
           }
-          
-          await window.supabaseClient
-            .from('kanban_cards')
-            .update(updatePayload)
-            .eq('id', assetId);
-        } catch(e) {
-          console.warn('Erro ao atualizar supabase kanban_cards:', e);
+        } else {
+          try {
+            await window.supabaseClient
+              .from('kanban_cards')
+              .update({ status: stage, updated_at: new Date().toISOString() })
+              .eq('id', assetId);
+          } catch(e) {
+            console.warn('Erro ao atualizar supabase kanban_cards:', e);
+          }
         }
       }
     }
