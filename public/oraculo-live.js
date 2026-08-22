@@ -196,17 +196,18 @@
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: true });
-      if (!error && data && data.length > 0) {
+      
+      if (!error && data) {
         return data.map(item => ({
           id: item.id,
           clientId: item.client_id,
-          role: item.role || (item.prompt_input ? 'user' : 'assistant'),
-          message: item.content || item.message || item.prompt_input || JSON.stringify(item.json_response),
+          role: item.role || 'assistant',
+          message: item.content || item.message || item.prompt_input || '',
           created_at: item.created_at
         }));
       }
-    } catch(e) {
-      console.warn("Erro ao buscar histórico no Supabase:", e);
+    } catch (err) {
+      console.warn("[Oraculum Live] Erro ao carregar bi_chat_history:", err);
     }
     return [];
   };
@@ -229,7 +230,21 @@
     const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_mock_123';
 
-    const fullMessage = "[CONTEXTO BI REUNIÃO AO VIVO]\nCliente: " + (contextoBI.cliente || 'Ativo') + "\nFaturamento: " + (contextoBI.faturamento || '0') + "\nGasto Tráfego: " + (contextoBI.gastoTrafego || '0') + "\nROAS: " + (contextoBI.roas || '0') + "\nLeads: " + (contextoBI.leads || '0') + "\n\n[PERGUNTA/FALA DO APRESENTADOR]: " + promptUsuario;
+    const biSystemPrompt = `Você é o ORACULUM LIVE, o Copiloto de Inteligência de Negócios e Diretor de Estratégia em tempo real da agência HAJALUZ.
+Você está participando de uma REUNIÃO AO VIVO com o cliente ou apresentando a performance de tráfego e vendas.
+
+DADOS REAIS DO DASHBOARD DE BI DO CLIENTE:
+- Cliente Ativo: ${contextoBI.cliente || 'Dr. Lucas / Cliente Ativo'}
+- Faturamento Total Gerado: ${contextoBI.faturamento || 'R$ 0,00'}
+- Investimento em Tráfego (Meta/Google Ads): ${contextoBI.gastoTrafego || 'R$ 0,00'}
+- ROAS Médio: ${contextoBI.roas || '0.0x'}
+- Leads Qualificados: ${contextoBI.leads || '0'}
+
+DIRETRIZES DE RESPOSTA PARA A REUNIÃO:
+1. Responda com postura de Consultor Sênior de BI: seja analítico, seguro, direto e estratégico.
+2. Sempre use os números reais acima para justificar diagnósticos de CAC, LTV, ROAS e conversão.
+3. Se o cliente ou gestor perguntar sobre melhorias, aponte exatamente onde otimizar (gargalo de funil, criativos de topo, verba por canal ou atendimento comercial).
+4. Responda em Português do Brasil de forma clara e profissional para ser lida ou falada ao vivo.`;
 
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -239,14 +254,18 @@
       },
       body: JSON.stringify({
         clientId: clientId,
-        message: fullMessage,
-        history: historicoAnterior || []
+        systemPrompt: biSystemPrompt,
+        message: `[PERGUNTA NA REUNIÃO DE BI]: ${promptUsuario}`,
+        history: (historicoAnterior || []).map(h => ({
+          role: h.role === 'user' ? 'user' : 'model',
+          parts: [{ text: h.message }]
+        }))
       })
     });
 
     const resData = await response.json();
     if (!response.ok || !resData.success || !resData.data) {
-      throw new Error(resData?.error || resData?.message || 'Falha na resposta do servidor.');
+      throw new Error(resData?.error || resData?.message || 'Falha na resposta do Gemini.');
     }
     return resData.data;
   }
