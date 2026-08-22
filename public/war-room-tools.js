@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const speedSlider = document.getElementById('prompter-speed-slider');
   const speedDisplay = document.getElementById('prompter-speed-display');
   const mirrorToggle = document.getElementById('prompter-mirror-toggle');
+  const focusToggle = document.getElementById('prompter-focus-toggle');
   const scrollContainer = document.getElementById('prompter-scroll-container');
 
   let teleprompterInterval = null;
@@ -544,6 +545,35 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentSpeed = 3;
   let currentFontSize = 38;
   let isMirrored = false;
+  let isFocusMode = false;
+
+  function parseTeleprompterScript(text) {
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    let html = '';
+    
+    lines.forEach(line => {
+      let raw = line.trim();
+      // Headers (## Gancho 1, ### Copy, etc)
+      if (/^(#+ |Gancho|Copy Principal|Chamada|CTA|Headline)/i.test(raw) && raw.length < 50) {
+        html += `<div class="tp-section-header"><span class="badge">📌 ${raw.replace(/^#+\s*/, '')}</span></div>`;
+      } 
+      // Action / Direction
+      else if (/^(\[.*?\]|\(.*?\)|ação|cênica|visual|direção):?/i.test(raw) || (raw.startsWith('[') && raw.endsWith(']'))) {
+        html += `<div class="tp-action-box"><i class="fa-solid fa-clapperboard"></i> Ação: ${raw.replace(/^(\[.*?\]|\(.*?\)|ação|cênica|visual|direção):?\s*/i, '')}</div>`;
+      }
+      // Text Overlay
+      else if (/^(texto na tela|text overlay|lettering|legenda):?/i.test(raw)) {
+        html += `<div class="tp-overlay-box"><i class="fa-solid fa-font"></i> Em Tela: ${raw.replace(/^(texto na tela|text overlay|lettering|legenda):?\s*/i, '')}</div>`;
+      }
+      // Speech (Fala)
+      else {
+        raw = raw.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html += `<div class="tp-speech-text">${raw}</div>`;
+      }
+    });
+    
+    return html;
+  }
 
   if (btnOpenTeleprompter && teleprompterModal) {
     btnOpenTeleprompter.addEventListener('click', () => {
@@ -562,7 +592,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (teleprompterTextBody) {
-        teleprompterTextBody.innerText = scriptText;
+        teleprompterTextBody.innerHTML = parseTeleprompterScript(scriptText);
+        teleprompterTextBody.style.fontSize = currentFontSize + 'px';
       }
     });
   }
@@ -630,6 +661,23 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         mirrorToggle.style.background = 'rgba(255,255,255,0.08)';
         mirrorToggle.style.borderColor = 'rgba(255,255,255,0.15)';
+      }
+    });
+  }
+
+  if (focusToggle) {
+    focusToggle.addEventListener('click', () => {
+      isFocusMode = !isFocusMode;
+      if (isFocusMode) {
+        document.body.classList.add('speech-only-mode');
+        focusToggle.style.background = 'rgba(16, 185, 129, 0.3)';
+        focusToggle.style.borderColor = '#10B981';
+        focusToggle.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Modo Completo';
+      } else {
+        document.body.classList.remove('speech-only-mode');
+        focusToggle.style.background = 'rgba(255,255,255,0.08)';
+        focusToggle.style.borderColor = 'rgba(255,255,255,0.15)';
+        focusToggle.innerHTML = '<i class="fa-solid fa-eye"></i> Apenas Falas';
       }
     });
   }

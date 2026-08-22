@@ -2603,6 +2603,9 @@
         <button type="button" id="prompter-mirror-toggle" style="font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
           <i class="fa-solid fa-arrows-left-right"></i> Modo Espelho
         </button>
+        <button type="button" id="prompter-focus-toggle" style="font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #FFF; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
+          <i class="fa-solid fa-eye"></i> Apenas Falas
+        </button>
       </div>
 
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -2616,7 +2619,7 @@
     </div>
 
     <!-- Área de Texto com Rolagem Automática Suave -->
-    <div id="prompter-scroll-container" style="flex: 1; overflow-y: scroll; padding: 80px 20% 400px; text-align: center; scroll-behavior: smooth;">
+    <div id="prompter-scroll-container" style="flex: 1; overflow-y: scroll; padding: 80px 20% 400px; text-align: left; scroll-behavior: smooth;">
       <div id="prompter-text-body" style="font-size: 38px; line-height: 1.6; font-weight: 600; color: #F1F5F9; transition: transform 0.2s ease;">
         Carregando roteiro...
       </div>
