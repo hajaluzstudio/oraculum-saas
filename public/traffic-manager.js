@@ -65,29 +65,54 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.loadArchivedTrafficCards = async function() {
-    const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-    if (!activeClientId) return;
-    
+    const container = document.getElementById('traffic-creatives-list');
+    if (!container) return;
+
+    // 1. Tenta buscar no Supabase
+    let cards = [];
     if (window.supabaseClient) {
-      try {
-        const { data: trafficCards, error } = await window.supabaseClient
-          .from('kanban_cards')
-          .select('*')
-          .eq('client_id', activeClientId)
-          .eq('status', 'archived_traffic')
-          .order('updated_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (trafficCards && trafficCards.length > 0) {
-          creativesGrid.innerHTML = trafficCards.map(renderTrafficCard).join('');
-        } else {
-          creativesGrid.innerHTML = `<p style="font-size: 12px; color: #64748B;">Nenhum criativo aguardando veiculação no momento.</p>`;
-        }
-      } catch (err) {
-        console.error('Erro ao buscar criativos de tráfego:', err);
+      const { data, error } = await window.supabaseClient
+        .from('kanban_cards')
+        .select('*')
+        .or('status.eq.archived_traffic,stage.eq.archived_traffic');
+      
+      if (!error && data) {
+        cards = data.filter(c => 
+          !window.currentClientId || 
+          c.client_id === window.currentClientId || 
+          c.client_name === window.currentClientName
+        );
       }
     }
+
+    // 2. Fallback de localStorage se vazio
+    if (!cards || cards.length === 0) {
+      const localCards = JSON.parse(localStorage.getItem('kanban_cards') || '[]');
+      cards = localCards.filter(c => 
+        (c.status === 'archived_traffic' || c.stage === 'archived_traffic') &&
+        (!window.currentClientId || c.client_id === window.currentClientId || c.client_name === window.currentClientName)
+      );
+    }
+
+    // 3. Renderização
+    if (cards.length === 0) {
+      container.innerHTML = '<p class="text-sm text-gray-400">Nenhum criativo aguardando veiculação no momento.</p>';
+      return;
+    }
+
+    container.innerHTML = cards.map(c => `
+      <div class="card-glass p-3 rounded-lg flex justify-between items-center border border-emerald-500/20 mb-2">
+        <div>
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
+          <h4 class="text-sm font-semibold text-white mt-1">${c.title || c.headline || 'Criativo sem título'}</h4>
+          <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-2">${c.description || c.copy || ''}</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="navigator.clipboard.writeText('${(c.description || c.copy || '').replace(/'/g, "\\'")}'); alert('Copy copiada!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
+          <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary">✅ Marcar Veiculado</button>
+        </div>
+      </div>
+    `).join('');
   }
 
   // Escuta o evento desacoplado do Kanban

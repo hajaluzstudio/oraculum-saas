@@ -1492,7 +1492,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
-      cards[cardIndex].stage = stage;
+      if (stage === 'archived_traffic') {
+        cards[cardIndex] = {
+          ...cards[cardIndex],
+          status: 'archived_traffic',
+          stage: 'archived_traffic',
+          client_id: window.currentClientId || cards[cardIndex].clientId || 'default',
+          client_name: window.currentClientName || cards[cardIndex].clientName || 'N/A',
+          headline: cards[cardIndex].title || cards[cardIndex].headline,
+          copy: cards[cardIndex].description || cards[cardIndex].copy,
+          type: cards[cardIndex].type || 'video',
+          updated_at: new Date().toISOString()
+        };
+      } else {
+        cards[cardIndex].stage = stage;
+      }
       localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
       renderKanbanBoard(cards);
 
@@ -1510,9 +1524,23 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (window.supabaseClient) {
         try {
+          let updatePayload = { status: stage, updated_at: new Date().toISOString() };
+          if (stage === 'archived_traffic') {
+            updatePayload = {
+              status: 'archived_traffic',
+              stage: 'archived_traffic',
+              client_id: window.currentClientId || cards[cardIndex].clientId || 'default',
+              client_name: window.currentClientName || cards[cardIndex].clientName || 'N/A',
+              headline: cards[cardIndex].title || cards[cardIndex].headline,
+              copy: cards[cardIndex].description || cards[cardIndex].copy,
+              type: cards[cardIndex].type || 'video',
+              updated_at: new Date().toISOString()
+            };
+          }
+          
           await window.supabaseClient
             .from('kanban_cards')
-            .update({ status: stage, updated_at: new Date().toISOString() })
+            .update(updatePayload)
             .eq('id', assetId);
         } catch(e) {
           console.warn('Erro ao atualizar supabase kanban_cards:', e);
