@@ -522,3 +522,115 @@ function renderWarRoomFromJSON(plan) {
 }
 
 window.renderWarRoomFromJSON = renderWarRoomFromJSON;
+
+// ==========================================
+// TELEPROMPTER LOGIC
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  const teleprompterModal = document.getElementById('teleprompter-modal');
+  const teleprompterTextBody = document.getElementById('prompter-text-body');
+  const btnOpenTeleprompter = document.getElementById('btn-open-teleprompter');
+  const btnCloseTeleprompter = document.getElementById('prompter-close-btn');
+  const btnPlayPause = document.getElementById('prompter-play-pause-btn');
+  const btnFontInc = document.getElementById('prompter-font-inc');
+  const btnFontDec = document.getElementById('prompter-font-dec');
+  const speedSlider = document.getElementById('prompter-speed-slider');
+  const speedDisplay = document.getElementById('prompter-speed-display');
+  const mirrorToggle = document.getElementById('prompter-mirror-toggle');
+  const scrollContainer = document.getElementById('prompter-scroll-container');
+
+  let teleprompterInterval = null;
+  let isPlaying = false;
+  let currentSpeed = 3;
+  let currentFontSize = 38;
+  let isMirrored = false;
+
+  if (btnOpenTeleprompter && teleprompterModal) {
+    btnOpenTeleprompter.addEventListener('click', () => {
+      teleprompterModal.style.display = 'flex';
+      let scriptText = "Nenhum roteiro encontrado. Despache um briefing primeiro.";
+      
+      const targetClientId = localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
+      const saved = localStorage.getItem(`oraculum_briefing_${targetClientId}`);
+      if (saved) {
+        try {
+          const bd = JSON.parse(saved);
+          if (bd.video && bd.video.roteiro_teleprompter) {
+            scriptText = bd.video.roteiro_teleprompter;
+          }
+        } catch(e){}
+      }
+      
+      if (teleprompterTextBody) {
+        teleprompterTextBody.innerText = scriptText;
+      }
+    });
+  }
+
+  if (btnCloseTeleprompter) {
+    btnCloseTeleprompter.addEventListener('click', () => {
+      if (teleprompterModal) teleprompterModal.style.display = 'none';
+      stopTeleprompter();
+    });
+  }
+
+  function stopTeleprompter() {
+    isPlaying = false;
+    clearInterval(teleprompterInterval);
+    if(btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Rolagem';
+  }
+
+  function startTeleprompter() {
+    isPlaying = true;
+    if(btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i> Pausar';
+    teleprompterInterval = setInterval(() => {
+      if (scrollContainer) {
+        scrollContainer.scrollTop += (currentSpeed / 2);
+      }
+    }, 50);
+  }
+
+  if (btnPlayPause) {
+    btnPlayPause.addEventListener('click', () => {
+      if (isPlaying) stopTeleprompter();
+      else startTeleprompter();
+    });
+  }
+
+  if (speedSlider) {
+    speedSlider.addEventListener('input', (e) => {
+      currentSpeed = parseInt(e.target.value);
+      if (speedDisplay) speedDisplay.innerText = currentSpeed + 'x';
+    });
+  }
+
+  if (btnFontInc) {
+    btnFontInc.addEventListener('click', () => {
+      currentFontSize += 4;
+      if (teleprompterTextBody) teleprompterTextBody.style.fontSize = currentFontSize + 'px';
+    });
+  }
+
+  if (btnFontDec) {
+    btnFontDec.addEventListener('click', () => {
+      currentFontSize = Math.max(16, currentFontSize - 4);
+      if (teleprompterTextBody) teleprompterTextBody.style.fontSize = currentFontSize + 'px';
+    });
+  }
+
+  if (mirrorToggle) {
+    mirrorToggle.addEventListener('click', () => {
+      isMirrored = !isMirrored;
+      if (teleprompterTextBody) {
+        teleprompterTextBody.style.transform = isMirrored ? 'scaleX(-1)' : 'scaleX(1)';
+      }
+      if (isMirrored) {
+        mirrorToggle.style.background = 'rgba(6, 182, 212, 0.3)';
+        mirrorToggle.style.borderColor = '#06B6D4';
+      } else {
+        mirrorToggle.style.background = 'rgba(255,255,255,0.08)';
+        mirrorToggle.style.borderColor = 'rgba(255,255,255,0.15)';
+      }
+    });
+  }
+});

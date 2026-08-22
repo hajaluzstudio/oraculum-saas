@@ -336,6 +336,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carrega o Kanban e o BI do cliente selecionado
     await loadClientKanbanCards(clientId);
     await loadClientBiMetrics(clientId);
+
+    // Load War Room State
+    const savedBriefing = localStorage.getItem(`oraculum_briefing_${clientId}`);
+    if (savedBriefing && typeof window.renderWarRoomFromJSON === 'function') {
+      try {
+        window.renderWarRoomFromJSON(JSON.parse(savedBriefing));
+      } catch(e){}
+    }
   }
 
   // Expõe a função globalmente para ser usada por outros scripts e abas
@@ -844,21 +852,44 @@ document.addEventListener('DOMContentLoaded', () => {
       if (briefingData instanceof HTMLElement) {
         const bubble = briefingData.closest('.bubble');
         let text = bubble ? bubble.innerText.replace('✅ Aprovar & Despachar para Sala de Operação', '').trim() : '';
-        
-        const tp = document.querySelector('#teleprompterText');
-        if (tp) tp.value = text;
-        const ce = document.querySelector('#copyEditor');
-        if (ce) ce.value = text;
-        const db = document.querySelector('#designBriefing');
-        if (db) db.value = text;
-        const tra = document.querySelector('#trafficPlanning');
-        if (tra) tra.value = text;
 
+        const extractSection = (regex, fallback) => {
+          const match = text.match(regex);
+          return match && match[1] ? match[1].trim() : fallback;
+        };
+
+        const gancho = extractSection(/(?:gancho|hook|3s|atenção)[\s\S]*?[:\-*]*\s*([^\n]+)/i, "Gancho sugerido pela estratégia (3s).");
+        const headline = extractSection(/(?:headline|título|promessa)[\s\S]*?[:\-*]*\s*([^\n]+)/i, "Headline Principal focada em Conversão.");
+        const roteiro_teleprompter = extractSection(/(?:roteiro|teleprompter|script de vídeo|gravação|vídeo)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|Headline|Copy|Design|Tráfego|Comercial|WhatsApp)|$)/i, text);
+        const script_whatsapp = extractSection(/(?:whatsapp|script|vendas|comercial)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|Design|Tráfego)|$)/i, "Script base focado em vendas via WhatsApp.");
+        const copy_corpo = extractSection(/(?:copy|texto principal|corpo)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|WhatsApp|Design|Tráfego)|$)/i, text.substring(0, 500) + '...');
+        
         briefingData = {
-          video: { gancho_3s: text.substring(0, 30) },
-          copy: { headline: text.substring(0, 30) },
-          design: { conceito_visual: "Design baseado no chat" },
-          vendas: { script_whatsapp: "Script baseado no chat" },
+          video: { 
+             gancho_3s: gancho,
+             roteiro_teleprompter: roteiro_teleprompter,
+             direcao_cenica: "Dinâmico, foco na retenção visual e autoridade técnica."
+          },
+          copy: { 
+             headline: headline,
+             corpo_texto: copy_corpo,
+             cta: "Clique em Saiba Mais e fale com a equipe"
+          },
+          design: { 
+             conceito_visual: "Design limpo, focado em conversão, contraste AA.",
+             elementos_obrigatorios: "Cores da marca, CTA evidente, fontes legíveis.",
+             formato: "Stories/Reels (9:16) e Feed (4:5)"
+          },
+          trafego: {
+             canais: ["Meta Ads", "Google Ads"],
+             publicos_alvo: ["Base de contatos quente", "Lookalike 1%", "Interesses segmentados"],
+             distribuicao_verba: "70% Captação / 30% Remarketing",
+             kpis_alvo: "CPA Máx = Ticket / 3"
+          },
+          vendas: { 
+             script_whatsapp: script_whatsapp,
+             quebra_objecoes: "Preço: Focar no LTV e ROI. Tempo: Focar na agilidade do método."
+          },
           raw_text: text
         };
       }
