@@ -1416,5 +1416,19 @@ app.patch('/api/kanban/:assetId/stage', async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 });
+// POST /api/kanban/update-status
+app.post('/api/kanban/update-status', async (req: Request, res: Response) => {
+  try {
+    const { cardId, status } = req.body;
+    if (!cardId || !status) return res.status(400).json({ success: false, error: 'Missing cardId or status' });
+    
+    const { error } = await supabase.from('kanban_cards').update({ status, updated_at: new Date().toISOString() }).eq('id', cardId);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 export default app;

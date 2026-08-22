@@ -1507,6 +1507,17 @@ document.addEventListener('DOMContentLoaded', () => {
           window.dispatchEvent(new CustomEvent('cardSentToTraffic', { detail: cards[cardIndex] }));
         }
       }
+      
+      if (window.supabaseClient) {
+        try {
+          await window.supabaseClient
+            .from('kanban_cards')
+            .update({ status: stage, updated_at: new Date().toISOString() })
+            .eq('id', assetId);
+        } catch(e) {
+          console.warn('Erro ao atualizar supabase kanban_cards:', e);
+        }
+      }
     }
 
     try {

@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" onclick="navigator.clipboard.writeText('${(card.description || '').replace(/'/g, "\\'")}')" style="flex: 1; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
             📋 Copiar Texto do Anúncio
           </button>
-          <button type="button" onclick="this.parentElement.parentElement.style.opacity='0.5'; this.innerText='Veiculado!'" style="flex: 1; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+          <button type="button" onclick="window.markTrafficCardPublished('${card.id}')" style="flex: 1; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
             ✅ Marcar como Veiculado no Gerenciador
           </button>
         </div>
@@ -48,19 +48,45 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  window.loadArchivedTrafficCards = function() {
+  window.markTrafficCardPublished = async function(cardId) {
+    if (window.supabaseClient) {
+      try {
+        const { error } = await window.supabaseClient
+          .from('kanban_cards')
+          .update({ status: 'published', updated_at: new Date().toISOString() })
+          .eq('id', cardId);
+        if (!error) {
+          window.loadArchivedTrafficCards();
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar status:', err);
+      }
+    }
+  };
+
+  window.loadArchivedTrafficCards = async function() {
     const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
     if (!activeClientId) return;
     
-    let cards = [];
-    const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
-    if (saved) cards = JSON.parse(saved);
+    if (window.supabaseClient) {
+      try {
+        const { data: trafficCards, error } = await window.supabaseClient
+          .from('kanban_cards')
+          .select('*')
+          .eq('client_id', activeClientId)
+          .eq('status', 'archived_traffic')
+          .order('updated_at', { ascending: false });
 
-    const trafficCards = cards.filter(c => c.stage === 'archived_traffic');
-    if (trafficCards.length > 0) {
-      creativesGrid.innerHTML = trafficCards.map(renderTrafficCard).join('');
-    } else {
-      creativesGrid.innerHTML = `<p style="font-size: 12px; color: #64748B;">Nenhum criativo aguardando veiculação no momento.</p>`;
+        if (error) throw error;
+
+        if (trafficCards && trafficCards.length > 0) {
+          creativesGrid.innerHTML = trafficCards.map(renderTrafficCard).join('');
+        } else {
+          creativesGrid.innerHTML = `<p style="font-size: 12px; color: #64748B;">Nenhum criativo aguardando veiculação no momento.</p>`;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar criativos de tráfego:', err);
+      }
     }
   }
 
