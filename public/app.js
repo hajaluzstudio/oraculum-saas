@@ -432,6 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicialização autônoma dos clientes do tenant
   loadOrganizationClients();
 
+  // Expõe funções de carga de módulo para uso pelo state manager externo
+  window.loadClientKanbanCards = loadClientKanbanCards;
+
   // ============================================================================
   // 2. DISPARO DE ONBOARDING E DOSSIÊ DE NICHO
   // ============================================================================
@@ -1431,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. KANBAN DINÂMICO & MOVIMENTAÇÃO POR IA
   // ============================================================================
   async function loadClientKanbanCards(clientId) {
-    const targetClientId = clientId || activeClientId;
+    const targetClientId = clientId || window.currentClientId || activeClientId;
     if (!targetClientId) return;
 
     const kanbanGrid = document.getElementById('kanban-grid-container');
@@ -1901,22 +1904,32 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   async function loadClientBiMetrics(clientId) {
-    const targetClientId = clientId || activeClientId;
+    const targetClientId = clientId || window.currentClientId || activeClientId;
     if (!targetClientId) {
       window.renderBIData(null);
       return;
     }
 
     const titleEl = document.getElementById('bi-active-client-title');
-    if (titleEl) titleEl.textContent = activeClientName || 'Cliente Ativo';
+    const resolvedName = window.currentClientName || activeClientName || 'Cliente Ativo';
+    if (titleEl) titleEl.textContent = resolvedName;
 
-    const clientObj = window.clienteAtivoAtual || { id: targetClientId, name: activeClientName || 'Cliente Ativo' };
+    // Resolve full client object from cache — zero KPIs for clients with no data
+    let clientObj = (window.clientsList || window.clientesMock || []).find(c => String(c.id) === String(targetClientId));
+    if (!clientObj) clientObj = window.clienteAtivoAtual;
+    if (!clientObj) clientObj = { id: targetClientId, name: resolvedName };
+
+    // Merge name from global state in case the cache entry is a minimal stub
+    if (!clientObj.name) clientObj.name = resolvedName;
+
     window.renderBIData(clientObj);
   }
+  // Expose globally so the external clientChanged listener can call it
+  window.loadClientBiMetrics = loadClientBiMetrics;
 
   function renderBiInteractiveDashboard(period = '30d') {
     currentBiPeriod = period;
-    const data = getClientCycleBiData(activeClientId, activeClientName, period);
+    const data = getClientCycleBiData(window.currentClientId || activeClientId, window.currentClientName || activeClientName, period);
 
     // 1. Atualiza os 6 cards de KPIs
     const revEl = document.getElementById('bi-val-revenue');
@@ -5523,7 +5536,9 @@ window.addEventListener('clientChanged', (e) => {
   if (!newClient || !newClient.id) return;
   console.log('[STATE MANAGER] Re-renderizando abas para o cliente:', newClient.name);
 
-  // 1. BI & Feedback Loop
+  // 1. BI & Feedback Loop — atualiza título e métricas do cliente real
+  const biTitle = document.getElementById('bi-active-client-title');
+  if (biTitle) biTitle.textContent = newClient.name || 'Cliente Ativo';
   if (typeof window.loadClientBiMetrics === 'function') {
     window.loadClientBiMetrics(newClient.id);
   }
@@ -5536,9 +5551,9 @@ window.addEventListener('clientChanged', (e) => {
     setTimeout(window.loadArchivedTrafficCards, 50);
   }
 
-  // 3. Radar de Concorrentes
+  // 3. Radar de Concorrentes — dispara varredura pelo nicho do cliente ativo
   if (typeof window.loadCompetitors === 'function') {
-    window.loadCompetitors();
+    window.loadCompetitors(newClient);
   }
 
   // 4. Kanban & Trilha de Equipe
@@ -5559,3 +5574,22 @@ window.addEventListener('clientChanged', (e) => {
     }
   }
 });
+
+// ============================================================================
+// RADAR: wrapper global que resolve o nicho do cliente ativo
+// ============================================================================
+window.loadCompetitors = function(clientData) {
+  const client = clientData || window.currentClientData || {};
+  const niche = client.niche || client.mercado || '';
+  if (!niche) {
+    console.log('[Radar] Nenhum nicho disponível para varredura.');
+    return;
+  }
+  if (typeof window.runAutonomousMarketHunter === 'function') {
+    // Não bloqueia a UI — executa em background
+    window.runAutonomousMarketHunter(niche).catch(err =>
+      console.warn('[Radar] Varredura de mercado falhou silenciosamente:', err.message)
+    );
+  }
+};
+
