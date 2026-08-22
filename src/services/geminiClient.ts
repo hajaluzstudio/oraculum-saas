@@ -292,35 +292,43 @@ REGRAS RÍGIDAS DE ABORDAGEM MULTICANAL, INFLUENCERS E PODCASTS:
     clientName ? ` (Cliente: "${clientName}")` : ''
   }. Responda estritamente em formato JSON seguindo o schema exato fornecido.`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: nicheDossierExhaustiveSchema,
-        temperature: 0.2,
-        maxOutputTokens: 8192,
-      },
-    });
+  const modelCandidates = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-1.5-flash', 'gemini-pro'];
+  let lastError: any = null;
 
-    if (!response.text) {
-      throw new Error('A API do Gemini retornou uma resposta em branco.');
+  for (const modelName of modelCandidates) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: nicheDossierExhaustiveSchema,
+          temperature: 0.2,
+          maxOutputTokens: 8192,
+        },
+      });
+
+      if (!response.text) {
+        throw new Error(`Modelo ${modelName} retornou resposta em branco.`);
+      }
+
+      const parsedData = JSON.parse(response.text);
+
+      const dossier: NicheDossier = {
+        ...parsedData,
+        niche,
+        clientName: clientName || parsedData.clientName || 'Cliente Padrão',
+        generatedAt: new Date().toISOString(),
+      };
+
+      return dossier;
+    } catch (error: any) {
+      console.warn(`⚠️ Tentativa com modelo ${modelName} no geminiClient falhou:`, error.message || error);
+      lastError = error;
     }
-
-    const parsedData = JSON.parse(response.text);
-
-    const dossier: NicheDossier = {
-      ...parsedData,
-      niche,
-      clientName: clientName || parsedData.clientName || 'Cliente Padrão',
-      generatedAt: new Date().toISOString(),
-    };
-
-    return dossier;
-  } catch (error) {
-    console.error('❌ Erro ao gerar Dossiê Multicanal via Gemini API (@google/genai):', error);
-    throw error;
   }
+
+  console.error('❌ Todos os modelos no geminiClient falharam:', lastError);
+  throw lastError || new Error('Falha na geração do dossiê com todos os modelos do Gemini.');
 }

@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
 
+const MODEL_CANDIDATES = [
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro-latest',
+  'gemini-1.5-flash',
+  'gemini-pro'
+];
+
 export default async function handler(req: Request, res: Response) {
   try {
-    console.log('[Test-Gemini API] Iniciando teste de diagnóstico de ambiente e conexão com o Gemini...');
+    console.log('[Test-Gemini API] Iniciando teste de diagnóstico com fallback de modelos...');
     
     const apiKey = process.env.GEMINI_API_KEY;
-    console.log('[Test-Gemini API] Presença de process.env.GEMINI_API_KEY:', apiKey ? 'Siga OK (presente)' : '❌ Ausente');
-
     if (!apiKey) {
       return res.status(500).json({
         status: 'error',
@@ -16,40 +21,48 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const keyLimpa = apiKey.trim();
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyLimpa}`;
+    let lastError: any = null;
 
-    console.log('[Test-Gemini API] Enviando requisição de ping para o Google Gemini API...');
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Ping de teste de diagnóstico Oraculum' }] }]
-      })
-    });
+    for (const modelName of MODEL_CANDIDATES) {
+      try {
+        console.log(`[Test-Gemini API] Testando modelo: ${modelName}...`);
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyLimpa}`;
 
-    console.log('[Test-Gemini API] Status HTTP da resposta do Gemini:', response.status);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Ping de teste de diagnóstico Oraculum' }] }]
+          })
+        });
 
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      console.error('[Test-Gemini API] Erro retornado pela API do Gemini:', errBody);
-      return res.status(response.status).json({
-        status: 'error',
-        httpStatus: response.status,
-        message: `Falha na comunicação com a API do Gemini: ${errBody?.error?.message || response.statusText}`,
-        detail: errBody
-      });
+        if (response.ok) {
+          const data = await response.json();
+          const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          console.log(`✅ [Test-Gemini API] Sucesso com modelo: ${modelName}`);
+
+          return res.status(200).json({
+            status: 'ok',
+            message: 'Conexão com Gemini validada com sucesso!',
+            modelUsed: modelName,
+            geminiReplySnippet: replyText ? replyText.substring(0, 100) + '...' : 'Sem texto'
+          });
+        }
+
+        const errBody = await response.json().catch(() => ({}));
+        console.warn(`⚠️ [Test-Gemini API] Modelo ${modelName} falhou (HTTP ${response.status}):`, errBody?.error?.message || response.statusText);
+        lastError = { httpStatus: response.status, modelTried: modelName, error: errBody?.error || response.statusText };
+      } catch (err: any) {
+        console.warn(`⚠️ Exceção ao tentar modelo ${modelName}:`, err.message);
+        lastError = { modelTried: modelName, error: err.message };
+      }
     }
 
-    const data = await response.json();
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    console.log('[Test-Gemini API] Resposta recebida do Gemini com sucesso!');
-
-    return res.status(200).json({
-      status: 'ok',
-      message: 'Conexão com Gemini validada com sucesso!',
-      model: 'gemini-1.5-flash',
-      geminiReplySnippet: replyText ? replyText.substring(0, 100) + '...' : 'Sem texto'
+    return res.status(500).json({
+      status: 'error',
+      message: 'Todos os modelos do Gemini falharam na comunicação.',
+      candidatesTried: MODEL_CANDIDATES,
+      lastError
     });
 
   } catch (error: any) {

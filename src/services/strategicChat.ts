@@ -180,28 +180,43 @@ REGRAS ABSOLUTAS INEGOCIÁVEIS:
     }
   ];
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: contents,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: strategicChatResponseSchema,
-        temperature: 0.3,
-      },
-    });
+  const modelCandidates = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-1.5-flash', 'gemini-pro'];
+  let lastError: any = null;
 
-    if (!response.text) {
-      throw new Error('A API do Gemini retornou uma resposta em branco no Chat Estratégico.');
+  for (const modelName of modelCandidates) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: contents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: strategicChatResponseSchema,
+          temperature: 0.3,
+        },
+      });
+
+      if (!response.text) {
+        throw new Error(`Modelo ${modelName} retornou resposta em branco.`);
+      }
+
+      const chatResponse: StrategicChatResponse = JSON.parse(response.text);
+
+      // Salva a interação no histórico do Supabase
+      await saveChatMessageToHistory(
+        organizationId,
+        clientId,
+        userMessage,
+        chatResponse
+      );
+
+      return chatResponse;
+    } catch (error: any) {
+      console.warn(`⚠️ Tentativa com modelo ${modelName} no strategicChat falhou:`, error.message || error);
+      lastError = error;
     }
-
-    const chatResponse: StrategicChatResponse = JSON.parse(response.text);
-
-    console.log(`[Chat Estratégico] ✅ Resposta do Oráculo gerada com sucesso.`);
-    return chatResponse;
-  } catch (error) {
-    console.error('❌ Erro durante a interação no Chat Estratégico:', error);
-    throw error;
   }
+
+  console.error('❌ Erro no Chat Estratégico em todos os modelos:', lastError);
+  throw lastError || new Error('Falha no Chat Estratégico com todos os modelos do Gemini.');
 }
