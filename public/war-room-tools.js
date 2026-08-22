@@ -360,3 +360,165 @@ document.addEventListener('DOMContentLoaded', () => {
   bantChecks.forEach(c => c.addEventListener('change', updateBant));
 
 });
+
+// =======================================================
+// RENDER WAR ROOM FROM JSON (INJEÇÃO NAS 5 EQUIPES)
+// =======================================================
+function renderWarRoomFromJSON(plan) {
+  if (!plan) return;
+
+  // 1. EQUIPE DE TRÁFEGO
+  if (plan.trafego) {
+    const wrTrafficContent = document.getElementById('wr-traffic-content');
+    if (wrTrafficContent) {
+      const canais = Array.isArray(plan.trafego.canais) ? plan.trafego.canais.join(', ') : (plan.trafego.canais || '-');
+      const publicos = Array.isArray(plan.trafego.publicos_alvo) ? plan.trafego.publicos_alvo.join(', ') : (plan.trafego.publicos_alvo || '-');
+
+      const html = `
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 12px;">
+            <h4 style="color: #34D399; font-weight: 700; font-size: 14px; margin: 0 0 8px;"><i class="fa-solid fa-bullseye"></i> Estratégia de Mídia & Distribuição</h4>
+            <p style="color: #E2E8F0; font-size: 13px; margin: 0; line-height: 1.5;">${plan.diagnostico_estrategico || ''}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+              <span style="font-size: 11px; color: #94A3B8;">Canais Recomendados:</span>
+              <p style="color: #FFF; font-weight: 700; margin: 4px 0 0; font-size: 13px;">${canais}</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+              <span style="font-size: 11px; color: #94A3B8;">Divisão da Verba:</span>
+              <p style="color: #06B6D4; font-weight: 700; margin: 4px 0 0; font-size: 13px;">${plan.trafego.distribuicao_verba || '-'}</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+              <span style="font-size: 11px; color: #94A3B8;">Metas de KPI (CPL / CPA):</span>
+              <p style="color: #10B981; font-weight: 700; margin: 4px 0 0; font-size: 13px;">${plan.trafego.kpis_alvo || '-'}</p>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #94A3B8;">Segmentação & Públicos-Alvo:</span>
+            <p style="color: #CBD5E1; font-size: 12px; margin: 4px 0 0; line-height: 1.4;">${publicos}</p>
+          </div>
+        </div>
+      `;
+      wrTrafficContent.innerHTML = html;
+    }
+  }
+
+  // 2. EQUIPE DE VÍDEO
+  if (plan.video) {
+    const wrVideoContent = document.getElementById('wr-video-content');
+    if (wrVideoContent) {
+      const html = `
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #F87171; font-weight: 700;">🔥 Gancho de Retenção (Primeiros 3s):</span>
+            <p style="color: #FFF; font-size: 14px; font-weight: 700; margin: 4px 0 0;">"${plan.video.gancho_3s || '-'}"</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #34D399; font-weight: 700;">📜 Roteiro Teleprompter:</span>
+            <p style="color: #E2E8F0; font-size: 13px; margin: 6px 0 0; line-height: 1.6; white-space: pre-line;">${plan.video.roteiro_teleprompter || '-'}</p>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #22D3EE; font-weight: 700;">🎬 Direção Cênica & Edição:</span>
+            <p style="color: #CBD5E1; font-size: 12px; margin: 4px 0 0; line-height: 1.4;">${plan.video.direcao_cenica || '-'}</p>
+          </div>
+        </div>
+      `;
+      wrVideoContent.innerHTML = html;
+    }
+  }
+
+  // 3. EQUIPE DE DESIGN
+  if (plan.design) {
+    const wrDesignContent = document.getElementById('wr-design-content');
+    if (wrDesignContent) {
+      const html = `
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+          <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 14px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #22D3EE; font-weight: 700;">🎨 Conceito Visual / Direção de Arte:</span>
+            <p style="color: #FFF; font-size: 13px; margin: 4px 0 0; line-height: 1.5;">${plan.design.conceito_visual || '-'}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+              <span style="font-size: 11px; color: #94A3B8;">Elementos Obrigatórios:</span>
+              <p style="color: #E2E8F0; font-size: 12px; margin: 4px 0 0;">${plan.design.elementos_obrigatorios || '-'}</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;">
+              <span style="font-size: 11px; color: #94A3B8;">Formatos Orientados:</span>
+              <p style="color: #34D399; font-weight: 700; font-size: 12px; margin: 4px 0 0;">${plan.design.formato || '-'}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      // Insere o briefing de design no topo do container de design
+      const containerExisting = wrDesignContent.querySelector('.grid-2col');
+      if (containerExisting) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        wrDesignContent.insertBefore(div, containerExisting);
+      } else {
+        wrDesignContent.innerHTML = html + wrDesignContent.innerHTML;
+      }
+    }
+  }
+
+  // 4. EQUIPE DE COPY
+  if (plan.copy) {
+    const wrCopyContent = document.getElementById('wr-copy-content');
+    if (wrCopyContent) {
+      const html = `
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 14px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #34D399; font-weight: 700;">✍️ Headline Principal:</span>
+            <p style="color: #FFF; font-size: 15px; font-weight: 700; margin: 4px 0 0;">"${plan.copy.headline || '-'}"</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #94A3B8; font-weight: 700;">📄 Corpo da Copy:</span>
+            <p style="color: #E2E8F0; font-size: 13px; margin: 6px 0 0; line-height: 1.6; white-space: pre-line;">${plan.copy.corpo_texto || '-'}</p>
+          </div>
+          <div style="background: rgba(253, 224, 71, 0.1); border: 1px solid rgba(253, 224, 71, 0.3); padding: 12px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #FDE047; font-weight: 700;">🚀 Chamada para Ação (CTA):</span>
+            <p style="color: #FFF; font-weight: 700; font-size: 13px; margin: 4px 0 0;">${plan.copy.cta || '-'}</p>
+          </div>
+        </div>
+      `;
+      const containerExisting = wrCopyContent.querySelector('.grid-2col');
+      if (containerExisting) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        wrCopyContent.insertBefore(div, containerExisting);
+      } else {
+        wrCopyContent.innerHTML = html + wrCopyContent.innerHTML;
+      }
+    }
+  }
+
+  // 5. EQUIPE COMERCIAL / VENDAS
+  if (plan.vendas) {
+    const wrSalesContent = document.getElementById('wr-sales-content');
+    if (wrSalesContent) {
+      const html = `
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 14px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #34D399; font-weight: 700;">💬 Script de Abordagem WhatsApp:</span>
+            <p style="color: #E2E8F0; font-size: 13px; margin: 6px 0 0; line-height: 1.6; white-space: pre-line;">${plan.vendas.script_whatsapp || '-'}</p>
+          </div>
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 14px; border-radius: 10px;">
+            <span style="font-size: 11px; color: #F87171; font-weight: 700;">🛡️ Reversão de Objeções (Preço/Tempo):</span>
+            <p style="color: #FFF; font-size: 13px; margin: 6px 0 0; line-height: 1.5;">${plan.vendas.quebra_objecoes || '-'}</p>
+          </div>
+        </div>
+      `;
+      const containerExisting = wrSalesContent.querySelector('.grid-2col');
+      if (containerExisting) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        wrSalesContent.insertBefore(div, containerExisting);
+      } else {
+        wrSalesContent.innerHTML = html + wrSalesContent.innerHTML;
+      }
+    }
+  }
+}
+
+window.renderWarRoomFromJSON = renderWarRoomFromJSON;

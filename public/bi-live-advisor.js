@@ -861,6 +861,149 @@ ${textoOraculo}`;
     }
   };
 
+  // =======================================================
+  // ORACULUM AUTONOMOUS ENGINE (MULTIAGENTE & INJEÇÃO DE CONTEXTO)
+  // =======================================================
+  async function runOraculumAutonomousEngine(clientId, userStrategicGoal) {
+    if (!clientId) {
+      const activeSelect = document.getElementById('active-client-select');
+      clientId = activeSelect ? activeSelect.value : null;
+    }
+
+    if (!clientId) {
+      throw new Error("Selecione um cliente ativo na barra superior para rodar a IA.");
+    }
+
+    // A. Coleta dados reais do cliente no Supabase
+    let client = null;
+    if (window.supabaseClient) {
+      const { data } = await window.supabaseClient
+        .from('clients')
+        .select('*')
+        .eq('id', clientId)
+        .maybeSingle();
+      client = data;
+    }
+
+    // B. Coleta dossiê e inteligência do nicho
+    let knowledge = null;
+    if (window.supabaseClient) {
+      const { data } = await window.supabaseClient
+        .from('niche_knowledge_base')
+        .select('*')
+        .eq('client_id', clientId)
+        .maybeSingle();
+      knowledge = data;
+    }
+
+    const clientName = client?.name || client?.company_name || 'Cliente';
+    const clientNiche = client?.niche || client?.niche_sector || 'Geral';
+    const monthlyBudget = client?.monthly_budget || client?.budget || 0;
+    const nicheContext = knowledge ? JSON.stringify(knowledge) : "Sem dossiê prévio. Use os melhores benchmarks do mercado.";
+
+    // C. System Prompt de Alta Performance e Papel Multiagente
+    const systemPrompt = `
+Você é o ORACULUM CORE AI, o Diretor de Estratégia e Operações de maior nível de ROI do mercado.
+Sua missão é criar uma estratégia 100% prática, baseada em dados, métricas financeiras e sem respostas genéricas.
+
+DADOS DA CONTA:
+- Empresa: ${clientName}
+- Nicho: ${clientNiche}
+- Verba Mensal: R$ ${monthlyBudget}
+- Dossiê do Nicho / Benchmarks: ${nicheContext}
+- Objetivo Declarado: ${userStrategicGoal}
+
+DIRETRIZES:
+1. Proibido respostas vagas como "faça posts consistentes" ou "use boas hashtags".
+2. Entregue ações cirúrgicas: ganchos com números, ângulos de anúncios específicos, testes A/B e cálculos de CPA/CPL compatíveis com a verba.
+3. Responda ESTRITAMENTE em formato JSON VÁLIDO sem blocos markdown adicionais, respeitando este schema exato:
+
+{
+  "diagnostico_estrategico": "Análise técnica do cenário e rota de crescimento",
+  "trafego": {
+    "canais": ["Meta Ads", "Google Search"],
+    "distribuicao_verba": "Divisão percentual e em R$",
+    "publicos_alvo": ["Público A", "Público B"],
+    "kpis_alvo": "Meta de CPL e CPA"
+  },
+  "video": {
+    "gancho_3s": "Frase exata de abertura de alto impacto",
+    "roteiro_teleprompter": "Texto completo para gravação",
+    "direcao_cenica": "Instruções visuais para o videomaker"
+  },
+  "design": {
+    "conceito_visual": "Direção de arte dos criativos",
+    "elementos_obrigatorios": "Cores, contrastes e textos na arte",
+    "formato": "Feed 4:5 e Stories 9:16"
+  },
+  "copy": {
+    "headline": "Título chamativo",
+    "corpo_texto": "Copy persuasiva completa",
+    "cta": "Chamada para ação direta"
+  },
+  "vendas": {
+    "script_whatsapp": "Abordagem para o time comercial",
+    "quebra_objecoes": "Resposta para a principal objeção de preço/tempo"
+  }
+}
+`;
+
+    const apiKey = window.GEMINI_API_KEY || localStorage.getItem('ORACULUM_GEMINI_API_KEY') || localStorage.getItem('GEMINI_API_KEY');
+    if (!apiKey) {
+      throw new Error("Chave de API do Gemini não configurada. Configure no Cofre de APIs.");
+    }
+
+    // D. Execução da API com tratamento e fallback
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: systemPrompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(`Falha na API Gemini (${response.status}): ${errData?.error?.message || 'Erro desconhecido'}`);
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error("A IA não retornou nenhum conteúdo.");
+    }
+
+    const parsedPlan = JSON.parse(rawText);
+
+    // E. Salva o plano no histórico do banco (se Supabase disponível)
+    if (window.supabaseClient) {
+      try {
+        await window.supabaseClient.from('bi_chat_history').insert([{
+          client_id: clientId,
+          prompt_input: userStrategicGoal,
+          json_response: parsedPlan
+        }]);
+      } catch (e) {
+        console.warn("Não foi possível salvar no histórico Supabase:", e);
+      }
+    }
+
+    // Também armazena no localStorage para persistência imediata no War Room
+    localStorage.setItem(`oraculum_war_room_${clientId}`, JSON.stringify(parsedPlan));
+
+    // F. Despacha o plano para a Sala de Operação (War Room)
+    if (typeof window.renderWarRoomFromJSON === 'function') {
+      window.renderWarRoomFromJSON(parsedPlan);
+    } else if (typeof renderWarRoomFromJSON === 'function') {
+      renderWarRoomFromJSON(parsedPlan);
+    }
+
+    return parsedPlan;
+  }
+
+  window.runOraculumAutonomousEngine = runOraculumAutonomousEngine;
+
   document.addEventListener('DOMContentLoaded', injetarEstruturaLiveAdvisor);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     injetarEstruturaLiveAdvisor();
