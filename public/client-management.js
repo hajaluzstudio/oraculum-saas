@@ -309,6 +309,12 @@ window.excluirCliente = async function(clientId) {
 // 5. CARREGAR DADOS DO CLIENTE NO FORMULÁRIO DE ONBOARDING
 window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (!clientId) return;
+  // Delega toda a sincronia bidirecional para o Maestro Global
+  if (typeof window.setActiveClient === 'function') {
+    window.setActiveClient(clientId);
+    return;
+  }
+  // Fallback legado (caso setActiveClient ainda não esteja disponível)
   const list = window.clientesMock || [];
   const client = list.find(c => String(c.id) === String(clientId));
   

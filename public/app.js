@@ -369,6 +369,60 @@ document.addEventListener('DOMContentLoaded', () => {
   // Expõe a função globalmente para ser usada por outros scripts e abas
   window.selectActiveClient = selectActiveClient;
 
+  // ============================================================================
+  // MAESTRO GLOBAL: window.setActiveClient (ponto único de troca de cliente)
+  // ============================================================================
+  window.setActiveClient = async function(clientId) {
+    if (!clientId) return;
+
+    // 1. Busca os dados completos do cliente no cache local ou no Supabase
+    let client = (window.clientsList || window.clientesMock || []).find(c => String(c.id) === String(clientId));
+    if (!client && window.supabaseClient) {
+      const { data } = await window.supabaseClient.from('clients').select('*').eq('id', clientId).single();
+      client = data;
+    }
+    if (!client) {
+      // Fallback mínimo para não travar o fluxo
+      client = { id: clientId, name: 'Cliente' };
+    }
+
+    // 2. Sincroniza os dois dropdowns (Header + Onboarding)
+    const headerSelect = document.getElementById('active-client-select');
+    if (headerSelect && headerSelect.value !== client.id) headerSelect.value = client.id;
+
+    const onboardingSelect = document.getElementById('select-onboarding-client');
+    if (onboardingSelect && onboardingSelect.value !== client.id) onboardingSelect.value = client.id;
+
+    // 3. Preenche automaticamente os inputs do formulário de Onboarding
+    const nameInput  = document.getElementById('client-name');
+    const nicheInput = document.getElementById('client-niche');
+    const webInput   = document.getElementById('client-website');
+    const notesInput = document.getElementById('previous-agency-notes') || document.getElementById('briefing-notes');
+
+    if (nameInput)  nameInput.value  = client.name    || '';
+    if (nicheInput) nicheInput.value = client.niche   || '';
+    if (webInput)   webInput.value   = client.website || '';
+
+    if (notesInput) {
+      let cleanNotes = client.notes || client.actual_notes || client.previous_agency_notes || '';
+      if (typeof cleanNotes === 'string' && cleanNotes.trim().startsWith('{')) {
+        try { const p = JSON.parse(cleanNotes); cleanNotes = p.actual_notes || p.notes || cleanNotes; } catch (_) {}
+      }
+      notesInput.value = cleanNotes;
+    }
+
+    // 4. Delega para selectActiveClient (que grava estado global e dispara clientChanged)
+    await selectActiveClient(clientId);
+  };
+
+  // Vincula o seletor de Onboarding ao Maestro
+  const onboardingClientSelect = document.getElementById('select-onboarding-client');
+  if (onboardingClientSelect) {
+    onboardingClientSelect.addEventListener('change', (e) => {
+      window.setActiveClient(e.target.value);
+    });
+  }
+
   if (activeClientSelect) {
     activeClientSelect.addEventListener('change', (e) => {
       selectActiveClient(e.target.value);
@@ -5490,5 +5544,18 @@ window.addEventListener('clientChanged', (e) => {
   // 4. Kanban & Trilha de Equipe
   if (typeof window.loadClientKanbanCards === 'function') {
     window.loadClientKanbanCards(newClient.id);
+  }
+
+  // 5. Refresh do Dossiê Estratégico (se disponível no payload do cliente)
+  if (newClient.dossier_data) {
+    if (typeof window.renderDossierOutput === 'function') {
+      window.renderDossierOutput(newClient.dossier_data);
+    }
+    const badge = document.getElementById('dossier-status-badge');
+    if (badge) {
+      badge.textContent = `DOSSIÊ ATIVO: ${newClient.name}`;
+      badge.style.background = 'rgba(0, 245, 160, 0.2)';
+      badge.style.color = '#00F5A0';
+    }
   }
 });
