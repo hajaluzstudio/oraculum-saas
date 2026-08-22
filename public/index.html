@@ -1373,45 +1373,6 @@
             </div>
           </div>
 
-          <!-- BOTÃO FLUTUANTE (TRIGGER) -->
-          <div id="oracle-live-trigger-container" class="fixed bottom-6 right-6 z-50">
-            <button id="btn-open-oracle-live" onclick="window.toggleOracleLive(true)" class="flex items-center gap-2.5 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs rounded-full shadow-2xl shadow-emerald-500/40 border border-emerald-300 transition transform hover:scale-105 cursor-pointer">
-              <span class="w-2.5 h-2.5 rounded-full bg-black animate-ping"></span>
-              <span>💬 Oracle Live BI</span>
-            </button>
-          </div>
-
-          <!-- DRAWER / MODAL LATERAL FLUTUANTE (INICIA OCULTO) -->
-          <div id="oracle-live-drawer" class="fixed bottom-6 right-6 z-50 hidden w-96 max-w-[90vw] h-[520px] max-h-[80vh] flex-col rounded-2xl border border-emerald-500/40 bg-gray-950/95 backdrop-blur-xl shadow-2xl shadow-black transition-all">
-            
-            <!-- Topo da Gaveta -->
-            <div class="flex items-center justify-between p-3.5 border-b border-emerald-500/20 bg-emerald-950/30 rounded-t-2xl">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <h4 class="text-xs font-bold text-white tracking-wide uppercase">Oracle Live — BI Copilot</h4>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20" id="oracle-live-client-name">Cliente Ativo</span>
-                <button type="button" onclick="window.toggleOracleLive(false)" class="text-gray-400 hover:text-white text-sm px-1.5 py-0.5 rounded hover:bg-gray-800 transition cursor-pointer">✕</button>
-              </div>
-            </div>
-
-            <!-- Lista de Mensagens com Scroll -->
-            <div id="oracle-live-messages" class="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs text-gray-200">
-              <div class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded-lg text-emerald-200">
-                👋 <strong>Oracle:</strong> Analisando as métricas de <strong id="oracle-live-intro-client">este cliente</strong>. O que deseja diagnosticar sobre ROAS, CAC ou conversão?
-              </div>
-            </div>
-
-            <!-- Input & Ações -->
-            <div class="p-3 border-t border-emerald-500/20 bg-black/60 rounded-b-2xl">
-              <form onsubmit="event.preventDefault(); window.sendOracleLiveMessage();" class="flex gap-2">
-                <input type="text" id="oracle-live-input" placeholder="Pergunte ao Oracle..." class="flex-1 bg-gray-900 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 transition" autocomplete="off" />
-                <button type="submit" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded-lg transition shadow-md cursor-pointer">🚀</button>
-              </form>
-            </div>
-          </div>
-
           <!-- FEEDBACK LOOP PREDITIVO -->
           <div class="card-glass mt-20">
             <div class="card-header">
@@ -3347,7 +3308,7 @@
   <script src="/agency-management.js?v=65.0.0"></script>
   <script src="/client-management.js?v=65.0.0"></script>
   <script src="/radar-concorrentes.js?v=65.0.0"></script>
-  <script src="/bi-live-advisor.js?v=65.0.0"></script>
+  <script src="/oraculo-live.js?v=65.0.0"></script>
   <script src="/war-room-tools.js?v=65.0.0"></script>
   <script src="/traffic-manager.js?v=65.0.0"></script>
 </body>
