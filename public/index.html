@@ -46,11 +46,8 @@
       --text-muted: #8da39b;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
+    #auth-gate-container * {
       box-sizing: border-box;
-      user-select: none;
     }
 
     #auth-gate-container {
@@ -79,7 +76,7 @@
     }
 
     /* Header */
-    header {
+    #auth-gate-container header {
       position: fixed;
       top: 0;
       left: 0;
@@ -197,20 +194,20 @@
     }
 
     /* Formulário */
-    form {
+    #auth-gate-container form {
       display: flex;
       flex-direction: column;
       gap: 1.2rem;
       text-align: left;
     }
 
-    .input-group {
+    #auth-gate-container .input-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    label {
+    #auth-gate-container label {
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.15rem;
@@ -218,14 +215,14 @@
       font-weight: 700;
     }
 
-    .input-wrapper {
+    #auth-gate-container .input-wrapper {
       position: relative;
       display: flex;
       align-items: center;
       width: 100%;
     }
 
-    input {
+    #auth-gate-container input {
       width: 100%;
       background: rgba(8, 41, 31, 0.35);
       border: 1px solid rgba(56, 201, 167, 0.25);
