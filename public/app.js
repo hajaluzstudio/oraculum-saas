@@ -3802,20 +3802,8 @@ document.addEventListener('DOMContentLoaded', () => {
     authTabBtnLogin.addEventListener('click', () => {
       authTabBtnLogin.style.background = '#10B981';
       authTabBtnLogin.style.color = '#FFF';
-      authTabBtnRegister.style.background = 'transparent';
-      authTabBtnRegister.style.color = '#94A3B8';
       formAuthLogin.style.display = 'block';
-      formAuthRegister.style.display = 'none';
-      if (authErrorMsg) authErrorMsg.style.display = 'none';
-    });
-
-    authTabBtnRegister.addEventListener('click', () => {
-      authTabBtnRegister.style.background = '#00F5A0';
-      authTabBtnRegister.style.color = '#080B11';
-      authTabBtnLogin.style.background = 'transparent';
-      authTabBtnLogin.style.color = '#94A3B8';
-      formAuthRegister.style.display = 'block';
-      formAuthLogin.style.display = 'none';
+      if (formAuthRegister) formAuthRegister.style.display = 'none';
       if (authErrorMsg) authErrorMsg.style.display = 'none';
     });
   }
@@ -3839,70 +3827,59 @@ document.addEventListener('DOMContentLoaded', () => {
       const email = document.getElementById('auth-login-email')?.value;
       const password = document.getElementById('auth-login-password')?.value;
 
-      let role = 'agency_owner';
-      let agencyStatus = 'active';
+      try {
+        const supaClient = (typeof supabase !== 'undefined') ? supabase : window.supabaseClient;
+        if (!supaClient) throw new Error("Supabase não inicializado.");
 
-      if (email.toLowerCase().includes('admin')) {
-        role = 'super_admin';
-      } else if (email.toLowerCase().includes('bloqueado')) {
-        agencyStatus = 'blocked';
-      }
+        const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
 
-      const sessionData = {
-        email,
-        role,
-        agencyStatus,
-        agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + email.split('@')[0],
-        loggedAt: new Date().toISOString()
-      };
+        const token = data.session.access_token;
+        const userId = data.user.id;
 
-      localStorage.setItem('oraculum_session', JSON.stringify(sessionData));
+        const { data: profile, error: profileErr } = await supaClient
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (userSessionLabel) {
-        userSessionLabel.textContent = sessionData.email;
-      }
+        let role = profile?.role || 'agency_member';
+        let agencyId = profile?.agency_id || null;
+        let agencyStatus = 'active';
 
-      if (authModalOverlay) authModalOverlay.style.display = 'none';
+        const sessionData = {
+          email,
+          role,
+          agencyId,
+          userId,
+          agencyStatus,
+          agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira',
+          loggedAt: new Date().toISOString()
+        };
 
-      if (agencyStatus === 'blocked') {
-        if (blockedSuspensionModal) blockedSuspensionModal.style.display = 'flex';
-      } else if (role === 'super_admin') {
-        const btnSuperAdmin = document.getElementById('btn-tab-super-admin');
-        if (btnSuperAdmin) btnSuperAdmin.click();
-        alert('👑 Bem-vindo, Super Admin! Painel Master ativado.');
-      } else {
-        alert(`✅ Login realizado com sucesso como ${email}!`);
+        sessionStorage.setItem('oraculum_session', JSON.stringify(sessionData));
+
+        if (userSessionLabel) {
+          userSessionLabel.textContent = sessionData.email;
+        }
+
+        if (authModalOverlay) authModalOverlay.style.display = 'none';
+
+        if (role === 'super_admin') {
+          const btnSuperAdmin = document.getElementById('btn-tab-super-admin');
+          if (btnSuperAdmin) btnSuperAdmin.click();
+          alert('👑 Bem-vindo, Super Admin! Painel Master ativado.');
+        } else {
+          alert(`✅ Login realizado com sucesso como ${email}!`);
+        }
+      } catch (error) {
+        console.error('Erro no login modal:', error);
+        alert('Erro ao realizar login. Verifique as credenciais.');
       }
     });
   }
 
-  // SUBMIT AUTO-CADASTRO DE AGÊNCIA
-  if (formAuthRegister) {
-    formAuthRegister.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const agencyName = document.getElementById('auth-reg-agency-name')?.value;
-      const fullName = document.getElementById('auth-reg-fullname')?.value;
-      const email = document.getElementById('auth-reg-email')?.value;
 
-      const sessionData = {
-        email,
-        fullName,
-        agencyName,
-        role: 'agency_owner',
-        agencyStatus: 'active',
-        loggedAt: new Date().toISOString()
-      };
-
-      localStorage.setItem('oraculum_session', JSON.stringify(sessionData));
-
-      if (userSessionLabel) {
-        userSessionLabel.textContent = email;
-      }
-
-      if (authModalOverlay) authModalOverlay.style.display = 'none';
-      alert(`🎉 Agência "${agencyName}" criada com sucesso! Seja bem-vindo ao Oraculum SaaS.`);
-    });
-  }
 
   // ============================================================================
   // AUTH GATE PORTAL & CONTROLE DE VISIBILIDADE RBAC (SUPER ADMIN VS AGÊNCIA)

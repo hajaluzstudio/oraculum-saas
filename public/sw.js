@@ -2,7 +2,7 @@
 // SERVICE WORKER - ORACULUM SAAS (PWA & OFFLINE TELEPROMPTER)
 // ==============================================================================
 
-const CACHE_NAME = 'oraculum-cache-v1';
+const CACHE_NAME = 'oraculum-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -34,22 +34,29 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Interceptação de Requisições de Rede (Cache First para assets estáticos)
+// Interceptação de Requisições de Rede (Network First para garantir atualização)
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições de API para manter dados em tempo real
-  if (event.request.url.includes('/api/')) {
+  // Ignora requisições de API e extensões do Chrome
+  if (event.request.url.includes('/api/') || event.request.url.startsWith('chrome-extension')) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
-        return caches.match('/index.html');
+    fetch(event.request).then((response) => {
+      // Atualiza o cache dinamicamente com a versão mais recente
+      const resClone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => {
+        cache.put(event.request, resClone);
+      });
+      return response;
+    }).catch(() => {
+      // Se falhar (offline), busca no cache
+      return caches.match(event.request).then((response) => {
+        return response || caches.match('/index.html');
       });
     })
   );

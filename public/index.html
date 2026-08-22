@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -367,7 +367,7 @@
     </form>
 
     <div class="footer-help">
-      <a href="index.html">Primeiro Acesso?</a>
+      <span>Painel Restrito</span>
       <a href="#">Recuperar Chave</a>
     </div>
   </div>
@@ -2691,9 +2691,8 @@
       </div>
 
       <!-- Abas do Modal -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; background: #080B11; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; font-size: 13px; font-weight: 600;">
-        <button type="button" id="auth-tab-btn-login" style="padding: 10px; border: none; border-radius: 8px; background: #10B981; color: #FFF; cursor: pointer; transition: all 0.2s;">Entrar</button>
-        <button type="button" id="auth-tab-btn-register" style="padding: 10px; border: none; border-radius: 8px; background: transparent; color: #94A3B8; cursor: pointer; transition: all 0.2s;">Cadastrar Nova Agência</button>
+      <div style="display: flex; background: #080B11; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; font-size: 13px; font-weight: 600;">
+        <button type="button" id="auth-tab-btn-login" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #10B981; color: #FFF; cursor: default;">Acesso Restrito</button>
       </div>
 
       <div id="auth-error-msg" style="display: none; background: rgba(255,75,75,0.15); border: 1px solid rgba(255,75,75,0.3); color: #FF4B4B; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 16px;"></div>
@@ -2716,28 +2715,7 @@
         </p>
       </form>
 
-      <!-- FORM 2: CADASTRO DE AGÊNCIA -->
-      <form id="form-auth-register" style="display: none;">
-        <div style="margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome da Agência / Empresa</label>
-          <input type="text" id="auth-reg-agency-name" required placeholder="Ex: Agência Turbo Digital" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome do Responsável / CEO</label>
-          <input type="text" id="auth-reg-fullname" required placeholder="Seu nome completo" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">E-mail Administrativo</label>
-          <input type="email" id="auth-reg-email" required placeholder="contato@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-        <div style="margin-bottom: 18px;">
-          <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Senha Mestra de Acesso</label>
-          <input type="password" id="auth-reg-password" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
-        </div>
-        <button type="submit" style="width: 100%; background: #10B981; border: none; border-radius: 12px; padding: 14px; color: #0f172a; font-weight: 800; font-size: 14px; cursor: pointer;">
-          <i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i> Criar Agência & Iniciar Teste
-        </button>
-      </form>
+
     </div>
   </div>
 
@@ -3117,34 +3095,49 @@
         if (rememberMe) localStorage.setItem('oraculum_saved_email', email);
         else localStorage.removeItem('oraculum_saved_email');
 
-        // Tenta login via Supabase se disponível
-        let authSuccess = false;
-        let token = 'master-session-' + Date.now();
-        let role = email.toLowerCase().includes('admin') ? 'super_admin' : 'agency_owner';
-
         const supaClient = (typeof supabase !== 'undefined') ? supabase : (window.supabaseClient || window.supabase);
-        if (supaClient && supaClient.auth) {
-          try {
-            const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
-            if (error && !email.toLowerCase().includes('admin') && !email.toLowerCase().includes('agencia')) {
-              throw error;
-            }
-            if (data?.session) {
-              token = data.session.access_token;
-              authSuccess = true;
-            }
-          } catch(supaErr) {
-            if (!email.toLowerCase().includes('admin') && !email.toLowerCase().includes('agencia')) {
-              throw supaErr;
-            }
-          }
+        if (!supaClient || !supaClient.auth) {
+          throw new Error('Serviço de autenticação (Supabase) não inicializado.');
         }
 
+        // Tenta login real via Supabase
+        const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
+        if (error) {
+          throw error;
+        }
+
+        const token = data.session.access_token;
+        const userId = data.user.id;
+
+        // Busca o papel e a agência do usuário na tabela profiles
+        const { data: profile, error: profileErr } = await supaClient
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (profileErr && profileErr.code !== 'PGRST116') {
+           console.error("Erro ao buscar profile:", profileErr);
+        }
+
+        let role = profile?.role || 'agency_member';
+        let agencyId = profile?.agency_id || null;
+        let agencyName = role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira';
+
         // Salva sessão ativa
-        const sessionObj = { token, email, role, agencyStatus: 'active', agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência ' + (email.split('@')[0] || 'Scale'), loggedAt: new Date().toISOString() };
+        const sessionObj = { 
+          token, 
+          email, 
+          role, 
+          agencyId,
+          userId,
+          agencyStatus: 'active', 
+          agencyName, 
+          loggedAt: new Date().toISOString() 
+        };
         sessionStorage.setItem('oraculum_session', JSON.stringify(sessionObj));
 
-        // Abre a tela principal na hora
+        // Abre a tela principal
         const authGate = document.getElementById('auth-gate-container');
         const mainDash = document.getElementById('main-dashboard-container');
         const appContainer = document.querySelector('.app-container');
@@ -3163,11 +3156,15 @@
         const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
         if (role === 'super_admin' && btnTabSuperAdmin) {
           btnTabSuperAdmin.click();
+        } else {
+           const btnClientes = document.getElementById('btn-tab-clientes');
+           if (btnClientes) btnClientes.click();
         }
 
       } catch (err) {
+        console.error('Erro de Login:', err);
         alert('Erro de Acesso: ' + (err.message || 'Falha ao autenticar'));
-        btn.innerText = 'Entrar no Sistema';
+        btn.innerText = 'Entrar na Plataforma →';
         btn.disabled = false;
       }
     };

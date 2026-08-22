@@ -284,6 +284,9 @@ window.salvarAgencia = async function(e) {
       const resData = await res.json();
       if (resData.success) {
         savedInSupa = true;
+        if (resData.userCreated) {
+           alert(`✅ Agência cadastrada com sucesso!\n\nUm usuário administrador foi criado para esta agência.\n\nE-mail: ${payload.admin_email}\nSenha Provisória: ${resData.defaultPassword}\n\nPor favor, copie e envie esta senha para a agência.`);
+        }
       } else {
         console.error("❌ ERRO BACKEND VERCEL ao salvar agência:", resData.error || resData);
         alert(`❌ ERRO BACKEND VERCEL ao salvar agência:\n${resData.error || JSON.stringify(resData)}`);

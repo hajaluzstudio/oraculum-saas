@@ -948,7 +948,31 @@ app.post(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, r
       throw error;
     }
     console.log('[Supabase] ✅ Agência criada com sucesso:', data?.id);
-    return res.json({ success: true, data });
+
+    // Tenta criar o usuário agency_admin via Supabase Auth
+    let userCreated = false;
+    let defaultPassword = 'ChangeMe123!';
+    const adminEmailToCreate = req.body.admin_email || email_billing;
+    if (adminEmailToCreate) {
+      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+        email: adminEmailToCreate,
+        password: defaultPassword,
+        email_confirm: true,
+        user_metadata: {
+           role: 'agency_owner',
+           agency_id: data.id,
+           full_name: req.body.responsible_name || 'Admin Agência'
+        }
+      });
+      if (userError) {
+         console.error('[Supabase] Erro ao criar usuário admin da agência:', userError);
+      } else {
+         console.log('[Supabase] ✅ Usuário admin da agência criado:', userData.user.id);
+         userCreated = true;
+      }
+    }
+
+    return res.json({ success: true, data, userCreated, defaultPassword: userCreated ? defaultPassword : null });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
