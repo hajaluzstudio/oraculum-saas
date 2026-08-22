@@ -682,10 +682,8 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 // POST /api/chat - Chat Estratégico & Live Advisor com persistência no bi_chat_history
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const organizationId = (req as any).organizationId;
     const userMessage = req.body.message || req.body.prompt || '';
     const clientId = req.body.clientId || req.body.client_id;
-    const history = req.body.history || [];
     
     if (!clientId || !userMessage) {
       return res.status(400).json({ status: 'error', error: 'clientId e message são obrigatórios.' });
@@ -696,47 +694,44 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(500).json({ status: 'error', error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    // 1. Gravação síncrona da mensagem do usuário no bi_chat_history com compatibilidade dupla
-    const payloadUser = {
+    // Salva mensagem do usuário
+    await supabase.from('bi_chat_history').insert({
       client_id: clientId,
       role: 'user',
-      sender: 'user',
       content: userMessage,
-      message: userMessage,
       created_at: new Date().toISOString()
-    };
-    
-    const { error: userErr } = await supabase.from('bi_chat_history').insert(payloadUser);
-    if (userErr) {
-      console.error('❌ [Supabase Insert User Error]:', userErr);
-      try { await supabase.from('chat_history').insert(payloadUser); } catch (e) { console.warn('[Supabase Fallback Warning]:', e); }
-    }
+    });
 
-    // 2. Chamada da IA Gemini
-    const response = await sendStrategicChatMessage(organizationId, clientId, userMessage, history);
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
 
-    const assistantContent = typeof response === 'string' ? response : (typeof (response as any)?.replyText === 'string' ? (response as any).replyText : JSON.stringify(response));
+    // Pega o dossiê real do banco
+    const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
+    const dossierContext = dossierData ? JSON.stringify(dossierData.dossier_data) : 'Sem dossiê';
 
-    // 3. Gravação síncrona da resposta da IA no bi_chat_history com compatibilidade dupla
-    const payloadAssistant = {
+    const systemInstruction = `Você é o Oráculo de Marketing Híbrido ROI-First especialista no nicho deste cliente.
+FONTE DE CONTEXTO (DOSSIÊ DO CLIENTE ATIVO):
+${dossierContext}
+
+Responda diretamente à mensagem do usuário usando os dados reais do dossiê.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      config: { systemInstruction }
+    });
+
+    const replyText = response.text || "Erro na geração da resposta.";
+
+    // Salva resposta real da IA
+    await supabase.from('bi_chat_history').insert({
       client_id: clientId,
       role: 'assistant',
-      sender: 'assistant',
-      content: assistantContent,
-      message: assistantContent,
-      json_response: typeof response === 'object' ? response : null,
+      content: replyText,
       created_at: new Date().toISOString()
-    };
-    
-    const { error: aiErr } = await supabase.from('bi_chat_history').insert(payloadAssistant);
-    if (aiErr) {
-      console.error('❌ [Supabase Insert AI Error]:', aiErr);
-      try { await supabase.from('chat_history').insert(payloadAssistant); } catch (e) { console.warn('[Supabase Fallback Warning]:', e); }
-    } else {
-      console.log('[Supabase] ✅ Resposta do assistente salva com sucesso para o cliente:', clientId);
-    }
+    });
 
-    return res.json({ status: 'ok', success: true, data: response, reply: assistantContent });
+    return res.json({ reply: replyText, status: 'ok' });
   } catch (error: any) {
     console.error('❌ [API /api/chat Error]:', error);
     return res.status(500).json({ status: 'error', error: error.message || 'Erro interno no Chat.' });

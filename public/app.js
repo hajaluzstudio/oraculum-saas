@@ -320,17 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const jsonResp = msg.json_response;
 
             if (role === 'model' || role === 'assistant' || rawRole === 'oraculum' || rawRole === 'bot') {
-              if (jsonResp && typeof jsonResp === 'object') {
-                renderChatReply(jsonResp);
-              } else {
-                let parsed = null;
-                try { parsed = JSON.parse(content); } catch (e) {}
-                if (parsed && typeof parsed === 'object') {
-                  renderChatReply(parsed);
-                } else {
-                  renderChatReply({ replyText: content });
-                }
-              }
+              appendChatMessage('model', content);
             } else {
               appendChatMessage('user', content);
             }
@@ -798,8 +788,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const typingEl = document.getElementById(typingId);
       if (typingEl) typingEl.remove();
 
-      if (resData.success && resData.data) {
-        renderChatReply(resData.data);
+      if (resData.status === 'ok') {
+        const replyHtml = `${resData.reply}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>`;
+        appendChatMessage('model', replyHtml);
       } else {
         throw new Error('Erro na resposta do chat');
       }
