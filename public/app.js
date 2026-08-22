@@ -109,16 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
   const sidebarEl = document.querySelector('.sidebar');
   if (btnToggleSidebar && sidebarEl) {
-    btnToggleSidebar.addEventListener('click', () => {
+    btnToggleSidebar.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       sidebarEl.classList.toggle('collapsed');
-      const icon = btnToggleSidebar.querySelector('i');
-      if (sidebarEl.classList.contains('collapsed')) {
-        icon.classList.remove('fa-chevron-left');
-        icon.classList.add('fa-chevron-right');
-      } else {
-        icon.classList.remove('fa-chevron-right');
-        icon.classList.add('fa-chevron-left');
-      }
     });
   }
 

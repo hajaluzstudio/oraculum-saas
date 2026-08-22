@@ -883,12 +883,12 @@
     <main class="main-content">
       <!-- CABEÇALHO SUPERIOR -->
       <header class="top-header">
-        <div class="header-title" style="margin-bottom: 16px;">
+        <div class="header-title">
           <h1 id="page-title">Carteira de Clientes & Fichas Cadastrais</h1>
           <p id="page-subtitle">Gerencie os dados cadastrais, ticket médio, meta de faturamento e contatos dos clientes da agência.</p>
         </div>
 
-        <div class="header-actions" style="margin-bottom: 16px;">
+        <div class="header-actions" style="display: flex; flex-direction: row; gap: 12px; align-items: center;">
 
           <div class="stat-pill highlight" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-user-check"></i>
@@ -910,10 +910,6 @@
             <i class="fa-solid fa-circle-user" style="color: #34D399;"></i>
             <span id="header-user-email" style="font-size: 11px; color: #E2E8F0; font-weight: 600;">Carregando...</span>
           </div>
-
-
-
-
 
         </div>
       </header>
@@ -961,7 +957,7 @@
             <div style="overflow-x: auto;">
               <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                 <thead>
-                  <tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94A3B8; text-transform: uppercase; font-size: 11px;">
+                  <tr style="background: var(--bg-surface); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94A3B8; text-transform: uppercase; font-size: 11px;">
                     <th style="padding: 14px 18px;">Empresa / Marca</th>
                     <th style="padding: 14px 18px;">Nicho / Setor</th>
                     <th style="padding: 14px 18px;">Responsável & Contato</th>
@@ -971,7 +967,7 @@
                   </tr>
                 </thead>
                 <tbody id="clients-table-body">
-                  <tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>
+                  <tr><td colspan="6" class="text-center py-8 text-[var(--text-muted)]">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1101,10 +1097,10 @@
                 
                 <div class="form-group">
                   <label for="lp-theme-select">Tema Visual & Estilo *</label>
-                  <select id="lp-theme-select" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
-                    <option value="dark_vip" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Dark Mode VIP (Alto Padrão / Luxo)</option>
-                    <option value="clinical_minimal" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Minimalista Clínico (Clean & Confiança)</option>
-                    <option value="tech_growth" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Tech Growth (Contraste & Dinamismo)</option>
+                  <select id="lp-theme-select" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                    <option value="dark_vip" selected class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Dark Mode VIP (Alto Padrão / Luxo)</option>
+                    <option value="clinical_minimal" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Minimalista Clínico (Clean & Confiança)</option>
+                    <option value="tech_growth" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Tech Growth (Contraste & Dinamismo)</option>
                   </select>
                 </div>
 
@@ -1475,7 +1471,7 @@
         <section id="tab-war-room" class="tab-panel">
           <div class="war-room-container" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
             <!-- Cabeçalho de Navegação Interno (As 5 Equipes) -->
-            <div class="war-room-nav" style="display: flex; gap: 8px; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.15); overflow-x: auto;">
+            <div class="war-room-nav" style="display: flex; gap: 8px; background: var(--bg-surface); padding: 8px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.15); overflow-x: auto;">
               <button class="wr-tab-btn active" data-wr-target="wr-video"><i class="fa-solid fa-film"></i> Vídeo & Gravação</button>
               <button class="wr-tab-btn" data-wr-target="wr-design"><i class="fa-solid fa-palette"></i> Design & Web</button>
               <button class="wr-tab-btn" data-wr-target="wr-traffic"><i class="fa-solid fa-bullseye"></i> Tráfego</button>
@@ -1515,12 +1511,12 @@
                       <form id="form-generate-script" style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
                         <div class="form-group">
                           <label for="script-format-type"><i class="fa-solid fa-film"></i> Formato do Vídeo *</label>
-                          <select id="script-format-type" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
-                            <option value="reels_30s" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
-                            <option value="vsl_60s" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
-                            <option value="authority_video" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
-                            <option value="objection_killer" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
-                            <option value="depoimento" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
+                          <select id="script-format-type" required class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                            <option value="reels_30s" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
+                            <option value="vsl_60s" selected class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
+                            <option value="authority_video" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
+                            <option value="objection_killer" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
+                            <option value="depoimento" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
                           </select>
                         </div>
 
@@ -1701,7 +1697,7 @@
                         <div style="margin-top: 14px;">
                           <div class="form-group">
                             <label>Formato do Criativo</label>
-                            <select id="mockup-format" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm">
+                            <select id="mockup-format" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 text-sm">
                               <option value="9_16">Story / Reels / TikTok (9:16)</option>
                               <option value="4_5">Feed Vertical (4:5)</option>
                               <option value="1_1">Feed Quadrado (1:1)</option>
@@ -1709,7 +1705,7 @@
                           </div>
                           <div class="form-group" style="margin-top:10px;">
                             <label>Upload da Arte (Imagem)</label>
-                            <input type="file" id="mockup-file" accept="image/*" class="w-full text-slate-100 text-sm">
+                            <input type="file" id="mockup-file" accept="image/*" class="w-full text-[var(--text-primary)] text-sm">
                           </div>
                           <div style="margin-top: 16px; display: flex; gap: 8px;">
                             <button type="button" class="btn-secondary sm" id="btn-toggle-safezone"><i class="fa-solid fa-layer-group"></i> Toggle Safe Zone</button>
@@ -1741,14 +1737,14 @@
                               <label>Cor de Fundo</label>
                               <div style="display: flex; gap: 8px; align-items: center;">
                                 <input type="color" id="color-bg" value="var(--bg-surface)" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
-                                <input type="text" id="color-bg-hex" value="var(--bg-surface)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
+                                <input type="text" id="color-bg-hex" value="var(--bg-surface)" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)] text-sm uppercase">
                               </div>
                             </div>
                             <div class="form-group" style="flex: 1;">
                               <label>Cor do Texto</label>
                               <div style="display: flex; gap: 8px; align-items: center;">
                                 <input type="color" id="color-text" value="#10B981" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
-                                <input type="text" id="color-text-hex" value="#10B981" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
+                                <input type="text" id="color-text-hex" value="#10B981" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)] text-sm uppercase">
                               </div>
                             </div>
                           </div>
@@ -1794,19 +1790,19 @@
                           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="form-group">
                               <label>Orçamento Diário (R$)</label>
-                              <input type="number" id="sim-budget" value="100" step="10" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <input type="number" id="sim-budget" value="100" step="10" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                             </div>
                             <div class="form-group">
                               <label>Ticket Médio (R$)</label>
-                              <input type="number" id="sim-ticket" value="297" step="1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <input type="number" id="sim-ticket" value="297" step="1" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                             </div>
                             <div class="form-group">
                               <label>Conversão da LP (%)</label>
-                              <input type="number" id="sim-conversion" value="2" step="0.5" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <input type="number" id="sim-conversion" value="2" step="0.5" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                             </div>
                             <div class="form-group">
                               <label>Meta de ROAS</label>
-                              <input type="number" id="sim-roas-target" value="3" step="0.5" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <input type="number" id="sim-roas-target" value="3" step="0.5" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                             </div>
                           </div>
                           
@@ -1836,12 +1832,12 @@
                         <form id="form-utm-generator" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
                           <div class="form-group">
                             <label>URL Base</label>
-                            <input type="url" id="utm-url" placeholder="https://seudominio.com.br/oferta" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            <input type="url" id="utm-url" placeholder="https://seudominio.com.br/oferta" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                           </div>
                           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="form-group">
                               <label>Source (Origem)</label>
-                              <select id="utm-source" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <select id="utm-source" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                                 <option value="meta">Meta (FB/IG)</option>
                                 <option value="google">Google</option>
                                 <option value="tiktok">TikTok</option>
@@ -1850,7 +1846,7 @@
                             </div>
                             <div class="form-group">
                               <label>Medium (Mídia)</label>
-                              <select id="utm-medium" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                              <select id="utm-medium" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                                 <option value="cpc">CPC (Custo por Clique)</option>
                                 <option value="organic">Orgânico</option>
                                 <option value="email">E-mail</option>
@@ -1859,11 +1855,11 @@
                           </div>
                           <div class="form-group">
                             <label>Campaign (Campanha)</label>
-                            <input type="text" id="utm-campaign" placeholder="ex: lancamento_v1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            <input type="text" id="utm-campaign" placeholder="ex: lancamento_v1" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                           </div>
                           <div class="form-group">
                             <label>Content (Criativo)</label>
-                            <input type="text" id="utm-content" placeholder="ex: ad_01_video" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100">
+                            <input type="text" id="utm-content" placeholder="ex: ad_01_video" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)]">
                           </div>
 
                           <div style="background: #000; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; position: relative;">
@@ -1894,7 +1890,7 @@
                           <p>Cole sua Copy. Iremos checar palavras proibidas pelo Meta/Google e a legibilidade.</p>
                         </div>
                         <div style="margin-top: 14px;">
-                          <textarea id="copy-audit-text" rows="6" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-emerald-500" placeholder="Cole o texto do anúncio aqui... Ex: Perca 10kg em 1 semana garantido!"></textarea>
+                          <textarea id="copy-audit-text" rows="6" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-emerald-500" placeholder="Cole o texto do anúncio aqui... Ex: Perca 10kg em 1 semana garantido!"></textarea>
                           
                           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px;">
                             <div style="display: flex; gap: 12px;">
@@ -1977,7 +1973,7 @@
                           
                           <!-- Objeção 1 -->
                           <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                               <span>💸 "Tá muito caro / Sem Orçamento"</span>
                               <i class="fa-solid fa-chevron-down"></i>
                             </button>
@@ -1993,7 +1989,7 @@
 
                           <!-- Objeção 2 -->
                           <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                               <span>⏳ "Vou pensar / Falo com você depois"</span>
                               <i class="fa-solid fa-chevron-down"></i>
                             </button>
@@ -2009,7 +2005,7 @@
                           
                           <!-- Objeção 3 -->
                           <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                               <span>🤝 "Preciso falar com meu sócio/esposa"</span>
                               <i class="fa-solid fa-chevron-down"></i>
                             </button>
@@ -2034,19 +2030,19 @@
                         </div>
                         <div style="margin-top: 14px;">
                           <form id="form-bant" style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                               <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
                               <span><strong>[B]udget:</strong> Tem orçamento alinhado / condição de pagamento.</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                               <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
                               <span><strong>[A]uthority:</strong> É o decisor final ou influencia diretamente.</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                               <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
                               <span><strong>[N]eed:</strong> Tem uma dor clara que nosso produto resolve.</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                               <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
                               <span><strong>[T]imeframe:</strong> Tem urgência de compra (próximos 7-15 dias).</span>
                             </label>
@@ -2382,7 +2378,7 @@
                   </div>
                 </div>
                 <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
-                  <button id="btn-save-api-keys-sa" type="button" onclick="window.salvarChavesAPI(event)" class="px-5 py-2.5 bg-[#10B981] hover:bg-[#059669] text-slate-950 rounded-xl font-extrabold text-xs shadow-none flex items-center gap-2 transition-all">
+                  <button id="btn-save-api-keys-sa" type="button" onclick="window.salvarChavesAPI(event)" class="px-5 py-2.5 bg-[#10B981] hover:bg-[#059669] text-[#020705] rounded-xl font-extrabold text-xs shadow-none flex items-center gap-2 transition-all">
                     <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Chaves de API
                   </button>
                 </div>
@@ -2628,7 +2624,7 @@
   <!-- MODAL DE APRESENTAÇÃO EXECUTIVA DE BI EM TELA CHEIA (CLIENTE) -->
   <div id="bi-presentation-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-app); z-index: 99999; flex-direction: column; color: #FFF; font-family: 'Inter', sans-serif; overflow-y: auto;">
     <!-- Barra Superior da Apresentação com Branding White-Label -->
-    <div style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.12); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10000; backdrop-filter: blur(10px);">
+    <div style="background: var(--bg-surface); border-bottom: 1px solid rgba(255,255,255,0.12); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10000; backdrop-filter: blur(10px);">
       <div style="display: flex; align-items: center; gap: 14px;">
         <div style="width: 38px; height: 38px; border-radius: 8px; background: #0A0E17; border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; color: #10B981; font-weight: 900; font-size: 18px;">
           <i class="fa-solid fa-chart-pie"></i>
@@ -2853,27 +2849,27 @@
         modal.id = 'modal-user-profile';
         modal.style.cssText = 'position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
         modal.innerHTML = `
-          <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
+            <div class="flex justify-between items-center border-b border-[var(--border-subtle)] pb-3">
               <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-gear text-emerald-400"></i> Editar Perfil & Foto</h3>
-              <button onclick="document.getElementById('modal-user-profile').style.display='none'" class="text-slate-400 hover:text-white text-xl cursor-pointer">&times;</button>
+              <button onclick="document.getElementById('modal-user-profile').style.display='none'" class="text-[var(--text-muted)] hover:text-white text-xl cursor-pointer">&times;</button>
             </div>
             <form onsubmit="window.salvarPerfilUsuario(event)" class="space-y-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome de Exibição / Responsável</label>
-                <input type="text" id="profile-input-name" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome de Exibição / Responsável</label>
+                <input type="text" id="profile-input-name" required class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome da Agência / Fantasia</label>
-                <input type="text" id="profile-input-agency" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome da Agência / Fantasia</label>
+                <input type="text" id="profile-input-agency" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">URL da Foto do Avatar (Opcional)</label>
-                <input type="url" id="profile-input-avatar" placeholder="https://exemplo.com/foto.jpg" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">URL da Foto do Avatar (Opcional)</label>
+                <input type="url" id="profile-input-avatar" placeholder="https://exemplo.com/foto.jpg" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
               </div>
-              <div class="flex justify-end space-x-2 pt-3 border-t border-slate-800">
-                <button type="button" onclick="document.getElementById('modal-user-profile').style.display='none'" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-xs cursor-pointer">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-slate-950 rounded-xl font-extrabold text-xs cursor-pointer shadow-none">Salvar Alterações</button>
+              <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--border-subtle)]">
+                <button type="button" onclick="document.getElementById('modal-user-profile').style.display='none'" class="px-4 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface)] rounded-xl text-[var(--text-primary)] text-xs cursor-pointer">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-[#020705] rounded-xl font-extrabold text-xs cursor-pointer shadow-none">Salvar Alterações</button>
               </div>
             </form>
           </div>

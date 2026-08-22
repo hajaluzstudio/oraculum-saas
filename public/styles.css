@@ -91,7 +91,7 @@ select option:checked {
 
 /* Glassmorphic Auth Card Custom Styling */
 .auth-glass-card {
-  background: rgba(15, 23, 42, 0.85) !important;
+  background: var(--bg-surface) !important;
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -109,7 +109,7 @@ select option:checked {
 
 /* SIDEBAR LATERAL */
 .sidebar {
-  width: 280px;
+  width: 270px;
   flex-shrink: 0;
   background: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
@@ -118,37 +118,36 @@ select option:checked {
   flex-direction: column;
   backdrop-filter: blur(20px);
   z-index: 100;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar.collapsed {
-  width: 68px;
-  padding: 24px 10px;
+  width: 78px;
 }
-
-.sidebar.collapsed .brand img#sidebar-logo-full {
+.sidebar.collapsed #sidebar-logo-full,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .user-info-text,
+.sidebar.collapsed .user-card-arrow {
   display: none !important;
 }
-.sidebar.collapsed .brand img#sidebar-logo-mini {
-  display: block !important;
+.sidebar.collapsed #sidebar-logo-mini {
+  display: flex !important;
   margin: 0 auto;
 }
-
-.sidebar.collapsed .sidebar-footer {
-  padding: 10px 0;
-}
-
-.sidebar.collapsed .user-info-text {
-  display: none;
-}
-
-.sidebar.collapsed .user-profile-card {
-  padding: 10px;
+.sidebar.collapsed .nav-item {
   justify-content: center;
+  padding: 12px;
+}
+.sidebar.collapsed #btn-toggle-sidebar i {
+  transform: rotate(180deg);
 }
 
-.sidebar.collapsed .user-card-arrow {
-  display: none;
+.brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding: 0 4px;
 }
 
 .brand {
@@ -252,7 +251,7 @@ select option:checked {
 }
 
 .nav-item:hover {
-  background: rgba(15, 23, 42, 0.5); /* bg-slate-900/50 */
+  background: var(--bg-surface); /* bg-slate-900/50 */
   color: #FFF;
 }
 
@@ -285,7 +284,7 @@ select option:checked {
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--bg-surface);
   border: 1px solid rgba(16, 185, 129, 0.25);
   margin-top: 10px;
 }
@@ -464,9 +463,8 @@ select option:checked {
 
 .top-header {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px 24px;
   margin-bottom: 24px;
   width: 100%;
