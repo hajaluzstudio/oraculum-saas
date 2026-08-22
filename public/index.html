@@ -409,7 +409,7 @@
       }
 
       try {
-        const supaClient = (typeof supabase !== 'undefined') ? supabase : (window.supabaseClient || window.supabase);
+        const supaClient = window.supabaseClient;
         if (!supaClient || !supaClient.auth) throw new Error('Serviço de autenticação não inicializado.');
 
         // Opcional: Adicionar um loading no botão ou alert (vamos de alert para simplicidade por enquanto)
@@ -3125,7 +3125,7 @@
         if (rememberMe) localStorage.setItem('oraculum_saved_email', email);
         else localStorage.removeItem('oraculum_saved_email');
 
-        const supaClient = (typeof supabase !== 'undefined') ? supabase : (window.supabaseClient || window.supabase);
+        const supaClient = window.supabaseClient;
         if (!supaClient || !supaClient.auth) {
           throw new Error('Serviço de autenticação (Supabase) não inicializado.');
         }
