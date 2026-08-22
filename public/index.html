@@ -848,7 +848,7 @@
 
     <!-- MODAL DE ALTERAÇÃO DE SENHA LOGADO -->
     <div id="change-password-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.85); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
-      <div style="width: 100%; max-width: 440px; background: #0F172A; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+      <div style="width: 100%; max-width: 440px; background: var(--bg-surface); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
         <div style="text-align: center; margin-bottom: 20px;">
           <div style="width: 52px; height: 52px; background: rgba(16, 185, 129, 0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #34D399; font-size: 24px;">
             <i class="fa-solid fa-key"></i>
@@ -860,15 +860,15 @@
         <form id="form-change-password" style="display: flex; flex-direction: column; gap: 14px;">
           <div>
             <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nova Senha</label>
-            <input type="password" id="change-password-new" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
+            <input type="password" id="change-password-new" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
           </div>
 
           <div>
             <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Confirme a Nova Senha</label>
-            <input type="password" id="change-password-confirm" required minlength="6" placeholder="Repita a senha" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
+            <input type="password" id="change-password-confirm" required minlength="6" placeholder="Repita a senha" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 11px; color: #FFF; font-size: 13px; outline: none;">
           </div>
 
-          <button type="submit" id="btn-submit-change-password" style="background: #10B981; border: none; border-radius: 12px; padding: 12px; color: #0f172a; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 6px; box-shadow: 0 8px 20px rgba(127,0,255,0.3);">
+          <button type="submit" id="btn-submit-change-password" style="background: #10B981; border: none; border-radius: 12px; padding: 12px; color: var(--bg-surface); font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 6px; box-shadow: 0 8px 20px rgba(127,0,255,0.3);">
             Atualizar Senha Agora
           </button>
 
@@ -943,12 +943,12 @@
           </div>
 
           <!-- CABEÇALHO COM AÇÃO NOVO CLIENTE -->
-          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; border: 1px solid rgba(168,85,247,0.3);">
+          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); border: 1px solid rgba(168,85,247,0.3);">
             <div>
               <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-address-book" style="color: #34D399;"></i> Gestão Cadastral da Carteira de Clientes</h3>
               <p style="margin: 0; font-size: 12px; color: #94A3B8;">Cadastre os dados completos das empresas clientes para alimentar a esteira autônoma de Onboarding e IA.</p>
             </div>
-            <button type="button" id="btn-modal-novo-cliente" onclick="window.abrirModalNovoCliente()" style="background: #10B981; border: none; border-radius: 12px; padding: 12px 20px; color: #0f172a; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+            <button type="button" id="btn-modal-novo-cliente" onclick="window.abrirModalNovoCliente()" style="background: var(--emerald-primary, #10B981); border: none; border-radius: 12px; padding: 12px 20px; color: #020705; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); transition: all 0.2s;">
               <i class="fa-solid fa-user-plus"></i> + Novo Cliente
             </button>
           </div>
@@ -992,7 +992,7 @@
                   <label for="select-onboarding-client" style="color: #34D399; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
                     <i class="fa-solid fa-address-book"></i> Selecionar Cliente da Carteira (Puxar Ficha Cadastral)
                   </label>
-                  <select id="select-onboarding-client" onchange="window.carregarDadosClienteNoOnboarding(this.value)" style="width: 100%; background: #0F172A; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; cursor: pointer;">
+                  <select id="select-onboarding-client" onchange="window.carregarDadosClienteNoOnboarding(this.value)" style="width: 100%; background: var(--bg-surface); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; cursor: pointer;">
                     <option value="">-- Selecione o Cliente para o Onboarding --</option>
                   </select>
                   <span style="font-size: 11px; color: #94A3B8; margin-top: 4px; display: block;">Selecione um cliente para carregar automaticamente Nome, Nicho, Site e Briefing Cadastrado.</span>
@@ -1101,10 +1101,10 @@
                 
                 <div class="form-group">
                   <label for="lp-theme-select">Tema Visual & Estilo *</label>
-                  <select id="lp-theme-select" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: #0f172a; color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
-                    <option value="dark_vip" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Dark Mode VIP (Alto Padrão / Luxo)</option>
-                    <option value="clinical_minimal" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Minimalista Clínico (Clean & Confiança)</option>
-                    <option value="tech_growth" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">Tech Growth (Contraste & Dinamismo)</option>
+                  <select id="lp-theme-select" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                    <option value="dark_vip" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Dark Mode VIP (Alto Padrão / Luxo)</option>
+                    <option value="clinical_minimal" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Minimalista Clínico (Clean & Confiança)</option>
+                    <option value="tech_growth" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">Tech Growth (Contraste & Dinamismo)</option>
                   </select>
                 </div>
 
@@ -1125,7 +1125,7 @@
               <!-- PREVIEW AO VIVO DA LANDING PAGE -->
               <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 520px;">
                 <div id="lp-iframe-wrapper" style="width: 100%; height: 560px; transition: width 0.3s ease;">
-                  <iframe id="lp-preview-iframe" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #080B11;"></iframe>
+                  <iframe id="lp-preview-iframe" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: var(--bg-app);"></iframe>
                 </div>
               </div>
             </div>
@@ -1167,7 +1167,7 @@
         <!-- ABA 5: BI & DASHBOARD INTERATIVO DE RESULTADOS -->
         <section id="tab-bi" class="tab-panel">
           <!-- CABEÇALHO DO DASHBOARD EXECUTIVO -->
-          <div style="margin-bottom: 20px; background: #0f172a; border: 1px solid rgba(6, 182, 212,0.3); border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="margin-bottom: 20px; background: var(--bg-surface); border: 1px solid rgba(6, 182, 212,0.3); border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="badge-tag" style="background: rgba(0,245,160,0.15); color: #00F5A0; font-size: 10px;">DASHBOARD DO CLIENTE ATIVO</span>
@@ -1416,11 +1416,11 @@
                 <h3 style="color: #FFF; font-size: 16px; margin: 0;"><i class="fa-solid fa-file-pen" style="color: #34D399;"></i> 📝 Insights & Pautas de Reunião</h3>
                 <span style="font-size: 11px; color: #94A3B8;">Anotações estratégicas em tempo real durante reuniões e alinhamentos com o cliente.</span>
               </div>
-              <button type="button" id="btn-save-meeting-notes" onclick="window.salvarAnotacoesReuniao()" class="btn-primary" style="font-size: 12px; padding: 8px 16px; border-radius: 10px; display: flex; align-items: center; gap: 6px; font-weight: 700; background: #10B981; border: none; cursor: pointer; color: #0f172a;">
+              <button type="button" id="btn-save-meeting-notes" onclick="window.salvarAnotacoesReuniao()" class="btn-primary" style="font-size: 12px; padding: 8px 16px; border-radius: 10px; display: flex; align-items: center; gap: 6px; font-weight: 700; background: #10B981; border: none; cursor: pointer; color: var(--bg-surface);">
                 <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Insight no Perfil do Cliente
               </button>
             </div>
-            <textarea id="meeting-notes-input" rows="4" placeholder="Anote aqui os principais insights, acordos de reunião, metas de ROAS e alinhamentos estratégicos com o cliente..." style="width: 100%; background: #080B11; border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 14px; color: #FFF; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; resize: vertical; line-height: 1.5;"></textarea>
+            <textarea id="meeting-notes-input" rows="4" placeholder="Anote aqui os principais insights, acordos de reunião, metas de ROAS e alinhamentos estratégicos com o cliente..." style="width: 100%; background: var(--bg-app); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 14px; color: #FFF; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; resize: vertical; line-height: 1.5;"></textarea>
           </div>
         </section>
 
@@ -1515,12 +1515,12 @@
                       <form id="form-generate-script" style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
                         <div class="form-group">
                           <label for="script-format-type"><i class="fa-solid fa-film"></i> Formato do Vídeo *</label>
-                          <select id="script-format-type" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: #0f172a; color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
-                            <option value="reels_30s" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
-                            <option value="vsl_60s" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
-                            <option value="authority_video" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
-                            <option value="objection_killer" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
-                            <option value="depoimento" class="bg-slate-900 text-slate-100 py-2" style="background-color: #0f172a; color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
+                          <select id="script-format-type" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
+                            <option value="reels_30s" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
+                            <option value="vsl_60s" selected class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
+                            <option value="authority_video" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
+                            <option value="objection_killer" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
+                            <option value="depoimento" class="bg-slate-900 text-slate-100 py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
                           </select>
                         </div>
 
@@ -1740,8 +1740,8 @@
                             <div class="form-group" style="flex: 1;">
                               <label>Cor de Fundo</label>
                               <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="color" id="color-bg" value="#0F172A" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
-                                <input type="text" id="color-bg-hex" value="#0F172A" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
+                                <input type="color" id="color-bg" value="var(--bg-surface)" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
+                                <input type="text" id="color-bg-hex" value="var(--bg-surface)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-slate-100 text-sm uppercase">
                               </div>
                             </div>
                             <div class="form-group" style="flex: 1;">
@@ -1754,7 +1754,7 @@
                           </div>
                           
                           <!-- Box de Preview de Contraste -->
-                          <div id="contrast-preview-box" style="padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: center; background-color: #0F172A; color: #10B981;">
+                          <div id="contrast-preview-box" style="padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: center; background-color: var(--bg-surface); color: #10B981;">
                             <h4 style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">Texto de Exemplo</h4>
                             <p style="font-size: 12px;">Se a leitura for difícil, as conversões vão cair.</p>
                           </div>
@@ -1933,7 +1933,7 @@
                           
                           <!-- Tabs de Filtro Interno -->
                           <div style="display: flex; gap: 6px; background: #000; padding: 4px; border-radius: 8px;">
-                            <button class="angle-tab-btn active" data-target="angle-frio" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #0F172A; color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">🥶 Frio (Inconsciente)</button>
+                            <button class="angle-tab-btn active" data-target="angle-frio" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: var(--bg-surface); color: #fff; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">🥶 Frio (Inconsciente)</button>
                             <button class="angle-tab-btn" data-target="angle-morno" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: transparent; color: #94A3B8; border: none; cursor: pointer;">😐 Morno (Problema)</button>
                             <button class="angle-tab-btn" data-target="angle-quente" style="flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; background: transparent; color: #94A3B8; border: none; cursor: pointer;">🔥 Quente (Oferta)</button>
                           </div>
@@ -2057,7 +2057,7 @@
                               <span style="font-size: 11px; color: #94A3B8;">Temperatura Estimada:</span>
                               <span id="bant-status" style="font-size: 12px; font-weight: bold; color: #64748B;">Frio (0%)</span>
                             </div>
-                            <div style="width: 100%; height: 12px; background: #0F172A; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="width: 100%; height: 12px; background: var(--bg-surface); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1);">
                               <div id="bant-progress" style="height: 100%; width: 0%; background: #64748B; transition: all 0.3s ease;"></div>
                             </div>
                           </div>
@@ -2130,7 +2130,7 @@
                   <button type="button" onclick="window.testarConexaoGeminiReal()" class="btn-secondary sm" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); font-size: 12px; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-bolt"></i> ⚡ Testar Conexão
                   </button>
-                  <button type="button" onclick="window.salvarGeminiKey(document.getElementById('setting-gemini-key').value)" style="background: #10B981; border: none; border-radius: 10px; padding: 8px 16px; color: #0f172a; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+                  <button type="button" onclick="window.salvarGeminiKey(document.getElementById('setting-gemini-key').value)" style="background: #10B981; border: none; border-radius: 10px; padding: 8px 16px; color: var(--bg-surface); font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
                     <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Gemini API Key
                   </button>
                 </div>
@@ -2152,7 +2152,7 @@
               <div class="form-group" style="position: relative;">
                 <label for="elevenlabs-api-key" style="display: block; font-size: 11px; font-weight: 700; color: #CBD5E1; text-transform: uppercase; margin-bottom: 6px;">ElevenLabs API Key</label>
                 <div style="position: relative; display: flex; align-items: center;">
-                  <input type="password" id="elevenlabs-api-key" placeholder="xi-... (Chave API ElevenLabs)" style="padding-right: 44px; width: 100%; background: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 10px 14px; color: #FFF; font-size: 13px; outline: none;">
+                  <input type="password" id="elevenlabs-api-key" placeholder="xi-... (Chave API ElevenLabs)" style="padding-right: 44px; width: 100%; background: var(--bg-surface); border: 1px solid #334155; border-radius: 12px; padding: 10px 14px; color: #FFF; font-size: 13px; outline: none;">
                   <button type="button" onclick="window.alternarVisibilidadeChave('elevenlabs-api-key', this)" title="Mostrar/Ocultar Chave" style="position: absolute; right: 10px; background: transparent; border: none; color: #94A3B8; cursor: pointer; font-size: 14px; padding: 6px;">
                     <i class="fa-solid fa-eye"></i>
                   </button>
@@ -2161,7 +2161,7 @@
 
               <div class="form-group">
                 <label for="elevenlabs-voice-id" style="display: block; font-size: 11px; font-weight: 700; color: #CBD5E1; text-transform: uppercase; margin-bottom: 6px;">Voice ID</label>
-                <input type="text" id="elevenlabs-voice-id" placeholder="Ex: pNInz6obpgDQGcFmaJgB" value="pNInz6obpgDQGcFmaJgB" style="width: 100%; background: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 10px 14px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="elevenlabs-voice-id" placeholder="Ex: pNInz6obpgDQGcFmaJgB" value="pNInz6obpgDQGcFmaJgB" style="width: 100%; background: var(--bg-surface); border: 1px solid #334155; border-radius: 12px; padding: 10px 14px; color: #FFF; font-size: 13px; outline: none;">
               </div>
             </div>
 
@@ -2175,7 +2175,7 @@
                 <button type="button" id="btn-test-elevenlabs-exclusiva" onclick="window.testarVozElevenLabsExclusiva(event)" class="btn-secondary sm" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                   <i class="fa-solid fa-volume-high"></i> 🔊 Testar e Ouvir Voz ElevenLabs
                 </button>
-                <button type="button" onclick="window.salvarConfigElevenLabs(event)" style="background: #10B981; border: none; border-radius: 10px; padding: 8px 16px; color: #0f172a; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+                <button type="button" onclick="window.salvarConfigElevenLabs(event)" style="background: #10B981; border: none; border-radius: 10px; padding: 8px 16px; color: var(--bg-surface); font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
                   <i class="fa-solid fa-floppy-disk"></i> 💾 Salvar Configurações ElevenLabs
                 </button>
               </div>
@@ -2196,8 +2196,8 @@
 
             <!-- Inputs para nova chave customizada -->
             <div style="display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 8px; margin-top: 14px;">
-              <input type="text" id="input-new-key-name" placeholder="Nome (Ex: OpenAI, RD Station...)" style="background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
-              <input type="password" id="input-new-key-value" placeholder="Chave API / Token" style="background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
+              <input type="text" id="input-new-key-name" placeholder="Nome (Ex: OpenAI, RD Station...)" style="background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
+              <input type="password" id="input-new-key-value" placeholder="Chave API / Token" style="background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px;">
               <button type="button" class="btn-secondary sm" id="btn-add-custom-key" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 11px;">
                 <i class="fa-solid fa-plus"></i> Adicionar
               </button>
@@ -2283,7 +2283,7 @@
 
         <!-- ABA 7: GESTÃO MASTER DE AGÊNCIAS (SUPER ADMIN) -->
         <section id="tab-super-admin" class="tab-panel">
-          <div class="card-glass" style="margin-bottom: 24px; background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3);">
+          <div class="card-glass" style="margin-bottom: 24px; background: var(--bg-surface); border: 1px solid rgba(16, 185, 129, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
               <div>
                 <span class="badge-tag" style="background: rgba(253, 224, 71, 0.2); color: #FDE047; border: 1px solid rgba(253, 224, 71, 0.4); margin-bottom: 8px;">👑 PAINEL MESTRE SUPER ADMIN</span>
@@ -2321,12 +2321,12 @@
           </div>
 
           <!-- CABEÇALHO COM AÇÕES DE CADASTRO -->
-          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; border: 1px solid rgba(168,85,247,0.3);">
+          <div class="card-glass" style="margin-bottom: 24px; padding: 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); border: 1px solid rgba(168,85,247,0.3);">
             <div>
               <h3 style="margin: 0 0 4px; color: #FFF; font-size: 16px;"><i class="fa-solid fa-building-flag" style="color: #34D399;"></i> Cadastro Completo de Agências Enterprise</h3>
               <p style="margin: 0; font-size: 12px; color: #94A3B8;">Gerencie dados jurídicos, faturamento, CNPJ, limites de clientes e licenças recorrentes.</p>
             </div>
-            <button type="button" id="btn-nova-agencia" onclick="window.abrirModalNovaAgencia(event)" style="background: #10B981; border: none; border-radius: 12px; padding: 12px 20px; color: #0f172a; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
+            <button type="button" id="btn-nova-agencia" onclick="window.abrirModalNovaAgencia(event)" style="background: #10B981; border: none; border-radius: 12px; padding: 12px 20px; color: var(--bg-surface); font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(127,0,255,0.4); transition: all 0.2s;">
               <i class="fa-solid fa-plus-circle"></i> + Cadastrar Nova Agência
             </button>
           </div>
@@ -2421,7 +2421,7 @@
 
     <!-- MODAL DE CADASTRO E EDIÇÃO DE AGÊNCIA (SUPER ADMIN CRUD) -->
     <div id="modal-nova-agencia" class="hidden" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.88); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px; overflow-y: auto;">
-      <div style="width: 100%; max-width: 720px; background: #0F172A; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 25px 60px rgba(0,0,0,0.9); position: relative; max-height: 90vh; overflow-y: auto;">
+      <div style="width: 100%; max-width: 720px; background: var(--bg-surface); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 24px; padding: 32px; color: #FFF; box-shadow: 0 25px 60px rgba(0,0,0,0.9); position: relative; max-height: 90vh; overflow-y: auto;">
         <button type="button" id="btn-close-agency-modal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: #94A3B8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
           <i class="fa-solid fa-xmark"></i>
         </button>
@@ -2449,16 +2449,16 @@
             <div style="display: grid; grid-template-columns: 2fr 1.5fr; gap: 12px;">
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Razão Social / Nome Fantasia *</label>
-                <input type="text" id="agency-input-name" required placeholder="Ex: Agência Turbo Digital LTDA" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-name" required placeholder="Ex: Agência Turbo Digital LTDA" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">CNPJ *</label>
-                <input type="text" id="agency-input-cnpj" required placeholder="00.000.000/0001-00" maxlength="18" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-cnpj" required placeholder="00.000.000/0001-00" maxlength="18" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
             </div>
             <div style="margin-top: 12px;">
               <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Nome do Responsável / CEO *</label>
-              <input type="text" id="agency-input-responsible" required placeholder="Ex: Carlos Eduardo de Oliveira" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+              <input type="text" id="agency-input-responsible" required placeholder="Ex: Carlos Eduardo de Oliveira" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
             </div>
           </div>
 
@@ -2470,11 +2470,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">E-mail Principal *</label>
-                <input type="email" id="agency-input-email" required placeholder="financeiro@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="email" id="agency-input-email" required placeholder="financeiro@agencia.com" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Telefone / WhatsApp *</label>
-                <input type="text" id="agency-input-phone" required placeholder="(11) 99999-9999" maxlength="15" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-phone" required placeholder="(11) 99999-9999" maxlength="15" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
             </div>
           </div>
@@ -2487,29 +2487,29 @@
             <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; margin-bottom: 12px;">
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">CEP *</label>
-                <input type="text" id="agency-input-zip" required placeholder="00000-000" maxlength="9" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-zip" required placeholder="00000-000" maxlength="9" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Logradouro / Avenida *</label>
-                <input type="text" id="agency-input-street" required placeholder="Av. Paulista" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-street" required placeholder="Av. Paulista" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Número *</label>
-                <input type="text" id="agency-input-number" required placeholder="1000, Cj 50" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-number" required placeholder="1000, Cj 50" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 12px;">
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Bairro *</label>
-                <input type="text" id="agency-input-neighborhood" required placeholder="Bela Vista" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-neighborhood" required placeholder="Bela Vista" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Cidade *</label>
-                <input type="text" id="agency-input-city" required placeholder="São Paulo" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="text" id="agency-input-city" required placeholder="São Paulo" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">UF (Estado) *</label>
-                <input type="text" id="agency-input-state" required placeholder="SP" maxlength="2" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; text-transform: uppercase;">
+                <input type="text" id="agency-input-state" required placeholder="SP" maxlength="2" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; text-transform: uppercase;">
               </div>
             </div>
           </div>
@@ -2522,7 +2522,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;">
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Plano SaaS *</label>
-                <select id="agency-input-plan" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <select id="agency-input-plan" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
                   <option value="starter">Starter Scale</option>
                   <option value="pro">Pro Agency</option>
                   <option value="enterprise" selected>Enterprise VIP</option>
@@ -2530,15 +2530,15 @@
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Mensalidade (R$) *</label>
-                <input type="number" id="agency-input-fee" required value="497" step="0.01" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="number" id="agency-input-fee" required value="497" step="0.01" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Dia do Vencimento *</label>
-                <input type="number" id="agency-input-due-day" required value="10" min="1" max="31" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <input type="number" id="agency-input-due-day" required value="10" min="1" max="31" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
               </div>
               <div>
                 <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 4px; font-weight: 600;">Status do Acesso *</label>
-                <select id="agency-input-status" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
+                <select id="agency-input-status" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none;">
                   <option value="active" selected>Ativa / Em Dia</option>
                   <option value="blocked">Bloqueada (Inadimplente)</option>
                   <option value="trial">Período de Testes</option>
@@ -2552,7 +2552,7 @@
             <button type="button" id="btn-cancel-agency-modal" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #94A3B8; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer;">
               Cancelar
             </button>
-            <button type="submit" id="btn-submit-agency-modal" style="background: #10B981; border: none; border-radius: 12px; padding: 12px 24px; color: #0f172a; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
+            <button type="submit" id="btn-submit-agency-modal" style="background: #10B981; border: none; border-radius: 12px; padding: 12px 24px; color: var(--bg-surface); font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(127,0,255,0.4);">
               <i class="fa-solid fa-check"></i> Salvar Agência
             </button>
           </div>
@@ -2562,7 +2562,7 @@
 
     <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO CRÍTICA DE AGÊNCIA -->
     <div id="confirm-delete-agency-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.95); backdrop-filter: blur(15px); z-index: 210000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; padding: 20px;">
-      <div style="width: 100%; max-width: 480px; background: #0F172A; border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 24px; padding: 36px 28px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255, 75, 75, 0.25);">
+      <div style="width: 100%; max-width: 480px; background: var(--bg-surface); border: 1px solid rgba(255, 75, 75, 0.4); border-radius: 24px; padding: 36px 28px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255, 75, 75, 0.25);">
         <div style="width: 64px; height: 64px; background: rgba(255, 75, 75, 0.15); border: 2px solid rgba(255, 75, 75, 0.4); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #FF4B4B; font-size: 28px;">
           <i class="fa-solid fa-trash-can"></i>
         </div>
@@ -2626,7 +2626,7 @@
       </div>
     </div>
   <!-- MODAL DE APRESENTAÇÃO EXECUTIVA DE BI EM TELA CHEIA (CLIENTE) -->
-  <div id="bi-presentation-modal" style="display: none; position: fixed; inset: 0; background: #080B11; z-index: 99999; flex-direction: column; color: #FFF; font-family: 'Inter', sans-serif; overflow-y: auto;">
+  <div id="bi-presentation-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-app); z-index: 99999; flex-direction: column; color: #FFF; font-family: 'Inter', sans-serif; overflow-y: auto;">
     <!-- Barra Superior da Apresentação com Branding White-Label -->
     <div style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255,255,255,0.12); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10000; backdrop-filter: blur(10px);">
       <div style="display: flex; align-items: center; gap: 14px;">
@@ -2697,7 +2697,7 @@
       </div>
 
       <!-- Resumo Estratégico para o Cliente -->
-      <div style="background: #0f172a; border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 20px;">
+      <div style="background: var(--bg-surface); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 20px;">
         <h4 style="color: #00F5A0; font-size: 15px; margin: 0 0 8px;"><i class="fa-solid fa-crown"></i> Conclusão Estratégica da Agência para a Próxima Reunião</h4>
         <p style="color: #CBD5E1; font-size: 13px; line-height: 1.6; margin: 0;">
           A campanha atingiu uma relação LTV/CAC de alta lucratividade, acima do benchmark do setor. A recomendação do comitê de IA é aumentar a escala em 25% mantendo o criativo campeão de Hook de 3s no topo do funil e concentrando conversões no WhatsApp VIP.
@@ -2708,7 +2708,7 @@
 
   <!-- MODAL DE AUTENTICAÇÃO / LOGIN / AUTO-CADASTRO DE AGÊNCIA -->
   <div id="auth-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.92); backdrop-filter: blur(12px); z-index: 100000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
-    <div style="width: 100%; max-width: 460px; background: #0F172A; border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative; color: #FFF;">
+    <div style="width: 100%; max-width: 460px; background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative; color: #FFF;">
       <button type="button" id="btn-close-auth-modal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: #94A3B8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -2722,7 +2722,7 @@
       </div>
 
       <!-- Abas do Modal -->
-      <div style="display: flex; background: #080B11; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; font-size: 13px; font-weight: 600;">
+      <div style="display: flex; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; margin-bottom: 20px; font-size: 13px; font-weight: 600;">
         <button type="button" id="auth-tab-btn-login" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #10B981; color: #FFF; cursor: default;">Acesso Restrito</button>
       </div>
 
@@ -2732,13 +2732,13 @@
       <form id="form-auth-login" style="display: block;">
         <div style="margin-bottom: 14px;">
           <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">E-mail Corporativo</label>
-          <input type="email" id="auth-login-email" required placeholder="seu.email@agencia.com" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
+          <input type="email" id="auth-login-email" required placeholder="seu.email@agencia.com" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
         </div>
         <div style="margin-bottom: 20px;">
           <label style="font-size: 11px; color: #CBD5E1; display: block; margin-bottom: 6px; font-weight: 600;">Senha de Acesso</label>
-          <input type="password" id="auth-login-password" required placeholder="••••••••" style="width: 100%; background: #080B11; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
+          <input type="password" id="auth-login-password" required placeholder="••••••••" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; color: #FFF; font-size: 13px; outline: none;">
         </div>
-        <button type="submit" style="width: 100%; background: #10B981; border: none; border-radius: 12px; padding: 14px; color: #0f172a; font-weight: 700; font-size: 14px; cursor: pointer; shadow: 0 4px 15px rgba(127,0,255,0.3);">
+        <button type="submit" style="width: 100%; background: #10B981; border: none; border-radius: 12px; padding: 14px; color: var(--bg-surface); font-weight: 700; font-size: 14px; cursor: pointer; shadow: 0 4px 15px rgba(127,0,255,0.3);">
           Entrar na Plataforma <i class="fa-solid fa-arrow-right" style="margin-left: 6px;"></i>
         </button>
         <p style="font-size: 11px; color: #64748B; text-align: center; margin-top: 14px;">
@@ -2752,7 +2752,7 @@
 
   <!-- BARREIRA DE SUSPENSÃO / BLOQUEIO FINANCEIRO / MANUTENÇÃO -->
   <div id="blocked-suspension-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 8, 15, 0.95); backdrop-filter: blur(15px); z-index: 200000; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;">
-    <div style="width: 100%; max-width: 500px; background: #0F172A; border: 1px solid rgba(255,75,75,0.4); border-radius: 28px; padding: 40px 32px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255,75,75,0.2);">
+    <div style="width: 100%; max-width: 500px; background: var(--bg-surface); border: 1px solid rgba(255,75,75,0.4); border-radius: 28px; padding: 40px 32px; text-align: center; color: #FFF; box-shadow: 0 0 50px rgba(255,75,75,0.2);">
       <div style="width: 72px; height: 72px; background: rgba(255,75,75,0.15); border: 2px solid rgba(255,75,75,0.4); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #FF4B4B; font-size: 32px;">
         <i class="fa-solid fa-lock"></i>
       </div>

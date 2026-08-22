@@ -4471,7 +4471,6 @@ document.addEventListener('DOMContentLoaded', () => {
       totalClients += Number(ag.clients_count || 0);
       
       const tr = document.createElement('tr');
-      tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
       
       const isActive = ag.status === 'active';
       let statusHtml = `<span style="background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">Ativa / Em Dia</span>`;
@@ -4504,10 +4503,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td style="padding: 14px 18px;">${statusHtml}</td>
         <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
-          <button type="button" class="btn-edit-agency" data-id="${ag.id}" title="Editar Dados da Agência" style="background: rgba(6, 182, 212, 0.15); color: #06B6D4; border: 1px solid rgba(6, 182, 212, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; margin-right: 4px;">
+          <button type="button" class="btn-action-discreet btn-action-edit" data-id="${ag.id}" title="Editar Dados da Agência">
             <i class="fa-solid fa-pen-to-square"></i> Editar
           </button>
-          <button type="button" class="btn-delete-agency" data-id="${ag.id}" data-name="${ag.name}" title="Excluir Agência" style="background: rgba(255, 75, 75, 0.15); color: #FF4B4B; border: 1px solid rgba(255, 75, 75, 0.3); padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer; margin-right: 4px;">
+          <button type="button" class="btn-action-discreet btn-delete-agency" data-id="${ag.id}" data-name="${ag.name}" title="Excluir Agência">
             <i class="fa-solid fa-trash-can"></i> Excluir
           </button>
           <button type="button" class="btn-toggle-agency" data-id="${ag.id}" data-status="${ag.status}" title="${isActive ? 'Bloquear Acesso' : 'Desbloquear Acesso'}" style="background: ${isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 245, 160, 0.15)'}; color: ${isActive ? '#34D399' : '#00F5A0'}; border: 1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(0, 245, 160, 0.3)'}; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
