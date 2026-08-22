@@ -1526,13 +1526,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stage === 'archived_traffic') {
           const cardPayload = {
             id: cards[cardIndex].id || crypto.randomUUID(),
-            client_id: window.currentClientId || 'default-client',
+            client_id: window.currentClientId || 'cliente-padrao',
             title: cards[cardIndex].title || cards[cardIndex].headline || 'Criativo de Campanha',
             description: cards[cardIndex].description || cards[cardIndex].copy || '',
             status: 'archived_traffic',
-            stage: 'archived_traffic',
-            type: cards[cardIndex].type || 'video',
-            updated_at: new Date().toISOString()
+            type: cards[cardIndex].type || 'video'
           };
 
           try {

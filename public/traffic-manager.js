@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .from('kanban_cards')
         .select('*')
         .eq('status', 'archived_traffic')
-        .order('updated_at', { ascending: false });
+        .order('id', { ascending: false });
 
       if (error) {
         console.error("[Traffic Error] Falha na consulta:", error);
@@ -116,10 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "🎬 [TESTE AUTÔNOMO] Vídeo Rinoplastia Dr. Lucas",
       description: "Gancho: Você sabia que a recuperação não precisa ser dolorosa? CTA: Agende sua avaliação no link da bio.",
       status: "archived_traffic",
-      stage: "archived_traffic",
       type: "video",
-      client_id: window.currentClientId || "cliente-teste",
-      updated_at: new Date().toISOString()
+      client_id: window.currentClientId || "cliente-teste"
     };
 
     const { data, error } = await window.supabaseClient
