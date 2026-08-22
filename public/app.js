@@ -314,11 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (chatResult.success && chatResult.data && chatResult.data.length > 0) {
           chatResult.data.forEach(msg => {
-            const role = msg.role === 'user' ? 'user' : 'model';
+            const rawRole = msg.role || msg.sender;
+            const role = (rawRole === 'user') ? 'user' : 'model';
             const content = msg.content || msg.message || '';
             const jsonResp = msg.json_response;
 
-            if (role === 'model' || role === 'assistant') {
+            if (role === 'model' || role === 'assistant' || rawRole === 'oraculum' || rawRole === 'bot') {
               if (jsonResp && typeof jsonResp === 'object') {
                 renderChatReply(jsonResp);
               } else {

@@ -649,13 +649,24 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
     }
       
     const { data, error } = await supabase
-      .from('chat_history')
-      .select('role, content, created_at')
+      .from('bi_chat_history')
+      .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: true });
 
     if (error) {
       console.error('❌ [Supabase GET chat-history error]:', error);
+      
+      // Fallback para chat_history antigo se falhar
+      const { data: oldData, error: oldError } = await supabase
+        .from('chat_history')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true });
+        
+      if (!oldError && oldData) {
+        return res.json({ success: true, data: oldData, source: 'fallback' });
+      }
     }
       
     if (!error && data) {
@@ -683,15 +694,20 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(500).json({ status: 'error', error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    // 1. Gravação síncrona da mensagem do usuário no bi_chat_history
-    const { error: userErr } = await supabase.from('bi_chat_history').insert({
+    // 1. Gravação síncrona da mensagem do usuário no bi_chat_history com compatibilidade dupla
+    const payloadUser = {
       client_id: clientId,
       role: 'user',
+      sender: 'user',
       content: message,
+      message: message,
       created_at: new Date().toISOString()
-    });
+    };
+    
+    const { error: userErr } = await supabase.from('bi_chat_history').insert(payloadUser);
     if (userErr) {
       console.error('❌ [Supabase Insert User Error]:', userErr);
+      await supabase.from('chat_history').insert(payloadUser).catch(() => {});
     }
 
     // 2. Chamada da IA Gemini
@@ -699,16 +715,21 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
     const assistantContent = typeof response === 'string' ? response : (typeof (response as any)?.replyText === 'string' ? (response as any).replyText : JSON.stringify(response));
 
-    // 3. Gravação síncrona da resposta da IA no bi_chat_history
-    const { error: aiErr } = await supabase.from('bi_chat_history').insert({
+    // 3. Gravação síncrona da resposta da IA no bi_chat_history com compatibilidade dupla
+    const payloadAssistant = {
       client_id: clientId,
       role: 'assistant',
+      sender: 'assistant',
       content: assistantContent,
+      message: assistantContent,
       json_response: typeof response === 'object' ? response : null,
       created_at: new Date().toISOString()
-    });
+    };
+    
+    const { error: aiErr } = await supabase.from('bi_chat_history').insert(payloadAssistant);
     if (aiErr) {
       console.error('❌ [Supabase Insert AI Error]:', aiErr);
+      await supabase.from('chat_history').insert(payloadAssistant).catch(() => {});
     } else {
       console.log('[Supabase] ✅ Resposta do assistente salva com sucesso para o cliente:', clientId);
     }
