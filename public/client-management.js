@@ -135,7 +135,15 @@ window.abrirModalNovoCliente = function(clientId = null) {
       document.getElementById('client-modal-meta-account').value = client.meta_ad_account_id || client.meta_account_id || '';
       document.getElementById('client-modal-meta-pixel').value = client.meta_pixel_id || '';
       document.getElementById('client-modal-google-customer').value = client.google_customer_id || '';
-      document.getElementById('client-modal-notes').value = client.previous_agency_notes || client.notes || '';
+      // Extract plain text from notes — never expose raw JSON to the textarea
+      let notesText = client.notes || client.actual_notes || client.previous_agency_notes || '';
+      if (notesText && notesText.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(notesText);
+          notesText = parsed.actual_notes || parsed.notes || parsed.text || JSON.stringify(parsed);
+        } catch (_) { /* keep original if unparseable */ }
+      }
+      document.getElementById('client-modal-notes').value = notesText;
     }
   } else {
     const titleEl = document.getElementById('modal-client-title');
@@ -189,32 +197,40 @@ window.salvarCliente = async function(e) {
 
   try {
     const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-    const client = getSupabaseClient();
-    let savedInSupa = false;
+    const supaClient = getSupabaseClient();
     let errDetail = '';
 
-    try {
-      if (id) {
-        // UPDATE (PUT) via API
-        const response = await fetch(`/api/clients/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-organization-id': activeTenantId
-          },
-          body: JSON.stringify({
-            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-            meta_ad_account_id, meta_pixel_id, google_customer_id
-          })
-        });
-        const data = await response.json();
-        if (response.ok && data.success) {
-          savedInSupa = true;
-        } else {
-          errDetail = data.error || JSON.stringify(data);
-        }
-      } else {
-        // INSERT (POST) via API
+    if (id) {
+      // UPDATE DIRETO NO SUPABASE (evita rotas /api/ que retornam 404)
+      if (!supaClient) {
+        alert('⚠️ Supabase não inicializado. Não foi possível salvar.');
+        return;
+      }
+      const payload = {
+        name,
+        niche,
+        contact_name,
+        phone,
+        website,
+        instagram,
+        avg_ticket: parseFloat(String(avg_ticket).replace(',', '.')) || 0,
+        target_revenue: parseFloat(String(target_revenue).replace(',', '.')) || 0,
+        meta_ad_account_id,
+        meta_pixel_id,
+        google_customer_id,
+        notes: previous_agency_notes
+      };
+      const { error: updateError } = await supaClient
+        .from('clients')
+        .update(payload)
+        .eq('id', id);
+      if (updateError) {
+        alert('❌ Erro ao atualizar cliente no Supabase: ' + updateError.message);
+        return;
+      }
+    } else {
+      // INSERT (POST) via API para novos cadastros
+      try {
         const response = await fetch('/api/clients', {
           method: 'POST',
           headers: {
@@ -226,21 +242,30 @@ window.salvarCliente = async function(e) {
             meta_ad_account_id, meta_pixel_id, google_customer_id
           })
         });
-        
-        const data = await response.json();
-        if (response.ok && data.success) {
-          savedInSupa = true;
-        } else {
-          errDetail = data.error || JSON.stringify(data);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          // Fallback: insert diretamente no Supabase
+          if (supaClient) {
+            const { error: insertError } = await supaClient
+              .from('clients')
+              .insert([{ name, niche, contact_name, phone, website, instagram,
+                avg_ticket: parseFloat(String(avg_ticket).replace(',', '.')) || 0,
+                target_revenue: parseFloat(String(target_revenue).replace(',', '.')) || 0,
+                meta_ad_account_id, meta_pixel_id, google_customer_id, notes: previous_agency_notes
+              }]);
+            if (insertError) {
+              alert('❌ Erro ao inserir cliente: ' + insertError.message);
+              return;
+            }
+          } else {
+            alert('⚠️ Falha ao cadastrar cliente: ' + (data.error || 'Erro desconhecido'));
+            return;
+          }
         }
+      } catch (apiErr) {
+        alert('⚠️ Erro de rede ao cadastrar: ' + apiErr.message);
+        return;
       }
-    } catch (apiErr) {
-      errDetail = apiErr.message;
-    }
-
-    if (!savedInSupa) {
-      alert(`⚠️ FALHA NO SUPABASE: Não foi possível salvar na Nuvem.\nDetalhamento: ${errDetail || 'Erro desconhecido'}`);
-      return;
     }
 
     window.fecharModalNovoCliente();
