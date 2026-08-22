@@ -112,12 +112,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    let activeClientId = window.currentClientId;
+    if (!activeClientId && window.supabaseClient) {
+      const { data: clients } = await window.supabaseClient.from('clients').select('id').limit(1);
+      if (clients && clients.length > 0) {
+        activeClientId = clients[0].id;
+      }
+    }
+
     const dummyCard = {
       title: "🎬 [TESTE AUTÔNOMO] Vídeo Rinoplastia Dr. Lucas",
       description: "Gancho: Você sabia que a recuperação não precisa ser dolorosa? CTA: Agende sua avaliação no link da bio.",
       status: "archived_traffic",
       type: "video",
-      client_id: window.currentClientId || "cliente-teste"
+      client_id: activeClientId || null
     };
 
     const { data, error } = await window.supabaseClient

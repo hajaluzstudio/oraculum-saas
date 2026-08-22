@@ -1524,9 +1524,16 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (window.supabaseClient) {
         if (stage === 'archived_traffic') {
+          let activeClientId = window.currentClientId;
+          if (!activeClientId) {
+            const { data: clients } = await window.supabaseClient.from('clients').select('id').limit(1);
+            if (clients && clients.length > 0) {
+              activeClientId = clients[0].id;
+            }
+          }
           const cardPayload = {
             id: cards[cardIndex].id || crypto.randomUUID(),
-            client_id: window.currentClientId || 'cliente-padrao',
+            client_id: activeClientId || null,
             title: cards[cardIndex].title || cards[cardIndex].headline || 'Criativo de Campanha',
             description: cards[cardIndex].description || cards[cardIndex].copy || '',
             status: 'archived_traffic',
