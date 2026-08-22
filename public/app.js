@@ -1113,74 +1113,143 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       try {
-        let response;
-
+        let base64Frames = [];
+        
         if (currentSource === 'pc' && selectedFileObj) {
-          // Envia multipart FormData se for upload do PC
-          const formData = new FormData();
-          formData.append('mediaFile', selectedFileObj);
-          formData.append('assetTitle', title);
-          formData.append('assetType', type);
-          formData.append('niche', niche);
-
-          response = await fetch(`${API_BASE_URL}/api/creatives/inspect`, {
-            method: 'POST',
-            headers: {
-              'x-organization-id': activeTenantId
-            },
-            body: formData
-          });
-        } else {
-          // Envia JSON com o Link do Drive / URL
-          response = await fetch(`${API_BASE_URL}/api/creatives/inspect`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-organization-id': activeTenantId
-            },
-            body: JSON.stringify({
-              assetTitle: title,
-              assetType: type,
-              niche,
-              filePath: driveUrl || 'https://drive.google.com/file/d/demo'
-            })
-          });
+          const fileType = selectedFileObj.type;
+          
+          if (fileType.startsWith('video/')) {
+            base64Frames = await extractVideoFrames(selectedFileObj);
+          } else if (fileType.startsWith('image/')) {
+            const base64 = await fileToBase64(selectedFileObj);
+            base64Frames.push(base64);
+          }
         }
+        
+        const payload = {
+          frames: base64Frames,
+          nicho: niche,
+          titulo: title,
+          assetType: type
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/inspect-creative`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-organization-id': activeTenantId
+          },
+          body: JSON.stringify(payload)
+        });
 
         const resData = await response.json();
         if (resData.success) {
-          renderCreativeReport(resData.data);
+          renderRealCreativeReport(resData.data, title);
           await loadClientKanbanCards(activeClientId);
         } else {
           throw new Error(resData.error || 'Falha no teste de criativo');
         }
       } catch (error) {
-        // Fallback para relatório demonstrativo de Visão Computacional
-        const mockReport = {
-          assetTitle: title,
-          assetType: type,
-          aiOverallScore: 88,
-          aiHookScore: 92,
-          isApproved: true,
-          verdict: 'APPROVED',
-          hookAnalysis: {
-            retentionFactor: 'Excelente quebra de padrão visual no frame 0.5s.',
-            patternInterruptQuality: 'Alta (Mudança dinâmica de cores e enquadramento)',
-            textLegibilityFirst3s: 'Texto em alto contraste com legenda visível no primeiro segundo.',
-            emotionalImpact: 'Gatilho de curiosidade e autoridade imediata.'
-          },
-          conversionFlaws: [
-            'O áudio nos 2 segundos finais pode ser levemente acelerado para aumentar o ritmo.'
-          ],
-          surgicalFixes: [
-            'Manter o título "A Reconstrução Única" visível até o frame 2.5s.',
-            'Adicionar marca d\'água de autoridade no canto superior direito.'
-          ]
-        };
-
-        renderCreativeReport(mockReport);
+        reportContent.innerHTML = `
+          <div class="placeholder-state" style="color: #ef4444;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <p>Erro na inspeção: ${error.message}</p>
+          </div>
+        `;
+        verdictBadge.textContent = 'Falha na Inspeção';
+        verdictBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+        verdictBadge.style.color = '#EF4444';
       }
     });
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function extractVideoFrames(file) {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      video.playsInline = true;
+      
+      const frames = [];
+      const times = [0.5, 1.5, 3.0];
+      let currentTimeIndex = 0;
+
+      video.addEventListener('loadeddata', () => {
+        video.currentTime = times[currentTimeIndex];
+      });
+
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth / 2; // reduce size
+        canvas.height = video.videoHeight / 2;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // JPEG quality 0.7
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        frames.push(dataUrl);
+
+        currentTimeIndex++;
+        if (currentTimeIndex < times.length) {
+          video.currentTime = times[currentTimeIndex];
+        } else {
+          URL.revokeObjectURL(video.src);
+          resolve(frames);
+        }
+      });
+      
+      video.addEventListener('error', (e) => reject(e));
+    });
+  }
+
+  function renderRealCreativeReport(data, title) {
+    const reportContent = document.getElementById('creative-report-content');
+    const verdictBadge = document.getElementById('inspect-verdict-badge');
+    reportContent.innerHTML = `
+      <div style="display: flex; gap: 20px; align-items: stretch;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span style="font-size: 11px; color: #94A3B8;">AI Hook Score (0-100)</span>
+              <h3 style="margin: 0; font-size: 28px; color: #10B981;">${data.hookScore}</h3>
+            </div>
+            <div>
+              <span style="font-size: 11px; color: #94A3B8;">Score de Conversão Geral</span>
+              <h3 style="margin: 0; font-size: 28px; color: #06B6D4;">${data.conversionScore}</h3>
+            </div>
+          </div>
+          
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 14px; border-radius: 12px;">
+            <span style="font-size: 11px; color: #34D399; font-weight: 700;">Quebra de Padrão</span>
+            <p style="color: #FFF; font-size: 13px; margin: 4px 0 0;">${data.patternBreak}</p>
+          </div>
+          
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px; border-radius: 12px;">
+            <span style="font-size: 11px; color: #94A3B8; font-weight: 700;">Legibilidade e Elementos</span>
+            <p style="color: #E2E8F0; font-size: 13px; margin: 4px 0 0;">${data.readability}</p>
+          </div>
+        </div>
+        
+        <div style="flex: 1; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 16px; border-radius: 12px;">
+          <h4 style="color: #F87171; font-weight: 700; margin: 0 0 12px;"><i class="fa-solid fa-stethoscope"></i> Ajustes Cirúrgicos Recomendados</h4>
+          <ul style="padding-left: 18px; margin: 0; color: #FFF; font-size: 13px; line-height: 1.6;">
+            ${(data.actionableFixes || []).map(f => `<li>${f}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+    verdictBadge.textContent = 'Inspeção Concluída';
+    verdictBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+    verdictBadge.style.color = '#10B981';
   }
 
   function renderCreativeReport(report) {

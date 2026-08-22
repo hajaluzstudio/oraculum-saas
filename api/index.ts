@@ -1260,4 +1260,72 @@ app.post('/api/admin/maintenance', (req: Request, res: Response) => {
   return res.json({ success: true, active: getMaintenanceModeState(), message: `Modo manutenção alterado para ${active ? 'ATIVADO' : 'DESATIVADO'}` });
 });
 
+// POST /api/inspect-creative - Avaliação multimodal de criativo
+app.post('/api/inspect-creative', async (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
+    }
+
+    const { frames, nicho, titulo, assetType } = req.body;
+    if (!frames || !frames.length) {
+      return res.status(400).json({ success: false, error: 'Nenhuma imagem fornecida para análise.' });
+    }
+
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const systemInstruction = `Você é um diretor de arte e auditor de tráfego pago especialista em retenção de anúncios.
+Analise visualmente os primeiros 3 segundos deste criativo para o nicho "${nicho}" e título "${titulo}".
+Avalie:
+1. AI Hook Score (0 a 100) baseado no impacto dos 3 primeiros segundos.
+2. Score de Conversão Geral (0 a 100).
+3. Quebra de Padrão (diagnóstico real do que você vê visualmente nas imagens).
+4. Legibilidade e contraste do texto/elementos visuais.
+5. Ajustes Cirúrgicos Recomendados baseados estritamente nos frames enviados.
+Retorne APENAS um JSON válido no formato:
+{
+  "hookScore": 90,
+  "conversionScore": 85,
+  "patternBreak": "string explicativa",
+  "readability": "string explicativa",
+  "actionableFixes": ["string", "string"]
+}`;
+
+    const parts: any[] = [{ text: systemInstruction }];
+
+    frames.forEach((f: string) => {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: f.replace(/^data:image\/[a-z]+;base64,/, '')
+        }
+      });
+    });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: [{ role: 'user', parts }]
+    });
+
+    const replyText = response.text || '';
+    
+    // Parse the JSON block from response
+    const jsonMatch = replyText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, replyText];
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonMatch[1].trim());
+    } catch (e) {
+      parsedData = JSON.parse(replyText.trim());
+    }
+
+    return res.status(200).json({ success: true, data: parsedData });
+
+  } catch (error: any) {
+    console.error('[API /api/inspect-creative] Erro:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Erro na avaliação do criativo.' });
+  }
+});
+
 export default app;
