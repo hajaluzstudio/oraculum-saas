@@ -1,6 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
 
   if (!apiKey) {
@@ -16,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const listData = await listRes.json();
 
     if (!listRes.ok || !listData.models) {
-      return res.status(listRes.status).json({
+      return res.status(listRes.status || 500).json({
         status: 'error',
         message: 'Falha ao consultar modelos disponíveis na API do Google.',
         detail: listData
@@ -28,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
       .map((m: any) => m.name.replace('models/', ''));
 
-    // 2. Tenta o primeiro modelo suportado retornado pela própria conta do Google
+    // 2. Tenta o primeiro modelo retornado ou fallback
     const modelToUse = supportedModels[0] || 'gemini-1.5-flash';
 
     const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`, {
@@ -50,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         reply: testData.candidates?.[0]?.content?.parts?.[0]?.text || 'OK'
       });
     } else {
-      return res.status(testRes.status).json({
+      return res.status(testRes.status || 500).json({
         status: 'error',
         message: `Erro ao gerar conteúdo com o modelo ${modelToUse}`,
         detail: testData,
