@@ -3,22 +3,21 @@
 // =======================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  const wrTrafficContent = document.getElementById('wr-traffic-content');
-  if (!wrTrafficContent) return;
+  const wrTrafficPanel = document.getElementById('wr-traffic');
+  if (!wrTrafficPanel) return;
 
   // Cria o container para a lista de criativos despachados
   const creativesContainer = document.createElement('div');
-  creativesContainer.id = 'traffic-creatives-list';
+  creativesContainer.id = 'traffic-ready-creatives-container';
+  creativesContainer.className = 'card-glass mt-4';
   creativesContainer.style.marginTop = '24px';
   creativesContainer.innerHTML = `
-    <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #10B981;">
-      <i class="fa-solid fa-rocket"></i> Criativos Prontos para Subida
-    </h3>
-    <div id="traffic-creatives-grid" style="display: flex; flex-direction: column; gap: 12px;"></div>
+    <h3>📦 Criativos Prontos para Subida de Anúncios</h3>
+    <div id="traffic-creatives-list" class="space-y-3 mt-3" style="display: flex; flex-direction: column; gap: 12px;"></div>
   `;
-  wrTrafficContent.appendChild(creativesContainer);
+  wrTrafficPanel.appendChild(creativesContainer);
 
-  const creativesGrid = document.getElementById('traffic-creatives-grid');
+  const creativesGrid = document.getElementById('traffic-creatives-list');
 
   function renderTrafficCard(card) {
     const isVideo = card.asset_type?.toLowerCase().includes('v') || card.title.toLowerCase().includes('vídeo');
@@ -39,10 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         <div style="display: flex; gap: 8px;">
           <button type="button" onclick="navigator.clipboard.writeText('${(card.description || '').replace(/'/g, "\\'")}')" style="flex: 1; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
-            <i class="fa-regular fa-copy"></i> Copiar Copy
+            📋 Copiar Texto do Anúncio
           </button>
-          <button type="button" onclick="this.parentElement.parentElement.style.opacity='0.5'; this.innerText='Publicado!'" style="flex: 1; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
-            <i class="fa-solid fa-check"></i> Marcar como Publicado
+          <button type="button" onclick="this.parentElement.parentElement.style.opacity='0.5'; this.innerText='Veiculado!'" style="flex: 1; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+            ✅ Marcar como Veiculado no Gerenciador
           </button>
         </div>
       </div>
@@ -61,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (trafficCards.length > 0) {
       creativesGrid.innerHTML = trafficCards.map(renderTrafficCard).join('');
     } else {
-      creativesGrid.innerHTML = `<p style="font-size: 12px; color: #64748B;">Nenhum criativo aguardando subida.</p>`;
+      creativesGrid.innerHTML = `<p style="font-size: 12px; color: #64748B;">Nenhum criativo aguardando veiculação no momento.</p>`;
     }
   }
 
