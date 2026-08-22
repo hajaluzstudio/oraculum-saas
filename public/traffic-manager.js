@@ -77,11 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!data || data.length === 0) {
-        container.innerHTML = `
-          <div class="text-sm text-gray-400 flex justify-between items-center py-2">
-            <span>Nenhum criativo aguardando veiculação no momento.</span>
-            <button onclick="window.injectTestTrafficCard()" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-xs rounded border border-emerald-500/40">🧪 Injetar Card de Teste</button>
-          </div>`;
+        container.innerHTML = '<p class="text-sm text-gray-400">Nenhum criativo aguardando veiculação no momento.</p>';
         return;
       }
 
@@ -104,43 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
       container.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">💥 <strong>Exceção:</strong> ${err.message}</div>`;
     }
   }
-
-  // Injetor de Card Fictício para teste de ponta a ponta
-  window.injectTestTrafficCard = async function() {
-    if (!window.supabaseClient) {
-      alert("Erro: Supabase não inicializado.");
-      return;
-    }
-
-    let activeClientId = window.currentClientId;
-    if (!activeClientId && window.supabaseClient) {
-      const { data: clients } = await window.supabaseClient.from('clients').select('id').limit(1);
-      if (clients && clients.length > 0) {
-        activeClientId = clients[0].id;
-      }
-    }
-
-    const dummyCard = {
-      title: "🎬 [TESTE AUTÔNOMO] Vídeo Rinoplastia Dr. Lucas",
-      description: "Gancho: Você sabia que a recuperação não precisa ser dolorosa? CTA: Agende sua avaliação no link da bio.",
-      status: "archived_traffic",
-      type: "video",
-      client_id: activeClientId || null
-    };
-
-    const { data, error } = await window.supabaseClient
-      .from('kanban_cards')
-      .insert([dummyCard])
-      .select();
-
-    if (error) {
-      alert("❌ ERRO AO INSERIR NO SUPABASE:\\n" + error.message + "\\nCódigo: " + error.code + "\\nDetalhes: " + (error.details || error.hint || ''));
-      console.error("Erro detalhado:", error);
-    } else {
-      alert("✅ Card fictício inserido com sucesso no Supabase!");
-      window.loadArchivedTrafficCards();
-    }
-  };
 
   window.markTrafficCardPublished = async function(cardId) {
     if (!window.supabaseClient) return;
