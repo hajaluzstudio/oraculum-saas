@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { sendStrategicChatMessage } from '../src/services/strategicChat';
+import { supabase } from '../src/services/supabaseClient';
 
 dotenv.config();
 
@@ -39,7 +40,39 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(400).json({ status: 'error', message: 'Parâmetros clientId e message são obrigatórios.' });
     }
 
+    // 1. Grava a mensagem do usuário no Supabase
+    const { error: userInsertErr } = await supabase.from('bi_chat_history').insert({
+      client_id: clientId,
+      role: 'user',
+      content: message,
+      created_at: new Date().toISOString()
+    });
+
+    if (userInsertErr) {
+      console.error('❌ [Supabase Insert User Error]:', userInsertErr);
+    } else {
+      console.log('✅ Mensagem do usuário gravada no bi_chat_history');
+    }
+
+    // 2. Executa a IA para gerar a resposta estratégica
     const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
+
+    const replyText = typeof response === 'string' ? response : (response.replyText || JSON.stringify(response));
+
+    // 3. Grava a resposta da IA no Supabase
+    const { error: aiInsertErr } = await supabase.from('bi_chat_history').insert({
+      client_id: clientId,
+      role: 'assistant',
+      content: replyText,
+      json_response: typeof response === 'object' ? response : null,
+      created_at: new Date().toISOString()
+    });
+
+    if (aiInsertErr) {
+      console.error('❌ [Supabase Insert AI Error]:', aiInsertErr);
+    } else {
+      console.log('✅ Resposta da IA gravada no bi_chat_history');
+    }
 
     return res.json({ success: true, data: response });
   } catch (error: any) {

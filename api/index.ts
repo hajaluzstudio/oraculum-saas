@@ -623,23 +623,25 @@ app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   }
 });
 
-// GET histórico de chat por cliente — suporte a chat_history e bi_chat_history
+// GET histórico de chat por cliente — suporte a bi_chat_history e chat_history
 app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   try {
     const { clientId } = req.params;
     
-    // Tenta primeiro em bi_chat_history
     const { data: biData, error: biErr } = await supabase
       .from('bi_chat_history')
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: true });
 
+    if (biErr) {
+      console.error('❌ [Supabase GET chat-history bi_chat_history error]:', biErr);
+    }
+
     if (!biErr && biData && biData.length > 0) {
       const formatted = biData.map(item => ({
-        role: 'model',
-        content: item.json_response || item.prompt_input,
-        prompt_input: item.prompt_input,
+        role: item.role || (item.json_response ? 'assistant' : 'user'),
+        content: item.content || (typeof item.json_response === 'string' ? item.json_response : (item.json_response?.replyText || item.prompt_input || '')),
         json_response: item.json_response,
         created_at: item.created_at
       }));
@@ -651,12 +653,17 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
       .select('role, content, created_at')
       .eq('client_id', clientId)
       .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('❌ [Supabase GET chat-history error]:', error);
+    }
       
     if (!error && data) {
       return res.json({ success: true, data });
     }
     return res.json({ success: true, data: [] });
   } catch (error: any) {
+    console.error('❌ [API /api/chat-history exception]:', error);
     return res.status(500).json({ error: error.message });
   }
 });
