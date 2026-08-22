@@ -1,34 +1,24 @@
 // =======================================================
-// Oraculum Live - BI FEEDBACK LOOP (100% SUPABASE & FIX BOTÃO)
+// Oraculum Live - BI FEEDBACK LOOP (100% SUPABASE & ASCII CLEAN)
 // =======================================================
 
 (function () {
-  console.log("Inicializando Oraculum Live Definitivo (Supabase Core)...");
+  console.log("Inicializando Oraculum Live (ASCII Clean)...");
 
   let isProcessando = false;
   let gravando = false;
   let recognition = null;
-  let vozesNavegador = [];
-
-  function carregarVozes() {
-    if ('speechSynthesis' in window) {
-      vozesNavegador = window.speechSynthesis.getVoices();
-    }
-  }
-  if ('speechSynthesis' in window) {
-    carregarVozes();
-    window.speechSynthesis.onvoiceschanged = carregarVozes;
-  }
 
   window.alternarOraculoLive = function () {
     const drawer = document.getElementById('oraculo-live-drawer');
     if (!drawer) return;
+    
     if (drawer.style.transform === 'translateX(0px)' || drawer.style.transform === 'none') {
       drawer.style.transform = 'translateX(100%)';
     } else {
       drawer.style.transform = 'translateX(0px)';
       const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-      if (activeClientId) {
+      if (activeClientId && typeof window.renderizarHistoricoNoFeed === 'function') {
         window.renderizarHistoricoNoFeed(activeClientId);
       }
     }
@@ -65,11 +55,11 @@
     if (remetente === 'usuario') {
       const textoFormatado = formatarMarkdown(typeof respostaData === 'string' ? respostaData : (respostaData?.replyText || ''));
       msgDiv.style.cssText = 'background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você</p><p style="margin: 0; line-height: 1.4;">${textoFormatado}</p>`;
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Voce</p><p style="margin: 0; line-height: 1.4;">${textoFormatado}</p>`;
     } else if (remetente === 'erro') {
-      const textoFormatado = formatarMarkdown(typeof respostaData === 'string' ? respostaData : 'Erro ao processar requisição');
+      const textoFormatado = formatarMarkdown(typeof respostaData === 'string' ? respostaData : 'Erro ao processar');
       msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 14px; padding: 12px; color: #FCA5A5; margin-right: 16px;';
-      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro</p><p style="margin: 0;">${textoFormatado}</p>`;
+      msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">Erro</p><p style="margin: 0;">${textoFormatado}</p>`;
     } else {
       const textContent = typeof respostaData === 'string' ? respostaData : (respostaData?.replyText || JSON.stringify(respostaData));
       const textoFormatado = formatarMarkdown(textContent);
@@ -81,7 +71,6 @@
     feed.scrollTop = feed.scrollHeight;
   }
 
-  // LEITURA 100% SUPABASE (SEM LOCALSTORAGE)
   window.carregarHistoricoNuvem = async function(clientId) {
     if (!clientId || !window.supabaseClient) return [];
     try {
@@ -100,7 +89,7 @@
         }));
       }
     } catch(e) {
-      console.warn("Erro ao buscar bi_chat_history no Supabase:", e);
+      console.warn("Erro ao ler Supabase:", e);
     }
     return [];
   };
@@ -111,7 +100,7 @@
     feed.innerHTML = '';
     const mensagens = await window.carregarHistoricoNuvem(clientId);
     if (mensagens.length === 0) {
-      adicionarAoFeed('oraculo', 'Olá! Sou o Oraculum Live. Como posso ajudar com a auditoria de tráfego, ROAS, CAC ou estratégias de escala hoje?');
+      adicionarAoFeed('oraculo', 'Ola! Sou o Oraculum Live. Como posso ajudar com a auditoria de trafego, ROAS, CAC ou escala hoje?');
       return;
     }
     mensagens.forEach(msg => {
@@ -119,11 +108,11 @@
     });
   };
 
-  async function perguntarAoOraculoGemini(promptUsuario, contextoBI, historicoAnterior = []) {
+  async function perguntarAoOraculoGemini(promptUsuario, contextoBI, historicoAnterior) {
     const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_mock_123';
 
-    const fullMessage = \`[CONTEXTO DO DASHBOARD BI]\nCliente: \${contextoBI?.cliente || 'Ativo'}\nFaturamento: \${contextoBI?.faturamento || '0'}\nGasto Tráfego: \${contextoBI?.gastoTrafego || '0'}\nROAS: \${contextoBI?.roas || '0'}\nLeads: \${contextoBI?.leads || '0'}\n\n[PERGUNTA DO USUÁRIO]: \${promptUsuario}\`;
+    const fullMessage = \`[CONTEXTO BI]\nCliente: \${contextoBI?.cliente || 'Ativo'}\nFaturamento: \${contextoBI?.faturamento || '0'}\nGasto: \${contextoBI?.gastoTrafego || '0'}\nROAS: \${contextoBI?.roas || '0'}\n\n[PERGUNTA]: \${promptUsuario}\`;
 
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -140,13 +129,12 @@
 
     const resData = await response.json();
     if (!response.ok || !resData.success || !resData.data) {
-      throw new Error(resData?.error || resData?.message || 'Falha na resposta do servidor.');
+      throw new Error(resData?.error || resData?.message || 'Falha no servidor Gemini.');
     }
     return resData.data;
   }
   window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
 
-  // GRAVAÇÃO 100% SUPABASE (SEM LOCALSTORAGE)
   window.enviarMensagemOraculo = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (isProcessando) return;
@@ -162,7 +150,6 @@
     const contexto = extrairContextoCompletoBI();
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
 
-    // Grava pergunta direto no Supabase
     if (window.supabaseClient) {
       window.supabaseClient.from('bi_chat_history').insert([{ 
         client_id: clientId, 
@@ -182,7 +169,7 @@
       const loadDiv = document.createElement('div');
       loadDiv.id = loadingId;
       loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 10px; color: #34D399; font-size: 12px;';
-      loadDiv.innerHTML = '⏳ Oraculum analisando métricas com Gemini...';
+      loadDiv.innerHTML = '⏳ Oraculum analisando metricas...';
       feed.appendChild(loadDiv);
       feed.scrollTop = feed.scrollHeight;
     }
@@ -196,7 +183,6 @@
 
       adicionarAoFeed('oraculo', respostaTexto);
       
-      // Grava resposta da IA direto no Supabase
       if (window.supabaseClient) {
         window.supabaseClient.from('bi_chat_history').insert([{ 
           client_id: clientId, 
@@ -225,7 +211,7 @@
   window.alternarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Seu navegador não suporta microfone direto.");
+      alert("Navegador sem suporte a microfone.");
       return;
     }
     const btnMic = document.getElementById('btn-toggle-mic');
@@ -260,6 +246,4 @@
       gravando = false;
     }
   };
-
-
 })();
