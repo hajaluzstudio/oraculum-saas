@@ -927,7 +927,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let savedCards = [];
         for (const card of newCards) {
-          savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing', locked: false });
+          const isStrict = card.title.includes('[VÍDEO]') || card.title.includes('[DESIGN]');
+          savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing', locked: isStrict });
         }
         
         localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(savedCards));
@@ -1375,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (data.success && data.data && data.data.length > 0) {
         // Normalize status to stage for frontend logic
-        const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status }));
+        const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status || 'producing' }));
         localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(normalizedData));
         renderKanbanBoard(normalizedData);
       }
@@ -1457,7 +1458,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ` : ''}
 
         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-          ${isStrictQA ? `
+          ${card.stage === 'published' ? `
+            <button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="archived" style="font-size: 10px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); border-radius: 4px; padding: 4px 8px; font-weight: bold; cursor: pointer; width: 100%;">
+              🚀 Enviar p/ Gestor de Tráfego (Concluir)
+            </button>
+          ` : (isStrictQA ? `
             <button type="button" onclick="document.querySelector('#btn-tab-war-room').click(); window.scrollTo(0, 0);" style="font-size: 10px; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-weight: 600; width: 100%;">
               🔍 Inspecionar Criativo (Score IA)
             </button>
@@ -1465,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${card.stage !== 'producing' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="producing" style="font-size: 10px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 6px; cursor: pointer;">← Produzir</button>` : ''}
             ${card.stage !== 'needs_adjustment' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="needs_adjustment" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Ajustar</button>` : ''}
             ${card.stage !== 'published' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="published" style="font-size: 10px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Aprovar →</button>` : ''}
-          `}
+          `)}
         </div>
       </div>
     `;
@@ -1490,6 +1495,14 @@ document.addEventListener('DOMContentLoaded', () => {
       cards[cardIndex].stage = stage;
       localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
       renderKanbanBoard(cards);
+
+      if (stage === 'archived') {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
+        toast.innerHTML = '🎯 Ativo despachado com sucesso para a gestão de tráfego pago!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
     }
 
     try {
