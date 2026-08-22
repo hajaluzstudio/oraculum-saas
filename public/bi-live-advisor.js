@@ -824,22 +824,19 @@ ${textoOraculo}`;
 
       const contexto = extrairContextoCompletoBI();
       const clientId = contexto.cliente || 'cliente_ativo';
-      localStorage.setItem(`oraculum_war_room_${clientId}`, JSON.stringify(jsonData));
-
-      // Atualizar a interface do War Room
-      if (typeof window.renderWarRoomData === 'function') {
-        window.renderWarRoomData(clientId);
+      
+      if (typeof window.dispatchBriefingToWarRoom === 'function') {
+        await window.dispatchBriefingToWarRoom(jsonData, { draft: false });
+      } else {
+        localStorage.setItem(`oraculum_war_room_${clientId}`, JSON.stringify(jsonData));
+        if (typeof window.renderWarRoomFromJSON === 'function') {
+          window.renderWarRoomFromJSON(jsonData);
+        }
       }
 
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado ao War Room';
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado à Sala de Operações';
       btn.style.background = 'rgba(16, 185, 129, 0.4)';
       btn.style.color = '#fff';
-      
-      const toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10B981;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;z-index:99999;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:13px;';
-      toast.innerHTML = '🚀 Estratégia aprovada e distribuída com sucesso para as 5 equipes no War Room!';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
 
     } catch (err) {
       console.error(err);

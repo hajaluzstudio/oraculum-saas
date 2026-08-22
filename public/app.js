@@ -864,26 +864,113 @@ document.addEventListener('DOMContentLoaded', () => {
     return msgId;
   }
 
-  function renderChatReply(reply) {
-    let html = `<p>${reply.replyText}</p>`;
+  // ============================================================================
+  // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
+  // ============================================================================
+  async function dispatchBriefingToWarRoom(briefingData, options = {}) {
+    try {
+      const isDraft = options.draft || false;
+      const targetClientId = activeClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
 
-    if (reply.suggestedBriefing) {
-      const b = reply.suggestedBriefing;
+      // 1. Renderiza os dados no War Room (5 Equipes)
+      if (typeof window.renderWarRoomFromJSON === 'function') {
+        window.renderWarRoomFromJSON(briefingData);
+      }
+
+      // 2. Salva no Supabase (ou localStorage)
+      if (window.supabaseClient) {
+        try {
+          await window.supabaseClient.from('briefings').insert([{
+            client_id: targetClientId,
+            organization_id: activeTenantId || null,
+            status: isDraft ? 'draft' : 'approved',
+            briefing_data: briefingData,
+            created_at: new Date().toISOString()
+          }]);
+        } catch (e) {
+          console.warn("Aviso ao salvar briefing no Supabase:", e);
+        }
+      }
+      localStorage.setItem(`oraculum_briefing_${targetClientId}`, JSON.stringify(briefingData));
+
+      // 3. Se não for apenas rascunho, gera cards na coluna "A Fazer" do Kanban
+      if (!isDraft) {
+        const kanbanItems = [];
+        if (briefingData.video?.gancho_3s) {
+          kanbanItems.push({ title: `Vídeo: ${briefingData.video.gancho_3s.substring(0, 30)}...`, category: 'Vídeo', stage: 'producing' });
+        }
+        if (briefingData.copy?.headline) {
+          kanbanItems.push({ title: `Copy: ${briefingData.copy.headline.substring(0, 30)}...`, category: 'Copy', stage: 'producing' });
+        }
+        if (briefingData.design?.conceito_visual) {
+          kanbanItems.push({ title: `Design: ${briefingData.design.conceito_visual.substring(0, 30)}...`, category: 'Design', stage: 'producing' });
+        }
+        if (briefingData.vendas?.script_whatsapp) {
+          kanbanItems.push({ title: `Comercial: Script WhatsApp`, category: 'Vendas', stage: 'producing' });
+        }
+
+        if (kanbanItems.length > 0 && typeof loadClientKanbanCards === 'function') {
+          await loadClientKanbanCards(targetClientId);
+        }
+      }
+
+      // 4. Feedback visual em Toast
+      const msg = isDraft ? "📝 Briefing salvo como Rascunho!" : "🚀 Briefing aprovado e enviado para a Sala de Operações e Kanban!";
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
+      toast.innerHTML = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+
+      return true;
+    } catch (err) {
+      console.error("[dispatchBriefingToWarRoom] Erro:", err);
+      alert("Erro ao despachar briefing: " + err.message);
+      return false;
+    }
+  }
+  window.dispatchBriefingToWarRoom = dispatchBriefingToWarRoom;
+
+  function renderChatReply(reply) {
+    let html = `<p style="line-height: 1.5;">${reply.replyText}</p>`;
+
+    const b = reply.suggestedBriefing || (reply.video || reply.copy ? reply : null);
+
+    if (b) {
+      const objTitle = b.campaignObjective || b.headline || b.diagnostico_estrategico || 'Estratégia Operacional';
+      const hookText = b.visualHookPrompt || b.video?.gancho_3s || b.hook_angle || '-';
+      const copyText = b.copyAngle || b.copy?.corpo_texto || '-';
+      const roiText = b.expectedRoiMultiplier || b.trafego?.kpis_alvo || 'LTV/CAC 4:1+';
+
+      const briefingJSON = JSON.stringify(reply).replace(/"/g, '&quot;');
+
       html += `
-        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px; border-radius: 8px; margin-top: 10px;">
-          <h5 style="color: var(--primary-cyan);"><i class="fa-solid fa-clapperboard"></i> Briefing Sugerido: ${b.campaignObjective}</h5>
-          <p style="font-size: 12px; margin-top: 4px;"><strong>Visual Hook (3s):</strong> ${b.visualHookPrompt}</p>
-          <p style="font-size: 12px;"><strong>Ângulo de Copy:</strong> ${b.copyAngle}</p>
-          <p style="font-size: 12px; color: var(--accent-gold);"><strong>Retorno Esperado:</strong> ${b.expectedRoiMultiplier}</p>
+        <div class="briefing-premium-card" style="background: #111d28; border: 1px solid rgba(16, 185, 129, 0.35); padding: 16px; border-radius: 14px; margin-top: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 11px; background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700;">🎯 BRIEFING TÁTICO</span>
+            <span style="font-size: 11px; color: #00F5A0; font-weight: 700;">ROI: ${roiText}</span>
+          </div>
+          <h4 style="color: #FFF; font-size: 14px; font-weight: 700; margin: 0 0 8px;">${objTitle}</h4>
+          <p style="font-size: 12px; color: #CBD5E1; margin: 4px 0;"><strong>🎬 Hook 3s:</strong> ${hookText}</p>
+          <p style="font-size: 12px; color: #CBD5E1; margin: 4px 0;"><strong>✍️ Ângulo Copy:</strong> ${copyText}</p>
+
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="button" onclick="window.dispatchBriefingToWarRoom(JSON.parse(this.dataset.briefing), { draft: true })" data-briefing="${briefingJSON}" style="flex: 1; padding: 8px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              ✏️ Rascunho
+            </button>
+            <button type="button" onclick="window.dispatchBriefingToWarRoom(JSON.parse(this.dataset.briefing), { draft: false })" data-briefing="${briefingJSON}" style="flex: 2; padding: 8px; background: #10B981; color: #020705; border: none; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+              ✅ Aprovar & Despachar (War Room & Kanban)
+            </button>
+          </div>
         </div>
       `;
     }
 
-    if (reply.actionableNextSteps) {
+    if (reply.actionableNextSteps && Array.isArray(reply.actionableNextSteps)) {
       html += `
-        <div style="margin-top: 10px;">
-          <strong style="font-size: 12px; color: var(--text-muted);">Próximos Passos Recomendados:</strong>
-          <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">
+        <div style="margin-top: 12px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px;">
+          <strong style="font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">📌 Próximos Passos Recomendados:</strong>
+          <ul style="font-size: 12px; color: #E2E8F0; padding-left: 18px; margin-top: 6px; line-height: 1.5;">
             ${reply.actionableNextSteps.map(step => `<li>${step}</li>`).join('')}
           </ul>
         </div>

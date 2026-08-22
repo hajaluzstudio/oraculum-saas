@@ -623,11 +623,29 @@ app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   }
 });
 
-// GET histórico de chat por cliente — schema real: id, agency_id, client_id, role, content, created_at
+// GET histórico de chat por cliente — suporte a chat_history e bi_chat_history
 app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   try {
     const { clientId } = req.params;
     
+    // Tenta primeiro em bi_chat_history
+    const { data: biData, error: biErr } = await supabase
+      .from('bi_chat_history')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+
+    if (!biErr && biData && biData.length > 0) {
+      const formatted = biData.map(item => ({
+        role: 'model',
+        content: item.json_response || item.prompt_input,
+        prompt_input: item.prompt_input,
+        json_response: item.json_response,
+        created_at: item.created_at
+      }));
+      return res.json({ success: true, data: formatted });
+    }
+      
     const { data, error } = await supabase
       .from('chat_history')
       .select('role, content, created_at')
