@@ -1155,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resData.success) {
           renderRealCreativeReport(resData.data, title);
           
-          // Quality Gate: Find Video Card and Update
+          // Quality Gate: Find Video/Design Card and Update
           const hookScore = resData.data.hookScore || 0;
           let newStage = hookScore >= 70 ? 'published' : 'adjustments';
           
@@ -1164,17 +1164,21 @@ document.addEventListener('DOMContentLoaded', () => {
              const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
              if (saved) cards = JSON.parse(saved);
              
-             const videoCardIndex = cards.findIndex(c => c.title.includes('[VÍDEO]'));
-             if (videoCardIndex !== -1) {
-                cards[videoCardIndex].stage = newStage;
-                cards[videoCardIndex].hook_score = hookScore;
+             // Identifica a vertical com base no select #inspect-type
+             const isDesign = type.toLowerCase().includes('imagem') || type.toLowerCase().includes('design');
+             const targetTag = isDesign ? '[DESIGN]' : '[VÍDEO]';
+             const targetCardIndex = cards.findIndex(c => c.title.includes(targetTag));
+             
+             if (targetCardIndex !== -1) {
+                cards[targetCardIndex].stage = newStage;
+                cards[targetCardIndex].hook_score = hookScore;
                 
                 if (hookScore < 70) {
-                   cards[videoCardIndex].locked = true;
-                   cards[videoCardIndex].adjustments_needed = (resData.data.actionableFixes || []).join(', ');
+                   cards[targetCardIndex].locked = true;
+                   cards[targetCardIndex].adjustments_needed = (resData.data.actionableFixes || []).join(', ');
                 } else {
-                   cards[videoCardIndex].locked = false;
-                   cards[videoCardIndex].adjustments_needed = null;
+                   cards[targetCardIndex].locked = false;
+                   cards[targetCardIndex].adjustments_needed = null;
                    
                    const btnCert = document.getElementById('btn-generate-metadata-cert');
                    if (btnCert) {
@@ -1185,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
                 
-                // Atualiza backend em lote (opcional)
+                // Atualiza backend em lote
                 fetch(`${API_BASE_URL}/api/kanban/batch`, {
                    method: 'POST',
                    headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
@@ -1357,15 +1361,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const kanbanGrid = document.getElementById('kanban-grid-container');
     if (!kanbanGrid) return;
+    
+    // Leitura imediata do localStorage para renderização em 0ms
+    const saved = localStorage.getItem(`oraculum_kanban_${targetClientId}`);
+    if (saved) {
+       try { renderKanbanBoard(JSON.parse(saved)); } catch(e){}
+    }
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/kanban/${targetClientId}`, {
         headers: { 'x-organization-id': activeTenantId }
       });
       const data = await res.json();
-      if (data.success && data.data) {
+      if (data.success && data.data && data.data.length > 0) {
         // Normalize status to stage for frontend logic
         const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status }));
+        localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(normalizedData));
         renderKanbanBoard(normalizedData);
       }
     } catch (e) {
@@ -1425,12 +1436,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const driveLink = card.filePath || card.file_path || '';
     const tagMatch = card.title.match(/\[(.*?)\]/);
     const tag = tagMatch ? tagMatch[1] : (card.asset_type?.toUpperCase() || 'VÍDEO');
-    
+    const isStrictQA = tag.includes('VÍDEO') || tag.includes('DESIGN');
+
     return `
       <div class="kanban-card" style="background: #111726; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: #94A3B8;">${tag}</span>
-          ${card.hook_score ? `<span style="font-size: 11px; font-weight: bold; color: ${card.hook_score >= 80 ? '#10B981' : '#EF4444'};">Hook: ${card.hook_score}/100</span>` : ''}
+          ${card.hook_score ? `<span style="font-size: 11px; font-weight: bold; color: ${card.hook_score >= 80 ? '#10B981' : '#EF4444'};">Score: ${card.hook_score}/100</span>` : ''}
         </div>
         <h4 style="font-size: 13px; margin: 0; color: #F1F5F9; font-weight: 600; line-height: 1.4;">${card.title}</h4>
         
@@ -1445,9 +1457,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ` : ''}
 
         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-          ${card.stage !== 'producing' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="producing" style="font-size: 10px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 6px; cursor: pointer;">← Produzir</button>` : ''}
-          ${card.stage !== 'needs_adjustment' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="needs_adjustment" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Ajustar</button>` : ''}
-          ${card.stage !== 'published' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="published" style="font-size: 10px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Aprovar →</button>` : ''}
+          ${isStrictQA ? `
+            <button type="button" onclick="document.querySelector('#btn-tab-war-room').click(); window.scrollTo(0, 0);" style="font-size: 10px; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-weight: 600; width: 100%;">
+              🔍 Inspecionar Criativo (Score IA)
+            </button>
+          ` : `
+            ${card.stage !== 'producing' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="producing" style="font-size: 10px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 6px; cursor: pointer;">← Produzir</button>` : ''}
+            ${card.stage !== 'needs_adjustment' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="needs_adjustment" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Ajustar</button>` : ''}
+            ${card.stage !== 'published' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="published" style="font-size: 10px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Aprovar →</button>` : ''}
+          `}
         </div>
       </div>
     `;

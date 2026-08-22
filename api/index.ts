@@ -1349,4 +1349,72 @@ Retorne APENAS um JSON válido no formato:
   }
 });
 
+// GET /api/kanban
+app.get('/api/kanban', async (req: Request, res: Response) => {
+  try {
+    const clientId = req.query.client_id as string;
+    if (!clientId) return res.status(400).json({ success: false, error: 'client_id is required' });
+    const { data, error } = await supabase.from('kanban_tasks').select('*').eq('client_id', clientId);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/kanban/:clientId
+app.get('/api/kanban/:clientId', async (req: Request, res: Response) => {
+  try {
+    const { clientId } = req.params;
+    const { data, error } = await supabase.from('kanban_tasks').select('*').eq('client_id', clientId);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/kanban/batch
+app.post('/api/kanban/batch', async (req: Request, res: Response) => {
+  try {
+    const cards = req.body;
+    if (!Array.isArray(cards)) return res.status(400).json({ success: false, error: 'Expected an array of cards' });
+    
+    if (cards.length > 0) {
+      const clientId = cards[0].clientId || cards[0].client_id;
+      if (clientId) {
+        await supabase.from('kanban_tasks').delete().eq('client_id', clientId);
+        const mappedCards = cards.map(c => ({
+            id: String(c.id),
+            client_id: c.clientId || c.client_id,
+            title: c.title,
+            description: c.description || c.adjustments_needed,
+            stage: c.stage,
+            asset_type: c.assetType || c.asset_type,
+            locked: c.locked || false,
+            hook_score: c.hook_score || 0
+        }));
+        const { error } = await supabase.from('kanban_tasks').insert(mappedCards);
+        if (error) return res.status(500).json({ success: false, error: error.message });
+      }
+    }
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PATCH /api/kanban/:assetId/stage
+app.patch('/api/kanban/:assetId/stage', async (req: Request, res: Response) => {
+  try {
+    const { assetId } = req.params;
+    const { stage } = req.body;
+    const { error } = await supabase.from('kanban_tasks').update({ stage }).eq('id', String(assetId));
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default app;
