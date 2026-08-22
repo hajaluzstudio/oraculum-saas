@@ -251,4 +251,57 @@
       gravando = false;
     }
   };
+
+  function forcarRenderizacaoOraculumLive() {
+    // 1. Botão Flutuante
+    let btn = document.getElementById('btn-open-oraculo-live');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'btn-open-oraculo-live';
+      btn.type = 'button';
+      btn.innerHTML = '<span style="font-size:16px;">🤖</span><span>Oraculum Live</span>';
+      document.body.appendChild(btn);
+    }
+    btn.onclick = function(e) {
+      e.preventDefault();
+      window.alternarOraculoLive();
+    };
+    btn.style.cssText = 'position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; gap: 8px !important; padding: 12px 20px !important; background-color: #10b981 !important; color: #020705 !important; border-radius: 9999px !important; font-weight: 800 !important; font-size: 13px !important; cursor: pointer !important; border: 1px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 25px rgba(16,185,129,0.5) !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+
+    // 2. Drawer Lateral
+    let drawer = document.getElementById('oraculo-live-drawer');
+    if (!drawer) {
+      drawer = document.createElement('div');
+      drawer.id = 'oraculo-live-drawer';
+      drawer.innerHTML = `
+        <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(8, 11, 17, 0.9);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">🤖</span>
+            <strong style="color: #FFF; font-size: 14px;">Oraculum Live</strong>
+          </div>
+          <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 22px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #CBD5E1;">
+          <div style="background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            👋 Olá! Sou o <strong>Oraculum Live</strong>. Como posso ajudar com métricas e escala hoje?
+          </div>
+        </div>
+        <div style="padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(8, 11, 17, 0.9);">
+          <form onsubmit="window.enviarMensagemOraculo(event)" style="display: flex; gap: 8px;">
+            <input type="text" id="oraculo-input-text" placeholder="Pergunte ao Oraculum..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px; outline: none;" />
+            <button type="submit" id="btn-send-oraculo" style="padding: 8px 14px; background: #10B981; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">➤</button>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(drawer);
+    }
+    drawer.style.cssText = 'position: fixed !important; top: 0 !important; bottom: 0 !important; right: 0 !important; z-index: 2147483647 !important; width: 100% !important; max-width: 400px !important; background: rgba(15, 23, 42, 0.98) !important; backdrop-filter: blur(20px) !important; border-left: 1px solid rgba(16,185,129,0.3) !important; box-shadow: -10px 0 30px rgba(0,0,0,0.8) !important; display: flex !important; flex-direction: column !important; transition: transform 0.3s ease !important; transform: translateX(100%) !important; color: #FFF !important;';
+  }
+
+  // Executa imediatamente e no carregamento
+  forcarRenderizacaoOraculumLive();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', forcarRenderizacaoOraculumLive);
+  }
+  window.addEventListener('load', forcarRenderizacaoOraculumLive);
 })();
