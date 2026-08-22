@@ -208,17 +208,30 @@ REGRAS ABSOLUTAS INEGOCIÁVEIS:
 
       const chatResponse: StrategicChatResponse = JSON.parse(response.text);
 
-      // Salva a interação no histórico do Supabase se a tabela/cliente estiver disponível
+      // Salva a interação no histórico do Supabase com role + content corretos
       try {
-        await supabase.from('bi_chat_history').insert([{
+        const assistantText = typeof chatResponse.replyText === 'string'
+          ? chatResponse.replyText
+          : JSON.stringify(chatResponse);
+
+        const { error: dbErr } = await supabase.from('bi_chat_history').insert({
           client_id: clientId,
           organization_id: organizationId || null,
-          prompt_input: userMessage,
+          role: 'assistant',
+          sender: 'assistant',
+          content: assistantText,
+          message: assistantText,
           json_response: chatResponse,
           created_at: new Date().toISOString()
-        }]);
+        });
+
+        if (dbErr) {
+          console.error('❌ ERRO CRÍTICO SUPABASE AO SALVAR ASSISTANT:', dbErr.message, dbErr.details);
+        } else {
+          console.log('✅ RESPOSTA SALVA COM SUCESSO NO BANCO para clientId:', clientId);
+        }
       } catch (err: any) {
-        console.warn('⚠️ Aviso ao salvar bi_chat_history no Supabase:', err.message || err);
+        console.error('❌ EXCEÇÃO AO SALVAR NO SUPABASE:', err.message);
       }
 
       return chatResponse;

@@ -967,6 +967,19 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
 
+    // Botão de aprovação sempre presente em respostas da IA
+    const briefingJSON = JSON.stringify(reply).replace(/"/g, '&quot;');
+    html += `
+      <div class="briefing-actions" style="margin-top: 14px; display: flex; gap: 8px;">
+        <button type="button"
+          onclick="window.dispatchBriefingToWarRoom(JSON.parse(this.dataset.briefing), { draft: false })"
+          data-briefing="${briefingJSON}"
+          style="padding: 8px 14px; background: #10B981; color: #020705; border: none; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+          ✅ Aprovar &amp; Despachar para Sala de Operação
+        </button>
+      </div>
+    `;
+
     appendChatMessage('model', html);
   }
 
