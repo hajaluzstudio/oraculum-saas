@@ -59,10 +59,9 @@
       <img src="logo-oraculum-03.svg" style="width: 22px; height: 22px; object-fit: contain;">
       <span>🤖 Oraculum Live</span>
     `;
-    document.body.appendChild(floatBtn);
-
-    // Drawer Retrátil
-    const drawer = document.createElement('div');
+    const targetContainer = document.getElementById('main-dashboard-container') || document.body;
+    targetContainer.appendChild(floatBtn);
+    targetContainer.appendChild(drawer);
     drawer.id = 'oraculo-live-drawer';
     drawer.className = 'fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/80 shadow-2xl flex flex-col transition-transform duration-300 translate-x-full text-white';
     drawer.style.cssText = 'position: fixed; top: 0; bottom: 0; right: 0; z-index: 99999; width: 100%; max-width: 420px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-left: 1px solid rgba(16,185,129,0.3); box-shadow: -10px 0 40px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease; transform: translateX(100%); color: #FFF; font-family: "Inter", sans-serif;';
@@ -115,7 +114,6 @@
         </div>
       </div>
     `;
-    document.body.appendChild(drawer);
 
     monitorarAbaAtivaBI();
   }
