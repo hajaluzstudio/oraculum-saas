@@ -1146,14 +1146,43 @@
 
             <!-- QUADRO KANBAN DINÂMICO DE 4 COLUNAS -->
             <div class="kanban-container" id="kanban-grid-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px;">
-              <!-- Preenchido dinamicamente pelo app.js -->
-            </div>
+              
+              <!-- Coluna 1: A Fazer / Produção -->
+              <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3B82F6; padding-bottom: 8px; margin-bottom: 14px;">
+                  <span style="font-weight: 600; font-size: 13px; color: #3B82F6;">1. Em Produção [Equipe]</span>
+                  <span id="count-producing" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                </div>
+                <div id="kanban-col-producing" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px;"></div>
+              </div>
 
-            <div class="drive-demo-box" style="margin-top: 20px;">
-              <button class="btn-primary" id="btn-trigger-drive-workflow">
-                <i class="fa-solid fa-play"></i> Simular Processamento da Esteira em Tempo Real
-              </button>
-              <div id="drive-workflow-output" class="output-log"></div>
+              <!-- Coluna 2: Em Análise / IA -->
+              <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #06B6D4; padding-bottom: 8px; margin-bottom: 14px;">
+                  <span style="font-weight: 600; font-size: 13px; color: #06B6D4;">2. Em Análise IA</span>
+                  <span id="count-analyzing" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                </div>
+                <div id="kanban-col-analyzing" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px;"></div>
+              </div>
+
+              <!-- Coluna 3: Ajustes Necessários -->
+              <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #EF4444; padding-bottom: 8px; margin-bottom: 14px;">
+                  <span style="font-weight: 600; font-size: 13px; color: #EF4444;">3. Ajustes Necessários</span>
+                  <span id="count-adjustments" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                </div>
+                <div id="kanban-col-adjustments" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px;"></div>
+              </div>
+
+              <!-- Coluna 4: Pronto / Publicado -->
+              <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #10B981; padding-bottom: 8px; margin-bottom: 14px;">
+                  <span style="font-weight: 600; font-size: 13px; color: #10B981;">4. Pronto para Tráfego</span>
+                  <span id="count-published" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                </div>
+                <div id="kanban-col-published" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px;"></div>
+              </div>
+
             </div>
           </div>
         </section>

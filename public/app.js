@@ -926,40 +926,21 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
 
         let savedCards = [];
-
         for (const card of newCards) {
-          try {
-            const payload = {
-              clientId: targetClientId,
-              title: card.title,
-              description: card.description,
-              status: 'producing',
-              assetType: card.assetType
-            };
-            const res = await fetch(`${API_BASE_URL}/api/kanban`, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'x-organization-id': activeTenantId 
-              },
-              body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (data.success && data.data) {
-                savedCards.push(data.data[0] || data.data);
-            } else {
-                savedCards.push({...payload, id: Date.now() + Math.random(), stage: 'producing'});
-            }
-          } catch(e) {
-            console.warn('Erro ao criar card Kanban:', e);
-            savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing' });
-          }
+          savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing', locked: false });
         }
         
         localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(savedCards));
+        
+        // Dispara gravação em lote no backend (se houver rota)
+        fetch(`${API_BASE_URL}/api/kanban/batch`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
+           body: JSON.stringify(savedCards)
+        }).catch(e => console.warn('Aviso backend batch Kanban:', e));
 
-        if (typeof loadClientKanbanCards === 'function') {
-          await loadClientKanbanCards(targetClientId);
+        if (typeof renderKanbanBoard === 'function') {
+          renderKanbanBoard();
         }
       }
 
@@ -1176,53 +1157,58 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Quality Gate: Find Video Card and Update
           const hookScore = resData.data.hookScore || 0;
-          let newStatus = hookScore >= 70 ? 'published' : 'needs_adjustment';
+          let newStage = hookScore >= 70 ? 'published' : 'adjustments';
           
           try {
-            const kanbanRes = await fetch(`${API_BASE_URL}/api/kanban/${activeClientId}`, {
-              headers: { 'x-organization-id': activeTenantId }
-            });
-            const kanbanData = await kanbanRes.json();
-            if (kanbanData.success && kanbanData.data) {
-               const videoCard = kanbanData.data.find(c => c.title.includes('[VÍDEO]'));
-               if (videoCard) {
-                 videoCard.status = newStatus;
-                 if (hookScore < 70) {
-                    videoCard.description = `[REPROVADO - Score ${hookScore}] Ajustes: ` + (resData.data.actionableFixes || []).join(', ');
-                    localStorage.setItem(`oraculum_qg_lock_${videoCard.id}`, 'locked');
-                 } else {
-                    videoCard.description = `[APROVADO - Score ${hookScore}] via Gemini Vision.`;
-                    localStorage.removeItem(`oraculum_qg_lock_${videoCard.id}`);
-                    
-                    const btnCert = document.getElementById('btn-generate-metadata-cert');
-                    if (btnCert) {
-                      btnCert.disabled = false;
-                      btnCert.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                 }
-                 
-                 await fetch(`${API_BASE_URL}/api/kanban`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
-                    body: JSON.stringify(videoCard)
-                 });
-                 
-                 const toastMsg = hookScore < 70 
-                    ? "⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor" 
-                    : "✅ Quality Gate Aprovado! Card movido para Pronto para Veiculação.";
-                 
-                 const toast = document.createElement('div');
-                 toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:${hookScore < 70 ? '#EF4444' : '#10B981'};color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;`;
-                 toast.innerHTML = toastMsg;
-                 document.body.appendChild(toast);
-                 setTimeout(() => toast.remove(), 5000);
-               }
-            }
+             let cards = [];
+             const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
+             if (saved) cards = JSON.parse(saved);
+             
+             const videoCardIndex = cards.findIndex(c => c.title.includes('[VÍDEO]'));
+             if (videoCardIndex !== -1) {
+                cards[videoCardIndex].stage = newStage;
+                cards[videoCardIndex].hook_score = hookScore;
+                
+                if (hookScore < 70) {
+                   cards[videoCardIndex].locked = true;
+                   cards[videoCardIndex].adjustments_needed = (resData.data.actionableFixes || []).join(', ');
+                } else {
+                   cards[videoCardIndex].locked = false;
+                   cards[videoCardIndex].adjustments_needed = null;
+                   
+                   const btnCert = document.getElementById('btn-generate-metadata-cert');
+                   if (btnCert) {
+                     btnCert.disabled = false;
+                     btnCert.classList.remove('opacity-50', 'cursor-not-allowed');
+                   }
+                }
+                
+                localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
+                
+                // Atualiza backend em lote (opcional)
+                fetch(`${API_BASE_URL}/api/kanban/batch`, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
+                   body: JSON.stringify(cards)
+                }).catch(e => console.warn('Aviso backend Quality Gate:', e));
+                
+                const toastMsg = hookScore < 70 
+                   ? "⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor" 
+                   : "✅ Quality Gate Aprovado! Card movido para Pronto para Tráfego.";
+                
+                const toast = document.createElement('div');
+                toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:${hookScore < 70 ? '#EF4444' : '#10B981'};color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;`;
+                toast.innerHTML = toastMsg;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+                
+                if (typeof renderKanbanBoard === 'function') {
+                  renderKanbanBoard();
+                }
+             }
           } catch(e) {
             console.error('Erro na sincronização do Quality Gate com Kanban', e);
           }
-          
-          await loadClientKanbanCards(activeClientId);
         } else {
           throw new Error(resData.error || 'Falha no teste de criativo');
         }
@@ -1388,59 +1374,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderKanbanBoard(assets) {
-    const kanbanGrid = document.getElementById('kanban-grid-container');
-    if (!kanbanGrid) return;
+    let cards = assets;
+    if (!cards || !Array.isArray(cards)) {
+      const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
+      cards = saved ? JSON.parse(saved) : [];
+    }
 
-    const col1 = assets.filter(a => a.stage === 'producing');
-    const col2 = assets.filter(a => a.stage === 'ai_eval');
-    const col3 = assets.filter(a => a.stage === 'needs_adjustment');
-    const col4 = assets.filter(a => a.stage === 'published');
+    const colProducing = cards.filter(a => a.stage === 'producing');
+    const colAnalyzing = cards.filter(a => a.stage === 'analyzing' || a.stage === 'ai_eval');
+    const colAdjustments = cards.filter(a => a.stage === 'adjustments' || a.stage === 'needs_adjustment');
+    const colPublished = cards.filter(a => a.stage === 'published');
 
-    kanbanGrid.innerHTML = `
-      <!-- COLUNA 1: PRODUZINDO -->
-      <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3B82F6; padding-bottom: 8px; margin-bottom: 14px;">
-          <span style="font-weight: 600; font-size: 13px; color: #3B82F6;">1. Produzindo [Designer/Editor]</span>
-          <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${col1.length}</span>
-        </div>
-        <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px;">
-          ${col1.map(card => renderKanbanCard(card)).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em produção</div>'}
-        </div>
-      </div>
+    const countProducing = document.getElementById('count-producing');
+    if(countProducing) countProducing.textContent = colProducing.length;
+    
+    const countAnalyzing = document.getElementById('count-analyzing');
+    if(countAnalyzing) countAnalyzing.textContent = colAnalyzing.length;
+    
+    const countAdjustments = document.getElementById('count-adjustments');
+    if(countAdjustments) countAdjustments.textContent = colAdjustments.length;
+    
+    const countPublished = document.getElementById('count-published');
+    if(countPublished) countPublished.textContent = colPublished.length;
 
-      <!-- COLUNA 2: ANÁLISE DA IA -->
-      <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #06B6D4; padding-bottom: 8px; margin-bottom: 14px;">
-          <span style="font-weight: 600; font-size: 13px; color: #06B6D4;">2. Análise da IA [Hook Score]</span>
-          <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${col2.length}</span>
-        </div>
-        <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px;">
-          ${col2.map(card => renderKanbanCard(card)).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em avaliação</div>'}
-        </div>
-      </div>
+    const containerProducing = document.getElementById('kanban-col-producing');
+    if (containerProducing) containerProducing.innerHTML = colProducing.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em produção</div>';
 
-      <!-- COLUNA 3: AJUSTES NECESSÁRIOS -->
-      <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #EF4444; padding-bottom: 8px; margin-bottom: 14px;">
-          <span style="font-weight: 600; font-size: 13px; color: #EF4444;">3. Ajustes Necessários</span>
-          <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${col3.length}</span>
-        </div>
-        <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px;">
-          ${col3.map(card => renderKanbanCard(card)).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo requer ajustes</div>'}
-        </div>
-      </div>
+    const containerAnalyzing = document.getElementById('kanban-col-analyzing');
+    if (containerAnalyzing) containerAnalyzing.innerHTML = colAnalyzing.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em avaliação</div>';
 
-      <!-- COLUNA 4: PUBLICADO / PRODUZIDO -->
-      <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #10B981; padding-bottom: 8px; margin-bottom: 14px;">
-          <span style="font-weight: 600; font-size: 13px; color: #10B981;">4. Publicado / Produzido</span>
-          <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${col4.length}</span>
-        </div>
-        <div class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px;">
-          ${col4.map(card => renderKanbanCard(card)).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo publicado</div>'}
-        </div>
-      </div>
-    `;
+    const containerAdjustments = document.getElementById('kanban-col-adjustments');
+    if (containerAdjustments) containerAdjustments.innerHTML = colAdjustments.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo requer ajustes</div>';
+
+    const containerPublished = document.getElementById('kanban-col-published');
+    if (containerPublished) containerPublished.innerHTML = colPublished.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo publicado</div>';
 
     document.querySelectorAll('.btn-kanban-stage').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1487,16 +1454,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function updateKanbanCardStage(assetId, stage) {
-    if (stage === 'published' && localStorage.getItem(`oraculum_qg_lock_${assetId}`) === 'locked') {
-      const toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#EF4444;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
-      toast.innerHTML = '⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
+    let cards = [];
+    const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
+    if (saved) cards = JSON.parse(saved);
+    
+    const cardIndex = cards.findIndex(c => String(c.id) === String(assetId));
+    if (cardIndex !== -1) {
+      if (stage === 'published' && cards[cardIndex].locked === true) {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#EF4444;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
+        toast.innerHTML = '⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+        return;
+      }
       
-      // Force UI refresh to revert card position
-      await loadClientKanbanCards(activeClientId);
-      return;
+      cards[cardIndex].stage = stage;
+      localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
+      renderKanbanBoard(cards);
     }
 
     try {
@@ -1510,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       if (data.success) {
-        await loadClientKanbanCards(activeClientId);
+        // Backend updated
       }
     } catch (e) {
       console.warn('Erro ao atualizar estágio da carta:', e);
