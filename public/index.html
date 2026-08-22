@@ -325,7 +325,7 @@
 
   <!-- Header -->
   <header>
-    <a href="https://site-oraculum.vercel.app/" class="back-link">&larr; Ir para o site</a>
+    <a href="https://site-oraculum.vercel.app/" target="_blank" class="back-link">&larr; Ir para o site</a>
     <a href="index.html" class="brand-logo">
       <img src="logo.png" alt="Oraculum Logo" onerror="handleImgError(this)">
     </a>
@@ -350,7 +350,20 @@
         <label>Chave de Acesso / Senha</label>
         <div class="input-wrapper">
           <input type="password" class="password-input" placeholder="••••••••••••" required id="login-password">
-          <button type="button" class="toggle-password-btn" id="toggle-password" aria-label="Mostrar ou ocultar senha">
+          <button type="button" class="toggle-password-btn" id="toggle-password" aria-label="Mostrar ou ocultar senha" onclick="
+            const pwd = document.getElementById('login-password');
+            const eye = document.getElementById('eye-icon');
+            const eyeOff = document.getElementById('eye-off-icon');
+            if (pwd.type === 'password') {
+              pwd.type = 'text';
+              eye.style.display = 'none';
+              eyeOff.style.display = 'block';
+            } else {
+              pwd.type = 'password';
+              eye.style.display = 'block';
+              eyeOff.style.display = 'none';
+            }
+          ">
             <svg id="eye-icon" viewBox="0 0 24 24">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
@@ -383,19 +396,6 @@
       }
     }
 
-    // Alternar Visibilidade da Senha
-    const togglePasswordBtn = document.getElementById('toggle-password');
-    const passwordInput = document.getElementById('login-password');
-    const eyeIcon = document.getElementById('eye-icon');
-    const eyeOffIcon = document.getElementById('eye-off-icon');
-
-    togglePasswordBtn.addEventListener('click', () => {
-      const isPassword = passwordInput.type === 'password';
-      passwordInput.type = isPassword ? 'text' : 'password';
-      eyeIcon.style.display = isPassword ? 'none' : 'block';
-      eyeOffIcon.style.display = isPassword ? 'block' : 'none';
-    });
-
     // Função para Recuperar Chave via Supabase Auth
     window.recuperarChave = async function(e) {
       e.preventDefault();
@@ -408,12 +408,13 @@
         return;
       }
 
-      try {
-        const supaClient = window.supabaseClient;
-        if (!supaClient || !supaClient.auth) throw new Error('Serviço de autenticação não inicializado.');
+      if (!window.supabaseClient) {
+        alert('Serviço de autenticação não inicializado. Tente recarregar a página.');
+        return;
+      }
 
-        // Opcional: Adicionar um loading no botão ou alert (vamos de alert para simplicidade por enquanto)
-        const { error } = await supaClient.auth.resetPasswordForEmail(email, {
+      try {
+        const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin + window.location.pathname
         });
 
@@ -882,12 +883,12 @@
     <main class="main-content">
       <!-- CABEÇALHO SUPERIOR -->
       <header class="top-header">
-        <div class="header-title">
+        <div class="header-title" style="margin-bottom: 16px;">
           <h1 id="page-title">Carteira de Clientes & Fichas Cadastrais</h1>
           <p id="page-subtitle">Gerencie os dados cadastrais, ticket médio, meta de faturamento e contatos dos clientes da agência.</p>
         </div>
 
-        <div class="header-actions">
+        <div class="header-actions" style="margin-bottom: 16px;">
 
           <div class="stat-pill highlight" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-user-check"></i>
