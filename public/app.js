@@ -1459,8 +1459,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
           ${card.stage === 'published' ? `
-            <button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="archived" style="font-size: 10px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); border-radius: 4px; padding: 4px 8px; font-weight: bold; cursor: pointer; width: 100%;">
-              🚀 Enviar p/ Gestor de Tráfego (Concluir)
+            <button type="button" class="btn-kanban-stage btn-archive-traffic" data-asset-id="${card.id}" data-target-stage="archived_traffic" style="font-size: 10px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); border-radius: 4px; padding: 4px 8px; font-weight: bold; cursor: pointer; width: 100%;">
+              🚀 Enviar para Tráfego & Arquivar
             </button>
           ` : (isStrictQA ? `
             <button type="button" onclick="document.querySelector('#btn-tab-war-room').click(); window.scrollTo(0, 0);" style="font-size: 10px; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-weight: 600; width: 100%;">
@@ -1496,12 +1496,16 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
       renderKanbanBoard(cards);
 
-      if (stage === 'archived') {
+      if (stage === 'archived' || stage === 'archived_traffic') {
         const toast = document.createElement('div');
         toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
         toast.innerHTML = '🎯 Ativo despachado com sucesso para a gestão de tráfego pago!';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 4000);
+        
+        if (stage === 'archived_traffic') {
+          window.dispatchEvent(new CustomEvent('cardSentToTraffic', { detail: cards[cardIndex] }));
+        }
       }
     }
 
