@@ -1363,7 +1363,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       if (data.success && data.data) {
-        renderKanbanBoard(data.data);
+        // Normalize status to stage for frontend logic
+        const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status }));
+        renderKanbanBoard(normalizedData);
       }
     } catch (e) {
       console.warn('Erro ao carregar Kanban:', e);
@@ -1438,19 +1440,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const isNeedsAdj = card.stage === 'needs_adjustment';
     const isPub = card.stage === 'published';
     const borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
+    const driveLink = card.filePath || card.file_path || '';
+    const tagMatch = card.title.match(/\[(.*?)\]/);
+    const tag = tagMatch ? tagMatch[1] : (card.asset_type?.toUpperCase() || 'VÍDEO');
     
     return `
-      <div class="kanban-card" style="background: #111726; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+      <div class="kanban-card" style="background: #111726; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: #94A3B8;">${card.asset_type?.toUpperCase() || 'VÍDEO'}</span>
+          <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: #94A3B8;">${tag}</span>
           ${card.hook_score ? `<span style="font-size: 11px; font-weight: bold; color: ${card.hook_score >= 80 ? '#10B981' : '#EF4444'};">Hook: ${card.hook_score}/100</span>` : ''}
         </div>
-        <h4 style="font-size: 13px; margin: 2px 0; color: #F1F5F9; font-weight: 600;">${card.title}</h4>
+        <h4 style="font-size: 13px; margin: 0; color: #F1F5F9; font-weight: 600; line-height: 1.4;">${card.title}</h4>
         
-        ${card.ai_feedback && card.ai_feedback.length > 0 ? `
-          <div style="background: rgba(255,255,255,0.03); border-left: 2px solid ${card.hook_score >= 80 ? '#10B981' : '#06B6D4'}; padding: 6px 8px; border-radius: 4px; font-size: 11px; color: #CBD5E1;">
-            ${card.ai_feedback[0]}
-          </div>
+        ${card.description ? `
+          <p style="font-size: 11px; color: #94A3B8; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${card.description}</p>
+        ` : ''}
+
+        ${driveLink ? `
+          <a href="${driveLink}" target="_blank" style="font-size: 11px; color: #3B82F6; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+            <i class="fa-brands fa-google-drive"></i> Abrir Drive
+          </a>
         ` : ''}
 
         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
