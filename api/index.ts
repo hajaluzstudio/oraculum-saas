@@ -707,7 +707,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     const { error: userErr } = await supabase.from('bi_chat_history').insert(payloadUser);
     if (userErr) {
       console.error('❌ [Supabase Insert User Error]:', userErr);
-      await supabase.from('chat_history').insert(payloadUser).catch(() => {});
+      try { await supabase.from('chat_history').insert(payloadUser); } catch (e) { console.warn('[Supabase Fallback Warning]:', e); }
     }
 
     // 2. Chamada da IA Gemini
@@ -729,7 +729,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     const { error: aiErr } = await supabase.from('bi_chat_history').insert(payloadAssistant);
     if (aiErr) {
       console.error('❌ [Supabase Insert AI Error]:', aiErr);
-      await supabase.from('chat_history').insert(payloadAssistant).catch(() => {});
+      try { await supabase.from('chat_history').insert(payloadAssistant); } catch (e) { console.warn('[Supabase Fallback Warning]:', e); }
     } else {
       console.log('[Supabase] ✅ Resposta do assistente salva com sucesso para o cliente:', clientId);
     }
