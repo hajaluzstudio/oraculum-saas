@@ -707,13 +707,11 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
     // Pega o dossiê real do banco
     const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
-    const dossierContext = dossierData ? JSON.stringify(dossierData.dossier_data) : 'Sem dossiê';
-
-    const systemInstruction = `Você é o Oráculo de Marketing Híbrido ROI-First especialista no nicho deste cliente.
-FONTE DE CONTEXTO (DOSSIÊ DO CLIENTE ATIVO):
-${dossierContext}
-
-Responda diretamente à mensagem do usuário usando os dados reais do dossiê.`;
+    const dossier = dossierData ? dossierData.dossier_data : {};
+    const systemInstruction = `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
+Dossiê do Cliente Ativo: ${JSON.stringify(dossier || {})}.
+Instrução do usuário: "${userMessage}".
+Responda diretamente à solicitação com a estratégia estruturada, sem introduções genéricas repetitivas. Formate com clareza em Markdown destacando Headlines, Hooks de 3s e Scripts.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.6-flash',

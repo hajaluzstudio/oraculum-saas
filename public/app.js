@@ -320,7 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const jsonResp = msg.json_response;
 
             if (role === 'model' || role === 'assistant' || rawRole === 'oraculum' || rawRole === 'bot') {
-              appendChatMessage('model', content);
+              const replyHtml = `${content}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>`;
+              appendChatMessage('model', replyHtml);
             } else {
               appendChatMessage('user', content);
             }
@@ -837,6 +838,28 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const isDraft = options.draft || false;
       const targetClientId = activeClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
+
+      if (briefingData instanceof HTMLElement) {
+        const bubble = briefingData.closest('.bubble');
+        let text = bubble ? bubble.innerText.replace('✅ Aprovar & Despachar para Sala de Operação', '').trim() : '';
+        
+        const tp = document.querySelector('#teleprompterText');
+        if (tp) tp.value = text;
+        const ce = document.querySelector('#copyEditor');
+        if (ce) ce.value = text;
+        const db = document.querySelector('#designBriefing');
+        if (db) db.value = text;
+        const tra = document.querySelector('#trafficPlanning');
+        if (tra) tra.value = text;
+
+        briefingData = {
+          video: { gancho_3s: text.substring(0, 30) },
+          copy: { headline: text.substring(0, 30) },
+          design: { conceito_visual: "Design baseado no chat" },
+          vendas: { script_whatsapp: "Script baseado no chat" },
+          raw_text: text
+        };
+      }
 
       // 1. Renderiza os dados no War Room (5 Equipes)
       if (typeof window.renderWarRoomFromJSON === 'function') {
