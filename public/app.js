@@ -139,8 +139,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (targetTab === 'tab-war-room' && typeof window.renderWarRoomData === 'function') {
-        const clientName = document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'cliente_ativo';
+        const clientName = window.currentClientName || document.getElementById('bi-active-client-title')?.innerText || document.getElementById('active-client-name')?.innerText || 'cliente_ativo';
         window.renderWarRoomData(clientName);
+        if (typeof window.loadArchivedTrafficCards === 'function') {
+          setTimeout(window.loadArchivedTrafficCards, 50);
+        }
+      }
+
+      if (targetTab === 'tab-spy' && typeof window.loadCompetitors === 'function') { // tab-spy is Radar
+        window.loadCompetitors();
+      }
+
+      if (targetTab === 'tab-kanban' && typeof window.loadClientKanbanCards === 'function') {
+        window.loadClientKanbanCards(window.currentClientId);
       }
 
       if (tabTitles[targetTab]) {
@@ -150,7 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (targetTab === 'tab-bi') {
         setTimeout(() => {
-          loadClientBiMetrics(activeClientId);
+          if (typeof loadClientBiMetrics === 'function') {
+             loadClientBiMetrics(window.currentClientId || activeClientId);
+          }
         }, 60);
       }
     });
@@ -250,13 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
     activeClientId = clientId;
     localStorage.setItem('oraculum_active_client_id', clientId);
     window.oraculum_active_client_id = clientId; // Keep it globally accessible
+    window.currentClientId = clientId;
 
     const selectedOption = activeClientSelect?.querySelector(`option[value="${clientId}"]`) || activeClientSelect?.selectedOptions[0];
+    let selectedClientData = { id: clientId, name: 'Cliente' };
     if (selectedOption) {
       activeClientName = selectedOption.textContent;
+      window.currentClientName = activeClientName;
+      selectedClientData.name = activeClientName;
       const chatLabel = document.getElementById('chat-active-client-label');
       if (chatLabel) chatLabel.textContent = activeClientName;
     }
+    
+    window.currentClientData = selectedClientData;
+    window.dispatchEvent(new CustomEvent('clientChanged', { detail: selectedClientData }));
 
     console.log(`[Workspace] Cliente ativo alterado para: ${activeClientId}`);
 
@@ -5440,3 +5460,35 @@ function initAngleMatrix() {
     });
   });
 }
+
+// ============================================================================
+// STATE MANAGER REATIVO: Atualização Global em Todas as Abas (clientChanged)
+// ============================================================================
+window.addEventListener('clientChanged', (e) => {
+  const newClient = e.detail;
+  if (!newClient || !newClient.id) return;
+  console.log('[STATE MANAGER] Re-renderizando abas para o cliente:', newClient.name);
+
+  // 1. BI & Feedback Loop
+  if (typeof window.loadClientBiMetrics === 'function') {
+    window.loadClientBiMetrics(newClient.id);
+  }
+
+  // 2. Sala de Operação (War Room) & Tráfego
+  if (typeof window.renderWarRoomData === 'function') {
+    window.renderWarRoomData(newClient.name);
+  }
+  if (typeof window.loadArchivedTrafficCards === 'function') {
+    setTimeout(window.loadArchivedTrafficCards, 50);
+  }
+
+  // 3. Radar de Concorrentes
+  if (typeof window.loadCompetitors === 'function') {
+    window.loadCompetitors();
+  }
+
+  // 4. Kanban & Trilha de Equipe
+  if (typeof window.loadClientKanbanCards === 'function') {
+    window.loadClientKanbanCards(newClient.id);
+  }
+});

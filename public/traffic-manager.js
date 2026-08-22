@@ -60,11 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const { data, error } = await window.supabaseClient
+      let query = window.supabaseClient
         .from('kanban_cards')
         .select('*')
-        .eq('status', 'archived_traffic')
-        .order('id', { ascending: false });
+        .eq('status', 'archived_traffic');
+
+      if (window.currentClientId) {
+        query = query.eq('client_id', window.currentClientId);
+      }
+
+      const { data, error } = await query.order('id', { ascending: false });
 
       if (error) {
         console.error("[Traffic Error] Falha na consulta:", error);
