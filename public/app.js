@@ -4117,7 +4117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = document.getElementById('auth-login-password')?.value;
 
       try {
-        const supaClient = (typeof supabase !== 'undefined') ? supabase : window.supabaseClient;
+        let supaClient = window.supabaseClient;
+        if (!supaClient && window.supabase && window.SUPABASE_URL) {
+          supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+          window.supabaseClient = supaClient;
+        }
         if (!supaClient) throw new Error("Supabase não inicializado.");
 
         const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
