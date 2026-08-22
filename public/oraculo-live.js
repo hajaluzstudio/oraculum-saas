@@ -112,7 +112,12 @@
     const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_mock_123';
 
-    const fullMessage = \`[CONTEXTO BI]\nCliente: \${contextoBI?.cliente || 'Ativo'}\nFaturamento: \${contextoBI?.faturamento || '0'}\nGasto: \${contextoBI?.gastoTrafego || '0'}\nROAS: \${contextoBI?.roas || '0'}\n\n[PERGUNTA]: \${promptUsuario}\`;
+    const cliNome = (contextoBI && contextoBI.cliente) ? contextoBI.cliente : 'Ativo';
+    const fatur = (contextoBI && contextoBI.faturamento) ? contextoBI.faturamento : '0';
+    const gasto = (contextoBI && contextoBI.gastoTrafego) ? contextoBI.gastoTrafego : '0';
+    const roasVal = (contextoBI && contextoBI.roas) ? contextoBI.roas : '0';
+
+    const fullMessage = "[CONTEXTO BI]\nCliente: " + cliNome + "\nFaturamento: " + fatur + "\nGasto: " + gasto + "\nROAS: " + roasVal + "\n\n[PERGUNTA]: " + promptUsuario;
 
     const response = await fetch('/api/chat', {
       method: 'POST',
