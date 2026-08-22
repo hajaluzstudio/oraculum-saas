@@ -5679,3 +5679,20 @@ window.sendOracleLiveMessage = async function() {
   }
 };
 
+window.toggleOracleLive = function(open) {
+  const drawer = document.getElementById('oracle-live-drawer');
+  const trigger = document.getElementById('oracle-live-trigger-container');
+  if (!drawer || !trigger) return;
+
+  if (open) {
+    drawer.classList.remove('hidden');
+    drawer.classList.add('flex');
+    trigger.classList.add('hidden');
+    setTimeout(() => document.getElementById('oracle-live-input')?.focus(), 100);
+  } else {
+    drawer.classList.add('hidden');
+    drawer.classList.remove('flex');
+    trigger.classList.remove('hidden');
+  }
+};
+
