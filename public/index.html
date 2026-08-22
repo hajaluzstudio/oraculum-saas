@@ -1373,6 +1373,32 @@
             </div>
           </div>
 
+          <!-- ORACLE LIVE - CHAT DE DIAGNÓSTICO EM TEMPO REAL -->
+          <div class="mt-6 card-glass p-5 rounded-xl border border-emerald-500/30 bg-black/40">
+            <div class="flex items-center justify-between pb-3 border-b border-emerald-500/20 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h3 class="text-sm font-bold text-white tracking-wide uppercase">💬 Oracle Live — Copiloto de BI & Diagnóstico ROI</h3>
+              </div>
+              <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">Contexto Ativo: <span id="oracle-live-client-name">Carregando...</span></span>
+            </div>
+
+            <!-- Área de Mensagens -->
+            <div id="oracle-live-messages" class="space-y-3 max-h-60 overflow-y-auto mb-4 p-3 bg-black/50 rounded-lg border border-gray-800 text-xs text-gray-200">
+              <div class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded text-emerald-200">
+                👋 <strong>Oracle:</strong> Analisei os dados de performance de <strong id="oracle-live-intro-client">este cliente</strong>. Como posso ajudar na otimização de ROAS e CAC hoje?
+              </div>
+            </div>
+
+            <!-- Campo de Input & Envio -->
+            <div class="flex gap-2">
+              <input type="text" id="oracle-live-input" placeholder="Pergunte ao Oracle sobre a conversão, CPA ou canais deste cliente..." class="flex-1 bg-gray-900/80 border border-emerald-500/30 rounded-lg px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 transition" />
+              <button type="button" onclick="window.sendOracleLiveMessage()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-bold text-xs rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-emerald-900/20 cursor-pointer">
+                <span>Enviar</span> 🚀
+              </button>
+            </div>
+          </div>
+
           <!-- FEEDBACK LOOP PREDITIVO -->
           <div class="card-glass mt-20">
             <div class="card-header">

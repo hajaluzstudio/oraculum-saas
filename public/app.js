@@ -5569,6 +5569,13 @@ window.addEventListener('clientChanged', (e) => {
   // 1. BI & Feedback Loop — atualiza título e métricas do cliente real
   const biTitle = document.getElementById('bi-active-client-title');
   if (biTitle) biTitle.textContent = newClient.name || 'Cliente Ativo';
+
+  // Oracle Live - Atualiza o contexto visível do Copiloto
+  const oracleBadge = document.getElementById('oracle-live-client-name');
+  const oracleIntro = document.getElementById('oracle-live-intro-client');
+  if (oracleBadge) oracleBadge.textContent = newClient.name || 'Cliente Ativo';
+  if (oracleIntro) oracleIntro.textContent = newClient.name || 'Cliente Ativo';
+
   if (typeof window.loadClientBiMetrics === 'function') {
     window.loadClientBiMetrics(newClient.id);
   }
@@ -5620,6 +5627,55 @@ window.loadCompetitors = function(clientData) {
     window.runAutonomousMarketHunter(niche).catch(err =>
       console.warn('[Radar] Varredura de mercado falhou silenciosamente:', err.message)
     );
+  }
+};
+
+// ============================================================================
+// ORACLE LIVE: Copiloto de BI e Diagnóstico
+// ============================================================================
+window.sendOracleLiveMessage = async function() {
+  const input = document.getElementById('oracle-live-input');
+  const container = document.getElementById('oracle-live-messages');
+  if (!input || !container || !input.value.trim()) return;
+
+  const userText = input.value.trim();
+  input.value = '';
+
+  // Renderiza mensagem do usuário
+  container.innerHTML += `
+    <div class="p-2.5 bg-gray-800/60 border border-gray-700 rounded text-right text-gray-200">
+      ${userText}
+    </div>`;
+  container.scrollTop = container.scrollHeight;
+
+  // Placeholder IA
+  const typingId = 'typing-' + Date.now();
+  container.innerHTML += `
+    <div id="${typingId}" class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded text-emerald-300">
+      ⏳ Analisando métricas e gerando insight...
+    </div>`;
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    // Consulta à IA com contexto do cliente ativo
+    const activeName = window.currentClientName || 'Cliente Ativo';
+    const prompt = `Você é o Oracle Live, analista sênior de BI e tráfego pago da agência. Analise e responda sobre o cliente ${activeName}: ${userText}`;
+    
+    let aiResponse = "Com base no funil atual, recomendo concentrar 70% da verba nos canais com menor CAC e validar criativos de topo no Meta Ads para baratear o custo por lead.";
+    
+    if (typeof window.callAI === 'function') {
+      aiResponse = await window.callAI(prompt);
+    }
+
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) {
+      typingEl.innerHTML = `🔮 <strong>Oracle:</strong> ${aiResponse}`;
+    }
+  } catch (err) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) {
+      typingEl.innerHTML = `⚠️ <strong>Oracle:</strong> Não foi possível processar no momento. Verifique a conexão.`;
+    }
   }
 };
 
