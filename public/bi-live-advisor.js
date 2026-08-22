@@ -901,6 +901,37 @@ ${textoOraculo}`;
     const monthlyBudget = client?.monthly_budget || client?.budget || 0;
     const nicheContext = knowledge ? JSON.stringify(knowledge) : "Sem dossiê prévio. Use os melhores benchmarks do mercado.";
 
+    // Coleta as 5 tendências mais recentes do nicho na tabela market_trends
+    let recentTrends = [];
+    if (window.supabaseClient) {
+      try {
+        const { data: trendsData } = await window.supabaseClient
+          .from('market_trends')
+          .select('*')
+          .eq('niche', clientNiche)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (trendsData && trendsData.length > 0) {
+          recentTrends = trendsData;
+        }
+      } catch (e) {
+        console.warn("Aviso ao buscar market_trends no Supabase:", e);
+      }
+    }
+
+    if (recentTrends.length === 0) {
+      try {
+        const localTrends = JSON.parse(localStorage.getItem(`market_trends_${clientNiche}`) || '[]');
+        if (localTrends.length > 0) {
+          recentTrends = localTrends.slice(0, 5);
+        }
+      } catch (e) {}
+    }
+
+    const trendsContext = recentTrends.length > 0
+      ? JSON.stringify(recentTrends)
+      : "Nenhuma tendência gravada recentemente para este nicho. Aplique os padrões de escala vigentes.";
+
     // C. System Prompt de Alta Performance e Papel Multiagente
     const systemPrompt = `
 Você é o ORACULUM CORE AI, o Diretor de Estratégia e Operações de maior nível de ROI do mercado.
@@ -911,6 +942,7 @@ DADOS DA CONTA:
 - Nicho: ${clientNiche}
 - Verba Mensal: R$ ${monthlyBudget}
 - Dossiê do Nicho / Benchmarks: ${nicheContext}
+- TENDÊNCIAS E BENCHMARKS RECENTES CAPTADOS PELO RADAR: ${trendsContext}
 - Objetivo Declarado: ${userStrategicGoal}
 
 DIRETRIZES:
