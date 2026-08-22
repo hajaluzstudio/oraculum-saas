@@ -6,67 +6,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!apiKey) {
     return res.status(500).json({
       status: 'error',
-      message: 'GEMINI_API_KEY ausente ou vazia no process.env.'
+      message: 'GEMINI_API_KEY ausente ou não configurada no servidor.'
     });
   }
 
-  // 1. Consulta quais modelos estão liberados para esta chave
-  let availableModels: string[] = [];
   try {
+    // 1. Listar os modelos disponíveis para esta chave
     const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
     const listData = await listRes.json();
-    if (listData.models) {
-      availableModels = listData.models.map((m: any) => m.name.replace('models/', ''));
+
+    if (!listRes.ok || !listData.models) {
+      return res.status(listRes.status).json({
+        status: 'error',
+        message: 'Falha ao consultar modelos disponíveis na API do Google.',
+        detail: listData
+      });
+    }
+
+    // Filtra apenas modelos que suportam geração de conteúdo
+    const supportedModels = listData.models
+      .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m: any) => m.name.replace('models/', ''));
+
+    // 2. Tenta o primeiro modelo suportado retornado pela própria conta do Google
+    const modelToUse = supportedModels[0] || 'gemini-1.5-flash';
+
+    const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Responda com apenas uma palavra: OK' }] }]
+      })
+    });
+
+    const testData = await testRes.json();
+
+    if (testRes.ok) {
+      return res.status(200).json({
+        status: 'ok',
+        message: 'Conexão com Gemini validada com sucesso!',
+        modelUsed: modelToUse,
+        availableModelsInAccount: supportedModels,
+        reply: testData.candidates?.[0]?.content?.parts?.[0]?.text || 'OK'
+      });
+    } else {
+      return res.status(testRes.status).json({
+        status: 'error',
+        message: `Erro ao gerar conteúdo com o modelo ${modelToUse}`,
+        detail: testData,
+        availableModelsInAccount: supportedModels
+      });
     }
   } catch (err: any) {
-    console.error('Erro ao listar modelos:', err);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Exceção interna ao testar API do Gemini',
+      detail: err.message
+    });
   }
-
-  // 2. Modelos para testar
-  const candidates = availableModels.length > 0 
-    ? availableModels.filter(m => m.includes('gemini'))
-    : ['gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
-
-  let success = null;
-  let errors: any[] = [];
-
-  for (const model of candidates) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Responda com apenas uma palavra: OK' }] }]
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        success = {
-          status: 'ok',
-          message: 'Conexão com Gemini validada com sucesso!',
-          modelUsed: model,
-          reply: data.candidates[0].content.parts[0].text,
-          availableModelsInAccount: availableModels
-        };
-        break;
-      } else {
-        errors.push({ model, error: data });
-      }
-    } catch (e: any) {
-      errors.push({ model, error: e.message });
-    }
-  }
-
-  if (success) {
-    return res.status(200).json(success);
-  }
-
-  return res.status(500).json({
-    status: 'error',
-    message: 'Nenhum modelo respondeu com sucesso.',
-    availableModelsFound: availableModels,
-    errors
-  });
 }
