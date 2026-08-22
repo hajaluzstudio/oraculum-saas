@@ -980,9 +980,10 @@ DIRETRIZES:
 }
 `;
 
-    const apiKey = window.GEMINI_API_KEY || localStorage.getItem('ORACULUM_GEMINI_API_KEY') || localStorage.getItem('GEMINI_API_KEY');
+    const rawKey = window.GEMINI_API_KEY || localStorage.getItem('ORACULUM_GEMINI_API_KEY') || localStorage.getItem('GEMINI_API_KEY');
+    const apiKey = rawKey ? String(rawKey).trim() : null;
     if (!apiKey) {
-      throw new Error("Chave de API do Gemini não configurada. Configure no Cofre de APIs.");
+      throw new Error("Chave de API do Gemini não encontrada ou vazia. Configure no Cofre de APIs.");
     }
 
     // D. Execução da API com tratamento e fallback

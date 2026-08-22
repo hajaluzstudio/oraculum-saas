@@ -461,10 +461,29 @@ app.delete('/api/clients/:id', async (req: Request, res: Response) => {
 // ONBOARDING — Gera o Dossiê Estratégico para um cliente já cadastrado
 app.post('/api/onboarding', async (req: Request, res: Response) => {
   try {
+    console.log('[API /api/onboarding] Requisição de onboarding recebida');
     const organizationId = (req as any).organizationId;
-    const { clientId, clientName, niche, sanitized_history, website, previous_agency_notes, previousAgencyNotes } = req.body;
-    if (!clientName || !niche) return res.status(400).json({ error: 'clientName e niche são obrigatórios.' });
+    const { clientId, clientName, niche, sanitized_history, website, previous_agency_notes, previousAgencyNotes } = req.body || {};
 
+    console.log('[API /api/onboarding] Body recebido:', { organizationId, clientId, clientName, niche, website });
+
+    // Validação defensiva da chave do Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('❌ [API /api/onboarding] GEMINI_API_KEY não está configurada no servidor!');
+      return res.status(500).json({
+        success: false,
+        error: 'Chave de API do Gemini não configurada no servidor (GEMINI_API_KEY ausente).',
+        detail: 'Configure a variável GEMINI_API_KEY no painel da Vercel ou arquivo .env.'
+      });
+    }
+
+    if (!clientName || !niche) {
+      console.warn('⚠️ [API /api/onboarding] clientName e niche são obrigatórios');
+      return res.status(400).json({ success: false, error: 'clientName e niche são obrigatórios.' });
+    }
+
+    console.log('[API /api/onboarding] Executando registerClientAndGenerateDossier...');
     const result = await registerClientAndGenerateDossier({
       organizationId,
       clientName,
@@ -475,7 +494,7 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
 
     // Usa o clientId que veio do frontend (já salvo no Supabase) ou o gerado pelo service
     const effectiveClientId = clientId || result.client.id;
-    console.log('[Onboarding] Salvando dossiê para clientId:', effectiveClientId);
+    console.log('[API /api/onboarding] Dossiê gerado com sucesso. Salvando dossiê para clientId:', effectiveClientId);
 
     // Salva dossiê na niche_knowledge_base usando o INSERT/UPDATE correto
     try {
@@ -511,7 +530,12 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
     // Retorna com o clientId correto
     return res.status(201).json({ success: true, data: { ...result, client: { ...result.client, id: effectiveClientId } } });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('❌ [API /api/onboarding] Erro ao processar onboarding:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Erro interno no Onboarding.',
+      detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
