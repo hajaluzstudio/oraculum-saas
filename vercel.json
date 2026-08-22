@@ -1,7 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "api/**/*.ts": {
+    "api/index.ts": {
       "includeFiles": "public/**"
     }
   },
@@ -16,21 +16,7 @@
     }
   ],
   "routes": [
-    { "src": "/api/onboarding(.*)", "dest": "/api/index" },
-    { "src": "/api/niche-dossier(.*)", "dest": "/api/index" },
-    { "src": "/api/bi(.*)", "dest": "/api/index" },
-    { "src": "/api/chat-history(.*)", "dest": "/api/index" },
-    { "src": "/api/creatives(.*)", "dest": "/api/index" },
-    { "src": "/api/scripts(.*)", "dest": "/api/index" },
-    { "src": "/api/landing-pages(.*)", "dest": "/api/index" },
-    { "src": "/api/notifications(.*)", "dest": "/api/index" },
-    { "src": "/api/spy(.*)", "dest": "/api/index" },
-    { "src": "/api/portal(.*)", "dest": "/api/index" },
-    { "src": "/api/admin(.*)", "dest": "/api/index" },
-    { "src": "/api/kanban(.*)", "dest": "/api/index" },
-    { "src": "/api/workflow(.*)", "dest": "/api/index" },
-    { "src": "/api/clients(.*)", "dest": "/api/clients" },
-    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/api/(.*)", "dest": "/api/index" },
     { "src": "/health", "dest": "/api/index" },
     { "src": "/(.*)", "dest": "/api/index" }
   ]

@@ -668,32 +668,154 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   }
 });
 
-// POST chat — schema real chat_history: id, agency_id, client_id, role, content, created_at
+// POST /api/chat - Chat Estratégico & Live Advisor com persistência no bi_chat_history
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
-    const { clientId, message, history } = req.body;
-    if (!clientId || !message) return res.status(400).json({ error: 'clientId e message são obrigatórios.' });
+    const { clientId, message, history } = req.body || {};
+    
+    if (!clientId || !message) {
+      return res.status(400).json({ status: 'error', error: 'clientId e message são obrigatórios.' });
+    }
 
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ status: 'error', error: 'GEMINI_API_KEY não configurada no servidor.' });
+    }
+
+    // 1. Gravação síncrona da mensagem do usuário no bi_chat_history
+    const { error: userErr } = await supabase.from('bi_chat_history').insert({
+      client_id: clientId,
+      role: 'user',
+      content: message,
+      created_at: new Date().toISOString()
+    });
+    if (userErr) {
+      console.error('❌ [Supabase Insert User Error]:', userErr);
+    }
+
+    // 2. Chamada da IA Gemini
     const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
 
-    // Salva histórico no Supabase com schema correto (coluna: content, não message)
-    try {
-      const replyText = typeof response === 'string' ? response :
-        (response as any)?.replyText || (response as any)?.response || JSON.stringify(response);
+    const replyText = typeof response === 'string' ? response :
+      (response as any)?.replyText || (response as any)?.response || JSON.stringify(response);
 
-      await supabase.from('chat_history').insert([
-        { client_id: clientId, role: 'user', content: message },
-        { client_id: clientId, role: 'assistant', content: replyText }
-      ]);
-      console.log('[Supabase] ✅ Chat salvo para client_id:', clientId);
-    } catch (e: any) {
-      console.warn('[Supabase] Aviso ao salvar chat:', e.message);
+    // 3. Gravação síncrona da resposta da IA no bi_chat_history
+    const { error: aiErr } = await supabase.from('bi_chat_history').insert({
+      client_id: clientId,
+      role: 'assistant',
+      content: replyText,
+      json_response: typeof response === 'object' ? response : null,
+      created_at: new Date().toISOString()
+    });
+    if (aiErr) {
+      console.error('❌ [Supabase Insert AI Error]:', aiErr);
     }
 
     return res.json({ success: true, data: response });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('❌ [API /api/chat Error]:', error);
+    return res.status(500).json({ status: 'error', error: error.message || 'Erro interno no Chat.' });
+  }
+});
+
+// GET /api/test-db - Diagnóstico de Conexão e Leitura/Escrita no Supabase
+app.get('/api/test-db', async (req: Request, res: Response) => {
+  try {
+    const testClientId = 'test_diag_' + Date.now();
+    const testContent = 'Ping de teste Supabase - ' + new Date().toISOString();
+
+    const { data: insertData, error: insertErr } = await supabase
+      .from('bi_chat_history')
+      .insert([{
+        client_id: testClientId,
+        role: 'user',
+        content: testContent,
+        created_at: new Date().toISOString()
+      }])
+      .select();
+
+    if (insertErr) {
+      console.error('❌ Erro no insert bi_chat_history:', insertErr);
+      return res.status(500).json({ status: 'error', step: 'bi_chat_history_insert', error: insertErr });
+    }
+
+    const { data: readData, error: readErr } = await supabase
+      .from('bi_chat_history')
+      .select('*')
+      .eq('client_id', testClientId);
+
+    if (readErr) {
+      return res.status(500).json({ status: 'error', step: 'bi_chat_history_read', error: readErr });
+    }
+
+    return res.status(200).json({
+      status: 'ok',
+      message: 'Conexão e gravação no Supabase validadas com sucesso!',
+      inserted: insertData,
+      readResult: readData
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message || String(err) });
+  }
+});
+
+// GET /api/test-gemini - Diagnóstico de Modelo Gemini com Candidate Fallbacks (Prioridade gemini-3.6-flash)
+app.get('/api/test-gemini', async (req: Request, res: Response) => {
+  const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+
+  if (!apiKey) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'GEMINI_API_KEY ausente ou não configurada no servidor.'
+    });
+  }
+
+  try {
+    let availableModels: string[] = [];
+    try {
+      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      const listData = await listRes.json();
+      if (listData.models) {
+        availableModels = listData.models
+          .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+          .map((m: any) => m.name.replace('models/', ''));
+      }
+    } catch (e) {
+      console.warn('Aviso ao consultar modelos:', e);
+    }
+
+    const candidates = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-pro-latest'];
+    const modelToUse = availableModels.find(m => candidates.includes(m)) || availableModels[0] || 'gemini-3.6-flash';
+
+    const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Responda com apenas uma palavra: OK' }] }]
+      })
+    });
+
+    const testData = await testRes.json();
+
+    if (testRes.ok) {
+      return res.status(200).json({
+        status: 'ok',
+        message: 'Conexão com Gemini validada com sucesso!',
+        modelUsed: modelToUse,
+        availableModelsInAccount: availableModels,
+        reply: testData.candidates?.[0]?.content?.parts?.[0]?.text || 'OK'
+      });
+    } else {
+      return res.status(testRes.status || 500).json({
+        status: 'error',
+        message: `Erro ao gerar conteúdo com o modelo ${modelToUse}`,
+        detail: testData,
+        availableModelsInAccount: availableModels
+      });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
