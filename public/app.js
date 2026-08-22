@@ -1439,11 +1439,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const kanbanGrid = document.getElementById('kanban-grid-container');
     if (!kanbanGrid) return;
-    
-    // Leitura imediata do localStorage para renderização em 0ms
+
+    // ISOLAMENTO: limpa imediatamente todas as colunas para não exibir dados do cliente anterior
+    const emptyMsg = '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo nesta etapa</div>';
+    ['kanban-col-producing','kanban-col-analyzing','kanban-col-adjustments','kanban-col-published'].forEach(id => {
+      const col = document.getElementById(id);
+      if (col) col.innerHTML = emptyMsg;
+    });
+    ['count-producing','count-analyzing','count-adjustments','count-published'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '0';
+    });
+
+    // Leitura do localStorage APENAS do cliente alvo
     const saved = localStorage.getItem(`oraculum_kanban_${targetClientId}`);
     if (saved) {
-       try { renderKanbanBoard(JSON.parse(saved)); } catch(e){}
+      try { renderKanbanBoard(JSON.parse(saved)); } catch(e){}
     }
 
     try {
@@ -1456,6 +1467,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status || 'producing' }));
         localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(normalizedData));
         renderKanbanBoard(normalizedData);
+      } else if (!saved) {
+        // Não há dados locais nem remotos — garante colunas limpas
+        renderKanbanBoard([]);
       }
     } catch (e) {
       console.warn('Erro ao carregar Kanban:', e);
@@ -5105,11 +5119,26 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.renderWarRoomData = function(clientId) {
+    // ISOLAMENTO: limpa todos os painéis antes de preencher com dados do novo cliente
+    const emptyState = '<div style="padding: 24px; text-align: center; color: #64748B; font-size: 13px;">Nenhum script gerado para este cliente. Gere o Dossiê no Onboarding Autônomo.</div>';
+    const panelIds = ['wr-video-content','wr-design-content','wr-traffic-content','wr-copy-content','wr-sales-content'];
+    panelIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = emptyState;
+    });
+
     const dataStr = localStorage.getItem(`oraculum_war_room_${clientId}`);
-    if (!dataStr) return; // Se não tem dados, deixa o placeholder
+    if (!dataStr) {
+      // Sem dados salvos para este cliente — mantém empty state já injetado
+      initWarRoomInteractiveTools();
+      return;
+    }
 
     let data;
-    try { data = JSON.parse(dataStr); } catch(e) { return; }
+    try { data = JSON.parse(dataStr); } catch(e) {
+      initWarRoomInteractiveTools();
+      return;
+    }
 
     // 1. VÍDEO
     const vidBox = document.getElementById('wr-video-content');
@@ -5187,6 +5216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ligar funções do War Room
     initWarRoomInteractiveTools();
   };
+
 
 });
 
