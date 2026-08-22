@@ -917,37 +917,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 3. Se não for apenas rascunho, gera cards na coluna "A Fazer" do Kanban
       if (!isDraft) {
-        const driveLink = document.getElementById('inspect-drive-url')?.value || '';
-        
         const newCards = [
-          { title: '🎬 [VÍDEO] Produção & Gravação', description: briefingData.video?.gancho_3s || 'Roteiro de vídeo', assetType: 'video', category: 'Vídeo' },
-          { title: '🎨 [DESIGN] Criativos & Carrosséis', description: briefingData.design?.conceito_visual || 'Design e conceito', assetType: 'image', category: 'Design' },
-          { title: '🚀 [TRÁFEGO] Estruturação de Campanhas', description: briefingData.trafego?.kpis_alvo || 'Campanha e KPI', assetType: 'text', category: 'Tráfego' },
-          { title: '✍️ [COPY] Landing Page & Anúncios', description: briefingData.copy?.headline || 'Headline principal', assetType: 'text', category: 'Copy' },
-          { title: '💼 [VENDAS] Script de Conversão WhatsApp', description: 'Atendimento comercial', assetType: 'text', category: 'Vendas' }
+          { title: '🎬 [VÍDEO] Gravação do Hook & Roteiro', description: briefingData.video?.gancho_3s || 'Roteiro de vídeo', assetType: 'video', category: 'Vídeo' },
+          { title: '🎨 [DESIGN] Criativos Visuais & Carrossel', description: briefingData.design?.conceito_visual || 'Design e conceito', assetType: 'image', category: 'Design' },
+          { title: '🚀 [TRÁFEGO] Configuração de Campanhas & Públicos', description: briefingData.trafego?.kpis_alvo || 'Campanha e KPI', assetType: 'text', category: 'Tráfego' },
+          { title: '✍️ [COPY] Copy de Anúncio & Quebra de Objeções', description: briefingData.copy?.headline || 'Headline principal', assetType: 'text', category: 'Copy' },
+          { title: '💼 [COMERCIAL] Script de Fechamento WhatsApp', description: 'Atendimento comercial', assetType: 'text', category: 'Vendas' }
         ];
+
+        let savedCards = [];
 
         for (const card of newCards) {
           try {
-            await fetch(`${API_BASE_URL}/api/kanban`, {
+            const payload = {
+              clientId: targetClientId,
+              title: card.title,
+              description: card.description,
+              status: 'producing',
+              assetType: card.assetType
+            };
+            const res = await fetch(`${API_BASE_URL}/api/kanban`, {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
                 'x-organization-id': activeTenantId 
               },
-              body: JSON.stringify({
-                clientId: targetClientId,
-                title: card.title,
-                description: card.description,
-                status: 'producing',
-                assetType: card.assetType,
-                filePath: driveLink
-              })
+              body: JSON.stringify(payload)
             });
+            const data = await res.json();
+            if (data.success && data.data) {
+                savedCards.push(data.data[0] || data.data);
+            } else {
+                savedCards.push({...payload, id: Date.now() + Math.random(), stage: 'producing'});
+            }
           } catch(e) {
             console.warn('Erro ao criar card Kanban:', e);
+            savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing' });
           }
         }
+        
+        localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(savedCards));
 
         if (typeof loadClientKanbanCards === 'function') {
           await loadClientKanbanCards(targetClientId);
@@ -1184,6 +1193,12 @@ document.addEventListener('DOMContentLoaded', () => {
                  } else {
                     videoCard.description = `[APROVADO - Score ${hookScore}] via Gemini Vision.`;
                     localStorage.removeItem(`oraculum_qg_lock_${videoCard.id}`);
+                    
+                    const btnCert = document.getElementById('btn-generate-metadata-cert');
+                    if (btnCert) {
+                      btnCert.disabled = false;
+                      btnCert.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
                  }
                  
                  await fetch(`${API_BASE_URL}/api/kanban`, {
