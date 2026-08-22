@@ -124,18 +124,21 @@
 
   function monitorarAbaAtivaBI() {
     setInterval(() => {
-      const btn = document.getElementById('btn-open-oraculo-live');
-      const drawer = document.getElementById('oraculo-live-drawer');
+      let btn = document.getElementById('btn-open-oraculo-live');
+      if (!btn) {
+        injetarEstruturaLiveAdvisor();
+        btn = document.getElementById('btn-open-oraculo-live');
+      }
       if (!btn) return;
 
       const biSection = document.getElementById('tab-bi') || 
                         document.getElementById('feedback-loop-section') || 
                         document.getElementById('bi-section');
 
-      // Verifica se a aba BI está com classe 'active' ou display 'block'
-      const isBiVisible = biSection && 
-                          (biSection.classList.contains('active') || 
-                           window.getComputedStyle(biSection).display !== 'none');
+      // Verifica se a aba BI está com classe 'active' ou visível
+      const isBiVisible = !biSection || 
+                          biSection.classList.contains('active') || 
+                          (window.getComputedStyle(biSection).display !== 'none');
 
       if (isBiVisible) {
         btn.classList.remove('hidden');
@@ -143,11 +146,8 @@
       } else {
         btn.classList.add('hidden');
         btn.style.setProperty('display', 'none', 'important');
-        if (drawer && (drawer.style.transform === 'translateX(0px)' || drawer.style.transform === 'none')) {
-          drawer.style.transform = 'translateX(100%)';
-        }
       }
-    }, 400);
+    }, 300);
   }
 
   window.alternarOraculoLive = function () {
