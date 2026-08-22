@@ -127,25 +127,11 @@
         injetarEstruturaLiveAdvisor();
         btn = document.getElementById('btn-open-oraculo-live');
       }
-      if (!btn) return;
-
-      const biSection = document.getElementById('tab-bi') || 
-                        document.getElementById('feedback-loop-section') || 
-                        document.getElementById('bi-section');
-
-      // Verifica se a aba BI está com classe 'active' ou visível
-      const isBiVisible = !biSection || 
-                          biSection.classList.contains('active') || 
-                          (window.getComputedStyle(biSection).display !== 'none');
-
-      if (isBiVisible) {
+      if (btn) {
         btn.classList.remove('hidden');
         btn.style.setProperty('display', 'flex', 'important');
-      } else {
-        btn.classList.add('hidden');
-        btn.style.setProperty('display', 'none', 'important');
       }
-    }, 300);
+    }, 500);
   }
 
   window.alternarOraculoLive = function () {
