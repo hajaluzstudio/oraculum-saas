@@ -817,11 +817,13 @@ document.addEventListener('DOMContentLoaded', () => {
     msgDiv.className = `chat-msg ${role}`;
     msgDiv.id = msgId;
 
+    const finalContent = role === 'model' && typeof marked !== 'undefined' ? marked.parse(content) : `<p>${content}</p>`;
+
     msgDiv.innerHTML = `
       <div class="avatar" style="display: flex; align-items: center; justify-content: center;">
         ${role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<img src="logo-oraculum-03.svg" alt="AI" style="width: 26px; height: 26px; object-fit: contain; transform: translateY(1px);">'}
       </div>
-      <div class="bubble"><p>${content}</p></div>
+      <div class="bubble"><div class="markdown-body">${finalContent}</div></div>
     `;
 
     chatMessagesList.appendChild(msgDiv);

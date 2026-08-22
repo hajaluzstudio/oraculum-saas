@@ -1195,3 +1195,48 @@ table tbody td {
   transform: translateY(-2px) scale(1.05) !important;
   box-shadow: 0 14px 40px rgba(16,185,129,0.8) !important;
 }
+
+/* ==============================================================================
+   MARKDOWN BODY (CHAT)
+   ============================================================================== */
+.markdown-body {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.markdown-body p {
+  margin-bottom: 0.85rem;
+  line-height: 1.6;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+  font-weight: 700;
+  color: #10b981;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-body ul, .markdown-body ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-body ul {
+  list-style-type: disc;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+}
+
+.markdown-body strong {
+  color: #f3f4f6;
+  font-weight: 600;
+}
+
+.markdown-body blockquote {
+  border-left: 3px solid #10b981;
+  padding-left: 0.75rem;
+  color: #9ca3af;
+  margin: 0.75rem 0;
+}
