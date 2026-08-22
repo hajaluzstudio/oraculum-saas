@@ -218,7 +218,8 @@ window.salvarCliente = async function(e) {
         meta_ad_account_id,
         meta_pixel_id,
         google_customer_id,
-        notes: previous_agency_notes
+        notes: previous_agency_notes,
+        updated_at: new Date().toISOString()
       };
       const { error: updateError } = await supaClient
         .from('clients')
@@ -448,20 +449,59 @@ window.renderizarListaClientes = function() {
   `).join('');
 };
 
+// Extrai texto limpo de notes (suporte a legado com JSON bruto)
+function sanitizeNotes(raw) {
+  if (!raw) return '';
+  const str = String(raw).trim();
+  if (str.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(str);
+      return parsed.actual_notes || parsed.notes || parsed.text || str;
+    } catch (_) {}
+  }
+  return str;
+}
+
 // 8. BUSCAR CLIENTES DO SUPABASE / BACKEND
 window.carregarClientesDoSupabase = async function() {
-  try {
-    const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-    const res = await fetch(`${window.location.origin}/api/clients`, {
-      headers: { 'x-organization-id': activeTenantId }
-    });
-    const data = await res.json();
-    if (data.success && Array.isArray(data.data)) {
-      window.clientesMock = data.data;
+  const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+  const supaClient = getSupabaseClient();
+  let loaded = false;
+
+  // FONTE PRIMÁRIA: Supabase direto
+  if (supaClient) {
+    try {
+      const { data, error } = await supaClient
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) {
+        // Sanitiza notes legadas em todos os registros
+        window.clientesMock = data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
+        window.clientsList = window.clientesMock;
+        loaded = true;
+      }
+    } catch (e) {
+      console.warn('[ClientManagement] Supabase direto falhou, tentando API...', e);
     }
-  } catch(e) {
-    console.warn("[ClientManagement] Usando cache local para lista de clientes.");
   }
+
+  // FALLBACK: API REST
+  if (!loaded) {
+    try {
+      const res = await fetch(`${window.location.origin}/api/clients`, {
+        headers: { 'x-organization-id': activeTenantId }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        window.clientesMock = data.data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
+        window.clientsList = window.clientesMock;
+      }
+    } catch(e) {
+      console.warn('[ClientManagement] Usando cache local para lista de clientes.');
+    }
+  }
+
   window.renderizarListaClientes();
   window.atualizarSeletorClientesOnboarding();
 };
