@@ -5575,6 +5575,10 @@ window.addEventListener('clientChanged', (e) => {
   const oracleIntro = document.getElementById('oracle-live-intro-client');
   if (oracleBadge) oracleBadge.textContent = newClient.name || 'Cliente Ativo';
   if (oracleIntro) oracleIntro.textContent = newClient.name || 'Cliente Ativo';
+  
+  if (typeof window.loadBiChatHistory === 'function') {
+    window.loadBiChatHistory(newClient.id);
+  }
 
   if (typeof window.loadClientBiMetrics === 'function') {
     window.loadClientBiMetrics(newClient.id);
@@ -5631,33 +5635,84 @@ window.loadCompetitors = function(clientData) {
 };
 
 // ============================================================================
-// ORACLE LIVE: Copiloto de BI e Diagnóstico
+// ORACLE LIVE: Copiloto de BI e Diagnóstico conectado ao Supabase
 // ============================================================================
+
+window.loadBiChatHistory = async function(clientId) {
+  const container = document.getElementById('oracle-live-messages');
+  if (!container || !window.supabaseClient) return;
+
+  container.innerHTML = `
+    <div class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded-lg text-emerald-200">
+      👋 <strong>Oracle:</strong> Analisando as métricas de <strong id="oracle-live-intro-client">${window.currentClientName || 'este cliente'}</strong>. O que deseja diagnosticar sobre ROAS, CAC ou conversão?
+    </div>`;
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('bi_chat_history')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.warn('[Oracle Live] Erro ao carregar histórico:', error.message);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      data.forEach(msg => {
+        if (msg.role === 'user') {
+          container.innerHTML += `
+            <div class="p-2.5 bg-gray-800/60 border border-gray-700 rounded-lg text-right text-gray-200 ml-4">
+              ${msg.content}
+            </div>`;
+        } else {
+          container.innerHTML += `
+            <div class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded-lg text-emerald-300 mr-4">
+              🔮 <strong>Oracle:</strong> ${msg.content}
+            </div>`;
+        }
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.error('[Oracle Live] Erro:', err);
+  }
+};
+
 window.sendOracleLiveMessage = async function() {
   const input = document.getElementById('oracle-live-input');
   const container = document.getElementById('oracle-live-messages');
-  if (!input || !container || !input.value.trim()) return;
+  if (!input || !container || !input.value.trim() || !window.currentClientId) return;
 
   const userText = input.value.trim();
   input.value = '';
 
   // Renderiza mensagem do usuário
   container.innerHTML += `
-    <div class="p-2.5 bg-gray-800/60 border border-gray-700 rounded text-right text-gray-200">
+    <div class="p-2.5 bg-gray-800/60 border border-gray-700 rounded-lg text-right text-gray-200 ml-4">
       ${userText}
     </div>`;
   container.scrollTop = container.scrollHeight;
 
+  // 1. Persiste a mensagem do usuário
+  if (window.supabaseClient) {
+    await window.supabaseClient.from('bi_chat_history').insert([{
+      client_id: window.currentClientId,
+      role: 'user',
+      content: userText
+    }]);
+  }
+
   // Placeholder IA
   const typingId = 'typing-' + Date.now();
   container.innerHTML += `
-    <div id="${typingId}" class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded text-emerald-300">
+    <div id="${typingId}" class="p-2.5 bg-emerald-950/40 border border-emerald-500/20 rounded-lg text-emerald-300 mr-4">
       ⏳ Analisando métricas e gerando insight...
     </div>`;
   container.scrollTop = container.scrollHeight;
 
   try {
-    // Consulta à IA com contexto do cliente ativo
     const activeName = window.currentClientName || 'Cliente Ativo';
     const prompt = `Você é o Oracle Live, analista sênior de BI e tráfego pago da agência. Analise e responda sobre o cliente ${activeName}: ${userText}`;
     
@@ -5670,6 +5725,15 @@ window.sendOracleLiveMessage = async function() {
     const typingEl = document.getElementById(typingId);
     if (typingEl) {
       typingEl.innerHTML = `🔮 <strong>Oracle:</strong> ${aiResponse}`;
+    }
+
+    // 2. Persiste a resposta da IA
+    if (window.supabaseClient) {
+      await window.supabaseClient.from('bi_chat_history').insert([{
+        client_id: window.currentClientId,
+        role: 'assistant',
+        content: aiResponse
+      }]);
     }
   } catch (err) {
     const typingEl = document.getElementById(typingId);
