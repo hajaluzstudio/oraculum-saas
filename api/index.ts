@@ -1251,7 +1251,7 @@ app.post('/api/admin/agencies/toggle-status', async (req: Request, res: Response
 });
 
 app.get('/api/admin/maintenance', (req: Request, res: Response) => {
-  return res.json({ success: true, active: getMaintenanceModeState() });
+    return res.json({ success: true, active: getMaintenanceModeState() });
 });
 
 app.post('/api/admin/maintenance', (req: Request, res: Response) => {
@@ -1320,8 +1320,29 @@ Retorne APENAS um JSON válido no formato:
       parsedData = JSON.parse(replyText.trim());
     }
 
-    return res.status(200).json({ success: true, data: parsedData });
+    // Histórico de Auditoria no Backend
+    try {
+      if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+        const organizationId = (req as any).organizationId;
+        const clientId = req.headers['x-client-id'] || 'cliente_ativo';
+        await supabase.from('creative_audits').insert({
+          organization_id: organizationId || null,
+          client_id: clientId,
+          creative_title: titulo || 'Vídeo sem título',
+          asset_type: assetType,
+          hook_score: parsedData.hookScore || 0,
+          conversion_score: parsedData.conversionScore || 0,
+          actionable_fixes: parsedData.actionableFixes || [],
+          status: (parsedData.hookScore >= 70) ? 'APROVADO' : 'REPROVADO',
+          drive_link: req.body.driveLink || null,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      console.warn('[Audit Log Warning]:', e);
+    }
 
+    return res.status(200).json({ success: true, data: parsedData });
   } catch (error: any) {
     console.error('[API /api/inspect-creative] Erro:', error);
     return res.status(500).json({ success: false, error: error.message || 'Erro na avaliação do criativo.' });

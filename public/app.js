@@ -917,21 +917,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 3. Se não for apenas rascunho, gera cards na coluna "A Fazer" do Kanban
       if (!isDraft) {
-        const kanbanItems = [];
-        if (briefingData.video?.gancho_3s) {
-          kanbanItems.push({ title: `Vídeo: ${briefingData.video.gancho_3s.substring(0, 30)}...`, category: 'Vídeo', stage: 'producing' });
-        }
-        if (briefingData.copy?.headline) {
-          kanbanItems.push({ title: `Copy: ${briefingData.copy.headline.substring(0, 30)}...`, category: 'Copy', stage: 'producing' });
-        }
-        if (briefingData.design?.conceito_visual) {
-          kanbanItems.push({ title: `Design: ${briefingData.design.conceito_visual.substring(0, 30)}...`, category: 'Design', stage: 'producing' });
-        }
-        if (briefingData.vendas?.script_whatsapp) {
-          kanbanItems.push({ title: `Comercial: Script WhatsApp`, category: 'Vendas', stage: 'producing' });
+        const driveLink = document.getElementById('inspect-drive-url')?.value || '';
+        
+        const newCards = [
+          { title: '🎬 [VÍDEO] Produção & Gravação', description: briefingData.video?.gancho_3s || 'Roteiro de vídeo', assetType: 'video', category: 'Vídeo' },
+          { title: '🎨 [DESIGN] Criativos & Carrosséis', description: briefingData.design?.conceito_visual || 'Design e conceito', assetType: 'image', category: 'Design' },
+          { title: '🚀 [TRÁFEGO] Estruturação de Campanhas', description: briefingData.trafego?.kpis_alvo || 'Campanha e KPI', assetType: 'text', category: 'Tráfego' },
+          { title: '✍️ [COPY] Landing Page & Anúncios', description: briefingData.copy?.headline || 'Headline principal', assetType: 'text', category: 'Copy' },
+          { title: '💼 [VENDAS] Script de Conversão WhatsApp', description: 'Atendimento comercial', assetType: 'text', category: 'Vendas' }
+        ];
+
+        for (const card of newCards) {
+          try {
+            await fetch(`${API_BASE_URL}/api/kanban`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-organization-id': activeTenantId 
+              },
+              body: JSON.stringify({
+                clientId: targetClientId,
+                title: card.title,
+                description: card.description,
+                status: 'producing',
+                assetType: card.assetType,
+                filePath: driveLink
+              })
+            });
+          } catch(e) {
+            console.warn('Erro ao criar card Kanban:', e);
+          }
         }
 
-        if (kanbanItems.length > 0 && typeof loadClientKanbanCards === 'function') {
+        if (typeof loadClientKanbanCards === 'function') {
           await loadClientKanbanCards(targetClientId);
         }
       }
@@ -1130,7 +1148,8 @@ document.addEventListener('DOMContentLoaded', () => {
           frames: base64Frames,
           nicho: niche,
           titulo: title,
-          assetType: type
+          assetType: type,
+          driveLink: driveUrl || ''
         };
 
         const response = await fetch(`${API_BASE_URL}/api/inspect-creative`, {
@@ -1145,6 +1164,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const resData = await response.json();
         if (resData.success) {
           renderRealCreativeReport(resData.data, title);
+          
+          // Quality Gate: Find Video Card and Update
+          const hookScore = resData.data.hookScore || 0;
+          let newStatus = hookScore >= 70 ? 'published' : 'needs_adjustment';
+          
+          try {
+            const kanbanRes = await fetch(`${API_BASE_URL}/api/kanban/${activeClientId}`, {
+              headers: { 'x-organization-id': activeTenantId }
+            });
+            const kanbanData = await kanbanRes.json();
+            if (kanbanData.success && kanbanData.data) {
+               const videoCard = kanbanData.data.find(c => c.title.includes('[VÍDEO]'));
+               if (videoCard) {
+                 videoCard.status = newStatus;
+                 if (hookScore < 70) {
+                    videoCard.description = `[REPROVADO - Score ${hookScore}] Ajustes: ` + (resData.data.actionableFixes || []).join(', ');
+                    localStorage.setItem(`oraculum_qg_lock_${videoCard.id}`, 'locked');
+                 } else {
+                    videoCard.description = `[APROVADO - Score ${hookScore}] via Gemini Vision.`;
+                    localStorage.removeItem(`oraculum_qg_lock_${videoCard.id}`);
+                 }
+                 
+                 await fetch(`${API_BASE_URL}/api/kanban`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
+                    body: JSON.stringify(videoCard)
+                 });
+                 
+                 const toastMsg = hookScore < 70 
+                    ? "⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor" 
+                    : "✅ Quality Gate Aprovado! Card movido para Pronto para Veiculação.";
+                 
+                 const toast = document.createElement('div');
+                 toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:${hookScore < 70 ? '#EF4444' : '#10B981'};color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;`;
+                 toast.innerHTML = toastMsg;
+                 document.body.appendChild(toast);
+                 setTimeout(() => toast.remove(), 5000);
+               }
+            }
+          } catch(e) {
+            console.error('Erro na sincronização do Quality Gate com Kanban', e);
+          }
+          
           await loadClientKanbanCards(activeClientId);
         } else {
           throw new Error(resData.error || 'Falha no teste de criativo');
@@ -1401,6 +1463,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function updateKanbanCardStage(assetId, stage) {
+    if (stage === 'published' && localStorage.getItem(`oraculum_qg_lock_${assetId}`) === 'locked') {
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#EF4444;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
+      toast.innerHTML = '⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+      
+      // Force UI refresh to revert card position
+      await loadClientKanbanCards(activeClientId);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/kanban/${assetId}/stage`, {
         method: 'PATCH',
