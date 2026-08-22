@@ -171,23 +171,24 @@ window.fecharModalNovoCliente = function() {
   }
 };
 
-// 3. SALVAR CLIENTE (LOCAL CACHE + SUPABASE)
+// 3. SALVAR CLIENTE (SUPABASE DIRETO — SEM JSON ENCAPSULADO)
 window.salvarCliente = async function(e) {
   if (e) e.preventDefault();
 
-  const id = document.getElementById('client-modal-id').value;
-  const name = document.getElementById('client-modal-name').value.trim();
-  const niche = document.getElementById('client-modal-niche').value.trim();
-  const contact_name = document.getElementById('client-modal-contact-name').value.trim();
-  const phone = document.getElementById('client-modal-phone').value.trim();
-  const website = document.getElementById('client-modal-website').value.trim();
-  const instagram = document.getElementById('client-modal-instagram').value.trim();
-  const avg_ticket = document.getElementById('client-modal-avg-ticket').value.trim();
-  const target_revenue = document.getElementById('client-modal-target-revenue').value.trim();
-  const meta_ad_account_id = document.getElementById('client-modal-meta-account')?.value.trim() || '';
-  const meta_pixel_id = document.getElementById('client-modal-meta-pixel')?.value.trim() || '';
-  const google_customer_id = document.getElementById('client-modal-google-customer')?.value.trim() || '';
-  const previous_agency_notes = document.getElementById('client-modal-notes').value.trim();
+  const id       = document.getElementById('client-modal-id').value;
+  const name     = document.getElementById('client-modal-name')?.value.trim()    || '';
+  const niche    = document.getElementById('client-modal-niche')?.value.trim()   || '';
+  const contact_name  = document.getElementById('client-modal-contact-name')?.value.trim() || '';
+  const phone    = document.getElementById('client-modal-phone')?.value.trim()   || '';
+  const website  = document.getElementById('client-modal-website')?.value.trim() || '';
+  const instagram = document.getElementById('client-modal-instagram')?.value.trim() || '';
+  const avg_ticket     = document.getElementById('client-modal-avg-ticket')?.value.trim()     || '0';
+  const target_revenue = document.getElementById('client-modal-target-revenue')?.value.trim() || '0';
+  const meta_ad_account_id  = document.getElementById('client-modal-meta-account')?.value.trim()     || '';
+  const meta_pixel_id       = document.getElementById('client-modal-meta-pixel')?.value.trim()       || '';
+  const google_customer_id  = document.getElementById('client-modal-google-customer')?.value.trim()  || '';
+  // Texto limpo — nunca JSON encapsulado
+  const cleanNotes = document.getElementById('client-modal-notes')?.value.trim() || '';
 
   const btn = document.getElementById('btn-save-client-crud');
   if (btn) {
@@ -218,7 +219,8 @@ window.salvarCliente = async function(e) {
         meta_ad_account_id,
         meta_pixel_id,
         google_customer_id,
-        notes: previous_agency_notes,
+        notes: cleanNotes,
+        previous_agency_notes: cleanNotes,
         updated_at: new Date().toISOString()
       };
       const { error: updateError } = await supaClient
@@ -230,42 +232,58 @@ window.salvarCliente = async function(e) {
         return;
       }
     } else {
-      // INSERT (POST) via API para novos cadastros
-      try {
-        const response = await fetch('/api/clients', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-organization-id': activeTenantId
-          },
-          body: JSON.stringify({
-            name, niche, contact_name, phone, website, instagram, avg_ticket, target_revenue, previous_agency_notes,
-            meta_ad_account_id, meta_pixel_id, google_customer_id
-          })
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.success) {
-          // Fallback: insert diretamente no Supabase
-          if (supaClient) {
-            const { error: insertError } = await supaClient
-              .from('clients')
-              .insert([{ name, niche, contact_name, phone, website, instagram,
-                avg_ticket: parseFloat(String(avg_ticket).replace(',', '.')) || 0,
-                target_revenue: parseFloat(String(target_revenue).replace(',', '.')) || 0,
-                meta_ad_account_id, meta_pixel_id, google_customer_id, notes: previous_agency_notes
-              }]);
-            if (insertError) {
-              alert('❌ Erro ao inserir cliente: ' + insertError.message);
+      // INSERT DIRETO NO SUPABASE (fonte primária, sem API intermediária)
+      const insertPayload = {
+        name, niche, contact_name, phone, website, instagram,
+        avg_ticket: parseFloat(String(avg_ticket).replace(',', '.')) || 0,
+        target_revenue: parseFloat(String(target_revenue).replace(',', '.')) || 0,
+        meta_ad_account_id, meta_pixel_id, google_customer_id,
+        notes: cleanNotes,
+        previous_agency_notes: cleanNotes,
+        updated_at: new Date().toISOString()
+      };
+
+      if (supaClient) {
+        const { error: insertError } = await supaClient
+          .from('clients')
+          .insert([insertPayload]);
+        if (insertError) {
+          // Fallback: tenta via API REST
+          try {
+            const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+            const response = await fetch('/api/clients', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
+              body: JSON.stringify(insertPayload)
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+              alert('❌ Erro ao cadastrar cliente: ' + (insertError.message || data.error || 'Erro desconhecido'));
               return;
             }
-          } else {
-            alert('⚠️ Falha ao cadastrar cliente: ' + (data.error || 'Erro desconhecido'));
+          } catch (apiErr) {
+            alert('❌ Erro de rede ao cadastrar: ' + apiErr.message);
             return;
           }
         }
-      } catch (apiErr) {
-        alert('⚠️ Erro de rede ao cadastrar: ' + apiErr.message);
-        return;
+      } else {
+        // Sem Supabase — tenta API diretamente
+        try {
+          const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+          const response = await fetch('/api/clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
+            body: JSON.stringify(insertPayload)
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            alert('⚠️ Falha ao cadastrar cliente: ' + (data.error || 'Erro desconhecido'));
+            return;
+          }
+        } catch (apiErr) {
+          alert('⚠️ Erro de rede ao cadastrar: ' + apiErr.message);
+          return;
+        }
       }
     }
 
