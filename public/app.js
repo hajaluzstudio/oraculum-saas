@@ -313,37 +313,26 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory = [];
         
         if (chatResult.success && chatResult.data && chatResult.data.length > 0) {
-          // Preenche com o histórico — usa campo 'content' (schema real do Supabase)
           chatResult.data.forEach(msg => {
-            const role = msg.role;
-            const content = msg.content || msg.message || '';  // 'content' é o campo real
-            
-            // Adiciona na UI
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `chat-msg ${role}`;
-            
+            const role = msg.role === 'user' ? 'user' : 'model';
+            const content = msg.content || msg.message || '';
+            const jsonResp = msg.json_response;
+
             if (role === 'model' || role === 'assistant') {
-              msgDiv.className = 'chat-msg model';
-              // Tenta parsear se for JSON
-              let displayContent = content;
-              try {
-                const parsed = JSON.parse(content);
-                if (parsed.replyText) displayContent = parsed.replyText;
-                else if (parsed.response) displayContent = parsed.response;
-              } catch (e) { /* ignore */ }
-              
-              msgDiv.innerHTML = `
-                <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="chat-bubble markdown-body">${typeof marked !== 'undefined' && marked.parse ? marked.parse(displayContent) : displayContent}</div>
-              `;
+              if (jsonResp && typeof jsonResp === 'object') {
+                renderChatReply(jsonResp);
+              } else {
+                let parsed = null;
+                try { parsed = JSON.parse(content); } catch (e) {}
+                if (parsed && typeof parsed === 'object') {
+                  renderChatReply(parsed);
+                } else {
+                  renderChatReply({ replyText: content });
+                }
+              }
             } else {
-              msgDiv.innerHTML = `
-                <div class="chat-bubble">${content}</div>
-                <div class="chat-avatar user-avatar"><i class="fa-solid fa-user"></i></div>
-              `;
+              appendChatMessage('user', content);
             }
-            chatMessagesList.appendChild(msgDiv);
-            chatHistory.push({ role, content, timestamp: msg.created_at });
           });
           chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
         }

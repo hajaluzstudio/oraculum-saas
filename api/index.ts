@@ -697,19 +697,20 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     // 2. Chamada da IA Gemini
     const response = await sendStrategicChatMessage(organizationId, clientId, message, history || []);
 
-    const replyText = typeof response === 'string' ? response :
-      (response as any)?.replyText || (response as any)?.response || JSON.stringify(response);
+    const assistantContent = typeof response === 'string' ? response : (typeof (response as any)?.replyText === 'string' ? (response as any).replyText : JSON.stringify(response));
 
     // 3. Gravação síncrona da resposta da IA no bi_chat_history
     const { error: aiErr } = await supabase.from('bi_chat_history').insert({
       client_id: clientId,
       role: 'assistant',
-      content: replyText,
+      content: assistantContent,
       json_response: typeof response === 'object' ? response : null,
       created_at: new Date().toISOString()
     });
     if (aiErr) {
       console.error('❌ [Supabase Insert AI Error]:', aiErr);
+    } else {
+      console.log('[Supabase] ✅ Resposta do assistente salva com sucesso para o cliente:', clientId);
     }
 
     return res.json({ success: true, data: response });
