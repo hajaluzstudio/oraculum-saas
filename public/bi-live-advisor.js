@@ -183,23 +183,62 @@
       .replace(/\n/g, '<br>');
   }
 
-  function adicionarAoFeed(remetente, texto) {
+  function adicionarAoFeed(remetente, respostaData) {
     const feed = document.getElementById('oraculo-chat-feed');
     if (!feed) return;
 
-    const textoFormatado = formatarMarkdown(texto);
     const msgDiv = document.createElement('div');
     
     if (remetente === 'usuario') {
+      const textoFormatado = formatarMarkdown(typeof respostaData === 'string' ? respostaData : (respostaData?.replyText || ''));
       msgDiv.style.cssText = 'background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 12px; color: #FFF; margin-left: 24px; text-align: right;';
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #34D399; font-weight: bold; margin: 0 0 4px;">Você / Apresentador</p><p style="margin: 0; line-height: 1.4;">${textoFormatado}</p>`;
     } else if (remetente === 'erro') {
+      const textoFormatado = formatarMarkdown(typeof respostaData === 'string' ? respostaData : 'Erro ao processar requisição');
       msgDiv.style.cssText = 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px; color: #FCA5A5; margin-right: 16px;';
       msgDiv.innerHTML = `<p style="font-size: 11px; color: #F87171; font-weight: bold; margin: 0 0 4px;">❌ Erro na API do Oraculum</p><p style="margin: 0; line-height: 1.5;">${textoFormatado}</p>`;
     } else {
+      // Formato IA / Modelo
+      const textContent = typeof respostaData === 'string' ? respostaData : (respostaData?.replyText || JSON.stringify(respostaData));
+      const textoFormatado = formatarMarkdown(textContent);
+
       msgDiv.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 14px; color: #E2E8F0; margin-right: 16px;';
-      msgDiv.innerHTML = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 4px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum</span></div><p style="margin: 0; line-height: 1.5;">${textoFormatado}</p>`;
-      msgDiv.innerHTML += `<button onclick="window.distribuirParaWarRoom(this.dataset.textoOriginal, event)" data-texto-original="${texto.replace(/"/g, '&quot;')}" style="margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34D399; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s;"><i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação</button>`;
+      let contentHtml = `<div style="display: flex; align-items: center; gap: 6px; margin: 0 0 6px;"><img src="logo-oraculum-03.svg" style="width: 14px; height: 14px; object-fit: contain;"><span style="font-size: 11px; color: #10B981; font-weight: bold;">Oraculum Live</span></div><p style="margin: 0; line-height: 1.5;">${textoFormatado}</p>`;
+
+      const b = (typeof respostaData === 'object' && respostaData !== null) ? (respostaData.suggestedBriefing || (respostaData.video || respostaData.copy ? respostaData : null)) : null;
+
+      if (b) {
+        const objTitle = b.campaignObjective || b.headline || b.diagnostico_estrategico || 'Estratégia Operacional';
+        const hookText = b.visualHookPrompt || b.video?.gancho_3s || b.hook_angle || '-';
+        const copyText = b.copyAngle || b.copy?.corpo_texto || '-';
+        const roiText = b.expectedRoiMultiplier || b.trafego?.kpis_alvo || 'LTV/CAC 4:1+';
+        const briefingJSON = JSON.stringify(respostaData).replace(/"/g, '&quot;');
+
+        contentHtml += `
+          <div class="briefing-premium-card" style="background: #111d28; border: 1px solid rgba(16, 185, 129, 0.35); padding: 14px; border-radius: 12px; margin-top: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.4);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 10px; background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.4); padding: 2px 6px; border-radius: 4px; font-weight: 700;">🎯 BRIEFING TÁTICO</span>
+              <span style="font-size: 10px; color: #00F5A0; font-weight: 700;">ROI: ${roiText}</span>
+            </div>
+            <h4 style="color: #FFF; font-size: 13px; font-weight: 700; margin: 0 0 6px;">${objTitle}</h4>
+            <p style="font-size: 11px; color: #CBD5E1; margin: 3px 0;"><strong>🎬 Hook 3s:</strong> ${hookText}</p>
+            <p style="font-size: 11px; color: #CBD5E1; margin: 3px 0;"><strong>✍️ Copy:</strong> ${copyText}</p>
+
+            <div style="display: flex; gap: 6px; margin-top: 10px;">
+              <button type="button" onclick="window.dispatchBriefingToWarRoom(JSON.parse(this.dataset.briefing), { draft: true, origin: 'bi_live' })" data-briefing="${briefingJSON}" style="flex: 1; padding: 6px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer;">
+                ✏️ Editar Briefing
+              </button>
+              <button type="button" onclick="window.dispatchBriefingToWarRoom(JSON.parse(this.dataset.briefing), { draft: false, origin: 'bi_live' })" data-briefing="${briefingJSON}" style="flex: 1.5; padding: 6px; background: #10B981; color: #020705; border: none; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
+                ✅ Aprovar & Despachar
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        contentHtml += `<button onclick="window.distribuirParaWarRoom(this.dataset.textoOriginal, event)" data-texto-original="${textContent.replace(/"/g, '&quot;')}" style="margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34D399; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s;"><i class="fa-solid fa-bolt"></i> Aprovar & Enviar para Sala de Operação</button>`;
+      }
+
+      msgDiv.innerHTML = contentHtml;
     }
 
     feed.appendChild(msgDiv);
@@ -555,122 +594,33 @@ ${historicoTexto || 'Vazio'}
 Mensagem do Usuário: "${perguntaUsuario}"
 
 -> Escreva abaixo APENAS a sua resposta direta para o usuário:`;
+  async function perguntarAoOraculoGemini(promptUsuario, contextoBI, historicoAnterior = []) {
+    const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const clientId = contextoBI?.cliente || window.activeClientId || localStorage.getItem('oraculum_active_client_id') || 'client_mock_123';
 
-    const keyLimpa = apiKey.trim();
+    const fullMessage = `[CONTEXTO DO DASHBOARD BI]\nCliente: ${contextoBI?.cliente || 'Ativo'}\nFaturamento: ${contextoBI?.faturamento || '0'}\nGasto Tráfego: ${contextoBI?.gastoTrafego || '0'}\nROAS: ${contextoBI?.roas || '0'}\nLeads: ${contextoBI?.leads || '0'}\n\n[PERGUNTA DO USUÁRIO]: ${promptUsuario}`;
 
-    // 1. Tenta descobrir os modelos habilitados para GERAR TEXTO na chave via GET /models (v1beta e v1)
-    let listaTentativas = [];
-    const modelosExcluidos = ['tts', 'audio', 'embed', 'embedding', 'bidi', 'imagen', 'realtime', 'speech', 'transcribe'];
-    
-    for (const apiVer of ['v1beta', 'v1']) {
-      try {
-        const resList = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${keyLimpa}`);
-        if (resList.ok) {
-          const dataList = await resList.json();
-          if (dataList.models && Array.isArray(dataList.models)) {
-            const validos = dataList.models.filter(m => {
-              const name = m.name.toLowerCase();
-              const hasGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent');
-              const isExcluded = modelosExcluidos.some(e => name.includes(e));
-              return hasGenerate && !isExcluded;
-            });
-
-            // Prioriza gemini-1.5-flash e gemini-2.0-flash para resposta de texto rápida
-            validos.sort((a, b) => {
-              const nameA = a.name.toLowerCase();
-              const nameB = b.name.toLowerCase();
-              if (nameA.includes('1.5-flash') && !nameB.includes('1.5-flash')) return -1;
-              if (!nameA.includes('1.5-flash') && nameB.includes('1.5-flash')) return 1;
-              if (nameA.includes('2.0-flash') && !nameB.includes('2.0-flash')) return -1;
-              if (!nameA.includes('2.0-flash') && nameB.includes('2.0-flash')) return 1;
-              return 0;
-            });
-
-            validos.forEach(m => {
-              const name = m.name.replace('models/', '');
-              listaTentativas.push({ apiVersion: apiVer, modelName: name });
-            });
-          }
-        }
-      } catch (e) {
-        console.warn(`Aviso ao consultar modelos (${apiVer}):`, e);
-      }
-    }
-
-    // Fallbacks de modelos de texto ultra seguros caso a listagem falhe ou venha vazia
-    const fallbacksSeguros = [
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
-      { apiVersion: 'v1beta', modelName: 'gemini-pro' },
-      { apiVersion: 'v1',     modelName: 'gemini-pro' }
-    ];
-
-    fallbacksSeguros.forEach(fb => {
-      if (!listaTentativas.some(t => t.apiVersion === fb.apiVersion && t.modelName === fb.modelName)) {
-        listaTentativas.push(fb);
-      }
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-organization-id': tenantId
+      },
+      body: JSON.stringify({
+        clientId: clientId,
+        message: fullMessage,
+        history: historicoAnterior || []
+      })
     });
 
-    let ultimoErro = null;
+    const resData = await response.json();
 
-    for (const item of listaTentativas) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`;
-
-        const payloadBody = {
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: promptCompleto }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800
-          }
-        };
-
-        if (item.apiVersion === 'v1beta' && !item.modelName.includes('gemini-pro')) {
-          payloadBody.systemInstruction = {
-            parts: [{ text: systemInstructionText }]
-          };
-        }
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payloadBody)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const msgErro = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-          ultimoErro = `Google Gemini (${response.status}): ${msgErro}`;
-          continue; // TENTA O PRÓXIMO MODELO DA LISTA AUTOMATICAMENTE
-        }
-
-        const data = await response.json();
-        const respostaTexto = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!respostaTexto) {
-          ultimoErro = `O modelo ${item.modelName} não retornou texto válido.`;
-          continue;
-        }
-
-        return respostaTexto;
-      } catch (err) {
-        ultimoErro = err.message;
-        continue;
-      }
+    if (!response.ok || !resData.success || !resData.data) {
+      const errMsg = resData?.error || resData?.message || 'Falha na resposta do servidor.';
+      throw new Error(errMsg);
     }
 
-    throw new Error(ultimoErro || "Nenhum modelo de texto do Google Gemini respondeu com sucesso para esta API Key.");
+    return resData.data;
   }
   window.perguntarAoOraculoGemini = perguntarAoOraculoGemini;
 
