@@ -48,68 +48,111 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  window.markTrafficCardPublished = async function(cardId) {
-    if (window.supabaseClient) {
-      try {
-        const { error } = await window.supabaseClient
-          .from('kanban_cards')
-          .update({ status: 'published', updated_at: new Date().toISOString() })
-          .eq('id', cardId);
-        if (!error) {
-          window.loadArchivedTrafficCards();
-        }
-      } catch (err) {
-        console.error('Erro ao atualizar status:', err);
-      }
-    }
-  };
-
   window.loadArchivedTrafficCards = async function() {
     const container = document.getElementById('traffic-creatives-list');
     if (!container) return;
 
-    let cards = [];
-    if (window.supabaseClient) {
+    container.innerHTML = '<p class="text-sm text-emerald-400">⏳ Conectando ao Supabase e carregando criativos...</p>';
+
+    if (!window.supabaseClient) {
+      container.innerHTML = '<div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">⚠️ <strong>Erro:</strong> window.supabaseClient não inicializado.</div>';
+      return;
+    }
+
+    try {
       const { data, error } = await window.supabaseClient
         .from('kanban_cards')
         .select('*')
         .eq('status', 'archived_traffic')
         .order('updated_at', { ascending: false });
 
-      if (!error && data) {
-        cards = data;
+      if (error) {
+        console.error("[Traffic Error] Falha na consulta:", error);
+        container.innerHTML = `
+          <div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">
+            <strong>❌ Erro ao consultar Supabase:</strong> ${error.message} (Código: ${error.code || 'N/A'})
+            <br><span class="text-gray-400">Detalhe: ${error.details || error.hint || 'Verifique o schema/RLS'}</span>
+          </div>`;
+        return;
       }
-    }
 
-    if (!cards || cards.length === 0) {
-      container.innerHTML = '<p class="text-sm text-gray-400">Nenhum criativo aguardando veiculação no momento.</p>';
+      if (!data || data.length === 0) {
+        container.innerHTML = `
+          <div class="text-sm text-gray-400 flex justify-between items-center py-2">
+            <span>Nenhum criativo aguardando veiculação no momento.</span>
+            <button onclick="window.injectTestTrafficCard()" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-xs rounded border border-emerald-500/40">🧪 Injetar Card de Teste</button>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = data.map(c => `
+        <div class="card-glass p-4 rounded-lg flex justify-between items-center border border-emerald-500/30 mb-3 bg-black/40">
+          <div>
+            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
+            <h4 class="text-sm font-semibold text-white mt-1.5">${c.title || 'Sem título'}</h4>
+            <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-3">${c.description || ''}</p>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('Copy copiada!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
+            <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary">✅ Marcar Veiculado</button>
+          </div>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      console.error("[Traffic Catch Exception]:", err);
+      container.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">💥 <strong>Exceção:</strong> ${err.message}</div>`;
+    }
+  }
+
+  // Injetor de Card Fictício para teste de ponta a ponta
+  window.injectTestTrafficCard = async function() {
+    if (!window.supabaseClient) {
+      alert("Erro: Supabase não inicializado.");
       return;
     }
 
-    container.innerHTML = cards.map(c => `
-      <div class="card-glass p-4 rounded-lg flex justify-between items-center border border-emerald-500/30 mb-3 bg-black/40">
-        <div>
-          <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
-          <h4 class="text-sm font-semibold text-white mt-1.5">${c.title}</h4>
-          <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-3">${c.description}</p>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('Copy copiada com sucesso!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
-          <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary">✅ Marcar Veiculado</button>
-        </div>
-      </div>
-    `).join('');
-  }
+    const dummyCard = {
+      title: "🎬 [TESTE AUTÔNOMO] Vídeo Rinoplastia Dr. Lucas",
+      description: "Gancho: Você sabia que a recuperação não precisa ser dolorosa? CTA: Agende sua avaliação no link da bio.",
+      status: "archived_traffic",
+      stage: "archived_traffic",
+      type: "video",
+      client_id: window.currentClientId || "cliente-teste",
+      updated_at: new Date().toISOString()
+    };
 
-  // Escuta o evento desacoplado do Kanban
-  window.addEventListener('cardSentToTraffic', (e) => {
-    window.loadArchivedTrafficCards();
-  });
+    const { data, error } = await window.supabaseClient
+      .from('kanban_cards')
+      .insert([dummyCard])
+      .select();
 
-  // Escuta a seleção de um novo cliente
-  window.addEventListener('clientChanged', (e) => {
-    setTimeout(window.loadArchivedTrafficCards, 100);
-  });
+    if (error) {
+      alert("❌ ERRO AO INSERIR NO SUPABASE:\\n" + error.message + "\\nCódigo: " + error.code + "\\nDetalhes: " + (error.details || error.hint || ''));
+      console.error("Erro detalhado:", error);
+    } else {
+      alert("✅ Card fictício inserido com sucesso no Supabase!");
+      window.loadArchivedTrafficCards();
+    }
+  };
+
+  window.markTrafficCardPublished = async function(cardId) {
+    if (!window.supabaseClient) return;
+    const { error } = await window.supabaseClient
+      .from('kanban_cards')
+      .update({ status: 'published', updated_at: new Date().toISOString() })
+      .eq('id', cardId);
+
+    if (error) {
+      alert("Erro ao marcar como veiculado: " + error.message);
+    } else {
+      window.loadArchivedTrafficCards();
+    }
+  };
+
+  // Escuta a troca de abas e evento do kanban
+  window.addEventListener('cardSentToTraffic', window.loadArchivedTrafficCards);
+  window.addEventListener('clientChanged', () => setTimeout(window.loadArchivedTrafficCards, 100));
 
   // Carrega na montagem
   setTimeout(window.loadArchivedTrafficCards, 500);
