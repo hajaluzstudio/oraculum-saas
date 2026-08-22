@@ -35,15 +35,31 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
     throw new Error("Chave de API do Gemini não encontrada ou vazia. Configure no Cofre de APIs.");
   }
 
-  // Chamada com Search Grounding ativo no Gemini
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: promptVarredura }] }],
-      generationConfig: { responseMimeType: "application/json" }
-    })
-  });
+  const modelCandidates = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-pro-latest'];
+  let response = null;
+  let lastErrData = null;
+
+  for (const modelName of modelCandidates) {
+    try {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptVarredura }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      if (response.ok) break;
+      lastErrData = await response.json().catch(() => ({}));
+    } catch (e) {
+      lastErrData = e;
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw new Error(`Falha no Robô Hunter (${response?.status || 500}): ${lastErrData?.error?.message || 'Erro de conexão'}`);
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));

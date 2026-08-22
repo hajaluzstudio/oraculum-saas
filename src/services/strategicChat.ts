@@ -180,7 +180,13 @@ REGRAS ABSOLUTAS INEGOCIÁVEIS:
     }
   ];
 
-  const modelCandidates = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-1.5-flash', 'gemini-pro'];
+  const modelCandidates = [
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    'gemini-pro-latest'
+  ];
   let lastError: any = null;
 
   for (const modelName of modelCandidates) {

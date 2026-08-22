@@ -292,7 +292,13 @@ REGRAS RÍGIDAS DE ABORDAGEM MULTICANAL, INFLUENCERS E PODCASTS:
     clientName ? ` (Cliente: "${clientName}")` : ''
   }. Responda estritamente em formato JSON seguindo o schema exato fornecido.`;
 
-  const modelCandidates = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-pro'];
+  const modelCandidates = [
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    'gemini-pro-latest'
+  ];
   let lastError: any = null;
 
   for (const modelName of modelCandidates) {
