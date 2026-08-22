@@ -1169,3 +1169,29 @@ table tbody td {
   color: var(--emerald-light);
   border-color: var(--border-accent);
 }
+
+/* BOTÃO FLUTUANTE ORACULUM LIVE */
+#btn-open-oraculo-live {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 22px !important;
+  background: #10B981 !important;
+  color: #020705 !important;
+  border-radius: 50px !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(255,255,255,0.4) !important;
+  box-shadow: 0 10px 30px rgba(16,185,129,0.6) !important;
+  transition: all 0.3s ease !important;
+}
+
+#btn-open-oraculo-live:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 14px 40px rgba(16,185,129,0.8) !important;
+}
