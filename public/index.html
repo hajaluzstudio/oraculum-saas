@@ -324,7 +324,7 @@
 
   <!-- Header -->
   <header>
-    <a href="index.html" class="back-link">&larr; Ir para o site</a>
+    <a href="https://site-oraculum.vercel.app/" class="back-link">&larr; Ir para o site</a>
     <a href="index.html" class="brand-logo">
       <img src="logo.png" alt="Oraculum Logo" onerror="handleImgError(this)">
     </a>
@@ -368,7 +368,7 @@
 
     <div class="footer-help">
       <span>Painel Restrito</span>
-      <a href="#">Recuperar Chave</a>
+      <a href="#" onclick="window.recuperarChave(event)">Recuperar Chave</a>
     </div>
   </div>
 
@@ -384,7 +384,7 @@
 
     // Alternar Visibilidade da Senha
     const togglePasswordBtn = document.getElementById('toggle-password');
-    const passwordInput = document.getElementById('auth-password');
+    const passwordInput = document.getElementById('login-password');
     const eyeIcon = document.getElementById('eye-icon');
     const eyeOffIcon = document.getElementById('eye-off-icon');
 
@@ -394,6 +394,35 @@
       eyeIcon.style.display = isPassword ? 'none' : 'block';
       eyeOffIcon.style.display = isPassword ? 'block' : 'none';
     });
+
+    // Função para Recuperar Chave via Supabase Auth
+    window.recuperarChave = async function(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('login-email');
+      const email = emailInput.value.trim();
+      
+      if (!email) {
+        alert('Por favor, preencha o campo "E-mail Corporativo" antes de clicar em Recuperar Chave.');
+        emailInput.focus();
+        return;
+      }
+
+      try {
+        const supaClient = (typeof supabase !== 'undefined') ? supabase : (window.supabaseClient || window.supabase);
+        if (!supaClient || !supaClient.auth) throw new Error('Serviço de autenticação não inicializado.');
+
+        // Opcional: Adicionar um loading no botão ou alert (vamos de alert para simplicidade por enquanto)
+        const { error } = await supaClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + window.location.pathname
+        });
+
+        if (error) throw error;
+        alert('✅ Link de redefinição de chave enviado!\n\nVerifique a caixa de entrada (e spam) do e-mail: ' + email);
+      } catch (err) {
+        console.error('Erro reset senha:', err);
+        alert('❌ Erro ao solicitar recuperação: ' + (err.message || 'Tente novamente.'));
+      }
+    };
 
     
 
