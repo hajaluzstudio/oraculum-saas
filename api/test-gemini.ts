@@ -1,75 +1,64 @@
 import { Request, Response } from 'express';
 
-const MODEL_CANDIDATES = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash',
-  'gemini-pro'
-];
-
 export default async function handler(req: Request, res: Response) {
   try {
-    console.log('[Test-Gemini API] Iniciando teste de diagnóstico com fallback de modelos...');
-    
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
       return res.status(500).json({
         status: 'error',
-        message: 'A variável de ambiente GEMINI_API_KEY não está configurada no servidor (process.env.GEMINI_API_KEY é undefined).',
-        detail: 'Configure a variável GEMINI_API_KEY no arquivo .env ou no painel da Vercel.'
+        message: 'A variável de ambiente GEMINI_API_KEY não está configurada no servidor.'
       });
     }
 
-    const keyLimpa = apiKey.trim();
-    let lastError: any = null;
+    const modelNames = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-pro'];
 
-    for (const modelName of MODEL_CANDIDATES) {
+    let successResponse = null;
+    let lastError = null;
+
+    for (const model of modelNames) {
       try {
-        console.log(`[Test-Gemini API] Testando modelo: ${modelName}...`);
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${keyLimpa}`;
-
-        const response = await fetch(endpoint, {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Ping de teste de diagnóstico Oraculum' }] }]
+            contents: [{ parts: [{ text: "Responda apenas: OK" }] }]
           })
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          console.log(`✅ [Test-Gemini API] Sucesso com modelo: ${modelName}`);
-
-          return res.status(200).json({
-            status: 'ok',
-            message: 'Conexão com Gemini validada com sucesso!',
-            modelUsed: modelName,
-            geminiReplySnippet: replyText ? replyText.substring(0, 100) + '...' : 'Sem texto'
-          });
+        const data = await response.json();
+        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          successResponse = {
+            modelUsed: model,
+            reply: data.candidates[0].content.parts[0].text
+          };
+          break;
+        } else {
+          lastError = data;
         }
-
-        const errBody = await response.json().catch(() => ({}));
-        console.warn(`⚠️ [Test-Gemini API] Modelo ${modelName} falhou (HTTP ${response.status}):`, errBody?.error?.message || response.statusText);
-        lastError = { httpStatus: response.status, modelTried: modelName, error: errBody?.error || response.statusText };
-      } catch (err: any) {
-        console.warn(`⚠️ Exceção ao tentar modelo ${modelName}:`, err.message);
-        lastError = { modelTried: modelName, error: err.message };
+      } catch (err) {
+        lastError = err;
       }
     }
 
-    return res.status(500).json({
-      status: 'error',
-      message: 'Todos os modelos do Gemini falharam na comunicação.',
-      candidatesTried: MODEL_CANDIDATES,
-      lastError
-    });
+    if (successResponse) {
+      return res.status(200).json({
+        status: "ok",
+        message: "Conexão com Gemini validada com sucesso!",
+        ...successResponse
+      });
+    } else {
+      return res.status(500).json({
+        status: "error",
+        message: "Nenhum modelo respondeu",
+        detail: lastError
+      });
+    }
 
   } catch (error: any) {
-    console.error('❌ [Test-Gemini API] Erro não tratado durante o diagnóstico:', error);
     return res.status(500).json({
-      status: 'error',
-      message: 'Exceção interna ao executar o teste do Gemini',
+      status: "error",
+      message: "Erro no handler de diagnóstico",
       detail: error.message || String(error)
     });
   }
