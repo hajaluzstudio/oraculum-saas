@@ -202,13 +202,18 @@ REGRAS ABSOLUTAS INEGOCIÁVEIS:
 
       const chatResponse: StrategicChatResponse = JSON.parse(response.text);
 
-      // Salva a interação no histórico do Supabase
-      await saveChatMessageToHistory(
-        organizationId,
-        clientId,
-        userMessage,
-        chatResponse
-      );
+      // Salva a interação no histórico do Supabase se a tabela/cliente estiver disponível
+      try {
+        await supabase.from('bi_chat_history').insert([{
+          client_id: clientId,
+          organization_id: organizationId || null,
+          prompt_input: userMessage,
+          json_response: chatResponse,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (err: any) {
+        console.warn('⚠️ Aviso ao salvar bi_chat_history no Supabase:', err.message || err);
+      }
 
       return chatResponse;
     } catch (error: any) {
