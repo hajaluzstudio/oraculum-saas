@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -31,564 +31,684 @@
 </head>
 <body>
 
-  <div id="auth-gate-container" class="fixed inset-0 z-50 flex items-center justify-center bg-[#02070d] relative overflow-hidden" style="display: flex !important;">
+    <div id="auth-gate-container" class="fixed inset-0 z-50 bg-[#010403] relative overflow-hidden" style="display: flex !important;">
 
-    <style>
-      /* VARIÁVEIS DE CALIBRAÇÃO PROPORCIONAIS */
-      :root {
-        --neon-color: #00ffaa;
-        --panel-opacity: 0.95;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-        /* Logo do Sistema */
-        --logo-display: flex;
-        --logo-top: -18%;
-        --logo-width: 42%;
-        --logo-offset-x: 0%;
-        --logo-offset-y: 0%;
+<style>
+    :root {
+      --oraculum-cyan: #38c9a7;
+      --oraculum-bright: #4fe4be;
+      --oraculum-glow: rgba(56, 201, 167, 0.6);
+      --bg-color: #020705;
+      --border-subtle: rgba(56, 201, 167, 0.25);
+      --text-muted: #8da39b;
+    }
 
-        /* Olho / Pupila */
-        --eye-top: 10.8%;
-        --eye-width: 14%;           
-        --eye-offset-x: 0%;
-        --eye-offset-y: 0%;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
 
-        /* Visor do Terminal */
-        --visor-top: 36.8%;
-        --visor-width: 58%;
-        --visor-height: 12.5%;
-        --visor-offset-x: 0%;
-        --visor-offset-y: 0%;
+    #auth-gate-container {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #ffffff;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
+    }
 
-        /* Teclado Numérico */
-        --keypad-top: 56.2%;
-        --keypad-width: 38%;         
-        --keypad-height: 33%;
-        --keypad-gap-x: 0.5%;        
-        --keypad-gap-y: 1.5%;        
-        --keypad-offset-x: 0%;
-        --keypad-offset-y: 0%;
-        --font-size-num: 2.8cqh;
+    /* WebGL Canvas */
+    #login-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      background: #010403;
+    }
 
-        /* Tamanho da Imagem do Terminal */
-        --terminal-max-height: 82vh;
-      }
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 120;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(1.2rem, 2.5vh, 2rem) 5%;
+      pointer-events: auto;
+    }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        user-select: none;
-      }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--oraculum-bright);
+      text-decoration: none;
+      font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+      letter-spacing: 0.2rem;
+      text-transform: uppercase;
+      padding: 0.65rem clamp(1.2rem, 1.8vw, 1.6rem);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      background: rgba(2, 8, 6, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
 
-      /* BARRA DE MODO DE TESTE NO TOPO (SECRETA) */
-      .test-toolbar {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10000;
-        background: rgba(4, 15, 24, 0.95);
-        border: 1px solid var(--neon-color);
-        border-radius: 20px;
-        padding: 6px 16px;
-        display: none;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 0 20px rgba(0, 255, 170, 0.3);
-        font-family: 'Consolas', 'Courier New', monospace;
-      }
-      .test-toolbar.active-admin { display: flex; }
-      .test-toolbar label, .test-toolbar button { color: var(--neon-color); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-      .toggle-btn { background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.35); color: var(--neon-color); padding: 5px 12px; border-radius: 14px; font-size: 11px; cursor: pointer; transition: all 0.2s ease; }
-      .toggle-btn:hover { background: rgba(0, 255, 170, 0.3); border-color: var(--neon-color); box-shadow: 0 0 10px rgba(0, 255, 170, 0.5); }
+    .back-link:hover {
+      background: var(--oraculum-cyan);
+      color: #020705;
+      box-shadow: 0 0 20px rgba(56, 201, 167, 0.6);
+      border-color: var(--oraculum-cyan);
+      transform: translateX(-4px);
+    }
 
-      /* PAINEL LATERAL ESQUERDO SECRETO */
-      .calibration-panel {
-        display: none; position: fixed; top: 60px; left: 15px; z-index: 9999; background: rgba(2, 10, 18, var(--panel-opacity));
-        border: 1px solid var(--neon-color); border-radius: 16px; padding: 14px 18px; gap: 10px; backdrop-filter: blur(16px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 255, 170, 0.25); max-height: 85vh; width: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--neon-color) transparent;
-        font-family: 'Consolas', 'Courier New', monospace;
-      }
-      .calibration-panel.active { display: flex; flex-direction: column; }
-      .panel-section-title { font-size: 11px; font-weight: 800; color: var(--neon-color); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(0, 255, 170, 0.25); padding-bottom: 3px; margin-top: 6px; }
-      .control-group { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 10px; color: var(--neon-color); }
-      .control-group label { flex: 1; white-space: nowrap; }
-      .control-group input[type="range"] { width: 110px; accent-color: var(--neon-color); cursor: pointer; }
-      .control-group input[type="color"] { width: 110px; height: 22px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
-      .control-group input[type="checkbox"] { accent-color: var(--neon-color); width: 16px; height: 16px; cursor: pointer; }
+    .brand-logo img {
+      height: clamp(28px, 3.8vh, 36px);
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(56, 201, 167, 0.4));
+    }
 
-      /* 1. CAMADA DE FUNDO REAL PUXANDO DA PASTA */
-      .bg-layer { position: fixed; inset: -40px; background-image: url('fundo.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1; transform: translateZ(-40px) scale(1.06); transition: transform 0.08s ease-out; filter: brightness(0.9) contrast(1.1); }
-      .scanlines { position: fixed; inset: 0; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.35)); background-size: 100% 4px; z-index: 2; pointer-events: none; opacity: 0.4; }
-      .radial-overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(0, 255, 170, 0.05) 0%, rgba(2, 7, 13, 0.8) 80%); z-index: 3; pointer-events: none; }
+    /* Card de Login com Efeito Espacial do Site */
+    .login-container {
+      position: relative;
+      z-index: 10;
+      width: clamp(340px, 90vw, 450px);
+      background: rgba(2, 8, 6, 0.82);
+      border: 1px solid rgba(56, 201, 167, 0.3);
+      border-radius: 24px;
+      padding: clamp(2.2rem, 4.5vh, 3.2rem);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.92), 0 0 40px rgba(56, 201, 167, 0.1);
+      text-align: center;
+      transform-style: preserve-3d;
+      will-change: transform;
+      transition: transform 0.2s ease-out, border-color 0.4s ease, box-shadow 0.4s ease;
+    }
 
-      /* 2. ETAPA DE CENTRALIZAÇÃO ABSOLUTA NO CENTRO DA TELA */
-      .terminal-stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; perspective: 1200px; }
-      .terminal-container { position: relative; display: inline-flex; align-items: center; justify-content: center; height: var(--terminal-max-height); max-height: 860px; pointer-events: auto; transform-style: preserve-3d; transition: transform 0.08s ease-out; container-type: size; }
-      
-      /* PUXANDO O TERMINAL DA PASTA */
-      .terminal-base-img { display: block; height: 100%; width: auto; object-fit: contain; pointer-events: none; filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 25px rgba(0, 255, 170, 0.25)); z-index: 10; }
+    .login-container:hover {
+      border-color: var(--oraculum-bright);
+      box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95), 0 0 45px rgba(56, 201, 167, 0.2);
+    }
 
-      /* 3. LOGO DO SISTEMA PUXANDO DA PASTA */
-      .logo-box { position: absolute; top: calc(var(--logo-top) + var(--logo-offset-y)); left: calc(50% + var(--logo-offset-x)); transform: translateX(-50%); width: var(--logo-width); z-index: 35; display: var(--logo-display); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; transition: all 0.08s ease-out; font-family: 'Consolas', 'Courier New', monospace;}
-      .logo-img { width: 100%; height: auto; max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 12px var(--neon-color)) drop-shadow(0 0 22px var(--neon-color)); display: block; }
+    .login-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.35rem;
+      color: var(--oraculum-bright);
+      padding: 0.35rem 1.1rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 999px;
+      background: rgba(56, 201, 167, 0.08);
+      margin-bottom: 1.2rem;
+      font-weight: 700;
+    }
 
-      /* 4. OLHO / PUPILA / SCANNER DESTACADO */
-      .eye-scanner-box { 
-        position: absolute; top: calc(var(--eye-top) + var(--eye-offset-y)); left: calc(50% + var(--eye-offset-x)); 
-        transform: translateX(-50%); width: var(--eye-width); aspect-ratio: 1 / 1; border-radius: 50%; z-index: 30; 
-        display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; 
-        box-shadow: inset 0 0 12px var(--neon-color), 0 0 18px var(--neon-color); border: 1px solid var(--neon-color);
-      }
-      .eye-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at center, var(--neon-color) 0%, rgba(0, 255, 170, 0.35) 60%, transparent 100%); box-shadow: 0 0 20px var(--neon-color); animation: eyePulse 2.5s infinite ease-in-out; }
-      .eye-pupil-center { position: absolute; width: 38%; height: 38%; border-radius: 50%; background: #ffffff; box-shadow: 0 0 12px #ffffff, 0 0 25px var(--neon-color); animation: pupilFlicker 3s infinite ease-in-out; }
-      .eye-laser { position: absolute; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--neon-color), #ffffff, var(--neon-color), transparent); box-shadow: 0 0 10px var(--neon-color), 0 0 20px #ffffff; top: 0; animation: sweepLaser 1.8s infinite alternate ease-in-out; }
+    /* Tipografia com Física de Letras */
+    h1.interactive-title {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.6rem;
+      color: #ffffff;
+      text-shadow: 0 0 25px rgba(0, 0, 0, 0.95), 0 0 50px rgba(56, 201, 167, 0.35);
+      cursor: default;
+    }
 
-      /* 5. VISOR COM FORMULÁRIO DE LOGIN INTEGRADO */
-      .visor-overlay { position: absolute; top: calc(var(--visor-top) + var(--visor-offset-y)); left: calc(50% + var(--visor-offset-x)); transform: translateX(-50%); width: var(--visor-width); height: var(--visor-height); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; font-family: 'Consolas', 'Courier New', monospace; }
-      .visor-text { color: var(--neon-color); font-size: clamp(10px, 2.2cqh, 16px); font-weight: 900; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 8px var(--neon-color), 0 0 16px var(--neon-color); animation: glitchFlicker 3.5s infinite ease-in-out; white-space: nowrap; }
-      .pin-display { display: flex; justify-content: center; gap: 10px; margin-top: 6px; }
-      .pin-dot { width: clamp(8px, 1.4cqh, 14px); height: clamp(8px, 1.4cqh, 14px); border: 1.5px solid var(--neon-color); border-radius: 50%; background: transparent; box-shadow: inset 0 0 4px rgba(0, 255, 170, 0.3); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-      .pin-dot.active { background: var(--neon-color); box-shadow: 0 0 12px var(--neon-color), 0 0 20px var(--neon-color); transform: scale(1.25); }
+    .physics-word {
+      display: inline-block;
+      white-space: nowrap;
+      margin-right: 0.3em;
+    }
 
-      /* 6. GRID DO TECLADO NUMÉRICO SOBREPOSTO */
-      .keypad-overlay { position: absolute; top: calc(var(--keypad-top) + var(--keypad-offset-y)); left: calc(50% + var(--keypad-offset-x)); transform: translateX(-50%); width: var(--keypad-width); height: var(--keypad-height); z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); column-gap: var(--keypad-gap-x); row-gap: var(--keypad-gap-y); pointer-events: auto; font-family: 'Consolas', 'Courier New', monospace;}
-      .key-btn { background: rgba(0, 255, 170, 0.02); border: 1px solid rgba(0, 255, 170, 0.18); border-radius: 8px; color: var(--neon-color); font-size: var(--font-size-num); font-weight: 700; cursor: pointer; backdrop-filter: blur(1px); text-shadow: 0 0 8px var(--neon-color); display: flex; align-items: center; justify-content: center; transition: all 0.12s ease; }
-      .key-btn:hover { border-color: var(--neon-color); background: rgba(0, 255, 170, 0.22); box-shadow: 0 0 16px var(--neon-color), inset 0 0 10px rgba(0, 255, 170, 0.3); color: #ffffff; transform: scale(1.05); }
-      .key-btn:active { transform: scale(0.92); background: rgba(0, 255, 170, 0.5); box-shadow: 0 0 25px var(--neon-color); }
-      .key-btn.action-btn { font-size: calc(var(--font-size-num) * 0.85); color: var(--neon-color); }
-      .status-msg { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: 2px; color: var(--neon-color); text-transform: uppercase; text-align: center; white-space: nowrap; opacity: 0.8; cursor: pointer; font-family: 'Consolas', 'Courier New', monospace;}
+    .physics-char {
+      display: inline-block;
+      will-change: transform;
+      transform-style: preserve-3d;
+      color: #ffffff;
+      opacity: 1;
+      transition: color 0.2s;
+    }
 
-      /* ANIMAÇÕES DE EFEITO VISUAL */
-      @keyframes eyePulse { 0%, 100% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.1); } }
-      @keyframes pupilFlicker { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 1; } }
-      @keyframes sweepLaser { 0% { top: 0%; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.2; } }
-      @keyframes glitchFlicker { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px var(--neon-color)); } 18% { opacity: 0.9; } 19% { opacity: 0.2; transform: scaleY(0.92); } 20% { opacity: 1; transform: scaleY(1); } 58% { opacity: 1; } 59% { opacity: 0.1; filter: none; } 60% { opacity: 0.8; } 61% { opacity: 0.3; } 62% { opacity: 1; filter: drop-shadow(0 0 10px var(--neon-color)); } }
-      
-      /* ERRO / SHAKE VIBRAÇÃO DO TERMINAL */
-      .terminal-container.error-shake { animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
-      .terminal-container.error-shake .visor-text { color: #ff3344; text-shadow: 0 0 12px #ff3344; }
-      .terminal-container.error-shake .pin-dot { border-color: #ff3344; background: #ff3344; box-shadow: 0 0 15px #ff3344; }
-      @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
-    </style>
+    .login-lead {
+      font-size: 0.95rem;
+      color: #b4c7c0;
+      margin-bottom: 1.8rem;
+      line-height: 1.5;
+    }
 
-    <div class="test-toolbar" id="testToolbar">
-      <button class="toggle-btn" onclick="toggleCalib()">🎛️ Abrir Painel de Calibração</button>
+    /* Formulário */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      text-align: left;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(8, 41, 31, 0.35);
+      border: 1px solid rgba(56, 201, 167, 0.25);
+      border-radius: 12px;
+      padding: 0.95rem 1.2rem;
+      color: #ffffff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    .password-input {
+      padding-right: 3rem;
+    }
+
+    input:focus {
+      border-color: var(--oraculum-bright);
+      box-shadow: 0 0 15px rgba(56, 201, 167, 0.35);
+      background: rgba(8, 41, 31, 0.6);
+    }
+
+    .toggle-password-btn {
+      position: absolute;
+      right: 0.8rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 6px;
+      transition: color 0.3s ease;
+      outline: none;
+    }
+
+    .toggle-password-btn:hover {
+      color: var(--oraculum-bright);
+    }
+
+    .toggle-password-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .btn-login-submit {
+      margin-top: 0.8rem;
+      width: 100%;
+      padding: 1.1rem;
+      border: none;
+      border-radius: 12px;
+      background: var(--oraculum-bright);
+      color: #020705;
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.2rem;
+      cursor: pointer;
+      box-shadow: 0 0 30px var(--oraculum-glow);
+      transition: all 0.3s;
+    }
+
+    .btn-login-submit:hover {
+      background: #ffffff;
+      box-shadow: 0 0 45px rgba(79, 228, 190, 0.85);
+      transform: translateY(-2px);
+    }
+
+    .footer-help {
+      margin-top: 1.8rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-help a {
+      color: var(--oraculum-bright);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .footer-help a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+
+  <!-- Header -->
+  <header>
+    <a href="index.html" class="back-link">&larr; Ir para o site</a>
+    <a href="index.html" class="brand-logo">
+      <img src="logo.png" alt="Oraculum Logo" onerror="handleImgError(this)">
+    </a>
+  </header>
+
+  <!-- WebGL Canvas Universo Realista -->
+  <canvas id="login-canvas"></canvas>
+
+  <!-- Card Central de Login -->
+  <div class="login-container" id="login-card">
+    <span class="login-badge">Seja Bem-vindo</span>
+    <h1 class="interactive-title">Oraculum Platform</h1>
+    <p class="login-lead">Decisões autônomas em tempo real.</p>
+
+    <form onsubmit="window.executarLogin(event)" id="form-login">
+      <div class="input-group">
+        <label>E-mail Corporativo</label>
+        <input type="email" placeholder="gestor@empresa.com" required id="login-email">
+      </div>
+
+      <div class="input-group">
+        <label>Chave de Acesso / Senha</label>
+        <div class="input-wrapper">
+          <input type="password" class="password-input" placeholder="••••••••••••" required id="login-password">
+          <button type="button" class="toggle-password-btn" id="toggle-password" aria-label="Mostrar ou ocultar senha">
+            <svg id="eye-icon" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg id="eye-off-icon" viewBox="0 0 24 24" style="display: none;">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login-submit" id="btn-submit-login">Entrar na Plataforma &rarr;</button>
+      <input type="checkbox" id="remember-me" checked style="display: none;">
+    </form>
+
+    <div class="footer-help">
+      <a href="index.html">Primeiro Acesso?</a>
+      <a href="#">Recuperar Chave</a>
     </div>
-
-    <div class="calibration-panel" id="calibPanel">
-      <div class="panel-section-title">Aparência & Exibição</div>
-      <div class="control-group">
-        <label>Cor Neon / Texto</label>
-        <input type="color" id="neonColorPicker" value="#00ffaa" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Opacidade Painel (<span id="panelOpacityVal">0.95</span>)</label>
-        <input type="range" id="panelOpacitySlider" min="0.2" max="1.0" step="0.05" value="0.95" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Altura Terminal (<span id="heightVal">82vh</span>)</label>
-        <input type="range" id="heightSlider" min="20" max="98" value="82" oninput="updateCalib()">
-      </div>
-
-      <div class="panel-section-title">Ajuste da Logo do Sistema</div>
-      <div class="control-group">
-        <label>Exibir Logo</label>
-        <input type="checkbox" id="showLogoCheckbox" checked onchange="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Logo Y (Subir/Descer) (<span id="logoOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="logoOffsetYSlider" min="-60" max="60" step="0.5" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Logo X (Esquerda/Direita) (<span id="logoOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="logoOffsetXSlider" min="-50" max="50" step="0.5" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Logo Largura (<span id="logoWidthVal">42.0%</span>)</label>
-        <input type="range" id="logoWidthSlider" min="5" max="100" step="0.5" value="42.0" oninput="updateCalib()">
-      </div>
-
-      <div class="panel-section-title">Ajuste da Pupila / Olho</div>
-      <div class="control-group">
-        <label>Olho Topo Y (<span id="eyeTopVal">10.8%</span>)</label>
-        <input type="range" id="eyeTopSlider" min="-50" max="100" step="0.1" value="10.8" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Olho Tamanho (<span id="eyeWidthVal">14.0%</span>)</label>
-        <input type="range" id="eyeWidthSlider" min="1" max="60" step="0.1" value="14.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Olho X (Esquerda/Direita) (<span id="eyeOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="eyeOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Olho Y Offset (<span id="eyeOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="eyeOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-
-      <div class="panel-section-title">Ajuste do Visor</div>
-      <div class="control-group">
-        <label>Visor Topo Y (<span id="visorTopVal">36.8%</span>)</label>
-        <input type="range" id="visorTopSlider" min="-50" max="100" step="0.1" value="36.8" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Visor Largura (<span id="visorWidthVal">58.0%</span>)</label>
-        <input type="range" id="visorWidthSlider" min="5" max="100" step="0.5" value="58.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Visor X (Esquerda/Direita) (<span id="visorOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="visorOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Visor Y Offset (<span id="visorOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="visorOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-
-      <div class="panel-section-title">Ajuste do Teclado Numérico</div>
-      <div class="control-group">
-        <label>Teclado Topo Y (<span id="keypadTopVal">56.2%</span>)</label>
-        <input type="range" id="keypadTopSlider" min="-50" max="100" step="0.1" value="56.2" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Teclado Altura (<span id="keypadHeightVal">33.0%</span>)</label>
-        <input type="range" id="keypadHeightSlider" min="5" max="80" step="0.5" value="33.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Teclado Largura (<span id="keypadWidthVal">38.0%</span>)</label>
-        <input type="range" id="keypadWidthSlider" min="5" max="100" step="0.5" value="38.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Espaço Horiz (Gap X) (<span id="keypadGapXVal">0.5%</span>)</label>
-        <input type="range" id="keypadGapXSlider" min="0" max="20" step="0.1" value="0.5" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Espaço Vert (Gap Y) (<span id="keypadGapYVal">1.5%</span>)</label>
-        <input type="range" id="keypadGapYSlider" min="0" max="20" step="0.1" value="1.5" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Teclado X (Esquerda/Direita) (<span id="keypadOffsetXVal">0.0%</span>)</label>
-        <input type="range" id="keypadOffsetXSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Teclado Y Offset (<span id="keypadOffsetYVal">0.0%</span>)</label>
-        <input type="range" id="keypadOffsetYSlider" min="-50" max="50" step="0.1" value="0.0" oninput="updateCalib()">
-      </div>
-      <div class="control-group">
-        <label>Tamanho Fonte (<span id="fontSizeNumVal">2.8cqh</span>)</label>
-        <input type="range" id="fontSizeNumSlider" min="0.8" max="6.0" step="0.1" value="2.8" oninput="updateCalib()">
-      </div>
-    </div>
-
-    <div class="bg-layer" id="bgLayer"></div>
-    <div class="scanlines"></div>
-    <div class="radial-overlay"></div>
-
-    <div class="terminal-stage">
-      <div class="terminal-container" id="terminal">
-
-        <div class="logo-box" id="logoBox">
-          <img id="logoImgElement" src="/logo.png" class="logo-img" alt="Logo do Sistema">
-          <span id="logoTextFallback" class="logo-text-fallback" style="display: none;">ORACULUM</span>
-        </div>
-
-        <img 
-          id="terminalImgElement"
-          src="/terminal.png" 
-          class="terminal-base-img" 
-          alt="Terminal de Segurança"
-        >
-
-        <div class="eye-scanner-box" id="eyeScannerBox">
-          <div class="eye-glow"></div>
-          <div class="eye-pupil-center"></div>
-          <div class="eye-laser"></div>
-        </div>
-
-        <div class="visor-overlay">
-          <div class="visor-text" id="visorText">ACESSO RESTRITO</div>
-          
-          <form id="form-login" onsubmit="window.executarLogin(event)" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
-            
-            <input type="email" id="login-email" required value="admin@oraculum.com" style="display: none;">
-            
-            <div class="pin-display" id="pin-display-container" style="margin-top: 10px;">
-              <div class="pin-dot"></div>
-              <div class="pin-dot"></div>
-              <div class="pin-dot"></div>
-              <div class="pin-dot"></div>
-            </div>
-
-            <input type="password" id="login-password" style="display: none;">
-            <input type="checkbox" id="remember-me" checked style="display: none;">
-            <button type="submit" id="btn-submit-login" style="display: none;"></button>
-          </form>
-        </div>
-
-        <div class="keypad-overlay">
-          <button class="key-btn" onclick="press('1')">1</button>
-          <button class="key-btn" onclick="press('2')">2</button>
-          <button class="key-btn" onclick="press('3')">3</button>
-          <button class="key-btn" onclick="press('4')">4</button>
-          <button class="key-btn" onclick="press('5')">5</button>
-          <button class="key-btn" onclick="press('6')">6</button>
-          <button class="key-btn" onclick="press('7')">7</button>
-          <button class="key-btn" onclick="press('8')">8</button>
-          <button class="key-btn" onclick="press('9')">9</button>
-          <button class="key-btn action-btn" onclick="erase()">⌫</button>
-          <button class="key-btn" onclick="press('0')">0</button>
-          <button class="key-btn action-btn" onclick="submitPin()">🔒</button>
-        </div>
-
-        <div class="status-msg" id="statusMsg" ondblclick="toggleAdminMode()">DIGITE A CHAVE NUMÉRICA DE ACESSO</div>
-      </div>
-    </div>
-
-    <script>
-      // SCRIPT DE CONTROLE 3D, PIN E INTEGRAÇÃO DE LOGIN
-
-      const terminal = document.getElementById('terminal');
-      const bgLayer = document.getElementById('bgLayer');
-      const visorText = document.getElementById('visorText');
-      const statusMsg = document.getElementById('statusMsg');
-      const calibPanel = document.getElementById('calibPanel');
-      const testToolbar = document.getElementById('testToolbar');
-
-      // ATIVAÇÃO DO MODO ADMINISTRADOR SECRETO (Ctrl + Shift + A ou duplo clique na mensagem inferior)
-      let isAdmin = false;
-      function toggleAdminMode() {
-        isAdmin = !isAdmin;
-        if (isAdmin) {
-          testToolbar.classList.add('active-admin');
-          calibPanel.classList.add('active');
-        } else {
-          testToolbar.classList.remove('active-admin');
-          calibPanel.classList.remove('active');
-        }
-      }
-
-      // SISTEMA DE CALIBRAÇÃO COM ATUALIZAÇÃO EM TEMPO REAL DE TODOS OS VALORES NO DOM
-      function toggleCalib() { calibPanel.classList.toggle('active'); }
-
-      function updateCalib() {
-        const root = document.documentElement;
-
-        const height = document.getElementById('heightSlider').value;
-        const panelOpacity = document.getElementById('panelOpacitySlider').value;
-        const neonColor = document.getElementById('neonColorPicker').value;
-
-        const showLogo = document.getElementById('showLogoCheckbox').checked;
-        const logoOffsetY = document.getElementById('logoOffsetYSlider').value;
-        const logoOffsetX = document.getElementById('logoOffsetXSlider').value;
-        const logoWidth = document.getElementById('logoWidthSlider').value;
-
-        const eyeTop = document.getElementById('eyeTopSlider').value;
-        const eyeWidth = document.getElementById('eyeWidthSlider').value;
-        const eyeOffsetX = document.getElementById('eyeOffsetXSlider').value;
-        const eyeOffsetY = document.getElementById('eyeOffsetYSlider').value;
-        
-        const visorTop = document.getElementById('visorTopSlider').value;
-        const visorWidth = document.getElementById('visorWidthSlider').value;
-        const visorOffsetX = document.getElementById('visorOffsetXSlider').value;
-        const visorOffsetY = document.getElementById('visorOffsetYSlider').value;
-
-        const keypadTop = document.getElementById('keypadTopSlider').value;
-        const keypadHeight = document.getElementById('keypadHeightSlider').value;
-        const keypadWidth = document.getElementById('keypadWidthSlider').value;
-        const keypadGapX = document.getElementById('keypadGapXSlider').value;
-        const keypadGapY = document.getElementById('keypadGapYSlider').value;
-        const keypadOffsetX = document.getElementById('keypadOffsetXSlider').value;
-        const keypadOffsetY = document.getElementById('keypadOffsetYSlider').value;
-        const fontSizeNum = document.getElementById('fontSizeNumSlider').value;
-
-        // Atualiza CSS Variables no root
-        root.style.setProperty('--terminal-max-height', height + 'vh');
-        root.style.setProperty('--panel-opacity', panelOpacity);
-        root.style.setProperty('--neon-color', neonColor);
-
-        root.style.setProperty('--logo-display', showLogo ? 'flex' : 'none');
-        root.style.setProperty('--logo-offset-y', logoOffsetY + '%');
-        root.style.setProperty('--logo-offset-x', logoOffsetX + '%');
-        root.style.setProperty('--logo-width', logoWidth + '%');
-
-        root.style.setProperty('--eye-top', eyeTop + '%');
-        root.style.setProperty('--eye-width', eyeWidth + '%');
-        root.style.setProperty('--eye-offset-x', eyeOffsetX + '%');
-        root.style.setProperty('--eye-offset-y', eyeOffsetY + '%');
-
-        root.style.setProperty('--visor-top', visorTop + '%');
-        root.style.setProperty('--visor-width', visorWidth + '%');
-        root.style.setProperty('--visor-offset-x', visorOffsetX + '%');
-        root.style.setProperty('--visor-offset-y', visorOffsetY + '%');
-
-        root.style.setProperty('--keypad-top', keypadTop + '%');
-        root.style.setProperty('--keypad-height', keypadHeight + '%');
-        root.style.setProperty('--keypad-width', keypadWidth + '%');
-        root.style.setProperty('--keypad-gap-x', keypadGapX + '%');
-        root.style.setProperty('--keypad-gap-y', keypadGapY + '%');
-        root.style.setProperty('--keypad-offset-x', keypadOffsetX + '%');
-        root.style.setProperty('--keypad-offset-y', keypadOffsetY + '%');
-        root.style.setProperty('--font-size-num', fontSizeNum + 'cqh');
-
-        // Atualiza os textos dos labels no painel
-        if (document.getElementById('heightVal')) document.getElementById('heightVal').innerText = height + 'vh';
-        if (document.getElementById('panelOpacityVal')) document.getElementById('panelOpacityVal').innerText = panelOpacity;
-
-        if (document.getElementById('logoOffsetYVal')) document.getElementById('logoOffsetYVal').innerText = logoOffsetY + '%';
-        if (document.getElementById('logoOffsetXVal')) document.getElementById('logoOffsetXVal').innerText = logoOffsetX + '%';
-        if (document.getElementById('logoWidthVal')) document.getElementById('logoWidthVal').innerText = logoWidth + '%';
-
-        if (document.getElementById('eyeTopVal')) document.getElementById('eyeTopVal').innerText = eyeTop + '%';
-        if (document.getElementById('eyeWidthVal')) document.getElementById('eyeWidthVal').innerText = eyeWidth + '%';
-        if (document.getElementById('eyeOffsetXVal')) document.getElementById('eyeOffsetXVal').innerText = eyeOffsetX + '%';
-        if (document.getElementById('eyeOffsetYVal')) document.getElementById('eyeOffsetYVal').innerText = eyeOffsetY + '%';
-
-        if (document.getElementById('visorTopVal')) document.getElementById('visorTopVal').innerText = visorTop + '%';
-        if (document.getElementById('visorWidthVal')) document.getElementById('visorWidthVal').innerText = visorWidth + '%';
-        if (document.getElementById('visorOffsetXVal')) document.getElementById('visorOffsetXVal').innerText = visorOffsetX + '%';
-        if (document.getElementById('visorOffsetYVal')) document.getElementById('visorOffsetYVal').innerText = visorOffsetY + '%';
-
-        if (document.getElementById('keypadTopVal')) document.getElementById('keypadTopVal').innerText = keypadTop + '%';
-        if (document.getElementById('keypadHeightVal')) document.getElementById('keypadHeightVal').innerText = keypadHeight + '%';
-        if (document.getElementById('keypadWidthVal')) document.getElementById('keypadWidthVal').innerText = keypadWidth + '%';
-        if (document.getElementById('keypadGapXVal')) document.getElementById('keypadGapXVal').innerText = keypadGapX + '%';
-        if (document.getElementById('keypadGapYVal')) document.getElementById('keypadGapYVal').innerText = keypadGapY + '%';
-        if (document.getElementById('keypadOffsetXVal')) document.getElementById('keypadOffsetXVal').innerText = keypadOffsetX + '%';
-        if (document.getElementById('keypadOffsetYVal')) document.getElementById('keypadOffsetYVal').innerText = keypadOffsetY + '%';
-        if (document.getElementById('fontSizeNumVal')) document.getElementById('fontSizeNumVal').innerText = fontSizeNum + 'cqh';
-      }
-
-      // EFEITO 3D PARALLAX SUAVE AO MOVER O MOUSE
-      window.addEventListener('mousemove', (e) => {
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-        const relX = (e.clientX - centerX) / centerX;
-        const relY = (e.clientY - centerY) / centerY;
-
-        bgLayer.style.transform = `translate(${relX * -14}px, ${relY * -14}px) scale(1.06)`;
-        terminal.style.transform = `rotateY(${relX * 10}deg) rotateX(${-relY * 10}deg)`;
-      });
-
-      // LÓGICA DE SENHA / TOKEN ÚNICO INTEGRADA AO SUPABASE
-      let pinCode = "";
-
-      function updateDots() {
-        const container = document.getElementById('pin-display-container');
-        if (!container) return;
-        container.innerHTML = '';
-        const totalDots = Math.max(4, pinCode.length);
-        for (let i = 0; i < totalDots; i++) {
-          const dot = document.createElement('div');
-          dot.className = 'pin-dot';
-          if (i < pinCode.length) dot.classList.add('active');
-          container.appendChild(dot);
-        }
-      }
-
-      function press(num) {
-        pinCode += num;
-        updateDots();
-      }
-
-      function erase() {
-        pinCode = pinCode.slice(0, -1);
-        updateDots();
-      }
-
-      function submitPin() {
-        if (pinCode.length === 0) return;
-
-        // --- MÁGICA DO TOKEN ÚNICO ---
-        const emailGerado = pinCode + "@oraculum.com";
-        
-        document.getElementById('login-email').value = emailGerado;
-        document.getElementById('login-password').value = pinCode;
-        
-        visorText.innerText = "AUTENTICANDO...";
-
-        document.getElementById('btn-submit-login').click();
-
-        setTimeout(() => {
-          const authGate = document.getElementById('auth-gate-container');
-          if (authGate && authGate.style.display !== 'none' && !authGate.style.cssText.includes('display: none')) {
-            terminal.classList.add('error-shake');
-            visorText.innerText = "ACESSO NEGADO";
-            statusMsg.innerText = "CHAVE INCORRETA. TENTE NOVAMENTE.";
-            statusMsg.style.color = "#ff3344";
-
-            setTimeout(() => {
-              terminal.classList.remove('error-shake');
-              const currentNeon = getComputedStyle(document.documentElement).getPropertyValue('--neon-color').trim() || "#00ffaa";
-              visorText.innerText = "ACESSO RESTRITO";
-              visorText.style.color = currentNeon;
-              visorText.style.textShadow = "0 0 8px " + currentNeon;
-              statusMsg.innerText = "DIGITE A CHAVE NUMÉRICA DE ACESSO";
-              statusMsg.style.color = currentNeon;
-              pinCode = "";
-              updateDots();
-            }, 1800);
-          } else {
-             pinCode = "";
-             updateDots();
-          }
-        }, 1500);
-      }
-
-      // SUPORTE A TECLADO FÍSICO E ATALHO SECRETO
-      window.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-          e.preventDefault();
-          toggleAdminMode();
-          return;
-        }
-
-        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key >= '0' && e.key <= '9') {
-          press(e.key);
-        }
-        if (e.key === 'Backspace') erase();
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          submitPin();
-        }
-      });
-
-      // LOADER DE IMAGENS VIA FETCH (garante carregamento independente de cache/routing)
-      (async function loadAuthImages() {
-        const images = [
-          { id: 'logoImgElement', url: '/logo.png', fallbackId: 'logoTextFallback' },
-          { id: 'terminalImgElement', url: '/terminal.png', fallbackId: null }
-        ];
-
-        for (const { id, url, fallbackId } of images) {
-          const el = document.getElementById(id);
-          if (!el) continue;
-
-          try {
-            const resp = await fetch(url, { cache: 'no-store' });
-            if (resp.ok) {
-              const blob = await resp.blob();
-              const blobUrl = URL.createObjectURL(blob);
-              el.src = blobUrl;
-              el.style.display = 'block';
-              if (fallbackId) {
-                const fb = document.getElementById(fallbackId);
-                if (fb) fb.style.display = 'none';
-              }
-            } else {
-              console.warn('Imagem retornou erro:', url, resp.status);
-            }
-          } catch (err) {
-            console.warn('Falha ao carregar imagem:', url, err);
-          }
-        }
-      })();
-    </script>
-
   </div>
-    </div>
+
+  <script>
+    function handleImgError(img) {
+      const src = img.getAttribute('src');
+      if (src.endsWith('.png')) {
+        img.src = src.replace('.png', '.jpg');
+      } else if (src.endsWith('.jpg')) {
+        img.src = src.replace('.jpg', '.jpeg');
+      }
+    }
+
+    // Alternar Visibilidade da Senha
+    const togglePasswordBtn = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('auth-password');
+    const eyeIcon = document.getElementById('eye-icon');
+    const eyeOffIcon = document.getElementById('eye-off-icon');
+
+    togglePasswordBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.style.display = isPassword ? 'none' : 'block';
+      eyeOffIcon.style.display = isPassword ? 'block' : 'none';
+    });
+
+    
+
+    // =======================================================
+    // FÍSICA DE LETRAS INTERATIVAS (HOVER EFFECT)
+    // =======================================================
+    const physicsElements = [];
+    function setupPhysicsText() {
+      document.querySelectorAll('.interactive-title').forEach(title => {
+        const text = title.textContent.trim();
+        const words = text.split(' ');
+        title.innerHTML = '';
+
+        words.forEach(word => {
+          const wordSpan = document.createElement('span');
+          wordSpan.className = 'physics-word';
+
+          for (let i = 0; i < word.length; i++) {
+            const charSpan = document.createElement('span');
+            charSpan.className = 'physics-char';
+            charSpan.textContent = word[i];
+            wordSpan.appendChild(charSpan);
+
+            physicsElements.push({
+              el: charSpan,
+              x: 0, y: 0, z: 0,
+              rotY: 0, rotZ: 0,
+              targetX: 0, targetY: 0, targetZ: 0,
+              targetRotY: 0, targetRotZ: 0
+            });
+          }
+          title.appendChild(wordSpan);
+        });
+      });
+    }
+
+    setupPhysicsText();
+
+    let mousePos = { x: -1000, y: -1000 };
+    window.addEventListener('mousemove', (e) => {
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    });
+
+    window.addEventListener('mouseleave', () => {
+      mousePos.x = -1000;
+      mousePos.y = -1000;
+    });
+
+    function updateTextPhysics() {
+      const radius = 100;
+      const forceStrength = 32;
+
+      physicsElements.forEach(item => {
+        const rect = item.el.getBoundingClientRect();
+        if (rect.width === 0) return;
+
+        const charCenterX = rect.left + rect.width / 2;
+        const charCenterY = rect.top + rect.height / 2;
+
+        const dx = mousePos.x - charCenterX;
+        const dy = mousePos.y - charCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < radius && dist > 0) {
+          const power = (1 - dist / radius);
+          const angle = Math.atan2(dy, dx);
+
+          item.targetX = -Math.cos(angle) * power * forceStrength;
+          item.targetY = -Math.sin(angle) * power * forceStrength;
+          item.targetZ = power * 20;
+          item.targetRotZ = -Math.sin(angle) * power * 25;
+          item.targetRotY = Math.cos(angle) * power * 30;
+        } else {
+          item.targetX = 0;
+          item.targetY = 0;
+          item.targetZ = 0;
+          item.targetRotY = 0;
+          item.targetRotZ = 0;
+        }
+
+        item.x += (item.targetX - item.x) * 0.14;
+        item.y += (item.targetY - item.y) * 0.14;
+        item.z += (item.targetZ - item.z) * 0.14;
+        item.rotY += (item.targetRotY - item.rotY) * 0.14;
+        item.rotZ += (item.targetRotZ - item.rotZ) * 0.14;
+
+        item.el.style.transform = `translate3d(${item.x}px, ${item.y}px, ${item.z}px) rotateY(${item.rotY}deg) rotateZ(${item.rotZ}deg)`;
+      });
+
+      requestAnimationFrame(updateTextPhysics);
+    }
+
+    updateTextPhysics();
+
+    // =======================================================
+    // INCLINAÇÃO 3D ESPACIAL DO CARD COM O MOUSE
+    // =======================================================
+    const loginCard = document.getElementById('login-card');
+    let cardTilt = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
+    window.addEventListener('mousemove', (e) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      cardTilt.targetX = ((e.clientY - cy) / cy) * -7;
+      cardTilt.targetY = ((e.clientX - cx) / cx) * 7;
+    });
+
+    function updateCardTilt() {
+      cardTilt.x += (cardTilt.targetX - cardTilt.x) * 0.08;
+      cardTilt.y += (cardTilt.targetY - cardTilt.y) * 0.08;
+      loginCard.style.transform = `rotateX(${cardTilt.x}deg) rotateY(${cardTilt.y}deg)`;
+      requestAnimationFrame(updateCardTilt);
+    }
+
+    updateCardTilt();
+
+    // =======================================================
+    // UNIVERSO THREE.JS
+    // =======================================================
+    const canvas = document.getElementById('login-canvas');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x010504, 0.014);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 8);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
+    scene.add(ambientLight);
+
+    const warmLight = new THREE.DirectionalLight(0xffa25e, 3.0);
+    warmLight.position.set(8, 6, 6);
+    scene.add(warmLight);
+
+    const cyanRimLight = new THREE.DirectionalLight(0x4fe4be, 4.8);
+    cyanRimLight.position.set(-8, -4, -4);
+    scene.add(cyanRimLight);
+
+    function createStarTexture() {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      const cx = 64, cy = 64;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grad.addColorStop(0.15, 'rgba(122, 248, 214, 0.85)');
+      grad.addColorStop(0.4, 'rgba(56, 201, 167, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 128);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, 10); ctx.lineTo(cx, 118);
+      ctx.moveTo(10, cy); ctx.lineTo(118, cy);
+      ctx.stroke();
+
+      const texture = new THREE.CanvasTexture(c);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    const starTexture = createStarTexture();
+
+    // Campo Estelar
+    const starCount = 2800;
+    const starGeo = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+
+    const colorCyan = new THREE.Color(0x38c9a7);
+    const colorBright = new THREE.Color(0x9bfbe4);
+    const colorWhite = new THREE.Color(0xffffff);
+
+    for (let i = 0; i < starCount; i++) {
+      const i3 = i * 3;
+      starPositions[i3] = (Math.random() - 0.5) * 85;
+      starPositions[i3 + 1] = (Math.random() - 0.5) * 65;
+      starPositions[i3 + 2] = (Math.random() - 0.5) * 260;
+
+      const choice = Math.random();
+      const c = choice < 0.45 ? colorWhite : (choice < 0.85 ? colorBright : colorCyan);
+      starColors[i3] = c.r;
+      starColors[i3 + 1] = c.g;
+      starColors[i3 + 2] = c.b;
+    }
+
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starMat = new THREE.PointsMaterial({
+      size: 0.42,
+      map: starTexture,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const starField = new THREE.Points(starGeo, starMat);
+    scene.add(starField);
+
+    // Nébulas Volumétricas
+    const nebulaCount = 20;
+    const nebulaGroup = new THREE.Group();
+    scene.add(nebulaGroup);
+
+    const nebulaGeo = new THREE.SphereGeometry(7, 16, 16);
+    const nebulaMat = new THREE.MeshBasicMaterial({
+      color: 0x08291f,
+      transparent: true,
+      opacity: 0.14,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide
+    });
+
+    for (let i = 0; i < nebulaCount; i++) {
+      const nebula = new THREE.Mesh(nebulaGeo, nebulaMat);
+      nebula.position.set(
+        (Math.random() - 0.5) * 70,
+        (Math.random() - 0.5) * 50,
+        -40 - Math.random() * 140
+      );
+      nebula.scale.set(
+        1 + Math.random() * 2.8,
+        1 + Math.random() * 1.9,
+        1 + Math.random() * 2.4
+      );
+      nebulaGroup.add(nebula);
+    }
+
+    // Gigante Gasoso com Anéis Orbitais
+    const planetGroup = new THREE.Group();
+    planetGroup.position.set(20, 6, -110);
+    scene.add(planetGroup);
+
+    const planetGeo = new THREE.SphereGeometry(14, 32, 32);
+    const planetMat = new THREE.MeshBasicMaterial({ color: 0x051a14 });
+    const planetMesh = new THREE.Mesh(planetGeo, planetMat);
+    planetGroup.add(planetMesh);
+
+    const atmosGeo = new THREE.SphereGeometry(14.6, 32, 32);
+    const atmosMat = new THREE.MeshBasicMaterial({
+      color: 0x38c9a7,
+      transparent: true,
+      opacity: 0.22,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide
+    });
+    const atmosMesh = new THREE.Mesh(atmosGeo, atmosMat);
+    planetGroup.add(atmosMesh);
+
+    const ringGeo = new THREE.RingGeometry(18, 28, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38c9a7,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const planetRing = new THREE.Mesh(ringGeo, ringMat);
+    planetRing.rotation.x = Math.PI / 2.3;
+    planetRing.rotation.y = Math.PI / 6;
+    planetGroup.add(planetRing);
+
+    let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    window.addEventListener('mousemove', (e) => {
+      mouse.targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouse.targetY = -(e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      mouse.x += (mouse.targetX - mouse.x) * 0.05;
+      mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+      camera.position.x = mouse.x * 0.45;
+      camera.position.y = -mouse.y * 0.45;
+      camera.lookAt(0, 0, -50);
+
+      const positions = starGeo.attributes.position.array;
+      for (let i = 0; i < starCount; i++) {
+        const i3 = i * 3 + 2;
+        positions[i3] += 0.04;
+        if (positions[i3] > 20) {
+          positions[i3] = -240;
+        }
+      }
+      starGeo.attributes.position.needsUpdate = true;
+      starField.rotation.z += 0.0003;
+
+      planetGroup.rotation.y += 0.001;
+      planetGroup.position.x = 20 + mouse.x * 1.5;
+      planetGroup.position.y = 6 - mouse.y * 1.5;
+
+      nebulaGroup.rotation.y += 0.0002;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+
   </div>
 
   <!-- MAIN DASHBOARD CONTAINER (OCULTO POR PADRÃO ATÉ AUTENTICAR) -->
@@ -3127,6 +3247,7 @@
   <script src="/war-room-tools.js?v=65.0.0"></script>
 </body>
 </html>
+
 
 
 
