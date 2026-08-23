@@ -337,7 +337,11 @@ Seja direto, tático, analítico e resolutivo.`
     return respostaFinal;
   }
 
-  window.enviarMensagemOraculo = async function() {
+  window.enviarMensagemOraculo = async function(event) {
+    if (event) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
     const input = document.getElementById('input-live-message') || document.getElementById('input-chat-oraculo') || document.getElementById('oraculo-input-text');
     if (!input) return;
     const texto = input.value.trim();
@@ -544,10 +548,10 @@ Seja direto, tático, analítico e resolutivo.`
         </div>
 
         <div style="padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(8, 11, 17, 0.9);">
-          <form onsubmit="window.enviarMensagemOraculo(event)" style="display: flex; gap: 8px; align-items: center;">
+          <form onsubmit="event.preventDefault(); window.enviarMensagemOraculo(event); return false;" style="display: flex; gap: 8px; align-items: center;">
             <button type="button" id="btn-toggle-mic" onclick="window.alternarMicrofone()" style="padding: 8px 12px; background: #1E293B; color: #FFF; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; cursor: pointer; font-size: 14px;" title="Ativar Microfone / Live Meeting">🎙️</button>
-            <input type="text" id="oraculo-input-text" placeholder="Pergunte ou use o microfone..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px; outline: none;" />
-            <button type="submit" id="btn-send-oraculo" style="padding: 8px 14px; background: #10B981; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">➤</button>
+            <input type="text" id="oraculo-input-text" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.enviarMensagemOraculo(event);}" placeholder="Pergunte ou use o microfone..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 12px; outline: none;" />
+            <button type="button" onclick="window.enviarMensagemOraculo(event)" id="btn-send-oraculo" style="padding: 8px 14px; background: #10B981; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">➤</button>
           </form>
         </div>
       `;
