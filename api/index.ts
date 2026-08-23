@@ -682,8 +682,9 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 // POST /api/chat - Chat Estratégico & Live Advisor com persistência no bi_chat_history
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const userMessage = req.body.message || req.body.prompt || '';
-    const clientId = req.body.clientId || req.body.client_id;
+    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt } = req.body;
+    const userMessage = message || prompt || '';
+    const clientId = reqClientId || client_id;
     
     if (!clientId || !userMessage) {
       return res.status(400).json({ status: 'error', error: 'clientId e message são obrigatórios.' });
@@ -694,13 +695,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(500).json({ status: 'error', error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    // Salva mensagem do usuário
-    await supabase.from('bi_chat_history').insert({
-      client_id: clientId,
-      role: 'user',
-      content: userMessage,
-      created_at: new Date().toISOString()
-    });
+    // As inserções no banco agora são responsabilidade segregada do frontend (chat_history vs bi_chat_history)
 
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
@@ -708,10 +703,20 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     // Pega o dossiê real do banco
     const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
     const dossier = dossierData ? dossierData.dossier_data : {};
-    const systemInstruction = `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
+    
+    let systemInstruction = '';
+    if (mode === 'bi_live') {
+      systemInstruction = `Você é o Oraculum Live, Diretor Executivo de Estratégia, BI e CRO em uma reunião ao vivo com o cliente.
+Sua função é responder DIRETAMENTE à pergunta feita pelo usuário, usando tom executivo, objetivo e embasado em dados.
+- Responda apenas o que foi perguntado.
+- NÃO gere roteiros de anúncios, hooks ou estruturas de VSL a menos que expressamente solicitado.
+- Se a pergunta for sobre diagnóstico, analise o cenário de métricas, gargalos do funil e recomende decisões de negócio.`;
+    } else {
+      systemInstruction = systemPrompt || `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
 Dossiê do Cliente Ativo: ${JSON.stringify(dossier || {})}.
 Instrução do usuário: "${userMessage}".
 Responda diretamente à solicitação com a estratégia estruturada, sem introduções genéricas repetitivas. Formate com clareza em Markdown destacando Headlines, Hooks de 3s e Scripts.`;
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.6-flash',
@@ -721,13 +726,7 @@ Responda diretamente à solicitação com a estratégia estruturada, sem introdu
 
     const replyText = response.text || "Erro na geração da resposta.";
 
-    // Salva resposta real da IA
-    await supabase.from('bi_chat_history').insert({
-      client_id: clientId,
-      role: 'assistant',
-      content: replyText,
-      created_at: new Date().toISOString()
-    });
+    // Salva resposta real da IA movido para o frontend
 
     return res.json({ reply: replyText, status: 'ok' });
   } catch (error: any) {

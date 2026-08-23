@@ -199,13 +199,22 @@
         .order('created_at', { ascending: true });
       
       if (!error && data) {
-        return data.map(item => ({
-          id: item.id,
-          clientId: item.client_id,
-          role: item.role || 'assistant',
-          message: item.content || item.message || item.prompt_input || '',
-          created_at: item.created_at
-        }));
+        return data
+          .filter(item => {
+            const txt = (item.content || '').toLowerCase();
+            // Ignora mensagens que vazaram do Chat Estratégico antigo (roteiros, anúncios, etc)
+            if (txt.includes('destacando headlines') || txt.includes('hooks de 3s') || txt.includes('script de vídeo') || txt.includes('roteiro de anúncio')) {
+              return false;
+            }
+            return true;
+          })
+          .map(item => ({
+            id: item.id,
+            clientId: item.client_id,
+            role: item.role || 'assistant',
+            message: item.content || item.message || item.prompt_input || '',
+            created_at: item.created_at
+          }));
       }
     } catch (err) {
       console.warn("[Oraculum Live] Erro ao carregar bi_chat_history:", err);
