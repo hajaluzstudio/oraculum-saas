@@ -5967,42 +5967,84 @@ window.abrirModalLancarBI = function(e) {
     e.stopPropagation();
   }
 
-  const modal = document.getElementById('modal-lancar-bi');
-  if (!modal) {
-    console.error('[BI-DEBUG] [ERR-MODAL-BI-001] Elemento #modal-lancar-bi não encontrado no DOM!');
-    alert('[ERR-MODAL-BI-001]: O modal de lançamento manual não foi encontrado.');
-    return;
-  }
-
   const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
   if (!activeClientId) {
     alert('Selecione um cliente ativo no topo da tela antes de lançar métricas.');
     return;
   }
 
-  // Força remoção de hidden e aplica estilos inline absolutos para sobrepor qualquer camada
-  modal.classList.remove('hidden');
-  modal.style.setProperty('display', 'flex', 'important');
-  modal.style.setProperty('position', 'fixed', 'important');
-  modal.style.setProperty('top', '0', 'important');
-  modal.style.setProperty('left', '0', 'important');
-  modal.style.setProperty('width', '100vw', 'important');
-  modal.style.setProperty('height', '100vh', 'important');
-  modal.style.setProperty('z-index', '99999', 'important');
-  modal.style.setProperty('background-color', 'rgba(2, 6, 23, 0.85)', 'important');
-  modal.style.setProperty('backdrop-filter', 'blur(8px)', 'important');
+  // 1. Remove qualquer instância antiga do modal para evitar duplicações
+  let modalExistente = document.getElementById('modal-lancar-bi');
+  if (modalExistente) {
+    modalExistente.remove();
+  }
+
+  // 2. Cria o modal diretamente como primeiro filho do <body>
+  const modalHTML = `
+    <div id="modal-lancar-bi" style="position: fixed; inset: 0px; width: 100vw; height: 100vh; background-color: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 16px;">
+      <div style="background-color: #0f172a; border: 1px solid #334155; width: 100%; max-width: 520px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); padding: 24px; color: #ffffff; font-family: inherit;">
+        
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <div>
+              <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; color: #f8fafc;">Lançar Métricas de BI</h3>
+              <p style="font-size: 11px; color: #94a3b8; margin: 0;">Lançamento manual para o cliente ativo</p>
+            </div>
+          </div>
+          <button type="button" onclick="window.fecharModalLancarBI()" style="background: transparent; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px;">✕</button>
+        </div>
+
+        <!-- Formulário -->
+        <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Gasto em Tráfego (R$)</label>
+              <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 3500.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Faturamento Total (R$)</label>
+              <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 24000.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Cliques no Link</label>
+              <input type="number" id="bi-input-cliques" required placeholder="Ex: 850" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Leads Qualificados</label>
+              <input type="number" id="bi-input-leads" required placeholder="Ex: 120" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Vendas / Fechamentos</label>
+              <input type="number" id="bi-input-vendas" required placeholder="Ex: 8" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid #1e293b;">
+            <button type="button" onclick="window.fecharModalLancarBI()" style="padding: 8px 16px; background-color: #1e293b; border: none; color: #cbd5e1; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer;">Cancelar</button>
+            <button type="submit" id="btn-submit-bi" style="padding: 8px 20px; background-color: #059669; border: none; color: #ffffff; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer;">💾 Gravar & Atualizar Dashboard</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
 
   const inputGasto = document.getElementById('bi-input-gasto');
   if (inputGasto) {
-    setTimeout(() => inputGasto.focus(), 150);
+    setTimeout(() => inputGasto.focus(), 100);
   }
 };
 
 window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-lancar-bi');
   if (modal) {
-    modal.classList.add('hidden');
-    modal.style.setProperty('display', 'none', 'important');
+    modal.remove();
   }
 };
 
