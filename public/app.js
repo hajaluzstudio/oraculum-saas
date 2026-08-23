@@ -1960,12 +1960,21 @@ document.addEventListener('DOMContentLoaded', () => {
         window.renderBIDataReal({
           hasData: true, revenue, ad_spend, profit, roas, convRate, cac, sales, leads, ltvcacStr
         });
+        if (typeof renderBiInteractiveDashboard === 'function') {
+          renderBiInteractiveDashboard(data);
+        }
       } else {
         window.renderBIDataReal({ hasData: false });
+        if (typeof renderBiInteractiveDashboard === 'function') {
+          renderBiInteractiveDashboard([]);
+        }
       }
     } catch(err) {
       console.error('Erro ao buscar bi_analytics_data:', err);
       window.renderBIDataReal({ hasData: false });
+      if (typeof renderBiInteractiveDashboard === 'function') {
+        renderBiInteractiveDashboard([]);
+      }
     }
   };
 
@@ -2028,36 +2037,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.loadClientBiMetrics = loadClientBiMetrics;
 
-  function renderBiInteractiveDashboard(period = '30d') {
-    currentBiPeriod = period;
-    
-    // Mocks desativados para o dashboard interativo.
-    // O backend ou Supabase devem popular gráficos.
-    console.log("[BI] Gráficos mockados foram expurgados para garantir dados reais.");
-
-
-    // 3. Renderiza Gráficos Chart.js com segurança e recriação limpa
-    if (typeof Chart === 'undefined') {
-      console.warn('[BI Chart] Chart.js ainda não carregou via CDN. Tentando novamente...');
-      setTimeout(() => renderBiInteractiveDashboard(period), 300);
-      return;
-    }
-
+  function renderBiInteractiveDashboard(metricsData = []) {
     try {
+      const safeData = Array.isArray(metricsData) ? metricsData : [];
+      if (safeData.length === 0) {
+        if (window.chartRevenueSpend) { try { window.chartRevenueSpend.destroy(); window.chartRevenueSpend = null; } catch (e) {} }
+        if (window.chartChannelDonut) { try { window.chartChannelDonut.destroy(); window.chartChannelDonut = null; } catch (e) {} }
+        if (window.chartCacCreatives) { try { window.chartCacCreatives.destroy(); window.chartCacCreatives = null; } catch (e) {} }
+        return;
+      }
+      
+      if (typeof Chart === 'undefined') {
+        console.warn('[BI Chart] Chart.js ainda não carregou via CDN. Tentando novamente...');
+        setTimeout(() => renderBiInteractiveDashboard(metricsData), 300);
+        return;
+      }
+
+      // Prepara dados
+      const labels = safeData.map(d => new Date(d.reference_date || new Date()).toLocaleDateString()).reverse();
+      const revenueTimeline = safeData.map(d => parseFloat(d.revenue) || 0).reverse();
+      const spendTimeline = safeData.map(d => parseFloat(d.ad_spend) || 0).reverse();
+      
       const ctxRev = document.getElementById('chart-revenue-spend');
       if (ctxRev) {
-        if (chartRevenueSpend) {
-          try { chartRevenueSpend.destroy(); } catch (e) {}
-          chartRevenueSpend = null;
+        if (window.chartRevenueSpend) {
+          try { window.chartRevenueSpend.destroy(); } catch (e) {}
+          window.chartRevenueSpend = null;
         }
-        chartRevenueSpend = new Chart(ctxRev, {
+        window.chartRevenueSpend = new Chart(ctxRev, {
           type: 'line',
           data: {
-            labels: data.labels,
+            labels: labels.length ? labels : ['Hoje'],
             datasets: [
               {
                 label: 'Faturamento (R$)',
-                data: data.revenueTimeline,
+                data: revenueTimeline.length ? revenueTimeline : [0],
                 borderColor: '#06B6D4',
                 backgroundColor: 'rgba(6, 182, 212, 0.12)',
                 borderWidth: 3,
@@ -2068,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', () => {
               },
               {
                 label: 'Investimento (R$)',
-                data: data.spendTimeline,
+                data: spendTimeline.length ? spendTimeline : [0],
                 borderColor: '#FF4B4B',
                 backgroundColor: 'rgba(255, 75, 75, 0.05)',
                 borderWidth: 2,
@@ -2104,9 +2118,9 @@ document.addEventListener('DOMContentLoaded', () => {
         chartChannelDonut = new Chart(ctxChannel, {
           type: 'doughnut',
           data: {
-            labels: ['Meta Ads (Reels/VSL)', 'Google Search (Fundo)', 'Mídias OOH / Ancoragem', 'Podcasts VIP'],
+            labels: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'Outros'],
             datasets: [{
-              data: data.channels,
+              data: [1, 0, 0, 0],
               backgroundColor: ['#1877F2', '#EA4335', '#FDE047', '#34D399'],
               borderWidth: 0
             }]
@@ -2135,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets: [
               {
                 label: 'CAC Real (R$)',
-                data: data.cacCreatives,
+                data: [1, 1, 1, 1],
                 backgroundColor: ['#00F5A0', '#06B6D4', '#FDE047', '#FF4B4B'],
                 borderRadius: 6
               }
