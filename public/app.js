@@ -1795,13 +1795,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.abrirModalBI = function() {
-    const modal = document.getElementById('modal-bi-metrics');
-    if (modal) modal.classList.remove('hidden');
+    let modal = document.getElementById('modal-bi-metrics');
+    if (!modal) {
+      console.error("Modal #modal-bi-metrics não encontrado no DOM!");
+      return;
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   };
 
   window.fecharModalBI = function() {
-    const modal = document.getElementById('modal-bi-metrics');
-    if (modal) modal.classList.add('hidden');
+    let modal = document.getElementById('modal-bi-metrics');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
   };
 
   window.salvarMetricasBIModal = async function() {
