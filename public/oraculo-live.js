@@ -701,3 +701,11 @@ Seja direto, tático, analítico e resolutivo.`
 
   window.sincronizarVisibilidadeOraculoLive = sincronizarVisibilidadeOraculoLive;
 })();
+
+window.exportarPdfBi = function() {
+  const timeEl = document.getElementById('print-timestamp');
+  if (timeEl) {
+    timeEl.innerText = 'Gerado em: ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR');
+  }
+  window.print();
+};
