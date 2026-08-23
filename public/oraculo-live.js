@@ -571,10 +571,10 @@ Seja direto, tático, analítico e resolutivo.`
       btn.id = 'btn-toggle-oraculo-live';
       btn.type = 'button';
       // Removendo o style.cssText inline para usar 100% as classes do Tailwind
-      btn.className = 'fixed bottom-6 right-6 z-[2147483647] flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-full shadow-[0_10px_25px_rgba(16,185,129,0.5)] transition-all duration-200 cursor-pointer border border-white/40 hidden';
+      btn.className = 'fixed bottom-6 right-6 z-[2147483647] flex items-center gap-3 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm rounded-full shadow-2xl shadow-emerald-500/30 hover:scale-105 transition-all duration-200 cursor-pointer select-none hidden';
       btn.innerHTML = `
-        <img src="/logo-oraculum-03.svg" alt="Oraculum" class="w-4 h-4 object-contain brightness-0" />
-        <span>Oraculum Live</span>
+        <img src="/logo-oraculum-03.svg" alt="Oraculum" class="w-5 h-5 object-contain brightness-0" />
+        <span class="tracking-wide">Oraculum Live</span>
       `;
       document.body.appendChild(btn);
     }
