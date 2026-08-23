@@ -386,11 +386,87 @@ Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decis�
     }
   };
 
-  window.solicitarApresentacaoExecutiva = function() {
+  window.gerarAtaReuniao = function() {
     if (isProcessando) return;
     const input = document.getElementById('oraculo-input-text');
-    if (input) input.value = 'Faça um resumo executivo para o cliente sobre os dados de ROAS, conversão e plano de escala.';
+    if (input) input.value = 'Analise as conversas desta reunião e gere uma ATA EXECUTIVA contendo:\n1. Diagnóstico do Momento da Conta (Métricas e Gargalos).\n2. Principais Acordos e Decisões Tomadas com o Cliente.\n3. Plano de Ação Imediato com responsáveis sugeridos (Tráfego, Copy, Design, Atendimento).';
     window.enviarMensagemOraculo();
+  };
+
+  window.exportarAcoesParaKanban = async function() {
+    if (isProcessando) return;
+    isProcessando = true;
+
+    const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
+
+    const loadingId = 'loading-' + Date.now();
+    const feed = document.getElementById('oraculo-chat-feed');
+    if (feed) {
+      const loadDiv = document.createElement('div');
+      loadDiv.id = loadingId;
+      loadDiv.style.cssText = 'background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 14px; padding: 12px; color: #FDE047; font-size: 12px;';
+      loadDiv.innerHTML = '⚙️ Extraindo tarefas da reunião para o Kanban...';
+      feed.appendChild(loadDiv);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    try {
+      const historicoAtual = await window.carregarHistoricoNuvem(clientId);
+      const promptKanban = "Extraia as tarefas acordadas nesta reunião. Retorne APENAS um JSON válido no formato: [ { \"title\": \"...\", \"description\": \"...\", \"column\": \"backlog\", \"tag\": \"Trafego\" } ]. Não use crases ou texto adicional. Se não houver, retorne [].";
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': tenantId
+        },
+        body: JSON.stringify({
+          clientId: clientId,
+          systemPrompt: "Você é um extrator de tarefas. Retorne estritamente um array JSON puro e válido.",
+          message: promptKanban,
+          history: historicoAtual.map(h => ({
+            role: h.role === 'user' ? 'user' : 'model',
+            parts: [{ text: h.message }]
+          }))
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || !resData.success || !resData.data) {
+        throw new Error('Falha na extração de tarefas.');
+      }
+
+      let tarefasStr = resData.data.trim();
+      if (tarefasStr.startsWith('```')) {
+        tarefasStr = tarefasStr.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+      }
+      const tarefas = JSON.parse(tarefasStr);
+
+      if (tarefas.length > 0 && window.supabaseClient) {
+        const inserts = tarefas.map(t => ({
+          client_id: clientId,
+          tenant_id: tenantId,
+          title: t.title,
+          description: t.description,
+          status: t.column || 'backlog',
+          tags: [t.tag || 'Geral']
+        }));
+        const { error } = await window.supabaseClient.from('kanban_tasks').insert(inserts);
+        if (error) throw error;
+        
+        adicionarAoFeed('oraculo', `✅ **${tarefas.length} tarefas exportadas para o Kanban!**\n\n` + tarefas.map(t => `- [${t.tag}] ${t.title}`).join('\n'));
+      } else {
+        adicionarAoFeed('oraculo', 'Nenhuma tarefa identificada para exportação.');
+      }
+    } catch(err) {
+      console.error("Erro exportando tarefas:", err);
+      adicionarAoFeed('erro', 'Erro ao exportar tarefas para o Kanban: ' + err.message);
+    } finally {
+      const loadEl = document.getElementById(loadingId);
+      if (loadEl) loadEl.remove();
+      isProcessando = false;
+    }
   };
 
   function forcarRenderizacaoOraculumLive() {
@@ -424,7 +500,8 @@ Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decis�
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 4px 8px; background: rgba(16,185,129,0.2); color: #34D399; border: 1px solid rgba(16,185,129,0.4); border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">⚡ Resumo Executivo</button>
+            <button type="button" onclick="window.gerarAtaReuniao()" style="padding: 4px 8px; background: rgba(59, 130, 246, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Ata Executiva">⚡ Ata & Plano de Ação</button>
+            <button type="button" onclick="window.exportarAcoesParaKanban()" style="padding: 4px 8px; background: rgba(234, 179, 8, 0.2); color: #FDE047; border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Exportar Ações">📌 Exportar Ações</button>
             <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 22px; cursor: pointer; padding: 0 4px;">&times;</button>
           </div>
         </div>
