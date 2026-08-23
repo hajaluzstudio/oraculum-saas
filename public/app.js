@@ -6057,7 +6057,6 @@ document.addEventListener('click', function(event) {
   }
 });
 
-// Renderizador Robusto do Dashboard de BI
 window.atualizarDashboardBIVisual = function(dados) {
   if (!dados) return;
 
@@ -6071,58 +6070,45 @@ window.atualizarDashboardBIVisual = function(dados) {
 
   const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  // 1. Atualização dos Cards Principais
-  const painelBI = document.getElementById('tab-bi') || document.querySelector('[data-tab="tab-bi"]') || document.body;
+  // 1. Injeção direta por ID unívoco
+  const elFat = document.getElementById('bi-val-faturamento');
+  if (elFat) elFat.innerText = formatBRL(faturamento);
 
-  // Varredura por blocos de métrica no painel
-  const cards = painelBI.querySelectorAll('.bg-slate-900\\/50, .card, div[class*="rounded"]');
-  
-  // Função auxiliar para atualizar valor dentro do card correspondente
-  function setValorCard(tituloRegex, valorTexto, corClasse) {
-    cards.forEach(card => {
-      if (tituloRegex.test(card.innerText)) {
-        // Encontra o elemento de destaque numérico dentro do card
-        const valorEl = card.querySelector('.text-2xl, .text-xl, strong, h3, div[class*="text-emerald"], div[class*="text-white"]') || card.querySelector('div:nth-child(2)');
-        if (valorEl && !valorEl.querySelector('button')) {
-          valorEl.innerText = valorTexto;
-          if (corClasse) {
-            valorEl.className = `text-2xl font-black ${corClasse}`;
-          }
-        }
-      }
-    });
+  const elGasto = document.getElementById('bi-val-gasto');
+  if (elGasto) elGasto.innerText = formatBRL(gasto);
+
+  const elLucro = document.getElementById('bi-val-lucro');
+  if (elLucro) {
+    elLucro.innerText = formatBRL(lucro);
+    elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
   }
 
-  setValorCard(/Faturamento Total/i, formatBRL(faturamento), 'text-white');
-  setValorCard(/Gasto em Tr[aá]fego/i, formatBRL(gasto), 'text-white');
-  setValorCard(/Lucro L[ií]quido/i, formatBRL(lucro), lucro >= 0 ? 'text-emerald-400' : 'text-rose-400');
-  setValorCard(/ROAS M[eé]dio/i, `${roas}x`, 'text-cyan-400');
-  
-  const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
-  setValorCard(/Taxa Conv/i, `${taxaConv}%`, 'text-cyan-400');
+  const elRoas = document.getElementById('bi-val-roas');
+  if (elRoas) elRoas.innerText = `${roas}x`;
 
-  // Sub-rotina: Atualiza o texto de "X Vendas" abaixo do faturamento
-  cards.forEach(card => {
-    if (/Faturamento Total/i.test(card.innerText)) {
-      const sub = card.querySelector('.text-xs, .text-slate-400, span');
-      if (sub && !sub.innerText.includes('Faturamento')) {
-        sub.innerText = `${vendas} Vendas (Confirmadas)`;
-      }
-    }
-  });
+  const elTaxa = document.getElementById('bi-val-taxa-conv');
+  if (elTaxa) {
+    const taxa = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
+    elTaxa.innerText = `${taxa}%`;
+  }
 
-  // 2. Atualização dos Indicadores do Funil
-  const funilItems = document.querySelectorAll('#tab-bi .funil-item, #tab-bi [class*="funil"], #tab-bi .space-y-2 > div');
-  funilItems.forEach(item => {
-    if (/Cliques no Link/i.test(item.innerText)) {
-      const tag = item.querySelector('span:last-child, .count, strong') || item;
+  const elVendasSub = document.getElementById('bi-val-vendas-sub');
+  if (elVendasSub) elVendasSub.innerText = `${vendas} Vendas (Confirmadas)`;
+
+  // 2. Atualização dos passos do funil
+  const funilSteps = document.querySelectorAll('#tab-bi .funil-item, #tab-bi [class*="funil"]');
+  funilSteps.forEach(step => {
+    if (/Cliques/i.test(step.innerText)) {
+      const tag = step.querySelector('span:last-child, strong') || step;
       tag.innerText = `${cliques} Cliques`;
     }
-    if (/Leads Qualificados/i.test(item.innerText)) {
-      const tag = item.querySelector('span:last-child, .count, strong') || item;
+    if (/Leads/i.test(step.innerText)) {
+      const tag = step.querySelector('span:last-child, strong') || step;
       tag.innerText = `${leads} Leads`;
     }
   });
+
+  console.log('[BI] Dashboard visual atualizado diretamente via IDs com sucesso:', dados);
 };
 
 // Gravação dos Dados no Supabase e Atualização de Tela
