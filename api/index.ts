@@ -682,7 +682,7 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 // POST /api/chat - Chat Estratégico & Live Advisor
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt } = req.body;
+    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext } = req.body;
     const userMessage = message || prompt || '';
     const clientId = reqClientId || client_id;
 
@@ -698,9 +698,16 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     let promptInstrucao = "Você é o Oraculum AI.";
     
     if (mode === 'bi_live') {
-      promptInstrucao = `Você é o Diretor Executivo de BI e Estratégia do Oraculum Live em reunião ao vivo. 
-Responda diretamente à pergunta do usuário de forma concisa, executiva e prática sobre negócios, finanças e tráfego. 
-NÃO gere roteiros de anúncios ou hooks de vídeo a não ser que solicitado.`;
+      promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO em reunião ao vivo com o cliente.
+
+DADOS REAIS DO CLIENTE ATIVO NO SISTEMA:
+${JSON.stringify(clientContext || {}, null, 2)}
+
+DIRETRIZES DE RESPOSTA:
+1. Responda imediatamente e com precisão diagnóstica usando os dados acima.
+2. Se as métricas financeiras estiverem zeradas no painel, faça o diagnóstico baseado nas diretrizes do Nicho/Dossiê do cliente, apontando a meta de CAC ideal, ticket médio recomendado e plano de tração imediato.
+3. NUNCA faça perguntas genéricas pedindo para o usuário passar métricas que você pode inferir pelo nicho ou que já constem no contexto.
+4. Mantenha tom executivo, tático e de liderança consultiva.`;
     } else {
       // Pega o dossiê real do banco
       const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();

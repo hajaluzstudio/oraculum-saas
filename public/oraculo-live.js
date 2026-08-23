@@ -373,6 +373,35 @@ Seja direto, tático, analítico e resolutivo.`
       const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
       const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'default_client';
 
+      let clientContextData = null;
+
+      if (window.supabaseClient && clientId && clientId !== 'default_client') {
+        try {
+          // 1. Busca dados cadastrais e dossiê
+          const { data: clientInfo } = await window.supabaseClient
+            .from('clients')
+            .select('name, niche, website, previous_agency_notes')
+            .eq('id', clientId)
+            .maybeSingle();
+
+          // 2. Busca últimas métricas de BI
+          const { data: biInfo } = await window.supabaseClient
+            .from('bi_analytics_data')
+            .select('*')
+            .eq('client_id', clientId)
+            .order('reference_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          clientContextData = {
+            cliente: clientInfo || {},
+            metricas_bi: biInfo || { status: 'Sem métricas reais lançadas ainda (valores zerados)' }
+          };
+        } catch (errCtx) {
+          console.warn('[Oraculum Live] Falha ao coletar contexto prévio:', errCtx);
+        }
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -382,7 +411,8 @@ Seja direto, tático, analítico e resolutivo.`
         body: JSON.stringify({
           clientId: clientId,
           message: texto,
-          mode: 'bi_live'
+          mode: 'bi_live',
+          clientContext: clientContextData
         })
       });
 
