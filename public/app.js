@@ -5722,66 +5722,82 @@ function formatarFeedbackLoopExecutivo(texto) {
 
   let raw = texto;
 
-  // 1. Remove qualquer texto introdutório antes dos blocos principais
-  const indexInicio = raw.search(/(🏆|\*\*Padrões|Padrões Campeões)/i);
-  if (indexInicio !== -1) {
-    raw = raw.substring(indexInicio);
+  // 1. Remove qualquer saudação ou introdução antes do primeiro bloco
+  const posInicio = raw.search(/(🏆|Padrões Campeões|\*\*Padrões)/i);
+  if (posInicio !== -1) {
+    raw = raw.substring(posInicio);
   }
 
-  // 2. Separação em dois blocos: Campeões (🏆) e Ajustes (⚠️)
-  const partes = raw.split(/(?=⚠️|\*\*Ajustes|Ajustes Preditivos)/i);
-  const blocoCampeoes = partes[0] || '';
-  const blocoAjustes = partes[1] || '';
+  // 2. Divisão flexível entre Bloco 1 (Campeões) e Bloco 2 (Ajustes)
+  let blocoCampeoes = '';
+  let blocoAjustes = '';
 
-  // Função auxiliar para formatar cada linha de item
-  function formatarItens(blocoTexto) {
-    // Remove o título do bloco
-    let conteudo = blocoTexto.replace(/^[^\n]*\n?/, '').trim();
+  const regexAjustes = /(⚠️|Ajustes Preditivos|\*\*Ajustes Preditivos)/i;
+  const matchAjustes = raw.search(regexAjustes);
 
-    return conteudo
-      .split('\n')
-      .map(linha => linha.trim())
-      .filter(linha => linha.length > 0)
-      .map(linha => {
-        // Limpa traços e marcadores iniciais
-        let item = linha.replace(/^[-•*]\s*/, '');
+  if (matchAjustes !== -1) {
+    blocoCampeoes = raw.substring(0, matchAjustes).trim();
+    blocoAjustes = raw.substring(matchAjustes).trim();
+  } else {
+    blocoCampeoes = raw.trim();
+  }
+
+  // Função auxiliar para renderizar linhas individuais limpas
+  function extrairLinhas(bloco) {
+    if (!bloco) return '<div class="text-xs text-slate-400 italic">Nenhuma recomendação registrada.</div>';
+
+    // Remove o título da seção
+    let linhas = bloco.split('\n');
+    if (linhas.length > 0 && /Padrões|Ajustes|🏆|⚠️/i.test(linhas[0])) {
+      linhas.shift();
+    }
+
+    const htmlItens = linhas
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+      .map(l => {
+        let item = l.replace(/^[-•*▸]\s*/, '');
+        // Formata colchetes residuais [Insight 1: ...]
+        item = item.replace(/^\[(.*?)\]/, '<strong class="text-slate-200 font-semibold">$1</strong>');
         // Formata negritos (**texto**)
         item = item.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
         // Formata itálicos (*texto*)
         item = item.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic">$1</span>');
 
         return `
-          <div class="flex items-start gap-2.5 text-xs text-slate-300 leading-relaxed pl-1">
+          <div class="flex items-start gap-2 text-xs text-slate-300 leading-relaxed pl-1">
             <span class="text-emerald-400 select-none text-[13px] leading-none mt-0.5">▸</span>
             <div class="flex-1">${item}</div>
           </div>
         `;
       })
       .join('');
+
+    return htmlItens || '<div class="text-xs text-slate-400 italic">Sem diretivas adicionais.</div>';
   }
 
-  // 3. Montagem do HTML com dois cartões organizados
+  // 3. Grid com dois cartões organizados lado a lado
   return `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
       <!-- Bloco de Padrões Campeões -->
-      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-emerald-500/20 space-y-2.5">
+      <div class="p-4 rounded-xl bg-slate-950/70 border border-emerald-500/20 space-y-3">
         <div class="flex items-center gap-2 pb-2 border-b border-emerald-500/20">
           <span class="text-sm">🏆</span>
           <span class="text-xs font-bold text-emerald-400 tracking-wide uppercase">Padrões Campeões Identificados</span>
         </div>
-        <div class="space-y-2">
-          ${formatarItens(blocoCampeoes)}
+        <div class="space-y-2.5">
+          ${extrairLinhas(blocoCampeoes)}
         </div>
       </div>
 
       <!-- Bloco de Ajustes Preditivos -->
-      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-amber-500/20 space-y-2.5">
+      <div class="p-4 rounded-xl bg-slate-950/70 border border-amber-500/20 space-y-3">
         <div class="flex items-center gap-2 pb-2 border-b border-amber-500/20">
           <span class="text-sm">⚠️</span>
           <span class="text-xs font-bold text-amber-400 tracking-wide uppercase">Ajustes Preditivos para a Próxima Campanha</span>
         </div>
-        <div class="space-y-2">
-          ${formatarItens(blocoAjustes)}
+        <div class="space-y-2.5">
+          ${extrairLinhas(blocoAjustes)}
         </div>
       </div>
     </div>
