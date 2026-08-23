@@ -711,34 +711,29 @@ Instrução do usuário: "${userMessage}".
 Responda diretamente à solicitação com a estratégia estruturada, sem introduções genéricas repetitivas. Formate com clareza em Markdown destacando Headlines, Hooks de 3s e Scripts.`;
     }
 
-    // Chamada à API Google Gemini
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const aiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: `${promptInstrucao}\n\nPergunta do usuário: ${userMessage}` }] }
-        ]
-      })
+    // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Chamada à API via SDK
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      config: { systemInstruction: promptInstrucao }
     });
 
-    const aiData = await aiResponse.json();
-
-    if (!aiResponse.ok) {
-      return res.status(aiResponse.status).json({ 
-        success: false, 
-        error: aiData.error?.message || 'Erro retornado pela API do Gemini.' 
-      });
-    }
-
-    const generatedText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta gerada pelo modelo.';
+    const generatedText = response.text || 'Sem resposta gerada pelo modelo.';
 
     return res.status(200).json({
       success: true,
       reply: generatedText,
       replyText: generatedText,
-      data: generatedText
+      data: generatedText,
+      debug: {
+        provider: "@google/genai SDK",
+        model: "gemini-3.6-flash",
+        keyPrefix: apiKey.substring(0, 4) + "..."
+      }
     });
 
   } catch (err: any) {
