@@ -5967,31 +5967,34 @@ window.abrirModalLancarBI = function(e) {
     e.stopPropagation();
   }
 
-  console.log('[BI-DEBUG] [INF-BI-001] Disparo de clique no botão Lançar BI detectado.');
-
   const modal = document.getElementById('modal-lancar-bi');
   if (!modal) {
     console.error('[BI-DEBUG] [ERR-MODAL-BI-001] Elemento #modal-lancar-bi não encontrado no DOM!');
-    alert('[ERR-MODAL-BI-001]: O modal de lançamento manual não foi encontrado na estrutura HTML da página.');
+    alert('[ERR-MODAL-BI-001]: O modal de lançamento manual não foi encontrado.');
     return;
   }
 
   const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
   if (!activeClientId) {
-    console.warn('[BI-DEBUG] [ERR-MODAL-BI-002] Nenhum cliente ativo selecionado no contexto.');
-    alert('[ERR-MODAL-BI-002]: Selecione um cliente ativo no seletor do topo antes de lançar métricas.');
+    alert('Selecione um cliente ativo no topo da tela antes de lançar métricas.');
     return;
   }
 
-  console.log(`[BI-DEBUG] [INF-BI-002] Abrindo modal com sucesso para o cliente: ${activeClientId}`);
+  // Força remoção de hidden e aplica estilos inline absolutos para sobrepor qualquer camada
   modal.classList.remove('hidden');
-  modal.style.display = 'flex';
+  modal.style.setProperty('display', 'flex', 'important');
+  modal.style.setProperty('position', 'fixed', 'important');
+  modal.style.setProperty('top', '0', 'important');
+  modal.style.setProperty('left', '0', 'important');
+  modal.style.setProperty('width', '100vw', 'important');
+  modal.style.setProperty('height', '100vh', 'important');
+  modal.style.setProperty('z-index', '99999', 'important');
+  modal.style.setProperty('background-color', 'rgba(2, 6, 23, 0.85)', 'important');
+  modal.style.setProperty('backdrop-filter', 'blur(8px)', 'important');
 
   const inputGasto = document.getElementById('bi-input-gasto');
   if (inputGasto) {
-    setTimeout(() => inputGasto.focus(), 100);
-  } else {
-    console.warn('[BI-DEBUG] [ERR-MODAL-BI-003] Input #bi-input-gasto não encontrado dentro do modal.');
+    setTimeout(() => inputGasto.focus(), 150);
   }
 };
 
@@ -5999,7 +6002,7 @@ window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-lancar-bi');
   if (modal) {
     modal.classList.add('hidden');
-    modal.style.display = 'none';
+    modal.style.setProperty('display', 'none', 'important');
   }
 };
 
