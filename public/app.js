@@ -5716,39 +5716,76 @@ window.loadCompetitors = function(clientData) {
   }
 };
 
-function formatarFeedbackLoopCard(texto) {
+// Parser robusto para estilização dos blocos do Feedback Loop
+function formatarFeedbackLoopExecutivo(texto) {
   if (!texto) return '';
 
-  let limpo = texto;
+  let raw = texto;
 
-  // 1. Remove introdução redundante da IA se presente
-  limpo = limpo.replace(/^Como Diretor de BI[\s\S]*?(?=(🏆|⚠️|\*\*Padrões|\*\*Ajustes))/i, '');
+  // 1. Remove qualquer texto introdutório antes dos blocos principais
+  const indexInicio = raw.search(/(🏆|\*\*Padrões|Padrões Campeões)/i);
+  if (indexInicio !== -1) {
+    raw = raw.substring(indexInicio);
+  }
 
-  // 2. Estilização do Bloco de Padrões Campeões (🏆)
-  limpo = limpo.replace(/(\uD83C\uDFC6|\*\*Padrões Campeões[^*]*\*\*|🏆 Padrões Campeões Identificados)/gi, 
-    '<div class="flex items-center gap-2 text-xs font-bold text-emerald-400 mt-2 mb-1.5 pb-1 border-b border-emerald-500/20"><span class="text-sm">🏆</span> <span>PADRÕES CAMPEÕES IDENTIFICADOS</span></div>'
-  );
+  // 2. Separação em dois blocos: Campeões (🏆) e Ajustes (⚠️)
+  const partes = raw.split(/(?=⚠️|\*\*Ajustes|Ajustes Preditivos)/i);
+  const blocoCampeoes = partes[0] || '';
+  const blocoAjustes = partes[1] || '';
 
-  // 3. Estilização do Bloco de Ajustes Preditivos (⚠️)
-  limpo = limpo.replace(/(\u26A0\uFE0F|\*\*Ajustes Preditivos[^*]*\*\*|⚠️ Ajustes Preditivos para a Próxima Campanha)/gi, 
-    '<div class="flex items-center gap-2 text-xs font-bold text-amber-400 mt-3 mb-1.5 pb-1 border-b border-amber-500/20"><span class="text-sm">⚠️</span> <span>AJUSTES PREDITIVOS PARA A PRÓXIMA CAMPANHA</span></div>'
-  );
+  // Função auxiliar para formatar cada linha de item
+  function formatarItens(blocoTexto) {
+    // Remove o título do bloco
+    let conteudo = blocoTexto.replace(/^[^\n]*\n?/, '').trim();
 
-  // 4. Negritos (**texto**)
-  limpo = limpo.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
+    return conteudo
+      .split('\n')
+      .map(linha => linha.trim())
+      .filter(linha => linha.length > 0)
+      .map(linha => {
+        // Limpa traços e marcadores iniciais
+        let item = linha.replace(/^[-•*]\s*/, '');
+        // Formata negritos (**texto**)
+        item = item.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
+        // Formata itálicos (*texto*)
+        item = item.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic">$1</span>');
 
-  // 5. Itálicos (*texto*)
-  limpo = limpo.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic">$1</span>');
+        return `
+          <div class="flex items-start gap-2.5 text-xs text-slate-300 leading-relaxed pl-1">
+            <span class="text-emerald-400 select-none text-[13px] leading-none mt-0.5">▸</span>
+            <div class="flex-1">${item}</div>
+          </div>
+        `;
+      })
+      .join('');
+  }
 
-  // 6. Bullets de Tópicos (- item)
-  limpo = limpo.replace(/^[-•]\s*(.*$)/gim, 
-    '<div class="flex items-start gap-2 my-1 text-slate-300 text-xs pl-1 leading-relaxed"><span class="text-emerald-400 select-none mt-0.5">▸</span><div>$1</div></div>'
-  );
+  // 3. Montagem do HTML com dois cartões organizados
+  return `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+      <!-- Bloco de Padrões Campeões -->
+      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-emerald-500/20 space-y-2.5">
+        <div class="flex items-center gap-2 pb-2 border-b border-emerald-500/20">
+          <span class="text-sm">🏆</span>
+          <span class="text-xs font-bold text-emerald-400 tracking-wide uppercase">Padrões Campeões Identificados</span>
+        </div>
+        <div class="space-y-2">
+          ${formatarItens(blocoCampeoes)}
+        </div>
+      </div>
 
-  limpo = limpo.replace(/\n\n/g, '<div class="h-1.5"></div>');
-  limpo = limpo.replace(/\n/g, '<br/>');
-
-  return limpo;
+      <!-- Bloco de Ajustes Preditivos -->
+      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-amber-500/20 space-y-2.5">
+        <div class="flex items-center gap-2 pb-2 border-b border-amber-500/20">
+          <span class="text-sm">⚠️</span>
+          <span class="text-xs font-bold text-amber-400 tracking-wide uppercase">Ajustes Preditivos para a Próxima Campanha</span>
+        </div>
+        <div class="space-y-2">
+          ${formatarItens(blocoAjustes)}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Diagnóstico Robusto do Feedback Loop com Códigos de Erro
@@ -5847,7 +5884,9 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     const textoFinal = resData.reply || resData.replyText;
 
     // Renderização com sucesso
-    container.innerHTML = formatarFeedbackLoopCard(textoFinal);
+    if (container) {
+      container.innerHTML = formatarFeedbackLoopExecutivo(textoFinal);
+    }
 
     localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
 
