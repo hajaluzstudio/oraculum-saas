@@ -42,10 +42,11 @@
         faturamento: document.getElementById('bi-val-revenue')?.innerText || 'R$ 0,00',
         gastoTrafego: document.getElementById('bi-val-spend')?.innerText || 'R$ 0,00',
         roas: document.getElementById('bi-val-roas')?.innerText || '0.0x',
+        cac: document.getElementById('bi-val-cac')?.innerText || 'R$ 0,00',
         leads: document.getElementById('funnel-val-leads')?.innerText || '0'
       };
     } catch(e) {
-      return { cliente: 'Cliente Ativo', faturamento: 'R$ 0,00', gastoTrafego: 'R$ 0,00', roas: '0.0x', leads: '0' };
+      return { cliente: 'Cliente Ativo', faturamento: 'R$ 0,00', gastoTrafego: 'R$ 0,00', roas: '0.0x', cac: 'R$ 0,00', leads: '0' };
     }
   }
 
@@ -230,21 +231,68 @@
     const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_mock_123';
 
-    const biSystemPrompt = `Você é o ORACULUM LIVE, o Copiloto de Inteligência de Negócios e Diretor de Estratégia em tempo real da agência HAJALUZ.
-Você está participando de uma REUNIÃO AO VIVO com o cliente ou apresentando a performance de tráfego e vendas.
+    let nicho = 'N/A';
+    let ticketMedio = 'N/A';
+    let metaFaturamento = 'N/A';
+    let dossieICP = 'N/A';
 
-DADOS REAIS DO DASHBOARD DE BI DO CLIENTE:
-- Cliente Ativo: ${contextoBI.cliente || 'Dr. Lucas / Cliente Ativo'}
-- Faturamento Total Gerado: ${contextoBI.faturamento || 'R$ 0,00'}
-- Investimento em Tráfego (Meta/Google Ads): ${contextoBI.gastoTrafego || 'R$ 0,00'}
-- ROAS Médio: ${contextoBI.roas || '0.0x'}
-- Leads Qualificados: ${contextoBI.leads || '0'}
+    if (window.supabaseClient && clientId && clientId !== 'client_mock_123') {
+      try {
+        const { data: clientData } = await window.supabaseClient
+          .from('clients')
+          .select('niche, average_ticket, revenue_goal, niche_id')
+          .eq('id', clientId)
+          .single();
 
-DIRETRIZES DE RESPOSTA PARA A REUNIÃO:
-1. Responda com postura de Consultor Sênior de BI: seja analítico, seguro, direto e estratégico.
-2. Sempre use os números reais acima para justificar diagnósticos de CAC, LTV, ROAS e conversão.
-3. Se o cliente ou gestor perguntar sobre melhorias, aponte exatamente onde otimizar (gargalo de funil, criativos de topo, verba por canal ou atendimento comercial).
-4. Responda em Português do Brasil de forma clara e profissional para ser lida ou falada ao vivo.`;
+        if (clientData) {
+          ticketMedio = clientData.average_ticket || 'N/A';
+          metaFaturamento = clientData.revenue_goal || 'N/A';
+          nicho = clientData.niche || 'N/A';
+          
+          let tableToQuery = 'niche_knowledge_base';
+          let queryCol = 'niche_name';
+          let matchVal = clientData.niche_id || nicho;
+          if (clientData.niche_id) queryCol = 'id';
+          
+          const { data: nicheData } = await window.supabaseClient
+            .from('niche_knowledge_base')
+            .select('niche_name, icp_pains, value_proposition')
+            .eq(queryCol, matchVal)
+            .single();
+
+          if (nicheData) {
+            if (nicho === 'N/A' || !nicho) nicho = nicheData.niche_name || nicho;
+            dossieICP = `Dores: ${nicheData.icp_pains || ''} | Proposta: ${nicheData.value_proposition || ''}`;
+          }
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar contexto RAG (clients/niche_knowledge_base):", err);
+      }
+    }
+
+    if (dossieICP === 'N/A' || !dossieICP.trim()) {
+      dossieICP = 'Informações de ICP não encontradas no banco.';
+    }
+
+    const biSystemPrompt = `Você é o ORACULUM LIVE, o Copiloto de Inteligência Autônoma e Diretor Estratégico da agência HAJALUZ.
+Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decisões de tráfego.
+
+--- [MEMÓRIA & DOSSIÊ ESTRATÉGICO DO CLIENTE] ---
+• Cliente / Marca: ${contextoBI.cliente || 'Cliente Ativo'}
+• Nicho / Segmento: ${nicho}
+• Ticket Médio: ${ticketMedio} | Meta de Faturamento: ${metaFaturamento}
+• Dores do ICP & Proposta de Valor: ${dossieICP}
+
+--- [MÉTRICAS DO BI EM TEMPO REAL] ---
+• Faturamento Atual: ${contextoBI.faturamento || 'R$ 0,00'}
+• Investimento em Mídia: ${contextoBI.gastoTrafego || 'R$ 0,00'}
+• ROAS Atual: ${contextoBI.roas || '0.0x'} | CAC: ${contextoBI.cac || 'R$ 0,00'} | Leads: ${contextoBI.leads || '0'}
+
+--- [DIRETRIZES DE INTELIGÊNCIA EXECUTIVA] ---
+1. PROIBIDO gerar respostas genéricas de marketing. Todas as sugestões DEVEM citar o nicho, as métricas e o contexto deste cliente específico.
+2. Identifique anomalias (ex: ROAS abaixo da meta, CAC elevado em criativos específicos) e aponte ações corretivas imediatas.
+3. Trate acordos e decisões anteriores como fatos consolidados.
+4. Responda em Português do Brasil de forma concisa, analítica e convincente.`;
 
     const response = await fetch('/api/chat', {
       method: 'POST',
