@@ -337,6 +337,40 @@ Seja direto, tático, analítico e resolutivo.`
     return respostaFinal;
   }
 
+  // Parser leve e autônomo para renderização executiva no Oraculum Live
+  function formatarMarkdownExecutivo(texto) {
+    if (!texto) return '';
+
+    let html = texto;
+
+    // 1. Linhas horizontais (---) -> Divisórias sutis
+    html = html.replace(/^---$/gim, '<div class="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-3"></div>');
+
+    // 2. Cabeçalhos H3 (###) -> Títulos com destaque e espaçamento executivo
+    html = html.replace(/^### (.*$)/gim, '<div class="text-xs font-bold text-cyan-300 uppercase tracking-wider mt-3 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span>$1</div>');
+
+    // 3. Cabeçalhos H4 (####) -> Subtítulos destacados
+    html = html.replace(/^#### (.*$)/gim, '<div class="text-xs font-semibold text-emerald-400 mt-2 mb-1 pl-2 border-l-2 border-emerald-500/40">$1</div>');
+
+    // 4. Negrito (**texto**) -> Texto em branco puro com peso
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
+
+    // 5. Itálico (*texto*)
+    html = html.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic">$1</span>');
+
+    // 6. Listas e Bullets (* item) -> Itens alinhados e estilizados
+    html = html.replace(/^\* (.*$)/gim, '<div class="flex items-start gap-2 my-1 text-slate-300 text-xs pl-1 leading-relaxed"><span class="text-emerald-400 text-xs select-none">▸</span><div>$1</div></div>');
+
+    // 7. Listas numeradas (1. item)
+    html = html.replace(/^(\d+)\. (.*$)/gim, '<div class="flex items-start gap-2 my-1 text-slate-300 text-xs pl-1 leading-relaxed"><span class="text-cyan-400 font-semibold text-[11px] select-none">$1.</span><div>$2</div></div>');
+
+    // 8. Quebras de linha normais
+    html = html.replace(/\n\n/g, '<div class="h-2"></div>');
+    html = html.replace(/\n/g, '<br/>');
+
+    return html;
+  }
+
   window.enviarMensagemOraculo = async function(event) {
     if (event) {
       if (typeof event.preventDefault === 'function') event.preventDefault();
@@ -428,8 +462,8 @@ Seja direto, tático, analítico e resolutivo.`
       // Extração prioritária do texto
       const textoResposta = resJson.reply || resJson.replyText || (typeof resJson.data === 'string' ? resJson.data : resJson.data?.replyText) || 'Resposta vazia.';
 
-      corpoEl.className = 'resposta-corpo text-slate-200 whitespace-pre-line leading-relaxed';
-      corpoEl.innerHTML = textoResposta.replace(/\n/g, '<br/>');
+      corpoEl.className = 'resposta-corpo text-slate-300 leading-relaxed font-sans text-xs space-y-1';
+      corpoEl.innerHTML = formatarMarkdownExecutivo(textoResposta);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
       // Persistência segura usando os campos universais
