@@ -1794,80 +1794,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.customAdSpendMap = window.customAdSpendMap || {};
+  window.abrirModalBI = function() {
+    const modal = document.getElementById('modal-bi-metrics');
+    if (modal) modal.classList.remove('hidden');
+  };
 
-  window.auditarEAtualizarBIComIA = async function() {
-    const select = document.getElementById('active-client-select');
-    const clientId = window.currentClientId || window.activeClientId || (select ? select.value : null);
-    const clientName = window.currentClientName || window.activeClientName || (select?.selectedOptions?.[0]?.text) || 'Cliente Ativo';
+  window.fecharModalBI = function() {
+    const modal = document.getElementById('modal-bi-metrics');
+    if (modal) modal.classList.add('hidden');
+  };
+
+  window.salvarMetricasBIModal = async function() {
+    const clientId = window.currentClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id');
     const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
 
     if (!clientId) {
-      alert("Selecione um cliente ativo.");
+      alert("Selecione um cliente ativo no topo.");
       return;
     }
 
-    const btnSync = document.getElementById('btn-sync-live-bi') || document.querySelector('[data-action="sync-bi"]');
-    const originalText = btnSync ? btnSync.innerHTML : '';
-    if (btnSync) btnSync.innerHTML = '⏳ IA Auditando Métricas...';
+    let revenue = parseFloat(document.getElementById('bi-input-revenue')?.value) || 0;
+    let spend = parseFloat(document.getElementById('bi-input-spend')?.value) || 0;
+    let leads = parseInt(document.getElementById('bi-input-leads')?.value, 10) || 0;
+    let sales = parseInt(document.getElementById('bi-input-sales')?.value, 10) || 0;
+    const rawReport = document.getElementById('bi-input-raw-report')?.value.trim();
 
-    try {
-      // 1. Coleta histórico de conversas e briefings do cliente
-      let contextData = '';
-      if (window.supabaseClient) {
-        const { data: chats } = await window.supabaseClient.from('bi_chat_history').select('content').eq('client_id', clientId).limit(10);
-        const { data: niche } = await window.supabaseClient.from('niche_knowledge_base').select('*').eq('client_id', clientId).maybeSingle();
-        contextData = JSON.stringify({ chats, niche });
-      }
-
-      // 2. Chama Gemini solicitando extração de métricas de BI em JSON estrito
-      const prompt = `Analise todos os dados e histórico deste cliente (${clientName}) e extraia/calcule as métricas reais atuais de BI.
-Retorne APENAS um JSON puro sem markdown com este formato:
-{
-  "revenue": 15000,
-  "ad_spend": 2500,
-  "leads": 45,
-  "sales": 6,
-  "top_channel": "Meta Ads",
-  "conversion_rate": 13.3
-}
-Contexto: ${contextData}`;
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
-        body: JSON.stringify({ clientId, message: prompt })
-      });
-
-      const res = await response.json();
-      let rawText = typeof res.data === 'string' ? res.data : (res.data.replyText || JSON.stringify(res.data));
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      
-      if (jsonMatch) {
-        const metricas = JSON.parse(jsonMatch[0]);
-
-        // 3. Salva no Supabase
-        if (window.supabaseClient) {
-          await window.supabaseClient.from('bi_analytics_data').upsert([{
-            client_id: clientId,
-            organization_id: tenantId,
-            revenue: metricas.revenue || 0,
-            ad_spend: metricas.ad_spend || 0,
-            leads: metricas.leads || 0,
-            sales: metricas.sales || 0,
-            reference_date: new Date().toISOString().split('T')[0]
-          }], { onConflict: 'client_id,reference_date' });
+    // Se colou relatório bruto, pede ao Gemini para parsear
+    if (rawReport && (!revenue || !spend)) {
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
+          body: JSON.stringify({
+            clientId: clientId,
+            message: `Extraia estritamente os números deste relatório em JSON: {"revenue": 0, "spend": 0, "leads": 0, "sales": 0}. Relatório: ${rawReport}`
+          })
+        });
+        const data = await res.json();
+        const rawText = typeof data.data === 'string' ? data.data : (data.data?.replyText || JSON.stringify(data.data));
+        const match = rawText.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (parsed.revenue) revenue = parsed.revenue;
+          if (parsed.spend) spend = parsed.spend;
+          if (parsed.leads) leads = parsed.leads;
+          if (parsed.sales) sales = parsed.sales;
         }
-
-        // 4. Atualiza a tela instantaneamente
-        if (typeof window.carregarMetricasBI === 'function') {
-          window.carregarMetricasBI(clientId);
-        }
+      } catch(e) {
+        console.error("Erro ao processar relatório bruto via Gemini", e);
       }
-    } catch (err) {
-      console.error("[BI Engine] Erro na auditoria autônoma:", err);
-    } finally {
-      if (btnSync) btnSync.innerHTML = originalText || '⚡ Sincronizar APIs';
+    }
+
+    // Salva na tabela bi_analytics_data do Supabase
+    if (window.supabaseClient) {
+      await window.supabaseClient.from('bi_analytics_data').upsert([{
+        client_id: clientId,
+        organization_id: tenantId,
+        revenue: revenue,
+        ad_spend: spend,
+        leads: leads,
+        sales: sales,
+        reference_date: new Date().toISOString().split('T')[0]
+      }], { onConflict: 'client_id,reference_date' });
+    }
+
+    window.fecharModalBI();
+    
+    // Limpa os inputs
+    ['bi-input-revenue', 'bi-input-spend', 'bi-input-leads', 'bi-input-sales', 'bi-input-raw-report'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    if (typeof window.carregarMetricasBI === 'function') {
+      window.carregarMetricasBI(clientId);
     }
   };
 
