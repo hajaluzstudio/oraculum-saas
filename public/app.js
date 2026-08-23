@@ -5716,6 +5716,41 @@ window.loadCompetitors = function(clientData) {
   }
 };
 
+function formatarFeedbackLoopCard(texto) {
+  if (!texto) return '';
+
+  let limpo = texto;
+
+  // 1. Remove introdução redundante da IA se presente
+  limpo = limpo.replace(/^Como Diretor de BI[\s\S]*?(?=(🏆|⚠️|\*\*Padrões|\*\*Ajustes))/i, '');
+
+  // 2. Estilização do Bloco de Padrões Campeões (🏆)
+  limpo = limpo.replace(/(\uD83C\uDFC6|\*\*Padrões Campeões[^*]*\*\*|🏆 Padrões Campeões Identificados)/gi, 
+    '<div class="flex items-center gap-2 text-xs font-bold text-emerald-400 mt-2 mb-1.5 pb-1 border-b border-emerald-500/20"><span class="text-sm">🏆</span> <span>PADRÕES CAMPEÕES IDENTIFICADOS</span></div>'
+  );
+
+  // 3. Estilização do Bloco de Ajustes Preditivos (⚠️)
+  limpo = limpo.replace(/(\u26A0\uFE0F|\*\*Ajustes Preditivos[^*]*\*\*|⚠️ Ajustes Preditivos para a Próxima Campanha)/gi, 
+    '<div class="flex items-center gap-2 text-xs font-bold text-amber-400 mt-3 mb-1.5 pb-1 border-b border-amber-500/20"><span class="text-sm">⚠️</span> <span>AJUSTES PREDITIVOS PARA A PRÓXIMA CAMPANHA</span></div>'
+  );
+
+  // 4. Negritos (**texto**)
+  limpo = limpo.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
+
+  // 5. Itálicos (*texto*)
+  limpo = limpo.replace(/\*(.*?)\*/g, '<span class="text-slate-400 italic">$1</span>');
+
+  // 6. Bullets de Tópicos (- item)
+  limpo = limpo.replace(/^[-•]\s*(.*$)/gim, 
+    '<div class="flex items-start gap-2 my-1 text-slate-300 text-xs pl-1 leading-relaxed"><span class="text-emerald-400 select-none mt-0.5">▸</span><div>$1</div></div>'
+  );
+
+  limpo = limpo.replace(/\n\n/g, '<div class="h-1.5"></div>');
+  limpo = limpo.replace(/\n/g, '<br/>');
+
+  return limpo;
+}
+
 // Diagnóstico Robusto do Feedback Loop com Códigos de Erro
 window.recalcularFeedbackLoop = async function(btnElement) {
   const btn = btnElement || document.getElementById('btn-recalcular-feedback-loop') || document.querySelector('[onclick*="recalcularFeedbackLoop"]');
@@ -5812,11 +5847,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     const textoFinal = resData.reply || resData.replyText;
 
     // Renderização com sucesso
-    if (typeof window.formatarMarkdownExecutivo === 'function') {
-      container.innerHTML = window.formatarMarkdownExecutivo(textoFinal);
-    } else {
-      container.innerHTML = textoFinal.replace(/\n/g, '<br/>');
-    }
+    container.innerHTML = formatarFeedbackLoopCard(textoFinal);
 
     localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
 
