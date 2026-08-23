@@ -1604,26 +1604,27 @@
           </div>
 
           <!-- FEEDBACK LOOP PREDITIVO -->
-          <div class="card-glass mt-20">
-            <div class="card-header">
-              <h3><i class="fa-solid fa-rotate"></i> Feedback Loop Preditivo da IA</h3>
-              <button class="btn-secondary sm" id="btn-run-feedback-loop"><i class="fa-solid fa-arrows-rotate"></i> Recalcular Feedback Loop</button>
+          <!-- Card do Feedback Loop Preditivo -->
+          <div class="card-bi-section p-4 rounded-xl bg-slate-900/60 border border-slate-800 my-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2 text-white font-bold text-xs">
+                <span class="text-emerald-400">⟳</span>
+                <span>Feedback Loop Preditivo da IA</span>
+              </div>
+              <!-- Botão com onclick direto -->
+              <button 
+                id="btn-recalcular-feedback-loop" 
+                type="button" 
+                onclick="window.recalcularFeedbackLoop(this)" 
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
+              >
+                <span>⟳</span>
+                <span id="btn-feedback-text">Recalcular Feedback Loop</span>
+              </button>
             </div>
-            <div id="feedback-loop-content" class="feedback-body">
-              <div class="insight-box">
-                <h4><i class="fa-solid fa-trophy"></i> Padrões Campeões Identificados</h4>
-                <ul>
-                  <li>Hooks visuais com contraste imediato nos primeiros 1.5s aumentaram a conversão em 340%.</li>
-                  <li>Copy com gatilho de ancoragem de alto valor elevou a conversão direta de consultas VIP.</li>
-                </ul>
-              </div>
-              <div class="insight-box warning">
-                <h4><i class="fa-solid fa-triangle-exclamation"></i> Ajustes Preditivos para a Próxima Campanha</h4>
-                <ul>
-                  <li>Reduzir verba em anúncios estáticos genéricos sem headline de dor.</li>
-                  <li>Injetar 70% do orçamento em VSLs curtas com prova social em vídeo.</li>
-                </ul>
-              </div>
+            <!-- Container de destino do texto -->
+            <div id="feedback-loop-content" class="text-xs text-slate-300 leading-relaxed pt-3 space-y-2">
+              <p class="text-slate-400 italic">Clique em "Recalcular Feedback Loop" para cruzar o dossiê com o funil comercial.</p>
             </div>
           </div>
 
@@ -3534,7 +3535,7 @@
   </script>
 
   <script src="/api-keys-manager.js?v=65.0.0"></script>
-  <script src="app.js?v=71.0.0"></script>
+  <script src="app.js?v=88.0.0"></script>
   <script src="/agency-management.js?v=65.0.0"></script>
   <script src="/client-management.js?v=65.0.0"></script>
   <script src="/radar-concorrentes.js?v=65.0.0"></script>

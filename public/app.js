@@ -5716,19 +5716,16 @@ window.loadCompetitors = function(clientData) {
   }
 };
 
-window.recalcularFeedbackLoop = async function() {
-  const btn = document.getElementById('btn-recalcular-feedback-loop') || 
-              document.querySelector('[onclick*="recalcularFeedbackLoop"]');
-  const container = document.getElementById('feedback-loop-content') || 
-                    document.querySelector('.feedback-loop-container') ||
-                    document.querySelector('#tab-bi .card-bi-section:has(button)');
-
+window.recalcularFeedbackLoop = async function(buttonElement) {
+  console.log('[Feedback Loop] Botão clicado. Iniciando recálculo...');
+  
+  const btn = buttonElement || document.getElementById('btn-recalcular-feedback-loop');
+  const btnText = document.getElementById('btn-feedback-text');
+  const container = document.getElementById('feedback-loop-content');
   const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!btn) return;
 
-  const textoOriginal = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="inline-block animate-spin mr-1">⟳</span> Analisando...`;
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.innerText = 'Recalculando com IA...';
 
   try {
     let clientContext = { cliente: {}, metricas: {} };
@@ -5754,6 +5751,8 @@ window.recalcularFeedbackLoop = async function() {
       };
     }
 
+    console.log('[Feedback Loop] Payload enviado para /api/chat:', { activeClientId, clientContext });
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -5766,28 +5765,28 @@ window.recalcularFeedbackLoop = async function() {
     });
 
     const resData = await response.json();
+    console.log('[Feedback Loop] Resposta da API:', resData);
 
-    if (resData.success && resData.reply) {
-      // Localiza o bloco de texto interno abaixo do botão
-      const targetTextEl = document.getElementById('feedback-loop-content') || 
-                           btn.closest('div.card-bi-section, div.rounded-xl, div.bg-slate-900\\/60')?.querySelector('div:last-child') ||
-                           container;
-
-      if (targetTextEl) {
+    if (resData.success && (resData.reply || resData.replyText)) {
+      const textoFinal = resData.reply || resData.replyText;
+      if (container) {
         if (typeof window.formatarMarkdownExecutivo === 'function') {
-          targetTextEl.innerHTML = window.formatarMarkdownExecutivo(resData.reply);
+          container.innerHTML = window.formatarMarkdownExecutivo(textoFinal);
         } else {
-          targetTextEl.innerHTML = resData.reply.replace(/\n/g, '<br/>');
+          container.innerHTML = textoFinal.replace(/\n/g, '<br/>');
         }
       }
+      if (activeClientId) {
+        localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
+      }
     } else {
-      alert('Não foi possível recalcular: ' + (resData.error || 'Erro desconhecido.'));
+      alert('Erro ao recalcular: ' + (resData.error || 'Falha na resposta da IA.'));
     }
   } catch (err) {
-    console.error('[Feedback Loop] Erro:', err);
+    console.error('[Feedback Loop] Falha na requisição:', err);
     alert('Erro de conexão ao processar inteligência preditiva.');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = textoOriginal;
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.innerText = 'Recalcular Feedback Loop';
   }
 };
