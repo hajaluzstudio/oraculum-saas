@@ -6057,7 +6057,7 @@ document.addEventListener('click', function(event) {
   }
 });
 
-// Renderização Reativa dos Cards e do Funil Comercial
+// Renderizador Robusto do Dashboard de BI
 window.atualizarDashboardBIVisual = function(dados) {
   if (!dados) return;
 
@@ -6071,35 +6071,58 @@ window.atualizarDashboardBIVisual = function(dados) {
 
   const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  // 1. Atualização dos Cards Superiores
-  const elFat = document.querySelector('[data-metric="faturamento"]') || document.querySelector('#tab-bi .card-metrica:nth-child(1) strong, #tab-bi .card-metrica:nth-child(1) .text-2xl');
-  if (elFat) elFat.innerText = formatBRL(faturamento);
+  // 1. Atualização dos Cards Principais
+  const painelBI = document.getElementById('tab-bi') || document.querySelector('[data-tab="tab-bi"]') || document.body;
 
-  const elGasto = document.querySelector('[data-metric="gasto"]') || document.querySelector('#tab-bi .card-metrica:nth-child(2) strong, #tab-bi .card-metrica:nth-child(2) .text-2xl');
-  if (elGasto) elGasto.innerText = formatBRL(gasto);
-
-  const elLucro = document.querySelector('[data-metric="lucro"]') || document.querySelector('#tab-bi .card-metrica:nth-child(3) strong, #tab-bi .card-metrica:nth-child(3) .text-2xl');
-  if (elLucro) {
-    elLucro.innerText = formatBRL(lucro);
-    elLucro.className = lucro >= 0 ? "text-2xl font-black text-emerald-400" : "text-2xl font-black text-rose-400";
+  // Varredura por blocos de métrica no painel
+  const cards = painelBI.querySelectorAll('.bg-slate-900\\/50, .card, div[class*="rounded"]');
+  
+  // Função auxiliar para atualizar valor dentro do card correspondente
+  function setValorCard(tituloRegex, valorTexto, corClasse) {
+    cards.forEach(card => {
+      if (tituloRegex.test(card.innerText)) {
+        // Encontra o elemento de destaque numérico dentro do card
+        const valorEl = card.querySelector('.text-2xl, .text-xl, strong, h3, div[class*="text-emerald"], div[class*="text-white"]') || card.querySelector('div:nth-child(2)');
+        if (valorEl && !valorEl.querySelector('button')) {
+          valorEl.innerText = valorTexto;
+          if (corClasse) {
+            valorEl.className = `text-2xl font-black ${corClasse}`;
+          }
+        }
+      }
+    });
   }
 
-  const elRoas = document.querySelector('[data-metric="roas"]') || document.querySelector('#tab-bi .card-metrica:nth-child(4) strong, #tab-bi .card-metrica:nth-child(4) .text-2xl');
-  if (elRoas) elRoas.innerText = `${roas}x`;
-
+  setValorCard(/Faturamento Total/i, formatBRL(faturamento), 'text-white');
+  setValorCard(/Gasto em Tr[aá]fego/i, formatBRL(gasto), 'text-white');
+  setValorCard(/Lucro L[ií]quido/i, formatBRL(lucro), lucro >= 0 ? 'text-emerald-400' : 'text-rose-400');
+  setValorCard(/ROAS M[eé]dio/i, `${roas}x`, 'text-cyan-400');
+  
   const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
-  const elTaxa = document.querySelector('[data-metric="taxa_conv"]') || document.querySelector('#tab-bi .card-metrica:nth-child(6) strong, #tab-bi .card-metrica:nth-child(6) .text-2xl');
-  if (elTaxa) elTaxa.innerText = `${taxaConv}%`;
+  setValorCard(/Taxa Conv/i, `${taxaConv}%`, 'text-cyan-400');
 
-  // 2. Atualização dos Indicadores do Funil Comercial
-  const elCliquesCount = document.getElementById('funil-cliques-count') || document.querySelector('#funil-etapa-cliques .count');
-  if (elCliquesCount) elCliquesCount.innerText = `${cliques} Cliques`;
+  // Sub-rotina: Atualiza o texto de "X Vendas" abaixo do faturamento
+  cards.forEach(card => {
+    if (/Faturamento Total/i.test(card.innerText)) {
+      const sub = card.querySelector('.text-xs, .text-slate-400, span');
+      if (sub && !sub.innerText.includes('Faturamento')) {
+        sub.innerText = `${vendas} Vendas (Confirmadas)`;
+      }
+    }
+  });
 
-  const elLeadsCount = document.getElementById('funil-leads-count') || document.querySelector('#funil-etapa-leads .count');
-  if (elLeadsCount) elLeadsCount.innerText = `${leads} Leads`;
-
-  const elVendasCount = document.getElementById('funil-vendas-count') || document.querySelector('#funil-etapa-vendas .count');
-  if (elVendasCount) elVendasCount.innerText = `${vendas} Fechamentos`;
+  // 2. Atualização dos Indicadores do Funil
+  const funilItems = document.querySelectorAll('#tab-bi .funil-item, #tab-bi [class*="funil"], #tab-bi .space-y-2 > div');
+  funilItems.forEach(item => {
+    if (/Cliques no Link/i.test(item.innerText)) {
+      const tag = item.querySelector('span:last-child, .count, strong') || item;
+      tag.innerText = `${cliques} Cliques`;
+    }
+    if (/Leads Qualificados/i.test(item.innerText)) {
+      const tag = item.querySelector('span:last-child, .count, strong') || item;
+      tag.innerText = `${leads} Leads`;
+    }
+  });
 };
 
 // Gravação dos Dados no Supabase e Atualização de Tela
@@ -6171,8 +6194,8 @@ window.salvarLancamentoBI = async function(e) {
   }
 };
 
-// Carregamento Automático ao Abrir a Aba BI ou Mudar de Cliente
-window.carregarMetricasBIDoBanco = async function(clientId) {
+// 2. Garante que ao navegar para a aba BI, ele busca a última métrica salva no Supabase
+window.carregarUltimoBIDoCliente = async function(clientId) {
   const activeClientId = clientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
   if (!activeClientId || !window.supabaseClient) return;
 
@@ -6180,7 +6203,7 @@ window.carregarMetricasBIDoBanco = async function(clientId) {
     const { data, error } = await window.supabaseClient
       .from('bi_analytics_data')
       .select('*')
-      .eq('client_id', activeClientId)
+      .eq('client_id', String(activeClientId))
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -6189,9 +6212,14 @@ window.carregarMetricasBIDoBanco = async function(clientId) {
       window.atualizarDashboardBIVisual(data);
     }
   } catch (err) {
-    console.error('[BI] Erro ao buscar métricas no Supabase:', err);
+    console.warn('[BI] Erro ao carregar métricas persistidas:', err);
   }
 };
+
+// Adiciona o gatilho de leitura automática na inicialização e troca de aba
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => window.carregarUltimoBIDoCliente(), 500);
+});
 
 // Sincronização de APIs (Simulação Sintética Avançada para Testes)
 window.sincronizarApisBI = async function() {
