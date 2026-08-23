@@ -1796,53 +1796,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.customAdSpendMap = window.customAdSpendMap || {};
 
-  window.abrirSimuladorOrcamento = async function() {
-    const currentClientId = window.activeClientId || window.currentClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
-    
-    if (!currentClientId) {
-      alert('⚠️ Selecione um cliente na carteira antes de ajustar a verba de tráfego.');
+  window.auditarEAtualizarBIComIA = async function() {
+    const select = document.getElementById('active-client-select');
+    const clientId = window.currentClientId || window.activeClientId || (select ? select.value : null);
+    const clientName = window.currentClientName || window.activeClientName || (select?.selectedOptions?.[0]?.text) || 'Cliente Ativo';
+    const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+
+    if (!clientId) {
+      alert("Selecione um cliente ativo.");
       return;
     }
 
-    const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-    
-    const revenueStr = prompt('💰 [DADOS REAIS] Digite o Faturamento Atual (R$):', '0');
-    if (revenueStr === null) return;
-    
-    const adSpendStr = prompt('💰 [DADOS REAIS] Digite o Gasto em Tráfego (R$):', '0');
-    if (adSpendStr === null) return;
-
-    const leadsStr = prompt('🎯 [DADOS REAIS] Digite a quantidade de Leads:', '0');
-    if (leadsStr === null) return;
-
-    const salesStr = prompt('🏆 [DADOS REAIS] Digite a quantidade de Vendas:', '0');
-    if (salesStr === null) return;
-
-    const revenue = parseFloat(revenueStr.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
-    const ad_spend = parseFloat(adSpendStr.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
-    const leads = parseInt(leadsStr.trim()) || 0;
-    const sales = parseInt(salesStr.trim()) || 0;
+    const btnSync = document.getElementById('btn-sync-live-bi') || document.querySelector('[data-action="sync-bi"]');
+    const originalText = btnSync ? btnSync.innerHTML : '';
+    if (btnSync) btnSync.innerHTML = '⏳ IA Auditando Métricas...';
 
     try {
-      const { error } = await window.supabaseClient.from('bi_analytics_data').upsert({
-        client_id: currentClientId,
-        organization_id: tenantId,
-        reference_date: new Date().toISOString().split('T')[0],
-        revenue: revenue,
-        ad_spend: ad_spend,
-        leads: leads,
-        sales: sales
-      }, { onConflict: 'client_id,reference_date' });
-
-      if (error) throw error;
-      alert('✅ Métricas salvas com sucesso no Supabase!');
-      
-      if (window.carregarMetricasBI) {
-        window.carregarMetricasBI(currentClientId);
+      // 1. Coleta histórico de conversas e briefings do cliente
+      let contextData = '';
+      if (window.supabaseClient) {
+        const { data: chats } = await window.supabaseClient.from('bi_chat_history').select('content').eq('client_id', clientId).limit(10);
+        const { data: niche } = await window.supabaseClient.from('niche_knowledge_base').select('*').eq('client_id', clientId).maybeSingle();
+        contextData = JSON.stringify({ chats, niche });
       }
-    } catch(err) {
-      console.error(err);
-      alert('❌ Erro ao salvar métricas: ' + err.message);
+
+      // 2. Chama Gemini solicitando extração de métricas de BI em JSON estrito
+      const prompt = `Analise todos os dados e histórico deste cliente (${clientName}) e extraia/calcule as métricas reais atuais de BI.
+Retorne APENAS um JSON puro sem markdown com este formato:
+{
+  "revenue": 15000,
+  "ad_spend": 2500,
+  "leads": 45,
+  "sales": 6,
+  "top_channel": "Meta Ads",
+  "conversion_rate": 13.3
+}
+Contexto: ${contextData}`;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
+        body: JSON.stringify({ clientId, message: prompt })
+      });
+
+      const res = await response.json();
+      let rawText = typeof res.data === 'string' ? res.data : (res.data.replyText || JSON.stringify(res.data));
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const metricas = JSON.parse(jsonMatch[0]);
+
+        // 3. Salva no Supabase
+        if (window.supabaseClient) {
+          await window.supabaseClient.from('bi_analytics_data').upsert([{
+            client_id: clientId,
+            organization_id: tenantId,
+            revenue: metricas.revenue || 0,
+            ad_spend: metricas.ad_spend || 0,
+            leads: metricas.leads || 0,
+            sales: metricas.sales || 0,
+            reference_date: new Date().toISOString().split('T')[0]
+          }], { onConflict: 'client_id,reference_date' });
+        }
+
+        // 4. Atualiza a tela instantaneamente
+        if (typeof window.carregarMetricasBI === 'function') {
+          window.carregarMetricasBI(clientId);
+        }
+      }
+    } catch (err) {
+      console.error("[BI Engine] Erro na auditoria autônoma:", err);
+    } finally {
+      if (btnSync) btnSync.innerHTML = originalText || '⚡ Sincronizar APIs';
     }
   };
 
