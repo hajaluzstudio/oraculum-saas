@@ -375,12 +375,7 @@ ${contexto}`;
         body: JSON.stringify({
           clientId: clientId,
           message: texto,
-          mode: 'bi_live',
-          systemPrompt: biSystemPrompt,
-          history: (historicoAtual || []).map(h => ({
-            role: h.role === 'user' ? 'user' : 'model',
-            parts: [{ text: h.message }]
-          }))
+          mode: 'bi_live'
         })
       });
 
@@ -391,27 +386,25 @@ ${contexto}`;
 
       if (!res.ok || !data || data.error || data.success === false) {
         const statusHttp = res.status;
-        const errorMsg = data?.error || data?.message || res.statusText || 'Erro desconhecido na rota /api/chat';
+        const errorMsg = data?.error || data?.message || res.statusText || 'Erro interno na rota /api/chat';
         const errorDetails = data?.details ? `\nDetalhes: ${JSON.stringify(data.details)}` : '';
         
         console.error('[Oraculum Live Error]', { status: statusHttp, data });
 
         // Renderiza aviso explícito e detalhado na bolha de erro
-        adicionarAoFeed('erro', `⚠️ **Erro ${statusHttp} na API Gemini / Backend:**\n\`${errorMsg}\`${errorDetails}\n\n*Verifique se a variável GEMINI_API_KEY está configurada no Vercel ou se a rota /api/chat suporta o payload enviado.*`);
+        adicionarAoFeed('erro', `⚠️ **Falha no Motor de IA (Código ${statusHttp}):**\n\`${errorMsg}\`${errorDetails}\n\n*Ação:* Verifique se a variável GEMINI_API_KEY está configurada no Vercel.`);
         return;
       }
 
       const respostaFinal = data.data?.replyText || (typeof data.data === 'string' ? data.data : JSON.stringify(data.data));
       adicionarAoFeed('oraculo', respostaFinal);
 
-      // Persistência assíncrona em background
+      // Persistência segura usando os campos universais (content e prompt_input)
       if (window.supabaseClient) {
         window.supabaseClient.from('bi_chat_history').insert([
           { client_id: clientId, role: 'user', content: texto, prompt_input: texto, created_at: new Date().toISOString() },
-          { client_id: clientId, role: 'assistant', content: respostaFinal, created_at: new Date().toISOString() }
-        ]).then(({ error }) => {
-          if (error) console.warn('[Supabase Live Warn]', error.message);
-        });
+          { client_id: clientId, role: 'assistant', content: respostaFinal, response_output: respostaFinal, created_at: new Date().toISOString() }
+        ]).then(() => {}).catch(err => console.warn('[Supabase Warn]', err));
       }
 
       window.falarTextoOraculo(respostaFinal);
@@ -419,7 +412,7 @@ ${contexto}`;
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
       console.error('[Oraculum Live Network Error]', networkError);
-      adicionarAoFeed('erro', `🛑 **Erro de Conexão Frontend:**\n\`${networkError.message}\`\n\n*A requisição para /api/chat falhou antes de receber resposta.*`);
+      adicionarAoFeed('erro', `🛑 **Erro de Conexão Frontend:**\n\`${networkError.message}\`\n\n*A requisição falhou antes de obter resposta da API.*`);
     } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
