@@ -565,19 +565,26 @@ Seja direto, tático, analítico e resolutivo.`
 
   function forcarRenderizacaoOraculumLive() {
     // 1. Botão Flutuante no Body
-    let btn = document.getElementById('btn-open-oraculo-live');
+    let btn = document.getElementById('btn-toggle-oraculo-live') || document.getElementById('btn-open-oraculo-live');
     if (!btn) {
       btn = document.createElement('button');
-      btn.id = 'btn-open-oraculo-live';
+      btn.id = 'btn-toggle-oraculo-live';
       btn.type = 'button';
-      btn.innerHTML = '<span style="font-size:16px;">🤖</span><span>Oraculum Live</span>';
+      // Removendo o style.cssText inline para usar 100% as classes do Tailwind
+      btn.className = 'fixed bottom-6 right-6 z-[2147483647] flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-full shadow-[0_10px_25px_rgba(16,185,129,0.5)] transition-all duration-200 cursor-pointer border border-white/40';
+      btn.innerHTML = `
+        <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        <span>Oraculum Live</span>
+      `;
       document.body.appendChild(btn);
     }
     btn.onclick = function(e) {
       e.preventDefault();
       window.alternarOraculoLive();
     };
-    btn.style.cssText = 'position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; gap: 8px !important; padding: 12px 20px !important; background-color: #10b981 !important; color: #020705 !important; border-radius: 9999px !important; font-weight: 800 !important; font-size: 13px !important; cursor: pointer !important; border: 1px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 25px rgba(16,185,129,0.5) !important;';
 
     // 2. Drawer Lateral com Botão de Microfone e Resumo de Reunião
     let drawer = document.getElementById('oraculo-live-drawer');
@@ -587,7 +594,10 @@ Seja direto, tático, analítico e resolutivo.`
       drawer.innerHTML = `
         <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(8, 11, 17, 0.9);">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">🤖</span>
+            <svg class="text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            </svg>
             <div>
               <h3 style="margin: 0; font-size: 13px; font-weight: 700; color: #FFF;">Oraculum Live (Reunião)</h3>
               <span style="font-size: 10px; color: #10B981;">● Contexto de BI Ativo</span>
