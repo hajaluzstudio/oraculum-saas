@@ -358,29 +358,68 @@ Seja direto, tático, analítico e resolutivo.`
     }
 
     try {
+      const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
       const historicoAtual = await window.carregarHistoricoNuvem(clientId);
-      const respostaTexto = await perguntarAoOraculoGemini(texto, contexto, historicoAtual);
+      const biSystemPrompt = `Você é o Oraculum Live, Diretor de Estratégia de Negócios e BI.
+Analise os dados financeiros, ROAS, CAC e métricas deste cliente em tempo real.
+Seja direto, tático, analítico e resolutivo.
+--- [CONTEXTO DE BI ATUAL] ---
+${contexto}`;
 
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': tenantId
+        },
+        body: JSON.stringify({
+          clientId: clientId,
+          message: texto,
+          mode: 'bi_live',
+          systemPrompt: biSystemPrompt,
+          history: (historicoAtual || []).map(h => ({
+            role: h.role === 'user' ? 'user' : 'model',
+            parts: [{ text: h.message }]
+          }))
+        })
+      });
+
+      const data = await res.json().catch(() => null);
+      
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
 
-      adicionarAoFeed('oraculo', respostaTexto);
-      
-      // Salva no banco em background sem bloquear a tela
+      if (!res.ok || !data || data.error || data.success === false) {
+        const statusHttp = res.status;
+        const errorMsg = data?.error || data?.message || res.statusText || 'Erro desconhecido na rota /api/chat';
+        const errorDetails = data?.details ? `\nDetalhes: ${JSON.stringify(data.details)}` : '';
+        
+        console.error('[Oraculum Live Error]', { status: statusHttp, data });
+
+        // Renderiza aviso explícito e detalhado na bolha de erro
+        adicionarAoFeed('erro', `⚠️ **Erro ${statusHttp} na API Gemini / Backend:**\n\`${errorMsg}\`${errorDetails}\n\n*Verifique se a variável GEMINI_API_KEY está configurada no Vercel ou se a rota /api/chat suporta o payload enviado.*`);
+        return;
+      }
+
+      const respostaFinal = data.data?.replyText || (typeof data.data === 'string' ? data.data : JSON.stringify(data.data));
+      adicionarAoFeed('oraculo', respostaFinal);
+
+      // Persistência assíncrona em background
       if (window.supabaseClient) {
         window.supabaseClient.from('bi_chat_history').insert([
           { client_id: clientId, role: 'user', content: texto, prompt_input: texto, created_at: new Date().toISOString() },
-          { client_id: clientId, role: 'assistant', content: respostaTexto, created_at: new Date().toISOString() }
+          { client_id: clientId, role: 'assistant', content: respostaFinal, created_at: new Date().toISOString() }
         ]).then(({ error }) => {
           if (error) console.warn('[Supabase Live Warn]', error.message);
         });
       }
 
-      window.falarTextoOraculo(respostaTexto);
-    } catch (err) {
+      window.falarTextoOraculo(respostaFinal);
+    } catch (networkError) {
       const loadEl = document.getElementById(loadingId);
       if (loadEl) loadEl.remove();
-      adicionarAoFeed('erro', err.message);
+      console.error('[Oraculum Live Network Error]', networkError);
+      adicionarAoFeed('erro', `🛑 **Erro de Conexão Frontend:**\n\`${networkError.message}\`\n\n*A requisição para /api/chat falhou antes de receber resposta.*`);
     } finally {
       if (btnSend) btnSend.disabled = false;
       isProcessando = false;
