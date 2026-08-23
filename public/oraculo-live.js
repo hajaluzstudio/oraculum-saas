@@ -663,19 +663,41 @@ Seja direto, tático, analítico e resolutivo.`
   document.addEventListener('DOMContentLoaded', sincronizarVisibilidadeOraculoLive);
   window.addEventListener('hashchange', sincronizarVisibilidadeOraculoLive);
   
-  document.addEventListener('click', function(e) {
-    setTimeout(sincronizarVisibilidadeOraculoLive, 50);
+  document.addEventListener('click', () => setTimeout(sincronizarVisibilidadeOraculoLive, 50));
+  
+  // Listener de clique externo com captura global para contornar stopPropagation() de outros elementos
+  document.addEventListener('pointerdown', function (event) {
+    const gaveta = document.getElementById('oraculo-live-drawer') || 
+                   document.getElementById('gaveta-oraculo-live') || 
+                   document.querySelector('.oraculo-live-panel');
 
-    const gaveta = document.getElementById('oraculo-live-drawer') || document.getElementById('gaveta-oraculo-live');
     const btnToggle = document.getElementById('btn-toggle-oraculo-live');
 
-    if (!gaveta || gaveta.classList.contains('hidden')) return;
+    if (!gaveta) return;
 
-    // Se o clique NÃO foi dentro da gaveta e NÃO foi no botão que abre/fecha
-    if (!gaveta.contains(e.target) && (!btnToggle || !btnToggle.contains(e.target))) {
-      gaveta.classList.add('hidden');
+    // Verifica se a gaveta está visível na tela
+    const estaAberta = !gaveta.classList.contains('hidden') && 
+                       !gaveta.classList.contains('translate-x-full') && 
+                       gaveta.style.display !== 'none' && 
+                       gaveta.offsetParent !== null;
+
+    if (!estaAberta) return;
+
+    // Se o clique ocorreu fora da gaveta e fora do botão de toggle
+    if (!gaveta.contains(event.target) && (!btnToggle || !btnToggle.contains(event.target))) {
+      // 1. Tenta acionar a função oficial de fechar se existir
+      if (typeof window.fecharOraculoLive === 'function') {
+        window.fecharOraculoLive();
+      } else if (typeof window.alternarOraculoLive === 'function' && gaveta.classList.contains('hidden') === false) {
+        window.alternarOraculoLive();
+      } else {
+        // 2. Fallback via manipulação direta de classes e estilos
+        gaveta.classList.add('hidden');
+        gaveta.classList.add('translate-x-full');
+        gaveta.style.display = 'none';
+      }
     }
-  });
+  }, true); // <- Fase de captura ativada para garantir a interceptação antes de outros componentes
 
   window.sincronizarVisibilidadeOraculoLive = sincronizarVisibilidadeOraculoLive;
 })();
