@@ -164,6 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (typeof loadClientBiMetrics === 'function') {
              loadClientBiMetrics(window.currentClientId || activeClientId);
           }
+          if (typeof window.carregarFeedbackLoopDoBanco === 'function') {
+             window.carregarFeedbackLoopDoBanco(window.currentClientId || activeClientId);
+          }
         }, 60);
       }
     });
@@ -356,6 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carrega o Kanban e o BI do cliente selecionado
     await loadClientKanbanCards(clientId);
     await loadClientBiMetrics(clientId);
+    if (typeof window.carregarFeedbackLoopDoBanco === 'function') {
+      window.carregarFeedbackLoopDoBanco(clientId);
+    }
 
     // Load War Room State
     const savedBriefing = localStorage.getItem(`oraculum_briefing_${clientId}`);
@@ -5904,8 +5910,6 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       container.innerHTML = formatarFeedbackLoopExecutivo(textoFinal);
     }
 
-    localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
-
   } catch (erroGrave) {
     console.error('[Feedback Loop Falha]', erroGrave);
     const msgErro = erroGrave.message || String(erroGrave);
@@ -5921,5 +5925,37 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   } finally {
     if (btn) btn.disabled = false;
     if (btnText) btnText.innerText = 'Recalcular Feedback Loop';
+  }
+};
+
+// Restaura o diagnóstico gravado no Supabase para o cliente ativo
+window.carregarFeedbackLoopDoBanco = async function(clientId) {
+  const activeClientId = clientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  const container = document.getElementById('feedback-loop-content');
+
+  if (!container || !activeClientId || !window.supabaseClient) return;
+
+  try {
+    const { data: client, error } = await window.supabaseClient
+      .from('clients')
+      .select('last_feedback_loop')
+      .eq('id', activeClientId)
+      .maybeSingle();
+
+    if (!error && client && client.last_feedback_loop) {
+      if (typeof formatarFeedbackLoopExecutivo === 'function') {
+        container.innerHTML = formatarFeedbackLoopExecutivo(client.last_feedback_loop);
+      } else {
+        container.innerHTML = client.last_feedback_loop.replace(/\n/g, '<br/>');
+      }
+    } else {
+      container.innerHTML = `
+        <div class="text-xs text-slate-400 italic py-2">
+          Nenhum diagnóstico registrado no banco. Clique em <strong>"Recalcular Feedback Loop"</strong> para cruzar o dossiê com o funil comercial.
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('[Feedback Loop] Erro ao carregar do Supabase:', err);
   }
 };

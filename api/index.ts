@@ -810,6 +810,18 @@ Responda diretamente à solicitação com a estratégia estruturada, sem introdu
       { contents: [{ role: 'user', parts: [{ text: userMessage }] }] }
     );
 
+    if (mode === 'bi_feedback_loop' && clientId && supabase) {
+      try {
+        await supabase
+          .from('clients')
+          .update({ last_feedback_loop: generatedText })
+          .eq('id', clientId);
+        console.log(`[Supabase] Feedback loop salvo com sucesso para o cliente ${clientId}`);
+      } catch (dbErr) {
+        console.warn('[Supabase] Erro ao salvar last_feedback_loop:', dbErr);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       reply: generatedText,
