@@ -5960,26 +5960,57 @@ window.carregarFeedbackLoopDoBanco = async function(clientId) {
   }
 };
 
-// Controle do Modal de Lançamento
+// Telemetria e Abertura com Códigos de Erro Estruturados
 window.abrirModalLancarBI = function(e) {
-  if (e) e.preventDefault();
-  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!activeClientId) {
-    alert('Selecione um cliente ativo no topo da tela antes de lançar métricas.');
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  console.log('[BI-DEBUG] [INF-BI-001] Disparo de clique no botão Lançar BI detectado.');
+
+  const modal = document.getElementById('modal-lancar-bi');
+  if (!modal) {
+    console.error('[BI-DEBUG] [ERR-MODAL-BI-001] Elemento #modal-lancar-bi não encontrado no DOM!');
+    alert('[ERR-MODAL-BI-001]: O modal de lançamento manual não foi encontrado na estrutura HTML da página.');
     return;
   }
-  const modal = document.getElementById('modal-lancar-bi');
-  if (modal) {
-    modal.classList.remove('hidden');
-    const inputGasto = document.getElementById('bi-input-gasto');
-    if (inputGasto) inputGasto.focus();
+
+  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  if (!activeClientId) {
+    console.warn('[BI-DEBUG] [ERR-MODAL-BI-002] Nenhum cliente ativo selecionado no contexto.');
+    alert('[ERR-MODAL-BI-002]: Selecione um cliente ativo no seletor do topo antes de lançar métricas.');
+    return;
+  }
+
+  console.log(`[BI-DEBUG] [INF-BI-002] Abrindo modal com sucesso para o cliente: ${activeClientId}`);
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+
+  const inputGasto = document.getElementById('bi-input-gasto');
+  if (inputGasto) {
+    setTimeout(() => inputGasto.focus(), 100);
+  } else {
+    console.warn('[BI-DEBUG] [ERR-MODAL-BI-003] Input #bi-input-gasto não encontrado dentro do modal.');
   }
 };
 
 window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-lancar-bi');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
 };
+
+// Captura Global via Event Delegation (Garante funcionamento mesmo se o HTML da aba for recriado dinamicamente)
+document.addEventListener('click', function(event) {
+  const btnLancar = event.target.closest('#btn-lancar-bi, [data-action="lancar-bi"], button:has(.lucro), .btn-lancar-bi');
+  if (btnLancar || (event.target.innerText && event.target.innerText.includes('Lançar BI'))) {
+    console.log('[BI-DEBUG] [INF-BI-003] Captura de clique via Event Delegation disparada.');
+    window.abrirModalLancarBI(event);
+  }
+});
 
 // Renderização Reativa dos Cards e do Funil Comercial
 window.atualizarDashboardBIVisual = function(dados) {
