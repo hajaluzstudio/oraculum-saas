@@ -314,12 +314,14 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('[Workspace] Erro ao carregar dossiê do cliente selecionado.');
     }
 
-    // Busca Histórico de Chat
+    // Busca Histórico de Chat Estratégico
     try {
-      const resChat = await fetch(`${API_BASE_URL}/api/chat-history/${clientId}`, {
-        headers: { 'x-organization-id': activeTenantId }
-      });
-      const chatResult = await resChat.json();
+      const { data: chatData, error: chatErr } = await window.supabaseClient
+        .from('chat_history')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true });
+        
       const chatMessagesList = document.getElementById('chat-messages-list');
       
       if (chatMessagesList) {
@@ -332,14 +334,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         chatHistory = [];
         
-        if (chatResult.success && chatResult.data && chatResult.data.length > 0) {
-          chatResult.data.forEach(msg => {
-            const rawRole = msg.role || msg.sender;
-            const role = (rawRole === 'user') ? 'user' : 'model';
+        if (!chatErr && chatData && chatData.length > 0) {
+          chatData.forEach(msg => {
+            const role = (msg.role === 'user') ? 'user' : 'model';
             const content = msg.content || msg.message || '';
-            const jsonResp = msg.json_response;
 
-            if (role === 'model' || role === 'assistant' || rawRole === 'oraculum' || rawRole === 'bot') {
+            if (role === 'model') {
               const replyHtml = `${content}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>`;
               appendChatMessage('model', replyHtml);
             } else {
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (e) {
-      console.warn('[Workspace] Erro ao carregar histórico de chat.');
+      console.warn('[Workspace] Erro ao carregar histórico de chat estratégico:', e);
     }
 
     // Carrega o Kanban e o BI do cliente selecionado
@@ -856,6 +856,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const typingId = appendChatMessage('model', '<i class="fa-solid fa-spinner fa-spin"></i> O Oraculum está consultando a base do nicho e formulando a recomendação...');
 
     try {
+      if (window.supabaseClient) {
+        await window.supabaseClient.from('chat_history').insert([{
+          client_id: activeClientId || 'client_mock_123',
+          role: 'user',
+          content: text
+        }]);
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -877,6 +885,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (resData.status === 'ok') {
         const replyHtml = `${resData.reply}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>`;
         appendChatMessage('model', replyHtml);
+        
+        if (window.supabaseClient) {
+          await window.supabaseClient.from('chat_history').insert([{
+            client_id: activeClientId || 'client_mock_123',
+            role: 'model',
+            content: resData.reply
+          }]);
+        }
       } else {
         throw new Error('Erro na resposta do chat');
       }
@@ -1835,6 +1851,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
           body: JSON.stringify({
             clientId: clientId,
+            type: 'bi_extraction_silent',
             message: `Extraia estritamente os números deste relatório em JSON: {"revenue": 0, "spend": 0, "leads": 0, "sales": 0}. Relatório: ${rawReport}`
           })
         });
