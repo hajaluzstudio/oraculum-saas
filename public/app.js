@@ -5752,18 +5752,25 @@ function formatarFeedbackLoopExecutivo(texto) {
   function extrairLinhas(bloco) {
     if (!bloco) return '<div class="text-xs text-slate-400 italic">Nenhuma recomendação registrada.</div>';
 
-    // Remove o título da seção
     let linhas = bloco.split('\n');
+    
+    // Remove título inicial se coincidir
     if (linhas.length > 0 && /Padrões|Ajustes|🏆|⚠️/i.test(linhas[0])) {
       linhas.shift();
     }
 
     const htmlItens = linhas
       .map(l => l.trim())
-      .filter(l => l.length > 0)
+      // 1. Filtra separadores e marcadores vazios residuais (###, ---, etc.)
+      .filter(l => l.length > 0 && !/^#{1,6}\s*$/.test(l) && !/^[-*_]{3,}\s*$/.test(l))
       .map(l => {
-        let item = l.replace(/^[-•*▸]\s*/, '');
-        // Formata colchetes residuais [Insight 1: ...]
+        // 2. Remove marcadores de lista, hashtags residuais no início e traços
+        let item = l.replace(/^[-•*▸#]+\s*/, '').trim();
+        
+        // Se a linha ficou vazia após a limpeza, ignora
+        if (!item) return '';
+
+        // Formata colchetes residuais [Insight: ...]
         item = item.replace(/^\[(.*?)\]/, '<strong class="text-slate-200 font-semibold">$1</strong>');
         // Formata negritos (**texto**)
         item = item.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
@@ -5777,6 +5784,7 @@ function formatarFeedbackLoopExecutivo(texto) {
           </div>
         `;
       })
+      .filter(html => html.length > 0)
       .join('');
 
     return htmlItens || '<div class="text-xs text-slate-400 italic">Sem diretivas adicionais.</div>';
