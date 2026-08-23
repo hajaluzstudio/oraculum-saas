@@ -679,59 +679,71 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/chat - Chat Estratégico & Live Advisor com persistência no bi_chat_history
+// POST /api/chat - Chat Estratégico & Live Advisor
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt } = req.body;
     const userMessage = message || prompt || '';
     const clientId = reqClientId || client_id;
-    
-    if (!clientId || !userMessage) {
-      return res.status(400).json({ status: 'error', error: 'clientId e message são obrigatórios.' });
+
+    if (!userMessage) {
+      return res.status(400).json({ success: false, error: 'Mensagem não fornecida.' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
-      return res.status(500).json({ status: 'error', error: 'GEMINI_API_KEY não configurada no servidor.' });
+      return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    // As inserções no banco agora são responsabilidade segregada do frontend (chat_history vs bi_chat_history)
-
-    const { GoogleGenAI } = require('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-
-    // Pega o dossiê real do banco
-    const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
-    const dossier = dossierData ? dossierData.dossier_data : {};
+    let promptInstrucao = "Você é o Oraculum AI.";
     
-    let systemInstruction = '';
     if (mode === 'bi_live') {
-      systemInstruction = `Você é o Oraculum Live, Diretor Executivo de Estratégia, BI e CRO em uma reunião ao vivo com o cliente.
-Sua função é responder DIRETAMENTE à pergunta feita pelo usuário, usando tom executivo, objetivo e embasado em dados.
-- Responda apenas o que foi perguntado.
-- NÃO gere roteiros de anúncios, hooks ou estruturas de VSL a menos que expressamente solicitado.
-- Se a pergunta for sobre diagnóstico, analise o cenário de métricas, gargalos do funil e recomende decisões de negócio.`;
+      promptInstrucao = `Você é o Diretor Executivo de BI e Estratégia do Oraculum Live em reunião ao vivo. 
+Responda diretamente à pergunta do usuário de forma concisa, executiva e prática sobre negócios, finanças e tráfego. 
+NÃO gere roteiros de anúncios ou hooks de vídeo a não ser que solicitado.`;
     } else {
-      systemInstruction = systemPrompt || `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
+      // Pega o dossiê real do banco
+      const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
+      const dossier = dossierData ? dossierData.dossier_data : {};
+      promptInstrucao = systemPrompt || `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
 Dossiê do Cliente Ativo: ${JSON.stringify(dossier || {})}.
 Instrução do usuário: "${userMessage}".
 Responda diretamente à solicitação com a estratégia estruturada, sem introduções genéricas repetitivas. Formate com clareza em Markdown destacando Headlines, Hooks de 3s e Scripts.`;
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      config: { systemInstruction }
+    // Chamada à API Google Gemini
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const aiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          { role: 'user', parts: [{ text: `${promptInstrucao}\n\nPergunta do usuário: ${userMessage}` }] }
+        ]
+      })
     });
 
-    const replyText = response.text || "Erro na geração da resposta.";
+    const aiData = await aiResponse.json();
 
-    // Salva resposta real da IA movido para o frontend
+    if (!aiResponse.ok) {
+      return res.status(aiResponse.status).json({ 
+        success: false, 
+        error: aiData.error?.message || 'Erro retornado pela API do Gemini.' 
+      });
+    }
 
-    return res.json({ reply: replyText, status: 'ok' });
-  } catch (error: any) {
-    console.error('❌ [API /api/chat Error]:', error);
-    return res.status(500).json({ status: 'error', error: error.message || 'Erro interno no Chat.' });
+    const generatedText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta gerada pelo modelo.';
+
+    return res.status(200).json({
+      success: true,
+      reply: generatedText,
+      replyText: generatedText,
+      data: generatedText
+    });
+
+  } catch (err: any) {
+    console.error('❌ [API /api/chat Error]:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Erro interno no servidor.' });
   }
 });
 

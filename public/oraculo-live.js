@@ -337,45 +337,39 @@ Seja direto, tático, analítico e resolutivo.`
     return respostaFinal;
   }
 
-  window.enviarMensagemOraculo = async function(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (isProcessando) return;
-
-    const input = document.getElementById('oraculo-input-text');
-    const texto = input ? input.value.trim() : '';
+  window.enviarMensagemOraculo = async function() {
+    const input = document.getElementById('input-live-message') || document.getElementById('input-chat-oraculo') || document.getElementById('oraculo-input-text');
+    if (!input) return;
+    const texto = input.value.trim();
     if (!texto) return;
 
-    isProcessando = true;
-    adicionarAoFeed('usuario', texto);
-    if (input) input.value = '';
+    input.value = '';
 
-    const contexto = extrairContextoCompletoBI();
-    const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
+    const chatContainer = document.getElementById('oraculo-live-messages') || document.getElementById('live-chat-feed') || document.getElementById('oraculo-chat-feed');
+    if (!chatContainer) return;
 
-    const btnSend = document.getElementById('btn-send-oraculo');
-    if (btnSend) btnSend.disabled = true;
+    // 1. Bolha do Usuário
+    const userBubble = document.createElement('div');
+    userBubble.className = 'p-3 bg-emerald-950/60 border border-emerald-500/30 text-emerald-100 rounded-xl text-xs ml-auto max-w-[85%] my-2';
+    userBubble.innerHTML = `<span class="font-bold text-[10px] block text-emerald-400 mb-1">Você / Reunião</span>${texto}`;
+    chatContainer.appendChild(userBubble);
 
-    const loadingId = 'loading-' + Date.now();
-    const feed = document.getElementById('oraculo-chat-feed');
-    if (feed) {
-      const loadDiv = document.createElement('div');
-      loadDiv.id = loadingId;
-      loadDiv.style.cssText = 'background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 12px; color: #34D399; font-size: 12px;';
-      loadDiv.innerHTML = '⏳ Oraculum analisando métricas da reunião...';
-      feed.appendChild(loadDiv);
-      feed.scrollTop = feed.scrollHeight;
-    }
+    // 2. Bolha da IA (Estado Inicial)
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'p-3 bg-slate-900 border border-slate-700/60 text-slate-200 rounded-xl text-xs mr-auto max-w-[90%] my-2';
+    aiBubble.innerHTML = `<span class="font-bold text-[10px] block text-cyan-400 mb-1 flex items-center gap-1">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> Oraculum Live
+    </span><div class="resposta-corpo text-slate-400 italic">Analisando dados em tempo real...</div>`;
+    chatContainer.appendChild(aiBubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    const corpoEl = aiBubble.querySelector('.resposta-corpo');
 
     try {
       const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-      const historicoAtual = await window.carregarHistoricoNuvem(clientId);
-      const biSystemPrompt = `Você é o Oraculum Live, Diretor de Estratégia de Negócios e BI.
-Analise os dados financeiros, ROAS, CAC e métricas deste cliente em tempo real.
-Seja direto, tático, analítico e resolutivo.
---- [CONTEXTO DE BI ATUAL] ---
-${contexto}`;
+      const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'default_client';
 
-      const res = await fetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -388,43 +382,33 @@ ${contexto}`;
         })
       });
 
-      const data = await res.json().catch(() => null);
-      
-      const loadEl = document.getElementById(loadingId);
-      if (loadEl) loadEl.remove();
+      const resJson = await response.json().catch(() => null);
 
-      if (!res.ok || !data || data.error || data.success === false) {
-        const statusHttp = res.status;
-        const errorMsg = data?.error || data?.message || res.statusText || 'Erro interno na rota /api/chat';
-        const errorDetails = data?.details ? `\nDetalhes: ${JSON.stringify(data.details)}` : '';
-        
-        console.error('[Oraculum Live Error]', { status: statusHttp, data });
-
-        // Renderiza aviso explícito e detalhado na bolha de erro
-        adicionarAoFeed('erro', `⚠️ **Falha no Motor de IA (Código ${statusHttp}):**\n\`${errorMsg}\`${errorDetails}\n\n*Ação:* Verifique se a variável GEMINI_API_KEY está configurada no Vercel.`);
+      if (!response.ok || !resJson || resJson.success === false) {
+        const msgErro = resJson?.error || resJson?.message || `HTTP ${response.status} ${response.statusText}`;
+        corpoEl.className = 'resposta-corpo text-red-400 font-semibold';
+        corpoEl.innerHTML = `⚠️ Erro na resposta: ${msgErro}`;
         return;
       }
 
-      const respostaFinal = data.data?.replyText || (typeof data.data === 'string' ? data.data : JSON.stringify(data.data));
-      adicionarAoFeed('oraculo', respostaFinal);
+      // Extração prioritária do texto
+      const textoResposta = resJson.reply || resJson.replyText || (typeof resJson.data === 'string' ? resJson.data : resJson.data?.replyText) || 'Resposta vazia.';
 
-      // Persistência segura usando os campos universais (content e prompt_input)
+      corpoEl.className = 'resposta-corpo text-slate-200 whitespace-pre-line leading-relaxed';
+      corpoEl.innerHTML = textoResposta.replace(/\n/g, '<br/>');
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      // Persistência segura usando os campos universais
       if (window.supabaseClient) {
         window.supabaseClient.from('bi_chat_history').insert([
           { client_id: clientId, role: 'user', content: texto, prompt_input: texto, created_at: new Date().toISOString() },
-          { client_id: clientId, role: 'assistant', content: respostaFinal, response_output: respostaFinal, created_at: new Date().toISOString() }
+          { client_id: clientId, role: 'assistant', content: textoResposta, response_output: textoResposta, created_at: new Date().toISOString() }
         ]).then(() => {}).catch(err => console.warn('[Supabase Warn]', err));
       }
 
-      window.falarTextoOraculo(respostaFinal);
-    } catch (networkError) {
-      const loadEl = document.getElementById(loadingId);
-      if (loadEl) loadEl.remove();
-      console.error('[Oraculum Live Network Error]', networkError);
-      adicionarAoFeed('erro', `🛑 **Erro de Conexão Frontend:**\n\`${networkError.message}\`\n\n*A requisição falhou antes de obter resposta da API.*`);
-    } finally {
-      if (btnSend) btnSend.disabled = false;
-      isProcessando = false;
+    } catch (err) {
+      corpoEl.className = 'resposta-corpo text-red-400 font-semibold';
+      corpoEl.innerHTML = `🛑 Falha de rede: ${err.message}`;
     }
   };
 
