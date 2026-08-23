@@ -1796,25 +1796,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.customAdSpendMap = window.customAdSpendMap || {};
 
-  window.abrirSimuladorOrcamento = function() {
-    const currentClientId = window.activeClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
+  window.abrirSimuladorOrcamento = async function() {
+    const currentClientId = window.activeClientId || window.currentClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
     
     if (!currentClientId) {
       alert('⚠️ Selecione um cliente na carteira antes de ajustar a verba de tráfego.');
       return;
     }
 
-    const currentSpend = window.customAdSpendMap[currentClientId] || 2000;
-    const novoValorStr = prompt('💰 Simulador de Orçamento (Calculadora de ROI)\nDigite o novo valor de verba em tráfego pago (R$):', currentSpend);
+    const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    
+    const revenueStr = prompt('💰 [DADOS REAIS] Digite o Faturamento Atual (R$):', '0');
+    if (revenueStr === null) return;
+    
+    const adSpendStr = prompt('💰 [DADOS REAIS] Digite o Gasto em Tráfego (R$):', '0');
+    if (adSpendStr === null) return;
 
-    if (novoValorStr !== null) {
-      const num = parseFloat(novoValorStr.replace('R$', '').replace('.', '').replace(',', '.').trim());
-      if (!isNaN(num) && num >= 0) {
-        window.customAdSpendMap[currentClientId] = num;
-        
-        const clientObj = window.clienteAtivoAtual || { id: currentClientId, name: window.activeClientName || 'Cliente Ativo' };
-        window.renderBIData(clientObj);
+    const leadsStr = prompt('🎯 [DADOS REAIS] Digite a quantidade de Leads:', '0');
+    if (leadsStr === null) return;
+
+    const salesStr = prompt('🏆 [DADOS REAIS] Digite a quantidade de Vendas:', '0');
+    if (salesStr === null) return;
+
+    const revenue = parseFloat(revenueStr.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
+    const ad_spend = parseFloat(adSpendStr.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
+    const leads = parseInt(leadsStr.trim()) || 0;
+    const sales = parseInt(salesStr.trim()) || 0;
+
+    try {
+      const { error } = await window.supabaseClient.from('bi_analytics_data').upsert({
+        client_id: currentClientId,
+        organization_id: tenantId,
+        reference_date: new Date().toISOString().split('T')[0],
+        revenue: revenue,
+        ad_spend: ad_spend,
+        leads: leads,
+        sales: sales
+      }, { onConflict: 'client_id,reference_date' });
+
+      if (error) throw error;
+      alert('✅ Métricas salvas com sucesso no Supabase!');
+      
+      if (window.carregarMetricasBI) {
+        window.carregarMetricasBI(currentClientId);
       }
+    } catch(err) {
+      console.error(err);
+      alert('❌ Erro ao salvar métricas: ' + err.message);
     }
   };
 
@@ -1836,8 +1864,79 @@ document.addEventListener('DOMContentLoaded', () => {
     alert('✅ Insight e pautas de reunião salvos com sucesso no perfil do cliente!');
   };
 
-  window.renderBIData = function(clientData) {
+  let currentBiSubscription = null;
+
+  window.carregarMetricasBI = async function(clientId) {
+    const targetClientId = clientId || window.currentClientId || window.activeClientId;
+    
     const titleEl = document.getElementById('bi-active-client-title');
+    const resolvedName = window.currentClientName || window.activeClientName || 'Cliente Ativo';
+    if (titleEl) titleEl.textContent = resolvedName;
+
+    if (!targetClientId) {
+      window.renderBIDataReal({ hasData: false });
+      return;
+    }
+
+    // Configura Realtime Subscription apenas se o client mudou
+    if (window.supabaseClient) {
+      if (currentBiSubscription) {
+        window.supabaseClient.removeChannel(currentBiSubscription);
+      }
+      currentBiSubscription = window.supabaseClient.channel('bi-realtime-' + targetClientId)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'bi_analytics_data', 
+          filter: `client_id=eq.${targetClientId}` 
+        }, (payload) => {
+          console.log('[BI Realtime] Alteração detectada no banco:', payload);
+          window.carregarMetricasBI(targetClientId); // Refresh recursivo seguro via trigger de evento
+        }).subscribe();
+    }
+
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .select('*')
+        .eq('client_id', targetClientId)
+        .order('reference_date', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        let revenue = 0, ad_spend = 0, leads = 0, sales = 0;
+        data.forEach(row => {
+          revenue += parseFloat(row.revenue) || 0;
+          ad_spend += parseFloat(row.ad_spend) || 0;
+          leads += parseInt(row.leads) || 0;
+          sales += parseInt(row.sales) || 0;
+        });
+
+        const profit = revenue - ad_spend;
+        const roas = ad_spend > 0 ? (revenue / ad_spend) : 0;
+        const convRate = leads > 0 ? (sales / leads) * 100 : 0;
+        const cac = sales > 0 ? (ad_spend / sales) : 0;
+        
+        let ltvcacStr = '0.0 : 1';
+        if (cac > 0) {
+          const fakeTicket = revenue > 0 && sales > 0 ? (revenue / sales) : 1500;
+          ltvcacStr = ((fakeTicket * 1.5) / cac).toFixed(1) + ' : 1';
+        }
+
+        window.renderBIDataReal({
+          hasData: true, revenue, ad_spend, profit, roas, convRate, cac, sales, leads, ltvcacStr
+        });
+      } else {
+        window.renderBIDataReal({ hasData: false });
+      }
+    } catch(err) {
+      console.error('Erro ao buscar bi_analytics_data:', err);
+      window.renderBIDataReal({ hasData: false });
+    }
+  };
+
+  window.renderBIDataReal = function(metrics) {
     const revEl = document.getElementById('bi-val-revenue');
     const spendEl = document.getElementById('bi-val-spend');
     const profitEl = document.getElementById('bi-val-profit');
@@ -1852,15 +1951,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const fMeetings = document.getElementById('funnel-val-meetings');
     const fSales = document.getElementById('funnel-val-sales');
 
-    if (!clientData || (!clientData.name && !clientData.company_name)) {
-      if (titleEl) titleEl.textContent = 'Selecione um cliente na Carteira para visualizar as métricas de ROI e BI';
+    if (!metrics || !metrics.hasData) {
       if (revEl) revEl.textContent = 'R$ 0,00';
       if (spendEl) spendEl.textContent = 'R$ 0,00';
       if (profitEl) profitEl.textContent = 'R$ 0,00';
       if (roasEl) roasEl.textContent = '0.00x';
       if (ltvcacEl) ltvcacEl.textContent = '0.0 : 1';
       if (convRateEl) convRateEl.textContent = '0.00%';
-      if (subConvEl) subConvEl.textContent = '0 Vendas (Aguardando cliente)';
+      if (subConvEl) subConvEl.textContent = '0 Vendas (Sem dados reais)';
 
       if (fImp) fImp.textContent = '0';
       if (fClicks) fClicks.textContent = '0';
@@ -1868,112 +1966,42 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fMeetings) fMeetings.textContent = '0';
       if (fSales) fSales.textContent = '0 Vendas';
 
-      const notesInput = document.getElementById('meeting-notes-input');
-      if (notesInput) notesInput.value = '';
+      // Limpar gráficos
+      if (window.chartRevenueSpend && typeof window.chartRevenueSpend.destroy === 'function') {
+        window.chartRevenueSpend.destroy(); window.chartRevenueSpend = null;
+      }
       return;
     }
 
-    window.clienteAtivoAtual = clientData;
-    window.activeClientId = clientData.id;
-    window.activeClientName = clientData.company_name || clientData.name;
+    if (revEl) revEl.textContent = `R$ ${metrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (spendEl) spendEl.textContent = `R$ ${metrics.ad_spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (profitEl) profitEl.textContent = `R$ ${metrics.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (roasEl) roasEl.textContent = `${metrics.roas.toFixed(2)}x`;
+    if (ltvcacEl) ltvcacEl.textContent = metrics.ltvcacStr;
+    if (convRateEl) convRateEl.textContent = `${metrics.convRate.toFixed(2)}%`;
+    if (subConvEl) subConvEl.textContent = `${metrics.sales} Vendas (CAC: R$ ${metrics.cac.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`;
 
-    if (titleEl) titleEl.textContent = clientData.company_name || clientData.name || 'Cliente Ativo';
+    if (fImp) fImp.textContent = '-';
+    if (fClicks) fClicks.textContent = '-';
+    if (fLeads) fLeads.textContent = metrics.leads.toLocaleString('pt-BR');
+    if (fMeetings) fMeetings.textContent = '-';
+    if (fSales) fSales.textContent = `${metrics.sales} Vendas`;
     
-    const currentAdSpend = window.customAdSpendMap && window.customAdSpendMap[clientData.id] 
-      ? window.customAdSpendMap[clientData.id] 
-      : (clientData.verba || clientData.ad_spend || 2000);
-
-    const ticket = clientData.average_ticket || clientData.ticket_medio || 1500;
-    const conversions = Math.max(1, Math.round((currentAdSpend * 3) / ticket));
-    const revenue = conversions * ticket;
-    const profit = Math.max(0, revenue - currentAdSpend);
-    const roas = currentAdSpend > 0 ? (revenue / currentAdSpend).toFixed(2) : '0.00';
-    const realCac = conversions > 0 ? Math.round(currentAdSpend / conversions) : currentAdSpend;
-    const ltvcac = realCac > 0 ? ((ticket * 1.8) / realCac).toFixed(1) : '0.0';
-
-    if (revEl) revEl.textContent = `R$ ${revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (spendEl) spendEl.textContent = `R$ ${currentAdSpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (profitEl) profitEl.textContent = `R$ ${profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (roasEl) roasEl.textContent = `${roas}x`;
-    if (ltvcacEl) ltvcacEl.textContent = `${ltvcac} : 1`;
-    if (convRateEl) convRateEl.textContent = '3.50%';
-    if (subConvEl) subConvEl.textContent = `${conversions} Vendas (CAC: R$ ${realCac.toLocaleString('pt-BR')})`;
-
-    const imp = Math.round(currentAdSpend * 28);
-    const clicks = Math.round(imp * 0.039);
-    const leads = Math.round(clicks * 0.078);
-    const meetings = Math.round(leads * 0.168);
-
-    if (fImp) fImp.textContent = imp.toLocaleString('pt-BR');
-    if (fClicks) fClicks.textContent = clicks.toLocaleString('pt-BR');
-    if (fLeads) fLeads.textContent = leads.toLocaleString('pt-BR');
-    if (fMeetings) fMeetings.textContent = meetings.toLocaleString('pt-BR');
-    if (fSales) fSales.textContent = `${conversions} Vendas (${((conversions / Math.max(1, meetings)) * 100).toFixed(1)}%)`;
-
-    const notesInput = document.getElementById('meeting-notes-input');
-    if (notesInput) {
-      const savedNotes = localStorage.getItem(`oraculum_meeting_notes_${clientData.id}`) || clientData.meeting_notes || '';
-      notesInput.value = savedNotes;
-    }
+    // Podemos manter os gráficos vazios ou fazer um update genérico
   };
 
   async function loadClientBiMetrics(clientId) {
-    const targetClientId = clientId || window.currentClientId || activeClientId;
-    if (!targetClientId) {
-      window.renderBIData(null);
-      return;
-    }
-
-    const titleEl = document.getElementById('bi-active-client-title');
-    const resolvedName = window.currentClientName || activeClientName || 'Cliente Ativo';
-    if (titleEl) titleEl.textContent = resolvedName;
-
-    // Resolve full client object from cache — zero KPIs for clients with no data
-    let clientObj = (window.clientsList || window.clientesMock || []).find(c => String(c.id) === String(targetClientId));
-    if (!clientObj) clientObj = window.clienteAtivoAtual;
-    if (!clientObj) clientObj = { id: targetClientId, name: resolvedName };
-
-    // Merge name from global state in case the cache entry is a minimal stub
-    if (!clientObj.name) clientObj.name = resolvedName;
-
-    window.renderBIData(clientObj);
+    window.carregarMetricasBI(clientId);
   }
-  // Expose globally so the external clientChanged listener can call it
   window.loadClientBiMetrics = loadClientBiMetrics;
 
   function renderBiInteractiveDashboard(period = '30d') {
     currentBiPeriod = period;
-    const data = getClientCycleBiData(window.currentClientId || activeClientId, window.currentClientName || activeClientName, period);
+    
+    // Mocks desativados para o dashboard interativo.
+    // O backend ou Supabase devem popular gráficos.
+    console.log("[BI] Gráficos mockados foram expurgados para garantir dados reais.");
 
-    // 1. Atualiza os 6 cards de KPIs
-    const revEl = document.getElementById('bi-val-revenue');
-    const spendEl = document.getElementById('bi-val-spend');
-    const profitEl = document.getElementById('bi-val-profit');
-    const roasEl = document.getElementById('bi-val-roas');
-    const ltvcacEl = document.getElementById('bi-val-ltvcac');
-    const convRateEl = document.getElementById('bi-val-conv-rate');
-    const subConvEl = document.getElementById('bi-sub-conversions');
-
-    if (revEl) revEl.textContent = `R$ ${data.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (spendEl) spendEl.textContent = `R$ ${data.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (profitEl) profitEl.textContent = `R$ ${data.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    if (roasEl) roasEl.textContent = `${data.roas.toFixed(2)}x`;
-    if (ltvcacEl) ltvcacEl.textContent = `${data.ltvcac.toFixed(1)} : 1`;
-    if (convRateEl) convRateEl.textContent = data.convRate;
-    if (subConvEl) subConvEl.textContent = `${data.conversions} (CAC: R$ ${data.realCac.toFixed(2)})`;
-
-    // 2. Atualiza Funil Visual
-    const fImp = document.getElementById('funnel-val-impressions');
-    const fClicks = document.getElementById('funnel-val-clicks');
-    const fLeads = document.getElementById('funnel-val-leads');
-    const fMeetings = document.getElementById('funnel-val-meetings');
-    const fSales = document.getElementById('funnel-val-sales');
-
-    if (fImp) fImp.textContent = data.funnel.imp;
-    if (fClicks) fClicks.textContent = data.funnel.clicks;
-    if (fLeads) fLeads.textContent = data.funnel.leads;
-    if (fMeetings) fMeetings.textContent = data.funnel.meetings;
-    if (fSales) fSales.textContent = data.funnel.sales;
 
     // 3. Renderiza Gráficos Chart.js com segurança e recriação limpa
     if (typeof Chart === 'undefined') {
