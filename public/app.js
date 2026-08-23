@@ -5960,10 +5960,20 @@ window.carregarFeedbackLoopDoBanco = async function(clientId) {
   }
 };
 
-// Controle do Modal
-window.abrirModalLancarBI = function() {
+// Controle do Modal de Lançamento
+window.abrirModalLancarBI = function(e) {
+  if (e) e.preventDefault();
+  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  if (!activeClientId) {
+    alert('Selecione um cliente ativo no topo da tela antes de lançar métricas.');
+    return;
+  }
   const modal = document.getElementById('modal-lancar-bi');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+    const inputGasto = document.getElementById('bi-input-gasto');
+    if (inputGasto) inputGasto.focus();
+  }
 };
 
 window.fecharModalLancarBI = function() {
@@ -5971,8 +5981,10 @@ window.fecharModalLancarBI = function() {
   if (modal) modal.classList.add('hidden');
 };
 
-// Renderização Reativa dos Cards e Funil do BI
+// Renderização Reativa dos Cards e do Funil Comercial
 window.atualizarDashboardBIVisual = function(dados) {
+  if (!dados) return;
+
   const faturamento = Number(dados.faturamento_total || 0);
   const gasto = Number(dados.gasto_trafego || 0);
   const lucro = faturamento - gasto;
@@ -5981,43 +5993,53 @@ window.atualizarDashboardBIVisual = function(dados) {
   const vendas = Number(dados.vendas_fechadas || 0);
   const cliques = Number(dados.cliques || 0);
 
-  // 1. Atualizar Cards Principais
   const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  // Faturamento Total
-  const elFat = document.querySelector('[data-metric="faturamento"]') || document.querySelector('#tab-bi .card-metrica:nth-child(1) strong, #tab-bi .card-metrica:nth-child(1) .text-2xl') || document.getElementById('bi-val-revenue');
+  // 1. Atualização dos Cards Superiores
+  const elFat = document.querySelector('[data-metric="faturamento"]') || document.querySelector('#tab-bi .card-metrica:nth-child(1) strong, #tab-bi .card-metrica:nth-child(1) .text-2xl');
   if (elFat) elFat.innerText = formatBRL(faturamento);
 
-  // Gasto em Tráfego
-  const elGasto = document.querySelector('[data-metric="gasto"]') || document.querySelector('#tab-bi .card-metrica:nth-child(2) strong, #tab-bi .card-metrica:nth-child(2) .text-2xl') || document.getElementById('bi-val-spend');
+  const elGasto = document.querySelector('[data-metric="gasto"]') || document.querySelector('#tab-bi .card-metrica:nth-child(2) strong, #tab-bi .card-metrica:nth-child(2) .text-2xl');
   if (elGasto) elGasto.innerText = formatBRL(gasto);
 
-  // Lucro Líquido
-  const elLucro = document.querySelector('[data-metric="lucro"]') || document.querySelector('#tab-bi .card-metrica:nth-child(3) strong, #tab-bi .card-metrica:nth-child(3) .text-2xl') || document.getElementById('bi-val-profit');
-  if (elLucro) elLucro.innerText = formatBRL(lucro);
+  const elLucro = document.querySelector('[data-metric="lucro"]') || document.querySelector('#tab-bi .card-metrica:nth-child(3) strong, #tab-bi .card-metrica:nth-child(3) .text-2xl');
+  if (elLucro) {
+    elLucro.innerText = formatBRL(lucro);
+    elLucro.className = lucro >= 0 ? "text-2xl font-black text-emerald-400" : "text-2xl font-black text-rose-400";
+  }
 
-  // ROAS Médio
-  const elRoas = document.querySelector('[data-metric="roas"]') || document.querySelector('#tab-bi .card-metrica:nth-child(4) strong, #tab-bi .card-metrica:nth-child(4) .text-2xl') || document.getElementById('bi-val-roas');
+  const elRoas = document.querySelector('[data-metric="roas"]') || document.querySelector('#tab-bi .card-metrica:nth-child(4) strong, #tab-bi .card-metrica:nth-child(4) .text-2xl');
   if (elRoas) elRoas.innerText = `${roas}x`;
 
-  // Taxa de Conversão Global
   const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
-  const elTaxa = document.querySelector('[data-metric="taxa_conv"]') || document.querySelector('#tab-bi .card-metrica:nth-child(6) strong, #tab-bi .card-metrica:nth-child(6) .text-2xl') || document.getElementById('bi-val-conv-rate');
+  const elTaxa = document.querySelector('[data-metric="taxa_conv"]') || document.querySelector('#tab-bi .card-metrica:nth-child(6) strong, #tab-bi .card-metrica:nth-child(6) .text-2xl');
   if (elTaxa) elTaxa.innerText = `${taxaConv}%`;
 
-  // 2. Atualizar Funil
-  const elFunilLeads = document.getElementById('funil-leads-count');
-  if (elFunilLeads) elFunilLeads.innerText = `${leads} Leads`;
+  // 2. Atualização dos Indicadores do Funil Comercial
+  const elCliquesCount = document.getElementById('funil-cliques-count') || document.querySelector('#funil-etapa-cliques .count');
+  if (elCliquesCount) elCliquesCount.innerText = `${cliques} Cliques`;
 
-  const elFunilVendas = document.getElementById('funil-vendas-count');
-  if (elFunilVendas) elFunilVendas.innerText = `${vendas} Vendas`;
+  const elLeadsCount = document.getElementById('funil-leads-count') || document.querySelector('#funil-etapa-leads .count');
+  if (elLeadsCount) elLeadsCount.innerText = `${leads} Leads`;
+
+  const elVendasCount = document.getElementById('funil-vendas-count') || document.querySelector('#funil-etapa-vendas .count');
+  if (elVendasCount) elVendasCount.innerText = `${vendas} Fechamentos`;
 };
 
-// Gravação no Banco de Dados
+// Gravação dos Dados no Supabase e Atualização de Tela
 window.salvarLancamentoBI = async function(e) {
   e.preventDefault();
   const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!activeClientId) return alert('Selecione um cliente ativo antes de lançar dados.');
+  if (!activeClientId) {
+    alert('Selecione um cliente ativo antes de realizar o lançamento.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit-bi');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="inline-block animate-spin">⟳</span> Gravando...`;
+  }
 
   const gasto = parseFloat(document.getElementById('bi-input-gasto').value) || 0;
   const faturamento = parseFloat(document.getElementById('bi-input-faturamento').value) || 0;
@@ -6039,14 +6061,44 @@ window.salvarLancamentoBI = async function(e) {
 
   try {
     if (window.supabaseClient) {
-      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+      const { error } = await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+      if (error) throw error;
     }
+
     window.atualizarDashboardBIVisual(payload);
     window.fecharModalLancarBI();
-    alert('Métricas de BI gravadas com sucesso!');
+    document.getElementById('form-lancar-bi').reset();
+    alert('Métricas de BI gravadas com sucesso no banco de dados!');
   } catch (err) {
-    console.error('[BI] Erro ao gravar dados:', err);
-    alert('Erro ao salvar no banco de dados.');
+    console.error('[BI] Erro ao gravar lançamento no Supabase:', err);
+    alert('Erro ao gravar métricas no banco de dados. Verifique a tabela bi_analytics_data.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>💾</span> <span>Gravar & Atualizar Dashboard</span>`;
+    }
+  }
+};
+
+// Carregamento Automático ao Abrir a Aba BI ou Mudar de Cliente
+window.carregarMetricasBIDoBanco = async function(clientId) {
+  const activeClientId = clientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  if (!activeClientId || !window.supabaseClient) return;
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('bi_analytics_data')
+      .select('*')
+      .eq('client_id', activeClientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && data) {
+      window.atualizarDashboardBIVisual(data);
+    }
+  } catch (err) {
+    console.error('[BI] Erro ao buscar métricas no Supabase:', err);
   }
 };
 
@@ -6080,26 +6132,4 @@ window.sincronizarApisBI = async function() {
     if (btn) btn.innerHTML = `<span>🔄</span> <span>Sincronizar APIs</span>`;
     alert('APIs sincronizadas com sucesso! Métricas reais atualizadas no painel.');
   }, 1200);
-};
-
-// Carregar Dados ao Abrir a Aba BI
-window.carregarMetricasBIDoBanco = async function(clientId) {
-  const activeClientId = clientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!activeClientId || !window.supabaseClient) return;
-
-  try {
-    const { data } = await window.supabaseClient
-      .from('bi_analytics_data')
-      .select('*')
-      .eq('client_id', activeClientId)
-      .order('reference_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (data) {
-      window.atualizarDashboardBIVisual(data);
-    }
-  } catch (err) {
-    console.error('[BI] Falha ao carregar métricas:', err);
-  }
 };

@@ -1476,7 +1476,7 @@
             <div class="metric-card">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span class="label">Gasto em Tráfego</span>
-                <button type="button" id="btn-edit-ad-spend" onclick="window.abrirModalLancarBI()" title="Lançar Métricas" style="background: rgba(6, 182, 212,0.15); border: 1px solid rgba(6, 182, 212,0.4); color: #06B6D4; font-size: 10px; padding: 2px 6px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 700; pointer-events: auto;">
+                <button type="button" id="btn-edit-ad-spend" onclick="window.abrirModalLancarBI(event)" title="Lançar Métricas" style="background: rgba(6, 182, 212,0.15); border: 1px solid rgba(6, 182, 212,0.4); color: #06B6D4; font-size: 10px; padding: 2px 6px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 700; pointer-events: auto;">
                   ✍️ Lançar BI
                 </button>
               </div>
@@ -3547,49 +3547,52 @@
   <!-- Script JS -->
   <script src="/oraculo-live.js?v=85.0.0"></script>
 
-  <!-- Modal Executivo de Lançamento de BI -->
-  <div id="modal-lancar-bi" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4">
+  <!-- Modal Executivo de Lançamento Manual de BI -->
+  <div id="modal-lancar-bi" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-200">
       <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div class="flex items-center gap-2">
-          <span class="text-amber-400">✍️</span>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Lançamento de Métricas Comerciais</h3>
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 text-amber-400">📊</div>
+          <div>
+            <h3 class="text-sm font-bold text-white tracking-wide">Lançar Métricas de Performance (BI)</h3>
+            <p class="text-[11px] text-slate-400">Insira os dados de investimento e faturamento do cliente ativo</p>
+          </div>
         </div>
-        <button onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-white text-lg">✕</button>
+        <button onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-white text-lg transition p-1">✕</button>
       </div>
 
-      <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" class="space-y-3">
+      <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[11px] font-semibold text-slate-400 uppercase">Gasto em Tráfego (R$)</label>
-            <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 3500.00" class="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none" />
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Gasto em Tráfego (R$)</label>
+            <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 3500.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-emerald-500 focus:outline-none transition" />
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-slate-400 uppercase">Faturamento Total (R$)</label>
-            <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 24000.00" class="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none" />
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Faturamento Total (R$)</label>
+            <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 24000.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-emerald-500 focus:outline-none transition" />
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="text-[10px] font-semibold text-slate-400 uppercase">Cliques / Link</label>
-            <input type="number" id="bi-input-cliques" required placeholder="Ex: 850" class="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none" />
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cliques no Link</label>
+            <input type="number" id="bi-input-cliques" required placeholder="Ex: 850" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none transition" />
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-slate-400 uppercase">Leads Qualificados</label>
-            <input type="number" id="bi-input-leads" required placeholder="Ex: 120" class="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none" />
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Leads Qualificados</label>
+            <input type="number" id="bi-input-leads" required placeholder="Ex: 120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none transition" />
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-slate-400 uppercase">Consultas / Vendas</label>
-            <input type="number" id="bi-input-vendas" required placeholder="Ex: 8" class="w-full mt-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none" />
+            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Vendas / Fechamentos</label>
+            <input type="number" id="bi-input-vendas" required placeholder="Ex: 8" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none transition" />
           </div>
         </div>
 
-        <div class="pt-3 flex gap-2 justify-end">
-          <button type="button" onclick="window.fecharModalLancarBI()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition">Cancelar</button>
-          <button type="submit" id="btn-submit-bi" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+        <div class="pt-3 flex gap-2.5 justify-end border-t border-slate-800/80">
+          <button type="button" onclick="window.fecharModalLancarBI()" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancelar</button>
+          <button type="submit" id="btn-submit-bi" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-900/30">
             <span>💾</span>
-            <span>Gravar & Recalcular BI</span>
+            <span>Gravar & Atualizar Dashboard</span>
           </button>
         </div>
       </form>
