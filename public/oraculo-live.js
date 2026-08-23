@@ -311,8 +311,21 @@ Seja direto, tático, analítico e resolutivo.`
     });
 
     const data = await response.json();
-    const respostaTexto = data.data?.replyText || (typeof data.data === 'string' ? data.data : JSON.stringify(data.data));
-    return respostaTexto;
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || data.message || 'Falha na resposta do Gemini.');
+    }
+    
+    let respostaFinal = "Sem resposta do assistente.";
+    if (typeof data.data === 'string') {
+      respostaFinal = data.data;
+    } else if (data.data?.replyText) {
+      respostaFinal = data.data.replyText;
+    } else if (data.replyText) {
+      respostaFinal = data.replyText;
+    } else if (data.data) {
+      respostaFinal = JSON.stringify(data.data);
+    }
+    return respostaFinal;
   }
 
   window.enviarMensagemOraculo = async function(e) {
@@ -329,20 +342,6 @@ Seja direto, tático, analítico e resolutivo.`
 
     const contexto = extrairContextoCompletoBI();
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
-
-    if (window.supabaseClient) {
-      try {
-        await window.supabaseClient.from('bi_chat_history').insert([{ 
-          client_id: clientId, 
-          role: 'user', 
-          content: texto, 
-          prompt_input: texto,
-          created_at: new Date().toISOString()
-        }]);
-      } catch (errDb) {
-        console.warn("[Oraculum Live] Falha ao persistir msg do usuario:", errDb);
-      }
-    }
 
     const btnSend = document.getElementById('btn-send-oraculo');
     if (btnSend) btnSend.disabled = true;
@@ -367,17 +366,14 @@ Seja direto, tático, analítico e resolutivo.`
 
       adicionarAoFeed('oraculo', respostaTexto);
       
+      // Salva no banco em background sem bloquear a tela
       if (window.supabaseClient) {
-        try {
-          await window.supabaseClient.from('bi_chat_history').insert([{ 
-            client_id: clientId, 
-            role: 'assistant', 
-            content: respostaTexto,
-            created_at: new Date().toISOString()
-          }]);
-        } catch (errDb) {
-          console.warn("[Oraculum Live] Falha ao persistir resposta IA:", errDb);
-        }
+        window.supabaseClient.from('bi_chat_history').insert([
+          { client_id: clientId, role: 'user', content: texto, prompt_input: texto, created_at: new Date().toISOString() },
+          { client_id: clientId, role: 'assistant', content: respostaTexto, created_at: new Date().toISOString() }
+        ]).then(({ error }) => {
+          if (error) console.warn('[Supabase Live Warn]', error.message);
+        });
       }
 
       window.falarTextoOraculo(respostaTexto);
