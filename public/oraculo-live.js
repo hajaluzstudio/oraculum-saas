@@ -334,13 +334,17 @@ Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decis�
     const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
 
     if (window.supabaseClient) {
-      window.supabaseClient.from('bi_chat_history').insert([{ 
-        client_id: clientId, 
-        role: 'user', 
-        content: texto, 
-        prompt_input: texto,
-        created_at: new Date().toISOString()
-      }]).catch(console.error);
+      try {
+        await window.supabaseClient.from('bi_chat_history').insert([{ 
+          client_id: clientId, 
+          role: 'user', 
+          content: texto, 
+          prompt_input: texto,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (errDb) {
+        console.warn("[Oraculum Live] Falha ao persistir msg do usuario:", errDb);
+      }
     }
 
     const btnSend = document.getElementById('btn-send-oraculo');
@@ -367,12 +371,16 @@ Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decis�
       adicionarAoFeed('oraculo', respostaTexto);
       
       if (window.supabaseClient) {
-        window.supabaseClient.from('bi_chat_history').insert([{ 
-          client_id: clientId, 
-          role: 'assistant', 
-          content: respostaTexto,
-          created_at: new Date().toISOString()
-        }]).catch(console.error);
+        try {
+          await window.supabaseClient.from('bi_chat_history').insert([{ 
+            client_id: clientId, 
+            role: 'assistant', 
+            content: respostaTexto,
+            created_at: new Date().toISOString()
+          }]);
+        } catch (errDb) {
+          console.warn("[Oraculum Live] Falha ao persistir resposta IA:", errDb);
+        }
       }
 
       window.falarTextoOraculo(respostaTexto);
