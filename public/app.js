@@ -5716,43 +5716,76 @@ window.loadCompetitors = function(clientData) {
   }
 };
 
-window.recalcularFeedbackLoop = async function(buttonElement) {
-  console.log('[Feedback Loop] Botão clicado. Iniciando recálculo...');
+// Diagnóstico Robusto do Feedback Loop com Códigos de Erro
+window.recalcularFeedbackLoop = async function(btnElement) {
+  const btn = btnElement || document.getElementById('btn-recalcular-feedback-loop') || document.querySelector('[onclick*="recalcularFeedbackLoop"]');
+  const btnText = document.getElementById('btn-feedback-text') || (btn ? btn.querySelector('span:last-child') : null);
+  const container = document.getElementById('feedback-loop-content') || document.querySelector('.feedback-loop-content');
   
-  const btn = buttonElement || document.getElementById('btn-recalcular-feedback-loop');
-  const btnText = document.getElementById('btn-feedback-text');
-  const container = document.getElementById('feedback-loop-content');
-  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  // 1. Validação de DOM
+  if (!container) {
+    alert('[ERR-FB-001] Falha de DOM: O elemento "#feedback-loop-content" não foi encontrado no HTML.');
+    console.error('[ERR-FB-001] Container #feedback-loop-content inexistente no DOM.');
+    return;
+  }
 
+  // 2. Validação de Cliente Ativo
+  const activeClientId = window.currentClientId || 
+                         localStorage.getItem('oraculum_active_client_id') || 
+                         document.getElementById('select-active-client')?.value ||
+                         document.querySelector('[data-active-client-id]')?.dataset?.activeClientId;
+
+  if (!activeClientId) {
+    const errMsg = '[ERR-FB-002] Nenhum cliente ativo selecionado. Selecione um cliente no menu superior antes de recalcular.';
+    container.innerHTML = `<div class="p-3 bg-rose-950/40 border border-rose-500/40 rounded-lg text-rose-300 text-xs font-mono"><strong>${errMsg}</strong></div>`;
+    alert(errMsg);
+    return;
+  }
+
+  // Feedback visual de carregamento
   if (btn) btn.disabled = true;
-  if (btnText) btnText.innerText = 'Recalculando com IA...';
+  if (btnText) btnText.innerText = 'Processando IA...';
+  container.innerHTML = `
+    <div class="flex items-center gap-2 text-cyan-400 text-xs font-mono py-2">
+      <span class="inline-block animate-spin">⟳</span>
+      <span>Consultando IA e métricas do cliente [ID: ${activeClientId.slice(0, 8)}...]</span>
+    </div>
+  `;
 
   try {
     let clientContext = { cliente: {}, metricas: {} };
 
-    if (window.supabaseClient && activeClientId) {
-      const { data: client } = await window.supabaseClient
-        .from('clients')
-        .select('name, niche, ticket, meta_faturamento, dossier_data')
-        .eq('id', activeClientId)
-        .maybeSingle();
+    // 3. Consulta ao Supabase
+    if (window.supabaseClient) {
+      try {
+        const { data: client, error: errClient } = await window.supabaseClient
+          .from('clients')
+          .select('name, niche, ticket, meta_faturamento, dossier_data')
+          .eq('id', activeClientId)
+          .maybeSingle();
 
-      const { data: biData } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .select('*')
-        .eq('client_id', activeClientId)
-        .order('reference_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        if (errClient) console.warn('[Feedback Loop] Aviso Supabase Clients:', errClient);
 
-      clientContext = {
-        cliente: client || {},
-        metricas: biData || { status: 'Sem métricas lançadas ainda' }
-      };
+        const { data: biData, error: errBi } = await window.supabaseClient
+          .from('bi_analytics_data')
+          .select('*')
+          .eq('client_id', activeClientId)
+          .order('reference_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (errBi) console.warn('[Feedback Loop] Aviso Supabase BI:', errBi);
+
+        clientContext = {
+          cliente: client || { name: 'Cliente Ativo', niche: 'Geral' },
+          metricas: biData || { status: 'Sem métricas cadastradas' }
+        };
+      } catch (dbErr) {
+        console.warn('[ERR-FB-003] Falha ao consultar Supabase, prosseguindo com contexto fallback:', dbErr);
+      }
     }
 
-    console.log('[Feedback Loop] Payload enviado para /api/chat:', { activeClientId, clientContext });
-
+    // 4. Chamada da API
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -5764,27 +5797,41 @@ window.recalcularFeedbackLoop = async function(buttonElement) {
       })
     });
 
-    const resData = await response.json();
-    console.log('[Feedback Loop] Resposta da API:', resData);
-
-    if (resData.success && (resData.reply || resData.replyText)) {
-      const textoFinal = resData.reply || resData.replyText;
-      if (container) {
-        if (typeof window.formatarMarkdownExecutivo === 'function') {
-          container.innerHTML = window.formatarMarkdownExecutivo(textoFinal);
-        } else {
-          container.innerHTML = textoFinal.replace(/\n/g, '<br/>');
-        }
-      }
-      if (activeClientId) {
-        localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
-      }
-    } else {
-      alert('Erro ao recalcular: ' + (resData.error || 'Falha na resposta da IA.'));
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`[ERR-FB-004] HTTP ${response.status} (${response.statusText}): ${errorText.slice(0, 100)}`);
     }
-  } catch (err) {
-    console.error('[Feedback Loop] Falha na requisição:', err);
-    alert('Erro de conexão ao processar inteligência preditiva.');
+
+    const resData = await response.json();
+
+    // 5. Validação da Resposta
+    if (!resData || (!resData.reply && !resData.replyText)) {
+      throw new Error(`[ERR-FB-005] Resposta da IA vazia ou com formato inválido: ${JSON.stringify(resData)}`);
+    }
+
+    const textoFinal = resData.reply || resData.replyText;
+
+    // Renderização com sucesso
+    if (typeof window.formatarMarkdownExecutivo === 'function') {
+      container.innerHTML = window.formatarMarkdownExecutivo(textoFinal);
+    } else {
+      container.innerHTML = textoFinal.replace(/\n/g, '<br/>');
+    }
+
+    localStorage.setItem(`feedback_loop_${activeClientId}`, textoFinal);
+
+  } catch (erroGrave) {
+    console.error('[Feedback Loop Falha]', erroGrave);
+    const msgErro = erroGrave.message || String(erroGrave);
+    container.innerHTML = `
+      <div class="p-3 bg-rose-950/60 border border-rose-500/50 rounded-lg text-rose-200 text-xs space-y-1 font-mono">
+        <div class="font-bold text-rose-400 flex items-center gap-1.5">
+          <span>⚠️</span> <span>FALHA NO RECÁLCULO PREDITIVO</span>
+        </div>
+        <div class="text-[11px] text-rose-300 break-all">${msgErro}</div>
+      </div>
+    `;
+    alert(msgErro);
   } finally {
     if (btn) btn.disabled = false;
     if (btnText) btnText.innerText = 'Recalcular Feedback Loop';
