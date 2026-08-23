@@ -709,6 +709,27 @@ REGRAS RÍGIDAS DE INTERAÇÃO:
 3. Perguntas pontuais: Dê respostas diretas, sucintas e analíticas.
 4. Diagnósticos completos: Só estruture planos de tração, baselines e matrizes se o usuário pedir explicitamente (ex: "faça o diagnóstico", "analise a conta", "gere o plano").
 5. Tom de voz: Executivo, seguro, conciso e orientado a negócios.`;
+    } else if (mode === 'bi_feedback_loop') {
+      promptInstrucao = `Você é o Diretor de BI Preditivo e Growth Intelligence do Oraculum.
+Analise os dados do cliente e as métricas do funil abaixo para gerar recomendações táticas preditivas.
+
+CONTEXTO DO CLIENTE E MÉTRICAS:
+${JSON.stringify(clientContext || {}, null, 2)}
+
+SUA TAREFA:
+Gere exatamente DUAS seções concisas e aplicadas ao nicho do cliente:
+
+🏆 Padrões Campeões Identificados
+- [Insight 1: Ângulo de anúncio/criativo com maior potencial no nicho]
+- [Insight 2: Gatilho ou ancoragem de ticket que mais gera leads qualificados]
+
+⚠️ Ajustes Preditivos para a Próxima Campanha
+- [Ajuste 1: Recomendação de alocação de orçamento nos canais mais eficientes]
+- [Ajuste 2: Ação imediata no fluxo de conversão/WhatsApp]
+
+DIRETRIZES:
+- Se os dados estiverem zerados, use os benchmarks de alta performance do nicho como base analítica.
+- Seja direto, conciso e tático.`;
     } else {
       // Pega o dossiê real do banco
       const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();

@@ -5716,5 +5716,78 @@ window.loadCompetitors = function(clientData) {
   }
 };
 
+window.recalcularFeedbackLoop = async function() {
+  const btn = document.getElementById('btn-recalcular-feedback-loop') || 
+              document.querySelector('[onclick*="recalcularFeedbackLoop"]');
+  const container = document.getElementById('feedback-loop-content') || 
+                    document.querySelector('.feedback-loop-container') ||
+                    document.querySelector('#tab-bi .card-bi-section:has(button)');
 
+  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  if (!btn) return;
 
+  const textoOriginal = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="inline-block animate-spin mr-1">⟳</span> Analisando...`;
+
+  try {
+    let clientContext = { cliente: {}, metricas: {} };
+
+    if (window.supabaseClient && activeClientId) {
+      const { data: client } = await window.supabaseClient
+        .from('clients')
+        .select('name, niche, ticket, meta_faturamento, dossier_data')
+        .eq('id', activeClientId)
+        .maybeSingle();
+
+      const { data: biData } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .select('*')
+        .eq('client_id', activeClientId)
+        .order('reference_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      clientContext = {
+        cliente: client || {},
+        metricas: biData || { status: 'Sem métricas lançadas ainda' }
+      };
+    }
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: activeClientId,
+        message: 'Recalcular feedback loop preditivo.',
+        mode: 'bi_feedback_loop',
+        clientContext: clientContext
+      })
+    });
+
+    const resData = await response.json();
+
+    if (resData.success && resData.reply) {
+      // Localiza o bloco de texto interno abaixo do botão
+      const targetTextEl = document.getElementById('feedback-loop-content') || 
+                           btn.closest('div.card-bi-section, div.rounded-xl, div.bg-slate-900\\/60')?.querySelector('div:last-child') ||
+                           container;
+
+      if (targetTextEl) {
+        if (typeof window.formatarMarkdownExecutivo === 'function') {
+          targetTextEl.innerHTML = window.formatarMarkdownExecutivo(resData.reply);
+        } else {
+          targetTextEl.innerHTML = resData.reply.replace(/\n/g, '<br/>');
+        }
+      }
+    } else {
+      alert('Não foi possível recalcular: ' + (resData.error || 'Erro desconhecido.'));
+    }
+  } catch (err) {
+    console.error('[Feedback Loop] Erro:', err);
+    alert('Erro de conexão ao processar inteligência preditiva.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+  }
+};
