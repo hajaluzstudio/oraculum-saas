@@ -607,7 +607,7 @@ Seja direto, tático, analítico e resolutivo.`
           </div>
         </div>
 
-        <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: #CBD5E1;">
+        <div id="oraculo-chat-feed" class="no-scrollbar" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: #CBD5E1;">
           <div style="background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
             👋 Olá! Sou o <strong>Oraculum Live</strong>. Faça perguntas por texto ou use o microfone para conduzir a reunião ao vivo.
           </div>
@@ -662,6 +662,20 @@ Seja direto, tático, analítico e resolutivo.`
   // Executar no boot e escutar eventos de navegação
   document.addEventListener('DOMContentLoaded', sincronizarVisibilidadeOraculoLive);
   window.addEventListener('hashchange', sincronizarVisibilidadeOraculoLive);
-  document.addEventListener('click', () => setTimeout(sincronizarVisibilidadeOraculoLive, 50));
+  
+  document.addEventListener('click', function(e) {
+    setTimeout(sincronizarVisibilidadeOraculoLive, 50);
+
+    const gaveta = document.getElementById('oraculo-live-drawer') || document.getElementById('gaveta-oraculo-live');
+    const btnToggle = document.getElementById('btn-toggle-oraculo-live');
+
+    if (!gaveta || gaveta.classList.contains('hidden')) return;
+
+    // Se o clique NÃO foi dentro da gaveta e NÃO foi no botão que abre/fecha
+    if (!gaveta.contains(e.target) && (!btnToggle || !btnToggle.contains(e.target))) {
+      gaveta.classList.add('hidden');
+    }
+  });
+
   window.sincronizarVisibilidadeOraculoLive = sincronizarVisibilidadeOraculoLive;
 })();
