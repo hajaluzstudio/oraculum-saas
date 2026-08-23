@@ -6104,7 +6104,11 @@ window.atualizarDashboardBIVisual = function(dados) {
 
 // Gravação dos Dados no Supabase e Atualização de Tela
 window.salvarLancamentoBI = async function(e) {
-  e.preventDefault();
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
   if (!activeClientId) {
     alert('Selecione um cliente ativo antes de realizar o lançamento.');
@@ -6117,15 +6121,15 @@ window.salvarLancamentoBI = async function(e) {
     btn.innerHTML = `<span class="inline-block animate-spin">⟳</span> Gravando...`;
   }
 
-  const gasto = parseFloat(document.getElementById('bi-input-gasto').value) || 0;
-  const faturamento = parseFloat(document.getElementById('bi-input-faturamento').value) || 0;
-  const cliques = parseInt(document.getElementById('bi-input-cliques').value) || 0;
-  const leads = parseInt(document.getElementById('bi-input-leads').value) || 0;
-  const vendas = parseInt(document.getElementById('bi-input-vendas').value) || 0;
+  const gasto = parseFloat(document.getElementById('bi-input-gasto')?.value) || 0;
+  const faturamento = parseFloat(document.getElementById('bi-input-faturamento')?.value) || 0;
+  const cliques = parseInt(document.getElementById('bi-input-cliques')?.value) || 0;
+  const leads = parseInt(document.getElementById('bi-input-leads')?.value) || 0;
+  const vendas = parseInt(document.getElementById('bi-input-vendas')?.value) || 0;
   const lucro = faturamento - gasto;
 
   const payload = {
-    client_id: activeClientId,
+    client_id: String(activeClientId),
     reference_date: new Date().toISOString().split('T')[0],
     gasto_trafego: gasto,
     faturamento_total: faturamento,
@@ -6137,21 +6141,32 @@ window.salvarLancamentoBI = async function(e) {
 
   try {
     if (window.supabaseClient) {
-      const { error } = await window.supabaseClient.from('bi_analytics_data').insert([payload]);
-      if (error) throw error;
+      const { data, error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .insert([payload])
+        .select();
+
+      if (error) {
+        console.error('[Supabase BI Error Detalhado]:', error);
+        throw error;
+      }
+      console.log('[BI] Métricas gravadas no Supabase com sucesso:', data);
     }
 
+    // Atualiza imediatamente a interface e fecha o modal
     window.atualizarDashboardBIVisual(payload);
     window.fecharModalLancarBI();
-    document.getElementById('form-lancar-bi').reset();
-    alert('Métricas de BI gravadas com sucesso no banco de dados!');
+    alert('✓ Métricas de BI gravadas com sucesso!');
   } catch (err) {
-    console.error('[BI] Erro ao gravar lançamento no Supabase:', err);
-    alert('Erro ao gravar métricas no banco de dados. Verifique a tabela bi_analytics_data.');
+    console.error('[BI] Erro ao gravar lançamento:', err);
+    // Mesmo com erro de banco, atualiza o visual da sessão para não travar a apresentação
+    window.atualizarDashboardBIVisual(payload);
+    window.fecharModalLancarBI();
+    alert(`Aviso: Métricas aplicadas na tela. (Detalhe banco: ${err.message || 'Tabela bi_analytics_data pendente no Supabase'})`);
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = `<span>💾</span> <span>Gravar & Atualizar Dashboard</span>`;
+      btn.innerHTML = `💾 Gravar & Atualizar Dashboard`;
     }
   }
 };
