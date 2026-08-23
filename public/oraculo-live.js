@@ -571,12 +571,9 @@ Seja direto, tático, analítico e resolutivo.`
       btn.id = 'btn-toggle-oraculo-live';
       btn.type = 'button';
       // Removendo o style.cssText inline para usar 100% as classes do Tailwind
-      btn.className = 'fixed bottom-6 right-6 z-[2147483647] flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-full shadow-[0_10px_25px_rgba(16,185,129,0.5)] transition-all duration-200 cursor-pointer border border-white/40';
+      btn.className = 'fixed bottom-6 right-6 z-[2147483647] flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-full shadow-[0_10px_25px_rgba(16,185,129,0.5)] transition-all duration-200 cursor-pointer border border-white/40 hidden';
       btn.innerHTML = `
-        <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
-          <circle cx="12" cy="12" r="3" fill="currentColor"/>
-        </svg>
+        <img src="/logo-oraculum-03.svg" alt="Oraculum" class="w-4 h-4 object-contain brightness-0" />
         <span>Oraculum Live</span>
       `;
       document.body.appendChild(btn);
@@ -639,38 +636,32 @@ Seja direto, tático, analítico e resolutivo.`
     document.addEventListener('DOMContentLoaded', forcarRenderizacaoOraculumLive);
   }
 
-  function sincronizarVisibilidadeAbaBI() {
-    const btn = document.getElementById('btn-open-oraculo-live');
-    const drawer = document.getElementById('oraculo-live-drawer');
-    if (!btn) return;
+  function sincronizarVisibilidadeOraculoLive() {
+    const btnLive = document.getElementById('btn-toggle-oraculo-live');
+    const gavetaLive = document.getElementById('oraculo-live-drawer') || document.getElementById('gaveta-oraculo-live');
 
-    // Localiza a view ou seção de BI no DOM
-    const biView = document.getElementById('view-bi') || 
-                   document.getElementById('tab-bi') || 
-                   document.querySelector('[data-view="bi"]') ||
-                   document.querySelector('#section-bi');
+    // Verifica se a aba de BI está visível no DOM
+    const biSection = document.getElementById('tab-bi') || document.getElementById('section-bi') || document.querySelector('[data-tab="tab-bi"]');
+    const isBiActive = biSection && !biSection.classList.contains('hidden') && biSection.style.display !== 'none';
 
-    // Verifica se a tela de BI está ativa e sem classe hidden / style display:none
-    let isBiAtivo = false;
-    if (biView) {
-      const isHidden = biView.classList.contains('hidden') || 
-                       biView.style.display === 'none' || 
-                       biView.getAttribute('aria-hidden') === 'true';
-      isBiAtivo = !isHidden;
-    }
-
-    if (isBiAtivo) {
-      btn.style.setProperty('display', 'flex', 'important');
-    } else {
-      btn.style.setProperty('display', 'none', 'important');
-      if (drawer && drawer.style.transform === 'translateX(0px)') {
-        drawer.style.transform = 'translateX(100%)';
+    if (btnLive) {
+      if (isBiActive) {
+        btnLive.classList.remove('hidden');
+        btnLive.style.setProperty('display', 'flex', 'important');
+      } else {
+        btnLive.classList.add('hidden');
+        btnLive.style.setProperty('display', 'none', 'important');
+        if (gavetaLive) {
+          gavetaLive.classList.add('hidden');
+          gavetaLive.style.transform = 'translateX(100%)';
+        }
       }
     }
   }
 
-  // Executa o check em ciclos rápidos e nos cliques de navegação do menu lateral
-  setInterval(sincronizarVisibilidadeAbaBI, 250);
-  window.addEventListener('hashchange', sincronizarVisibilidadeAbaBI);
-  document.addEventListener('click', () => setTimeout(sincronizarVisibilidadeAbaBI, 50));
+  // Executar no boot e escutar eventos de navegação
+  document.addEventListener('DOMContentLoaded', sincronizarVisibilidadeOraculoLive);
+  window.addEventListener('hashchange', sincronizarVisibilidadeOraculoLive);
+  document.addEventListener('click', () => setTimeout(sincronizarVisibilidadeOraculoLive, 50));
+  window.sincronizarVisibilidadeOraculoLive = sincronizarVisibilidadeOraculoLive;
 })();
