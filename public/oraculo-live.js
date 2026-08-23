@@ -302,20 +302,17 @@ Você está atuando AO VIVO em uma reunião com o cliente ou auditando as decis�
       },
       body: JSON.stringify({
         clientId: clientId,
-        systemPrompt: biSystemPrompt,
-        message: `[PERGUNTA NA REUNIÃO DE BI]: ${promptUsuario}`,
-        history: (historicoAnterior || []).map(h => ({
-          role: h.role === 'user' ? 'user' : 'model',
-          parts: [{ text: h.message }]
-        }))
+        message: promptUsuario,
+        mode: 'bi_live',
+        systemPrompt: `Você é o Oraculum Live, Diretor de Estratégia de Negócios e BI.
+Analise os dados financeiros, ROAS, CAC e métricas deste cliente em tempo real.
+Seja direto, tático, analítico e resolutivo.`
       })
     });
 
-    const resData = await response.json();
-    if (!response.ok || !resData.success || !resData.data) {
-      throw new Error(resData?.error || resData?.message || 'Falha na resposta do Gemini.');
-    }
-    return resData.data;
+    const data = await response.json();
+    const respostaTexto = data.data?.replyText || (typeof data.data === 'string' ? data.data : JSON.stringify(data.data));
+    return respostaTexto;
   }
 
   window.enviarMensagemOraculo = async function(e) {
