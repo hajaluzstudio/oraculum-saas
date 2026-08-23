@@ -27,6 +27,65 @@ import {
 } from '../src/services/autonomousScraperAgent';
 import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } from '../src/middlewares/authAgency';
 
+// Lista de contingência com base nos limites ativos do painel do usuário
+const GEMINI_MODELS_CASCADE = [
+  "gemini-3.7-flash",       // 1ª Opção: Alta velocidade
+  "gemini-3.5-flash-lite",  // 2ª Opção: Alta disponibilidade (500 requisições/dia)
+  "gemini-3.6-flash",       // 3ª Opção: Retoma após reset diário
+  "gemma-4-26b",            // 4ª Opção: Contingência massiva (14.400 requisições/dia)
+  "gemma-4-31b",            // 5ª Opção: Contingência avançada (14.400 requisições/dia)
+  "gemini-2.5-flash-tts"    // 6ª Opção: Fallback
+];
+
+/**
+ * Função executora universal para TODOS os módulos (Onboarding, Chat, BI, Live, Radar)
+ */
+async function executarIAComFallback(genAI: any, systemInstruction: string, promptOuConteudo: any) {
+  let ultimoErro: any = null;
+
+  for (const modelName of GEMINI_MODELS_CASCADE) {
+    try {
+      console.log(`[Global AI Router] Processando com modelo: ${modelName}`);
+
+      let config: any = {};
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
+      
+      const requestOptions: any = {
+        model: modelName,
+      };
+
+      if (promptOuConteudo && promptOuConteudo.contents) {
+        requestOptions.contents = promptOuConteudo.contents;
+        if (promptOuConteudo.config) {
+            config = { ...promptOuConteudo.config, ...config };
+        }
+      } else {
+        requestOptions.contents = [{ role: 'user', parts: [{ text: promptOuConteudo }] }];
+      }
+
+      if (Object.keys(config).length > 0) {
+        requestOptions.config = config;
+      }
+
+      const response = await genAI.models.generateContent(requestOptions);
+      const reply = response.text; // SDK @google/genai
+
+      if (reply && reply.trim().length > 0) {
+        return { reply, modelUsed: modelName };
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.warn(`[Global AI Router] Modelo ${modelName} falhou (${msg.slice(0, 100)}). Pulando para o próximo...`);
+      ultimoErro = err;
+      continue;
+    }
+  }
+
+  throw new Error(`Todos os modelos de IA da conta falharam ou atingiram cota. Último erro: ${ultimoErro?.message}`);
+}
+
 dotenv.config();
 
 const app = express();
@@ -744,23 +803,22 @@ Responda diretamente à solicitação com a estratégia estruturada, sem introdu
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
 
-    // Chamada à API via SDK
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      config: { systemInstruction: promptInstrucao }
-    });
-
-    const generatedText = response.text || 'Sem resposta gerada pelo modelo.';
+    // Chamada à API via SDK Global com Cascata
+    const { reply: generatedText, modelUsed } = await executarIAComFallback(
+      ai,
+      promptInstrucao,
+      { contents: [{ role: 'user', parts: [{ text: userMessage }] }] }
+    );
 
     return res.status(200).json({
       success: true,
       reply: generatedText,
       replyText: generatedText,
       data: generatedText,
+      model: modelUsed,
       debug: {
-        provider: "@google/genai SDK",
-        model: "gemini-3.6-flash",
+        provider: "@google/genai SDK (Cascata)",
+        model: modelUsed,
         keyPrefix: apiKey.substring(0, 4) + "..."
       }
     });
