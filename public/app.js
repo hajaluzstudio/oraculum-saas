@@ -1,3 +1,9 @@
+// [ANTI-CRASH GLOBAL]: Declaração antecipada para evitar TypeErrors durante o parsing
+window.carregarUltimoBIDoCliente = function(clientId) {
+  if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId);
+};
+window.loadClientBiMetrics = window.carregarUltimoBIDoCliente;
+
 /**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
@@ -8463,8 +8469,100 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// DECLARAÇÃO GLOBAL IMEDIATA DE BI (ANTI-CRASH & SUPABASE READY)
+// MODAL DE LANÇAMENTO DE BI COM DIAGNÓSTICO E TELEMETRIA ATIVA
 // ============================================================================
+
+window.abrirModalLancarBI = function(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  console.log('[BI-DEBUG 1/4] Clique detectado no botão Lançar BI.');
+
+  try {
+    // 1. Resolução do Cliente Ativo
+    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+    const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+    const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
+
+    console.log(`[BI-DEBUG 2/4] Cliente ativo identificado: ${clientName} (ID: ${clientId})`);
+
+    // 2. Localização ou Criação do Modal no DOM
+    let modal = document.getElementById('modal-bi-lancar');
+
+    if (!modal) {
+      console.warn('[BI-DEBUG 3/4] Elemento #modal-bi-lancar não encontrado no HTML. Injetando modal dinâmico de contingência...');
+      
+      const modalContingenciaHTML = `
+        <div id="modal-bi-lancar" style="position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; background-color: rgba(2, 6, 23, 0.9) !important; backdrop-filter: blur(8px) !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; margin: 0 !important;">
+          <div style="background-color: #0f172a; border: 1px solid #334155; width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); padding: 24px; color: #ffffff; font-family: inherit;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
+              <div>
+                <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; margin: 0; color: #f8fafc;">💰 Lançar Métricas de BI</h3>
+                <p style="font-size: 11px; color: #10b981; margin: 2px 0 0 0; font-weight: 600;" id="bi-modal-client-label">${clientName}</p>
+              </div>
+              <button type="button" onclick="window.fecharModalLancarBI()" style="background: transparent; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+
+            <form id="form-bi-lancar" onsubmit="window.salvarLancamentoBI(event)" style="display: flex; flex-direction: column; gap: 12px;">
+              <input type="hidden" id="bi-input-client-id" value="${clientId}">
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">Faturamento Total (R$)</label>
+                  <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 28900.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12px;" />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">Gasto em Tráfego (R$)</label>
+                  <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 4500.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12px;" />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">Vendas (Qtd)</label>
+                  <input type="number" id="bi-input-vendas" required placeholder="Ex: 14" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12px;" />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">Leads</label>
+                  <input type="number" id="bi-input-leads" required placeholder="Ex: 184" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12px;" />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; margin-bottom: 4px;">Cliques</label>
+                  <input type="number" id="bi-input-cliques" placeholder="Ex: 1420" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12px;" />
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid #1e293b;">
+                <button type="button" onclick="window.fecharModalLancarBI()" style="padding: 6px 14px; background-color: #1e293b; border: none; color: #cbd5e1; font-size: 12px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+                <button type="submit" id="btn-submit-bi" style="padding: 6px 18px; background-color: #059669; border: none; color: #ffffff; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer;">💾 Salvar no Supabase</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalContingenciaHTML);
+      modal = document.getElementById('modal-bi-lancar');
+    }
+
+    // 3. Atualiza dados internos do formulário
+    const inputId = document.getElementById('bi-input-client-id');
+    const labelName = document.getElementById('bi-modal-client-label');
+    if (inputId) inputId.value = clientId;
+    if (labelName) labelName.innerText = clientName;
+
+    // 4. Exibição forçada do Modal
+    modal.classList.remove('hidden');
+    modal.style.setProperty('display', 'flex', 'important');
+
+    console.log('[BI-DEBUG 4/4] Modal aberto com sucesso na tela.');
+
+  } catch (err) {
+    console.error('[BI-DEBUG ERRO CRÍTICO]:', err);
+    alert(`❌ ERRO AO ABRIR MODAL DO BI:\n\n${err.message}\n\nArquivo: ${err.fileName || 'app.js'}\nLinha: ${err.lineNumber || 'desconhecida'}`);
+  }
+};
 
 window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-bi-lancar');
@@ -8473,32 +8571,11 @@ window.fecharModalLancarBI = function() {
     modal.style.setProperty('display', 'none', 'important');
   }
 };
+
+window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
-window.abrirModalLancarBI = function(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
-
-  const modal = document.getElementById('modal-bi-lancar');
-  const inputId = document.getElementById('bi-input-client-id');
-  const labelName = document.getElementById('bi-modal-client-label');
-
-  if (inputId) inputId.value = clientId;
-  if (labelName) labelName.innerText = clientName;
-
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.setProperty('display', 'flex', 'important');
-  }
-};
-window.abrirModalBI = window.abrirModalLancarBI;
-
+// Salvar Lançamento no Supabase
 window.salvarLancamentoBI = async function(event) {
   if (event) {
     event.preventDefault();
@@ -8518,7 +8595,7 @@ window.salvarLancamentoBI = async function(event) {
   const btnSubmit = document.getElementById('btn-submit-bi');
   if (btnSubmit) {
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '⏳ Gravando...';
+    btnSubmit.innerHTML = '⏳ Gravando no Banco...';
   }
 
   const payload = {
@@ -8535,17 +8612,17 @@ window.salvarLancamentoBI = async function(event) {
 
   try {
     if (window.supabaseClient) {
-      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+      const { error } = await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+      if (error) throw error;
     }
-    if (typeof window.showToast === 'function') {
-      window.showToast('Métricas gravadas no Supabase com sucesso!', 'success');
-    }
+    alert('✅ Métricas gravadas no Supabase com sucesso!');
   } catch (err) {
-    console.warn('[BI] Supabase insert warning:', err);
+    console.error('[BI] Falha ao salvar no banco:', err);
+    alert(`Aviso ao salvar no banco: ${err.message}`);
   } finally {
     if (btnSubmit) {
       btnSubmit.disabled = false;
-      btnSubmit.innerHTML = '💾 Gravar no Supabase';
+      btnSubmit.innerHTML = '💾 Salvar no Supabase';
     }
     window.fecharModalLancarBI();
     window.carregarMetricasBI(clientId);
