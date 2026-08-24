@@ -1751,18 +1751,18 @@
           <div class="war-room-container" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
             <!-- Cabeçalho de Navegação Interno (As 5 Equipes) -->
             <div class="war-room-nav" style="display: flex; gap: 8px; background: var(--bg-surface); padding: 8px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.15); overflow-x: auto;">
-              <button class="wr-tab-btn active" data-wr-target="wr-video"><i class="fa-solid fa-film"></i> Vídeo & Gravação</button>
-              <button class="wr-tab-btn" data-wr-target="wr-design"><i class="fa-solid fa-palette"></i> Design & Web</button>
-              <button class="wr-tab-btn" data-wr-target="wr-traffic"><i class="fa-solid fa-bullseye"></i> Tráfego</button>
-              <button class="wr-tab-btn" data-wr-target="wr-copy"><i class="fa-solid fa-pen-nib"></i> Copywriting</button>
-              <button class="wr-tab-btn" data-wr-target="wr-sales"><i class="fa-solid fa-handshake"></i> Comercial & Vendas</button>
+              <button class="wr-tab-btn active" data-wr-target="wr-tab-video" data-wr-tab="video"><i class="fa-solid fa-film"></i> Vídeo & Gravação</button>
+              <button class="wr-tab-btn" data-wr-target="wr-tab-design" data-wr-tab="design"><i class="fa-solid fa-palette"></i> Design & Web</button>
+              <button class="wr-tab-btn" data-wr-target="wr-tab-traffic" data-wr-tab="traffic"><i class="fa-solid fa-bullseye"></i> Tráfego</button>
+              <button class="wr-tab-btn" data-wr-target="wr-tab-copywriting" data-wr-tab="copywriting"><i class="fa-solid fa-pen-nib"></i> Copywriting</button>
+              <button class="wr-tab-btn" data-wr-target="wr-tab-comercial" data-wr-tab="comercial"><i class="fa-solid fa-handshake"></i> Comercial & Vendas</button>
             </div>
 
             <!-- Painéis das 5 Equipes -->
             <div class="war-room-content" style="flex: 1; position: relative;">
               
               <!-- 1. VÍDEO -->
-              <div id="wr-video" class="wr-panel active">
+              <div id="wr-tab-video" id-legacy="wr-video" class="wr-panel wr-subtab-content active">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                   
                   <!-- DADOS INJETADOS PELA IA (JSON - HIDDEN) -->
@@ -1930,7 +1930,7 @@
               </div>
 
               <!-- 2. DESIGN -->
-              <div id="wr-design" class="wr-panel" style="display: none;">
+              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden" style="display: none;">
                 <div class="card-glass">
                   <div class="card-header">
                     <h3><i class="fa-solid fa-palette"></i> Briefings Visuais e Landing Pages</h3>
@@ -2160,7 +2160,7 @@
               </div>
 
               <!-- 3. TRÁFEGO -->
-              <div id="wr-traffic" class="wr-panel" style="display: none;">
+              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden" style="display: none;">
                 <div class="card-glass">
                   <div class="card-header">
                     <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
@@ -2298,7 +2298,7 @@
               </div>
 
               <!-- 4. COPYWRITING -->
-              <div id="wr-copy" class="wr-panel" style="display: none;">
+              <div id="wr-tab-copywriting" class="wr-panel wr-subtab-content hidden" style="display: none;">
                 <div class="card-glass">
                   <div class="card-header">
                     <h3><i class="fa-solid fa-pen-nib"></i> Headlines, Hooks e Textos Persuasivos</h3>
@@ -2398,7 +2398,7 @@
               </div>
 
               <!-- 5. COMERCIAL -->
-              <div id="wr-sales" class="wr-panel" style="display: none;">
+              <div id="wr-tab-comercial" class="wr-panel wr-subtab-content hidden" style="display: none;">
                 <div class="card-glass">
                   <div class="card-header">
                     <h3><i class="fa-solid fa-handshake"></i> Playbook de Vendas e Quebra de Objeções</h3>
@@ -3799,7 +3799,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.52.0"></script>
+<script src="/app.js?v=9999.53.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

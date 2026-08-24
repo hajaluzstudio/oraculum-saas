@@ -2468,45 +2468,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Fallback seguro caso window.alternarModoApresentacao não exista
+  if (typeof window.alternarModoApresentacao !== 'function') {
+    window.alternarModoApresentacao = function() { console.log('Modo Apresentação'); };
+  }
+
+  // Mapeamento e navegação padronizada das sub-abas do War Room
+  window.switchWarRoomTab = function(tabKey) {
+    const map = {
+      'video': 'wr-tab-video',
+      'design': 'wr-tab-design',
+      'traffic': 'wr-tab-traffic',
+      'trafego': 'wr-tab-traffic',
+      'copy': 'wr-tab-copywriting',
+      'copywriting': 'wr-tab-copywriting',
+      'comercial': 'wr-tab-comercial',
+      'sales': 'wr-tab-comercial'
+    };
+
+    const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
+
+    // Oculta todos os painéis de sub-aba
+    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
+      el.style.display = 'none';
+      el.classList.add('hidden');
+    });
+
+    // Exibe a sub-aba alvo
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.style.display = 'block';
+      targetEl.classList.remove('hidden');
+    }
+
+    // Atualiza os estilos dos botões de navegação da sub-aba
+    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
+      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target');
+      if (key === tabKey || key === targetId || map[key] === targetId) {
+        btn.classList.add('active');
+        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10B981';
+      } else {
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = '#94A3B8';
+      }
+    });
+  };
+
   function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
     const navButtons = warRoom.querySelectorAll('.war-room-nav .wr-tab-btn');
-    const panels = warRoom.querySelectorAll('.war-room-content .wr-panel');
-
     navButtons.forEach(btn => {
       btn.onclick = (e) => {
         if (e) e.preventDefault();
-        
-        // Remove class active de todos os botões
-        navButtons.forEach(b => {
-          b.classList.remove('active');
-          b.style.backgroundColor = 'transparent';
-          b.style.color = '#94A3B8';
-        });
-        
-        // Adiciona active no clicado
-        btn.classList.add('active');
-        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        btn.style.color = '#10B981';
-
-        const targetId = btn.getAttribute('data-wr-target');
-        
-        // Oculta todos os painéis e mostra só o alvo
-        panels.forEach(panel => {
-          if (panel.id === targetId) {
-            panel.style.display = 'block';
-          } else {
-            panel.style.display = 'none';
-          }
-        });
+        const targetId = btn.getAttribute('data-wr-target') || btn.getAttribute('data-wr-tab');
+        window.switchWarRoomTab(targetId);
       };
     });
 
-    // Ativa Vídeo & Gravação por padrão se nenhum estiver ativo
+    // Ativa Vídeo por padrão se nenhum ativo
     const activeBtn = Array.from(navButtons).find(b => b.classList.contains('active')) || navButtons[0];
-    if (activeBtn) activeBtn.click();
+    if (activeBtn) {
+      const targetId = activeBtn.getAttribute('data-wr-target') || activeBtn.getAttribute('data-wr-tab');
+      window.switchWarRoomTab(targetId);
+    }
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
@@ -4131,7 +4159,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   async function loadClientBiMetrics(clientId) {
-    window.carregarMetricasBI(clientId);
+    if (typeof window.carregarMetricasBI === 'function') {
+      window.carregarMetricasBI(clientId);
+    } else {
+      console.warn('[BI] window.carregarMetricasBI ainda não está disponível.');
+    }
   }
   window.loadClientBiMetrics = loadClientBiMetrics;
 
