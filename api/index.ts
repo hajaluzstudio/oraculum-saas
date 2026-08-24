@@ -682,6 +682,23 @@ app.post('/api/niche-dossier', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/chat - Retorna o histórico do banco para o Chat Estratégico
+app.get('/api/chat', async (req: Request, res: Response) => {
+  try {
+    const { client_id } = req.query;
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('client_id', String(client_id || 'client_1787406730'))
+      .order('created_at', { ascending: true });
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ history: data || [] });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // GET histórico de chat por cliente — suporte a bi_chat_history e chat_history
 app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   try {
@@ -748,6 +765,14 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     if (!userMessage) {
       return res.status(400).json({ success: false, error: 'Mensagem não fornecida.' });
     }
+
+    // 1. Grava no banco a mensagem do USER
+    await supabase.from('chat_history').insert([{
+      client_id: String(clientId),
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString()
+    }]);
 
     const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
@@ -854,12 +879,32 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       }
     }
 
+    // Tenta extrair tasks do aiResponse se for JSON estruturado
+    let extractedTasks = [];
+    let displayText = aiResponse;
+    try {
+      const parsed = JSON.parse(aiResponse);
+      if (parsed.tasks) extractedTasks = parsed.tasks;
+      if (parsed.replyText) displayText = parsed.replyText;
+    } catch(e) {}
+
+    // 3. Grava no banco a resposta do MODEL
+    await supabase.from('chat_history').insert([{
+      client_id: String(clientId),
+      role: 'model',
+      content: aiResponse, // Persiste JSON cru ou texto limpo
+      created_at: new Date().toISOString()
+    }]);
+
     return res.status(200).json({ 
       success: true, 
       reply: aiResponse,
-      replyText: aiResponse,
+      replyText: displayText,
+      display_text: displayText,
       data: aiResponse,
-      model: modelUsed
+      model: modelUsed,
+      tasks: extractedTasks,
+      saved: true
     });
 
   } catch (err: any) {

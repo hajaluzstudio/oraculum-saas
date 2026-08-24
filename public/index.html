@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -1284,7 +1284,12 @@
                   <span>Contexto Ativo: <strong id="chat-active-client-label">Nenhum cliente ativo (Aguardando Onboarding)</strong></span>
                 </div>
               </div>
-              <button class="btn-secondary sm" id="btn-clear-chat"><i class="fa-solid fa-rotate-right"></i> Limpar Chat</button>
+              <div style="display: flex; gap: 8px;">
+                <button onclick="testarConexaoSupabaseChat()" class="px-3 py-1 bg-emerald-950 border border-emerald-500/40 text-emerald-400 rounded-lg text-xs font-semibold hover:bg-emerald-900 transition flex items-center gap-1">
+                  🧪 Testar Conexão Banco
+                </button>
+                <button class="btn-secondary sm" id="btn-clear-chat"><i class="fa-solid fa-rotate-right"></i> Limpar Chat</button>
+              </div>
             </div>
 
             <div class="chat-messages" id="chat-messages-list">
@@ -3541,7 +3546,7 @@
   </script>
 
   <script src="/api-keys-manager.js?v=65.0.0"></script>
-  <script src="app.js?v=6000.0.0"></script>
+  <script src="app.js?v=9999.0.0"></script>
   <script src="/agency-management.js?v=65.0.0"></script>
   <script src="/client-management.js?v=65.0.0"></script>
   <script src="/radar-concorrentes.js?v=65.0.0"></script>
@@ -3609,7 +3614,7 @@
     });
   }
 </script>
-<script src="/app.js?v=6000.0.0"></script>
+<script src="/app.js?v=9999.0.0"></script>
 <script src="/oraculo-live.js?t=99999999"></script>
 </body>
 </html>

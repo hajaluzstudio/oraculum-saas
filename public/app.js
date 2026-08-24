@@ -1,14 +1,56 @@
-﻿/**
+/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
-
-// Limpeza automática de Service Workers residuais e cache estático
+// 1. Purga imediata de Service Worker travado em cache
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (let registration of registrations) { registration.unregister(); }
+    for (let registration of registrations) {
+      registration.unregister();
+      console.warn('[PWA]: Service Worker desregistrado para forçar atualização imediata.');
+    }
   });
 }
+
+// 2. Teste Ativo de Conexão com o Supabase
+window.testarConexaoSupabaseChat = async function () {
+  const supabase = window.supabaseClient || window.supabase;
+  const statusEl = document.getElementById('supabase-connection-status');
+  
+  if (!supabase) {
+    alert('❌ ERRO CRÍTICO: supabaseClient não foi encontrado na janela global.');
+    return;
+  }
+
+  const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
+
+  // Obtém agency_id válido caso exista no schema
+  let agencyId = null;
+  try {
+    const { data: agData } = await supabase.from('agencies').select('id').limit(1);
+    if (agData && agData.length > 0) agencyId = agData[0].id;
+  } catch (e) {}
+
+  const payloadTeste = {
+    client_id: String(clientId),
+    role: 'user',
+    content: `[TESTE DE CONEXÃO ATIVA] - ${new Date().toLocaleTimeString()}`
+  };
+  if (agencyId) payloadTeste.agency_id = agencyId;
+
+  console.log('[SUPABASE TEST]: Enviando payload de teste...', payloadTeste);
+
+  const { data, error } = await supabase.from('chat_history').insert([payloadTeste]).select();
+
+  if (error) {
+    console.error('[SUPABASE TEST ERRO]:', error);
+    alert(`❌ FALHA NA GRAVAÇÃO DO SUPABASE:\n\nCódigo: ${error.code}\nMensagem: ${error.message}\nDetalhes: ${error.details || 'Nenhum detalhe adicional'}\nDica: ${error.hint || 'Verifique as colunas e o RLS da tabela chat_history'}`);
+  } else {
+    console.log('[SUPABASE TEST SUCESSO]:', data);
+    alert(`✅ SUCESSO! Conexão ativa com o Supabase.\nRegistro criado com ID: ${data[0]?.id || 'OK'}\nO banco está gravando perfeitamente.`);
+    carregarHistoricoChat();
+  }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Oraculum SaaS Frontend Inicializado em Modo Clean State.');
@@ -890,6 +932,200 @@ document.addEventListener('DOMContentLoaded', () => {
         
         <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
           <button onclick="descartarSugestaoChat('${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 12px;">
+            <p style="color: var(--primary-cyan); font-weight: bold; margin-bottom: 4px;">📊 Divisão Orçamentária Recomendada:</p>
+            <p>💻 Tráfego Digital: <strong style="color: var(--accent-emerald);">${dossier.budgetAllocation?.digitalTrafficPercent ?? 50}%</strong> | 📻 Mídia Tradicional: <strong style="color: var(--primary-cyan);">${dossier.budgetAllocation?.traditionalMediaPercent ?? 25}%</strong> | 🤝 Eventos Presenciais: <strong style="color: var(--accent-gold);">${dossier.budgetAllocation?.offlineEventsPercent ?? 25}%</strong></p>
+            <p style="margin-top: 6px; color: var(--text-muted);"><strong>Justificativa Financeira:</strong> ${dossier.budgetAllocation?.financialJustification || 'Maximização de captação de alta intenção e ancoragem de autoridade no mercado local.'}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function exportDossierToPDF() {
+    if (!activeDossierData) {
+      alert('Selecione ou gere um Dossiê antes de exportar o relatório.');
+      return;
+    }
+    const d = activeDossierData;
+    const clientName = d.clientName || activeClientName || 'Cliente';
+    const niche = d.niche || 'Geral';
+    const dateStr = new Date().toLocaleDateString('pt-BR');
+
+    const printWin = window.open('', '_blank', 'width=900,height=1000');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Dossiê Estratégico - ${clientName}</title>
+        <style>
+          @page { size: A4; margin: 15mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; line-height: 1.5; margin: 0; padding: 20px; font-size: 13px; }
+          .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+          .header h1 { margin: 0; font-size: 20px; color: #0f172a; }
+          .header p { margin: 2px 0 0; color: #64748b; font-size: 12px; }
+          .badge { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+          .section { margin-bottom: 20px; page-break-inside: avoid; }
+          .section-title { font-size: 14px; font-weight: 700; color: #0369a1; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+          .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }
+          .card h4 { margin: 0 0 6px; font-size: 12px; color: #334155; }
+          .metric-box { text-align: center; background: #f1f5f9; padding: 8px; border-radius: 6px; border-left: 3px solid #0284c7; }
+          .metric-val { font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px; }
+          .metric-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; }
+          ul { margin: 4px 0 0; padding-left: 18px; }
+          li { margin-bottom: 3px; }
+          .footer { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 10px; color: #94a3b8; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1>ORACULUM // Dossiê Estratégico Preditivo</h1>
+            <p>Cliente: <strong>${clientName}</strong> | Nicho: <strong>${niche}</strong> | Data: ${dateStr}</p>
+          </div>
+          <div class="badge">MARKETING HÍBRIDO ROI-FIRST</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">1. Modelagem Financeira & Orçamento Preditivo</div>
+          <div class="grid-3">
+            <div class="metric-box">
+              <div class="metric-label">Ticket Médio</div>
+              <div class="metric-val">${d.budgetPricingStrategy?.suggestedAverageTicket || 'R$ 15.000,00'}</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">CAC Máximo Alvo</div>
+              <div class="metric-val">${d.budgetPricingStrategy?.maxAcceptableCAC || 'R$ 1.500,00'}</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Proporção LTV/CAC</div>
+              <div class="metric-val">${d.budgetPricingStrategy?.ltvCacTargetRatio || '≥ 3:1'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">2. Visão de Mercado & Psicologia de Consumo</div>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Perfil do Cliente Ideal (ICP)</h4>
+              <p><strong>Público:</strong> ${d.marketOverview?.targetAudience || 'Alta Renda'}</p>
+              <p><strong>Maturidade:</strong> ${d.marketOverview?.marketMaturityLevel || 'Mercado Maduro'}</p>
+              <p>${d.marketOverview?.idealCustomerProfileDetails || ''}</p>
+            </div>
+            <div class="card">
+              <h4>Gatilhos e Neuroeconomia</h4>
+              <p><strong>Medos:</strong> ${(d.consumptionPsychology?.subconsciousFears || []).join('; ')}</p>
+              <p><strong>Desejos:</strong> ${(d.consumptionPsychology?.unspokenDesires || []).join('; ')}</p>
+              <p><strong>Ancoragem de Preço:</strong> ${d.consumptionPsychology?.priceAnchoringMechanism || ''}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">3. Diretrizes de Neuromarketing (Vídeo - Hook 3 Segundos)</div>
+          <div class="card">
+            <p><strong>Ganchos Visuais (0s - 3s):</strong></p>
+            <ul>${(d.neuromarketingGuidelines?.visualHooksFirst3s || []).map(h => `<li>${h}</li>`).join('')}</ul>
+            <p style="margin-top: 6px;"><strong>Ganchos Verbais:</strong> ${(d.neuromarketingGuidelines?.verbalHooksFirst3s || []).join(' | ')}</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">4. Estratégia Omnichannel & Alocação de Verba</div>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Mídias Tradicionais & Eventos Presenciais</h4>
+              <p><strong>Rádio / TV / OOH:</strong> ${d.traditionalAndOfflineMedia?.radioTV || 'N/A'}</p>
+              <p><strong>Marketing de Experiência:</strong> ${d.traditionalAndOfflineMedia?.experientialAndEvents || 'N/A'}</p>
+              <p><strong>Rastreamento de ROI Offline:</strong> ${d.traditionalAndOfflineMedia?.offlineRoiAttribution || 'N/A'}</p>
+            </div>
+            <div class="card">
+              <h4>Parcerias & Divisão de Verba</h4>
+              <p><strong>Influenciadores & Podcasts:</strong> ${(d.influencerAndPodcastPartnerships?.targetPodcastCategoriesOrShows || []).join(', ')}</p>
+              <p><strong>Divisão:</strong> Digital: ${d.budgetAllocation?.digitalTrafficPercent ?? 50}% | Tradicional: ${d.budgetAllocation?.traditionalMediaPercent ?? 25}% | Eventos: ${d.budgetAllocation?.offlineEventsPercent ?? 25}%</p>
+              <p><em>${d.budgetAllocation?.financialJustification || ''}</em></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          Relatório Estratégico Confidencial gerado pela Plataforma Oraculum SaaS de Marketing Híbrido ROI-First.
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  const btnExportPdf = document.getElementById('btn-export-dossier-pdf');
+  if (btnExportPdf) {
+    btnExportPdf.addEventListener('click', exportDossierToPDF);
+  }
+
+  // ============================================================================
+  // 3. CHAT ESTRATÉGICO DE CO-CRIAÇÃO
+  // ============================================================================
+  const btnSendChat = document.getElementById('btn-send-chat');
+  const chatUserInput = document.getElementById('chat-user-input');
+  const chatMessagesList = document.getElementById('chat-messages-list');
+  const btnClearChat = document.getElementById('btn-clear-chat');
+
+  if (btnClearChat) {
+    btnClearChat.addEventListener('click', () => {
+      chatHistory = [];
+      chatMessagesList.innerHTML = `
+        <div class="chat-msg model">
+          <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><img src="logo-oraculum-03.svg" alt="AI" style="width: 26px; height: 26px; object-fit: contain; transform: translateY(1px);"></div>
+          <div class="bubble"><p>Histórico limpo. Como posso ajudar nas estratégias deste cliente?</p></div>
+        </div>
+      `;
+    });
+  }
+
+  window.descartarSugestaoChat = function(msgId) {
+    const el = document.getElementById(msgId);
+    if (el) {
+      el.style.transition = 'all 0.3s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'scale(0.95)';
+      setTimeout(() => el.remove(), 300);
+    }
+  };
+
+  window.aprovarParaSalaOperacao = function(msgId) {
+    const el = document.getElementById(msgId);
+    if (el) {
+      if (typeof window.dispatchBriefingToWarRoom === 'function') {
+        window.dispatchBriefingToWarRoom(el);
+      } else if (typeof dispatchBriefingToWarRoom === 'function') {
+        dispatchBriefingToWarRoom(el);
+      }
+      el.style.border = '1px solid #10B981';
+      el.style.backgroundColor = '#06261f';
+    }
+  };
+
+  function formatModelMessageWithActions(text) {
+    const messageId = 'msg-' + Date.now();
+    return `
+      <div class="chat-message-ai p-4 bg-[#071311] border border-[#1B3B36] rounded-xl my-3 text-slate-200 text-sm leading-relaxed" id="${messageId}">
+        <div class="whitespace-pre-wrap markdown-body">${typeof marked !== 'undefined' ? marked.parse(text) : text}</div>
+        
+        <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
+          <button onclick="descartarSugestaoChat('${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             Descartar
           </button>
@@ -903,151 +1139,143 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  async function handleSendChatMessage() {
-    const inputEl = document.getElementById('strategic-chat-input') || 
-                    document.querySelector('textarea[placeholder*="instrução tática"]') ||
-                    document.querySelector('input[placeholder*="instrução tática"]');
-    
-    const message = inputEl ? inputEl.value.trim() : '';
-    if (!message) return;
+  // Exibe alerta visual de erro na UI caso o banco falhe
+  function exibirErroSupabaseUI(mensagemErro, detalhe = '') {
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+    if (!container) return;
 
-    if (typeof appendChatMessage === 'function') {
-      appendChatMessage('user', message);
-    }
-    if (inputEl) inputEl.value = '';
+    const errorBanner = document.createElement('div');
+    errorBanner.className = 'p-3 my-2 text-xs font-semibold text-rose-300 bg-rose-950/80 border border-rose-600/50 rounded-xl shadow-lg flex flex-col gap-1';
+    errorBanner.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-rose-400 font-bold">⚠️ ERRO DE GRAVAÇÃO NO SUPABASE:</span>
+        <span>${mensagemErro}</span>
+      </div>
+      ${detalhe ? `<div class="text-[10px] text-rose-400/80 font-mono bg-black/40 p-1.5 rounded">${detalhe}</div>` : ''}
+    `;
+    container.appendChild(errorBanner);
+    container.scrollTop = container.scrollHeight;
+  }
 
-    if (typeof showChatLoadingSpinner === 'function') {
-      showChatLoadingSpinner();
-    }
-
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+  // 3. Modifica a persistência para emitir ALERT em caso de erro real de envio
+  async function persistirNoSupabaseChat(role, content) {
     const supabase = window.supabaseClient || window.supabase;
+    if (!supabase) {
+      alert('❌ Erro: Supabase desconectado no frontend.');
+      return false;
+    }
 
+    const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
+    
+    let agencyId = null;
     try {
-      if (supabase) {
-        await supabase.from('chat_history').insert([{
-          client_id: clientId,
-          role: 'user',
-          content: message,
-          created_at: new Date().toISOString()
-        }]);
+      const { data: agData } = await supabase.from('agencies').select('id').limit(1);
+      if (agData && agData.length > 0) agencyId = agData[0].id;
+    } catch (e) {}
+
+    const payload = {
+      client_id: String(clientId),
+      role: String(role),
+      content: typeof content === 'string' ? content : JSON.stringify(content)
+    };
+    if (agencyId) payload.agency_id = agencyId;
+
+    const { data, error } = await supabase.from('chat_history').insert([payload]).select();
+
+    if (error) {
+      console.error(`[SUPABASE ERRO - ${role}]:`, error);
+      alert(`❌ ERRO AO GRAVAR ${role.toUpperCase()} NO SUPABASE:\n${error.code} - ${error.message}`);
+      return false;
+    }
+
+    console.log(`[SUPABASE SUCESSO - ${role}]:`, data);
+    return true;
+  }
+
+  // Carrega histórico direto da API do servidor
+  async function carregarHistoricoChat() {
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+    if (!container) return;
+
+    const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
+    
+    try {
+      const res = await fetch(`/api/chat?client_id=${clientId}`);
+      const data = await res.json();
+      
+      if (data.history && Array.isArray(data.history)) {
+        container.innerHTML = '';
+        data.history.forEach(msg => {
+          let parsedTasks = null;
+          try {
+            if (msg.role === 'model') {
+              const parsed = JSON.parse(msg.content);
+              if (parsed.tasks) parsedTasks = parsed.tasks;
+            }
+          } catch(e) {}
+
+          if (typeof appendChatMessage === 'function') {
+            appendChatMessage(msg.role, msg.content, parsedTasks, false);
+          }
+        });
+        container.scrollTop = container.scrollHeight;
       }
     } catch (e) {
-      console.warn('[Chat Insert User Error]:', e);
+      console.error('[Load History Error]:', e);
+    }
+  }
+
+  // Envia prompt para a API do backend
+  async function handleSendChatMessage(userText) {
+    if (typeof userText !== 'string' || !userText.trim()) {
+      const inputEl = document.getElementById('strategic-chat-input') || 
+                      document.querySelector('textarea[placeholder*="instrução tática"]') ||
+                      document.querySelector('input[placeholder*="instrução tática"]');
+      userText = inputEl ? inputEl.value.trim() : '';
+      if (inputEl) inputEl.value = '';
     }
 
-    const dossier = typeof activeClient.dossie_estrategico === 'object'
-      ? JSON.stringify(activeClient.dossie_estrategico)
-      : String(activeClient.dossie_estrategico || activeClient.briefing_data || '');
+    if (!userText || !userText.trim()) return;
+    const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
+
+    if (typeof appendChatMessage === 'function') {
+      appendChatMessage('user', userText, null, false);
+    }
+
+    // Mantém o loading
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+    let loadingDiv = document.getElementById('chat-loading-indicator');
+    if (!loadingDiv && container) {
+      loadingDiv = document.createElement('div');
+      loadingDiv.id = 'chat-loading-indicator';
+      loadingDiv.className = 'text-xs text-emerald-400 animate-pulse flex items-center gap-2 p-3 my-2 bg-emerald-950/20 border border-emerald-800/30 rounded-xl';
+      loadingDiv.innerHTML = '<span>⚡ ORACULUM PROCESSANDO ESTRATÉGIA NO BANCO...</span>';
+      container.appendChild(loadingDiv);
+      container.scrollTop = container.scrollHeight;
+    }
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message,
-          clientName: activeClient.name || 'Dr. Lucas',
-          clientNiche: activeClient.niche || 'Medicina Estética',
-          dossierContext: dossier.slice(0, 3000)
-        })
+        body: JSON.stringify({ prompt: userText, client_id: clientId })
       });
-
       const data = await res.json();
-      let replyText = data.reply || data.message || data.display_text || data.content || 'Diretriz estratégica alinhada ao Dossiê.';
-      let tasksArray = data.tasks || [];
       
-      try {
-        const parsed = typeof replyText === 'string' ? JSON.parse(replyText.replace(/`json/g, '').replace(/`/g, '')) : replyText;
-        if (parsed.replyText) replyText = parsed.replyText;
-        if (parsed.display_text) replyText = parsed.display_text;
-        if (parsed.tasks && Array.isArray(parsed.tasks)) tasksArray = parsed.tasks;
-      } catch(e) {}
-      
-      try {
-        if (supabase) {
-          await supabase.from('chat_history').insert([{
-            client_id: clientId,
-            role: 'model',
-            content: typeof replyText === 'string' ? replyText : JSON.stringify(replyText),
-            tasks_payload: tasksArray.length > 0 ? tasksArray : null,
-            created_at: new Date().toISOString()
-          }]);
-        }
-      } catch (e) {
-        console.warn('[Chat Insert Model Error]:', e);
-      }
+      if (loadingDiv) loadingDiv.remove();
 
       if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', replyText, tasksArray, true);
+        appendChatMessage('model', data.display_text || data.replyText || data.reply, data.tasks, true);
       }
-    } catch (err) {
-      console.warn('[Chat Fallback Executado]:', err);
-      const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
-      
-      try {
-        if (supabase) {
-          await supabase.from('chat_history').insert([{
-            client_id: clientId,
-            role: 'model',
-            content: fallbackText,
-            tasks_payload: null,
-            created_at: new Date().toISOString()
-          }]);
-        }
-      } catch (e) {}
-
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', fallbackText, [], true);
-      }
+    } catch (e) {
+      if (loadingDiv) loadingDiv.remove();
+      alert('Erro ao comunicar com o servidor: ' + e.message);
     }
   }
-    if (inputEl) inputEl.value = '';
 
-    if (typeof showChatLoadingSpinner === 'function') {
-      showChatLoadingSpinner();
-    }
-
-    const activeClient = window.activeClient || {};
-    const dossier = typeof activeClient.dossie_estrategico === 'object'
-      ? JSON.stringify(activeClient.dossie_estrategico)
-      : String(activeClient.dossie_estrategico || activeClient.briefing_data || '');
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message,
-          clientName: activeClient.name || 'Dr. Lucas - Rinoplastia e Estética Facial',
-          clientNiche: activeClient.niche || 'Medicina Estética',
-          dossierContext: dossier.slice(0, 3000)
-        })
-      });
-
-      const data = await res.json();
-      let replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
-      let tasksArray = [];
-      
-      try {
-        const parsed = typeof replyText === 'string' ? JSON.parse(replyText.replace(/```json/g, '').replace(/```/g, '')) : replyText;
-        if (parsed.replyText) replyText = parsed.replyText;
-        if (parsed.display_text) replyText = parsed.display_text;
-        if (parsed.tasks && Array.isArray(parsed.tasks)) tasksArray = parsed.tasks;
-      } catch(e) {}
-      
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', replyText, tasksArray);
-      }
-    } catch (err) {
-      console.warn('[Chat Fallback Executado]:', err);
-      const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
-      
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', fallbackText);
-      }
-    }
-  }
+  // Inicia o carregamento direto do banco no carregamento da tela e na troca de cliente
+  window.carregarHistoricoChat = carregarHistoricoChat;
+  window.handleSendChatMessage = handleSendChatMessage;
 
   // Vinculação de evento direta por ID e delegação no clique do botão
   document.addEventListener('click', function (e) {
@@ -1075,6 +1303,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // Remove anterior se houver
     document.getElementById('chat-loading-spinner')?.remove();
 
+  window.handleSendChatMessage = handleSendChatMessage;
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#send-strategic-chat-btn, .chat-send-btn, button:has(svg)');
+    if (btn && document.getElementById('tab-chat')?.offsetParent !== null) {
+      e.preventDefault();
+      handleSendChatMessage();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.id === 'strategic-chat-input' || activeEl.placeholder?.includes('instrução tática'))) {
+        e.preventDefault();
+        handleSendChatMessage();
+      }
+    }
+  });
+
+  window.showChatLoadingSpinner = function() {
+    const container = document.getElementById('chat-messages-container') || document.getElementById('chat-messages-list') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
+    if (!container) return;
+    
+    document.getElementById('chat-loading-spinner')?.remove();
+
     const spinnerDiv = document.createElement('div');
     spinnerDiv.id = 'chat-loading-spinner';
     spinnerDiv.className = 'flex items-center space-x-3 p-4 bg-[#0B1514] border border-[#10B981]/40 rounded-xl my-3 animate-pulse';
@@ -1091,42 +1345,163 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.remove();
   };
 
-  // --- PERSISTÊNCIA DO CHAT ESTRATÉGICO ---
-  window.persistirMensagemChat = function(clientId, role, content, tasks = null) {
-    const key = `chat_history_${clientId}`;
-    const history = JSON.parse(localStorage.getItem(key) || '[]');
-    history.push({ role, content, tasks, timestamp: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(history));
-  };
-
-  window.carregarHistoricoChat = async function(clientId) {
-    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+  window.appendChatMessage = function(sender, text, tasksArray = [], isRestoring = false) {
+    if (typeof hideChatLoadingSpinner === 'function') hideChatLoadingSpinner();
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
     if (!container) return;
 
+    const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
+    const msgWrapper = document.createElement('div');
+    msgWrapper.id = msgId;
+    msgWrapper.className = sender === 'user' 
+      ? 'flex justify-end my-3' 
+      : 'flex flex-col bg-[#071311] border border-[#1B3B36] rounded-xl p-4 my-3 text-slate-200 text-sm leading-relaxed';
+
+    let finalContent = text;
+    if (sender !== 'user' && typeof marked !== 'undefined') {
+      finalContent = marked.parse(text);
+    }
+
+    if (sender === 'user') {
+      msgWrapper.innerHTML = `<div class="bg-[#10B981]/20 border border-[#10B981]/30 text-white rounded-xl px-4 py-2 max-w-[80%]">${finalContent}</div>`;
+    } else {
+      const escapedTasks = JSON.stringify(tasksArray).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+      msgWrapper.innerHTML = `
+        <div class="chat-content prose prose-invert max-w-none text-slate-200 markdown-body">${finalContent}</div>
+        <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
+          <button onclick="document.getElementById('${msgId}').remove()" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/50 border border-rose-800/50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Recusar
+          </button>
+          <button data-tasks="${escapedTasks}" onclick="const t=this.dataset.tasks?JSON.parse(this.dataset.tasks):[]; if(typeof dispatchBriefingToWarRoom === 'function'){ dispatchBriefingToWarRoom(document.getElementById('${msgId}'), t); } else if(typeof window.dispatchBriefingToWarRoom === 'function'){ window.dispatchBriefingToWarRoom(document.getElementById('${msgId}'), t); } else { alert('Estratégia Aprovada e Despachada para a Sala de Operação!'); }" class="px-4 py-1.5 text-xs font-semibold text-[#041210] bg-[#10B981] hover:bg-[#059669] rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 cursor-pointer btn-approve-chat">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Aprovar & Enviar para Sala de Operação
+          </button>
+        </div>
+      `;
+    }
+
+    container.appendChild(msgWrapper);
+    container.scrollTop = container.scrollHeight;
+  };
+
+  function extrairSegmentosEstrategicos(rawText) {
+    if (!rawText || typeof rawText !== 'string') return [];
+
+    const segments = [];
+    const lower = rawText.toLowerCase();
+
+    const videoRegex = /(?:(?:\d+\.\s*)?Ganchos?\s*Visuais|Roteiro(?:\s*de\s*Gravação|\s*de\s*Vídeo)?|3\s*Ganchos|Ideias\s*de\s*Vídeo)[\s\S]*?(?=(?:Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Playbook\s*de\s*Vendas|Script\s*Comercial|$))/i;
+    const matchVideo = rawText.match(videoRegex);
+
+    if (matchVideo && matchVideo[0].trim().length > 30) {
+      segments.push({
+        category: 'video',
+        title: '3 Ganchos Visuais e Roteiro de Gravação',
+        content: matchVideo[0].trim()
+      });
+    }
+
+    const salesRegex = /(?:Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Playbook\s*de\s*Vendas|Script\s*Comercial|Argumento\s*Principal)[\s\S]*$/i;
+    const matchSales = rawText.match(salesRegex);
+
+    if (matchSales && matchSales[0].trim().length > 30) {
+      segments.push({
+        category: 'comercial',
+        title: 'Script de Quebra de Objeção e Vendas',
+        content: matchSales[0].trim()
+      });
+      segments.push({
+        category: 'copywriting',
+        title: 'Diretriz de Copywriting & Headlines',
+        content: matchSales[0].trim()
+      });
+    }
+
+    if (segments.length === 0) {
+      let cat = 'copywriting';
+      if (lower.includes('vídeo') || lower.includes('gancho') || lower.includes('roteiro')) cat = 'video';
+      else if (lower.includes('objeção') || lower.includes('venda') || lower.includes('comercial')) cat = 'comercial';
+      else if (lower.includes('tráfego') || lower.includes('cpa')) cat = 'trafego';
+      else if (lower.includes('design')) cat = 'design';
+
+      segments.push({
+        category: cat,
+        title: `Diretriz Estratégica [${cat.toUpperCase()}]`,
+        content: rawText.trim()
+      });
+    }
+
+    return segments;
+  }
+
+  window.dispatchBriefingToWarRoom = async function (target, taskPayloadArray) {
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
     const supabase = window.supabaseClient || window.supabase;
-    let history = [];
+
+    let tasks = [];
+    if (Array.isArray(taskPayloadArray) && taskPayloadArray.length > 0) {
+      tasks = taskPayloadArray;
+    } else {
+      const container = typeof target === 'string' ? document.getElementById(target) : (target instanceof HTMLElement ? target : null);
+      const text = container ? (container.querySelector('.chat-content')?.innerText || container.innerText || '') : '';
+      tasks = [
+        { category: 'video', title: 'Roteiro de Gravação e Ganchos', content: text },
+        { category: 'copywriting', title: 'Headline & Copy Persuasiva', content: text },
+        { category: 'comercial', title: 'Script Comercial & Quebra de Objeção', content: text }
+      ];
+    }
+
+    const storageKey = `war_room_all_tasks_${clientId}`;
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    tasks.forEach(t => {
+      const item = {
+        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        client_id: clientId,
+        category: t.category,
+        title: t.title,
+        content: t.content,
+        created_at: new Date().toISOString()
+      };
+      existing.unshift(item);
+
+      if (supabase) {
+        supabase.from('war_room_tasks').insert([item]).catch(console.warn);
+      }
+    });
+
+    localStorage.setItem(storageKey, JSON.stringify(existing));
+
+    const btn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
+    if (btn) {
+      btn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg pointer-events-none flex items-center gap-1.5';
+      btn.innerHTML = '✓ Despachado com Sucesso!';
+    }
+
+    carregarSalaOperacaoCompleta();
+  };
+
+  async function carregarSalaOperacaoCompleta() {
+    const warRoom = document.getElementById('tab-war-room');
+    if (!warRoom) return;
+
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+
+    const storageKey = `war_room_all_tasks_${clientId}`;
+    let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
     try {
+      const supabase = window.supabaseClient || window.supabase;
       if (supabase) {
-        const { data } = await supabase
-          .from('chat_history')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: true });
-        if (Array.isArray(data) && data.length > 0) history = data;
+        const { data } = await supabase.from('war_room_tasks').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+        if (Array.isArray(data) && data.length > 0) {
+          tasks = [...tasks, ...data];
+        }
       }
     } catch (e) {}
-
-    if (history.length === 0) {
-      history = JSON.parse(localStorage.getItem(chat_history_ + clientId) || '[]');
-    }
-
-    // Limpa mensagens mantendo o header
-    const header = container.querySelector('.chat-context-header') || container.firstElementChild;
-    container.innerHTML = '';
-    if (header && header.className && header.className.includes('chat-context-header')) {
-      container.appendChild(header);
-    }
 
     history.forEach(msg => {
       if (typeof window.appendChatMessage === 'function') {
