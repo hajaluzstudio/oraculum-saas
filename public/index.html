@@ -3642,7 +3642,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.9.0"></script>
+<script src="/app.js?v=9999.10.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
@@ -3655,8 +3655,9 @@
         selector.innerHTML = '';
         const tasks = window.__WAR_ROOM_TASKS__ || [];
         const videoTasks = tasks.filter(t => t.category === 'video' || t.category === 'roteiro');
+        const grouped = window.groupTasksByPauta ? window.groupTasksByPauta(videoTasks) : [];
         
-        if (videoTasks.length === 0) {
+        if (grouped.length === 0) {
           const opt = document.createElement('option');
           opt.value = '';
           opt.text = 'Nenhuma pauta';
@@ -3664,29 +3665,32 @@
           return;
         }
 
-        videoTasks.forEach((t, i) => {
+        grouped.forEach((group, i) => {
           const opt = document.createElement('option');
-          opt.value = i;
-          opt.text = (t.title || 'Pauta ' + (i+1)).substring(0, 30) + '...';
+          opt.value = group.tema;
+          opt.text = (group.tema || 'Pauta ' + (i+1)).substring(0, 30);
           selector.appendChild(opt);
         });
 
         selector.onchange = () => {
-          const selectedTask = videoTasks[selector.value];
-          if (selectedTask && prompterTextBody) {
+          const selectedGroup = grouped.find(g => g.tema === selector.value);
+          if (selectedGroup && prompterTextBody) {
             let html = '';
-            const lines = (selectedTask.content || '').split('\\n').filter(l => l.trim() !== '');
-            lines.forEach(line => {
-              let raw = line.trim();
-              if (/^(#+ |Gancho|Copy Principal|Chamada|CTA|Headline)/i.test(raw) && raw.length < 50) {
-                html += '<div class="tp-section-header"><span class="badge">📌 ' + raw.replace(/^#+\\s*/, '') + '</span></div>';
-              } else if (/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?/i.test(raw) || (raw.startsWith('[') && raw.endsWith(']'))) {
-                html += '<div class="tp-action-box"><i class="fa-solid fa-clapperboard"></i> Ação: ' + raw.replace(/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?\\s*/i, '') + '</div>';
-              } else if (/^(texto na tela|text overlay|lettering|legenda):?/i.test(raw)) {
-                html += '<div class="tp-overlay-box"><i class="fa-solid fa-font"></i> Em Tela: ' + raw.replace(/^(texto na tela|text overlay|lettering|legenda):?\\s*/i, '') + '</div>';
-              } else {
-                html += '<div class="tp-speech-text">' + raw.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') + '</div>';
-              }
+            selectedGroup.items.forEach(t => {
+              html += `<div class="tp-section-header" style="margin-top:20px; color:#00F5A0; font-size:14px;"><strong>--- ${t.title || 'Sub-tópico'} ---</strong></div>`;
+              const lines = (t.content || '').split('\\n').filter(l => l.trim() !== '');
+              lines.forEach(line => {
+                let raw = line.trim();
+                if (/^(#+ |Gancho|Copy Principal|Chamada|CTA|Headline)/i.test(raw) && raw.length < 50) {
+                  html += '<div class="tp-section-header"><span class="badge">📌 ' + raw.replace(/^#+\\s*/, '') + '</span></div>';
+                } else if (/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?/i.test(raw) || (raw.startsWith('[') && raw.endsWith(']'))) {
+                  html += '<div class="tp-action-box"><i class="fa-solid fa-clapperboard"></i> Ação: ' + raw.replace(/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?\\s*/i, '') + '</div>';
+                } else if (/^(texto na tela|text overlay|lettering|legenda):?/i.test(raw)) {
+                  html += '<div class="tp-overlay-box"><i class="fa-solid fa-font"></i> Em Tela: ' + raw.replace(/^(texto na tela|text overlay|lettering|legenda):?\\s*/i, '') + '</div>';
+                } else {
+                  html += '<div class="tp-speech-text">' + raw.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') + '</div>';
+                }
+              });
             });
             prompterTextBody.innerHTML = html;
           }

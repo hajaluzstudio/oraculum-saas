@@ -26,8 +26,31 @@ window.toggleCollapsibleSection = function(containerId, buttonEl) {
   container.classList.toggle('hidden');
   if (buttonEl) {
     const arrow = buttonEl.querySelector('.tool-arrow');
-    if (arrow) arrow.innerText = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+    if (arrow) arrow.innerText = isHidden ? '▲ Recolher' : '▼ Expandir';
   }
+};
+
+window.groupTasksByPauta = function(tasks) {
+  const groups = {};
+  tasks.forEach(task => {
+    const match = task.title ? task.title.match(/\\[(.*?)\\]/) : null;
+    const pautaKey = match ? match[1].trim() : (task.title ? task.title.split('-')[0].trim() : 'Estratégia Geral');
+    
+    if (!groups[pautaKey]) {
+      groups[pautaKey] = {
+        tema: pautaKey,
+        priority: task.priority || 'media',
+        deadline: task.deadline || '48h',
+        created_at: task.created_at || new Date().toISOString(),
+        items: []
+      };
+    }
+    if (task.priority === 'alta' || task.priority === 'HIGH') {
+      groups[pautaKey].priority = 'alta';
+    }
+    groups[pautaKey].items.push(task);
+  });
+  return Object.values(groups);
 };
 
 if ('serviceWorker' in navigator) {
@@ -1778,35 +1801,42 @@ document.addEventListener('DOMContentLoaded', () => {
       if (catTasks.length === 0) {
         feed.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhuma diretriz despachada para ${cat.toUpperCase()} até o momento.</div>`;
       } else {
-        feed.innerHTML = catTasks.map((t, idx) => {
+        const grouped = window.groupTasksByPauta(catTasks);
+        feed.innerHTML = grouped.map((group, idx) => {
           const priorityColors = {
             'alta': 'bg-red-500/20 text-red-400 border-red-500/30',
             'media': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
             'baixa': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
           };
-          const badgeClass = priorityColors[t.priority || 'media'] || priorityColors['media'];
-          const isVideo = t.category === 'video' || t.category === 'roteiro';
+          const badgeClass = priorityColors[group.priority || 'media'] || priorityColors['media'];
+          const isVideo = cat === 'video' || cat === 'roteiro';
           
           return `
           <div class="p-0 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl mt-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[#1B3B36] p-4 cursor-pointer hover:bg-[#0A1A17] transition-colors" onclick="window.toggleCollapsibleSection('task-body-${cat}-${idx}', this)">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[#1B3B36] p-4 cursor-pointer hover:bg-[#0A1A17] transition-colors" onclick="window.toggleCollapsibleSection('task-group-${cat}-${idx}', this)">
               <div class="flex items-center gap-3">
-                <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded uppercase">${t.category}</span>
-                <h4 class="text-sm font-semibold text-emerald-300 truncate max-w-[200px] sm:max-w-[300px]">${t.title || 'Diretriz Operacional'}</h4>
+                <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded uppercase">📁 PAUTA</span>
+                <h4 class="text-sm font-semibold text-emerald-300 truncate max-w-[200px] sm:max-w-[300px]">Tema: [${group.tema}]</h4>
+                <span class="text-[10px] text-slate-400 ml-2">📑 ${group.items.length} Materiais</span>
               </div>
               <div class="flex items-center gap-3 mt-2 sm:mt-0">
-                <span class="px-2 py-0.5 text-[10px] border rounded font-semibold ${badgeClass}">Prioridade: ${t.priority ? t.priority.toUpperCase() : 'MÉDIA'}</span>
-                <span class="text-[11px] text-slate-400"><i class="fa-regular fa-calendar"></i> ${t.deadline ? new Date(t.deadline).toLocaleDateString('pt-BR') : 'Sem prazo'}</span>
-                <span class="text-[11px] text-slate-400"><i class="fa-regular fa-clock"></i> ${t.estimated_time || '30 min'}</span>
+                <span class="px-2 py-0.5 text-[10px] border rounded font-semibold ${badgeClass}">Prioridade: ${group.priority ? group.priority.toUpperCase() : 'MÉDIA'}</span>
+                <span class="text-[11px] text-slate-400"><i class="fa-regular fa-calendar"></i> ${new Date(group.created_at).toLocaleDateString('pt-BR')}</span>
                 <span class="tool-arrow text-[10px] text-slate-400 ml-2">▼ Expandir</span>
               </div>
             </div>
-            <div id="task-body-${cat}-${idx}" class="hidden p-5">
-              <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
+            <div id="task-group-${cat}-${idx}" class="hidden p-5 space-y-4">
+              ${group.items.map(t => `
+                <div class="bg-black/20 p-3 rounded-lg border border-white/5">
+                  <h5 class="text-xs font-bold text-emerald-200 mb-2 border-b border-white/5 pb-1">${t.title || 'Sub-tópico'}</h5>
+                  <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
+                </div>
+              `).join('')}
+              
               ${isVideo ? `
               <div class="mt-4 pt-4 border-t border-[#1B3B36] flex justify-end">
-                <button type="button" class="btn-primary sm" onclick="document.getElementById('btn-open-teleprompter').click();" style="font-size: 11px; padding: 6px 14px;">
-                  <i class="fa-solid fa-play"></i> Gravar no Teleprompter
+                <button type="button" class="btn-primary sm" onclick="document.getElementById('tp-drawer-selector').value = '${group.tema}'; document.getElementById('tp-drawer-selector').dispatchEvent(new Event('change')); document.getElementById('btn-open-teleprompter').click();" style="font-size: 11px; padding: 6px 14px;">
+                  <i class="fa-solid fa-play"></i> Carregar Esta Pauta no Teleprompter
                 </button>
               </div>
               ` : ''}
