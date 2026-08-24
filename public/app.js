@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (targetTab === 'tab-chat' && typeof window.inicializarEventosChatEstrategico === 'function') {
         window.inicializarEventosChatEstrategico();
+        if (typeof window.restaurarHistoricoChat === 'function') window.restaurarHistoricoChat();
       }
 
       if (targetTab === 'tab-spy' && typeof window.loadCompetitors === 'function') { // tab-spy is Radar
@@ -1094,6 +1095,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Identificar automaticamente o pilar/categoria com base no conteúdo
     let category = 'copywriting'; // padrão
     const lowerText = rawText.toLowerCase();
+
+    // Atualiza a interface do chat para mostrar que foi aprovado
+    const actionButtons = container.querySelector('.border-t.border-\\[\\#1B3B36\\]') || container.querySelector('div.mt-4.pt-3');
+    if (actionButtons) {
+      actionButtons.innerHTML = `<span class="text-xs text-emerald-400 font-bold flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Diretriz Enviada para Sala de Operação</span>`;
+    }
 
     if (lowerText.includes('gancho') || lowerText.includes('vídeo') || lowerText.includes('roteiro') || lowerText.includes('teleprompter') || lowerText.includes('cena')) {
       category = 'video';
