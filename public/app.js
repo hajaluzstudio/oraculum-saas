@@ -1924,7 +1924,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <!-- Área de Rolagem do Texto -->
             <div id="tp-scroll-container" style="height: 100%; overflow-y: auto; padding: 0 40px; text-align: center; scrollbar-width: none; position: relative; z-index: 10;">
               <!-- Espaçador Superior Calibrado (o texto nasce abaixo para dar tempo de leitura) -->
-              <div style="height: 38vh;"></div>
+              <div style="height: 38vh; display: flex; flex-direction: column; justify-content: flex-end; items-center; padding-bottom: 20px;">
+                <div id="tp-asr-hint" style="display: none;"></div>
+              </div>
               
               <div id="tp-text-display" style="color: #f8fafc; font-weight: 700; line-height: 1.6; white-space: pre-wrap; max-width: 1000px; margin: 0 auto; letter-spacing: 0.02em; font-size: 44px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
               </div>
@@ -2076,6 +2078,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tpDisplay) {
         tpDisplay.textContent = texto;
         tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 44) + 'px';
+      }
+
+      // Renderiza a pílula de aquecimento ASR se houver gatilhos no estado
+      const asrHintEl = document.getElementById('tp-asr-hint');
+      if (asrHintEl) {
+        const triggers = window.teleprompterAudioTriggersHint;
+        if (triggers && Array.isArray(triggers) && triggers.length > 0) {
+          asrHintEl.style.display = 'block';
+          asrHintEl.innerHTML = `<div class="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 mb-3 font-semibold shadow-lg shadow-emerald-950/50">🎯 Gatilhos de Áudio (ASR): ${triggers.join(' • ')}</div>`;
+        } else {
+          asrHintEl.style.display = 'none';
+        }
       }
 
       modal.style.display = 'flex';
@@ -2837,6 +2851,138 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (report) {
         report.innerHTML = `<div class="py-6 text-center text-red-400 text-xs">Erro ao processar visão: ${err.message}</div>`;
+      }
+    }
+  };
+
+  // ============================================================================
+  // 5. INDEXADOR DE SEO SOCIAL (TRIANGULAÇÃO ASR / OCR / ALT-TEXT)
+  // ============================================================================
+  window.toggleSocialSeoTool = function() {
+    const body = document.getElementById('body-social-seo');
+    const icon = document.getElementById('icon-toggle-social-seo');
+    if (!body) return;
+    const isHidden = body.classList.contains('hidden');
+    if (isHidden) {
+      body.classList.remove('hidden');
+      if (icon) icon.textContent = '▲ Recolher Ferramenta';
+    } else {
+      body.classList.add('hidden');
+      if (icon) icon.textContent = '▼ Expandir Ferramenta';
+    }
+  };
+
+  window.copiarTextoSeo = function(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.textContent || '';
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof window.showToast === 'function') {
+        window.showToast('📋 Copiado para a área de transferência!', 'success');
+      }
+    });
+  };
+
+  window.renderizarMatrizSocialSeo = function(data) {
+    const resultsContainer = document.getElementById('social-seo-results');
+    if (!resultsContainer) return;
+
+    resultsContainer.classList.remove('hidden');
+
+    // Card 1: ASR Triggers Badges
+    const triggersEl = document.getElementById('seo-val-audio-triggers');
+    if (triggersEl) {
+      const triggers = data.audioTriggers || [];
+      triggersEl.innerHTML = triggers.map(t => `
+        <span class="text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 px-2.5 py-1 rounded-md">
+          🎙️ ${t}
+        </span>
+      `).join('') || '<span class="text-xs text-slate-500">Nenhum gatilho gerado</span>';
+    }
+
+    // Card 2: OCR Screen Anchor
+    const ocrEl = document.getElementById('seo-val-ocr-anchor');
+    if (ocrEl) ocrEl.textContent = data.screenAnchorOcr || '-';
+
+    // Card 3: Alt-Text
+    const altEl = document.getElementById('seo-val-alt-text');
+    if (altEl) altEl.textContent = data.altText || '-';
+
+    // Card 4: Caption
+    const captionEl = document.getElementById('seo-val-caption');
+    if (captionEl) captionEl.textContent = data.searchFirstCaption || '-';
+  };
+
+  window.gerarMatrizSocialSeo = async function() {
+    const scriptText = document.getElementById('seo-script-text')?.value || '';
+    const btn = document.getElementById('btn-generate-social-seo');
+
+    if (!scriptText || !scriptText.trim()) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Insira o roteiro ou pauta da gravação para gerar a matriz.', 'warning');
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.innerHTML = '<span class="animate-spin">🌀</span> Processando Triangulação Algorítmica...';
+      btn.disabled = true;
+    }
+
+    try {
+      const cId = activeClientId || 'cliente_ativo';
+      const payload = {
+        scriptText: scriptText,
+        title: 'Pauta Ativa',
+        niche: 'Geral',
+        clientName: activeClientName || 'Cliente Ativo',
+        city: 'Geral'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/generate-social-seo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': activeTenantId,
+          'x-client-id': cId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await response.json();
+      if (resData.success) {
+        const data = resData.data;
+
+        // Persistência em localStorage
+        const pautaId = 'pauta_ativa';
+        const cacheKey = `oraculum_social_seo_${cId}_${pautaId}`;
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch (e) {
+          console.warn('[Social SEO Cache Error]:', e);
+        }
+
+        window.renderizarMatrizSocialSeo(data);
+
+        // Atualiza a pílula hint no teleprompter se houver audioTriggers
+        if (data.audioTriggers && data.audioTriggers.length > 0) {
+          window.teleprompterAudioTriggersHint = data.audioTriggers;
+        }
+
+        if (typeof window.showToast === 'function') {
+          window.showToast('⚡ Matriz de SEO Social gerada com sucesso!', 'success');
+        }
+      } else {
+        throw new Error(resData.error || 'Falha ao gerar SEO Social');
+      }
+    } catch (err) {
+      if (typeof window.showToast === 'function') {
+        window.showToast(`Erro no SEO Social: ${err.message}`, 'error');
+      }
+    } finally {
+      if (btn) {
+        btn.innerHTML = '<span>🚀 Gerar Matriz de Indexação Algorítmica</span>';
+        btn.disabled = false;
       }
     }
   };

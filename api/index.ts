@@ -1199,6 +1199,51 @@ app.post('/api/creatives/inject-metadata', async (req: Request, res: Response) =
   }
 });
 
+app.post('/api/generate-social-seo', async (req: Request, res: Response) => {
+  try {
+    const { scriptText, title, niche, clientName, city } = req.body;
+
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
+    }
+
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const promptSocialSeo = `Você é o Engenheiro de SEO e Algoritmos de Redes Sociais do Oraculum.
+Analise a pauta/roteiro abaixo para o cliente "${clientName || 'Cliente'}" (Nicho: "${niche || 'Geral'}", Cidade: "${city || 'Geral'}").
+Gere a matriz de indexação algorítmica para forçar o reconhecimento imediato pelos robôs de ASR (áudio), OCR (visão computacional de tela) e busca semântica (Alt-Text e Legenda).
+
+Roteiro / Título da Pauta:
+"${scriptText || title || 'Sem título'}"
+
+Retorne estritamente um JSON no formato:
+{
+  "audioTriggers": ["palavra-chave 1", "palavra-chave 2"],
+  "screenAnchorOcr": "Headline curta de alto impacto visual para queimar no vídeo/card",
+  "altText": "Texto alternativo acessível e rico em SEO de entidade",
+  "searchFirstCaption": "Legenda otimizada para a barra de pesquisa do Instagram/TikTok",
+  "carouselSlideHook": "Chamada de ação para passar o slide"
+}`;
+
+    const aiResponse = (await executarIAComFallback(ai, '', {
+      contents: [{ role: 'user', parts: [{ text: promptSocialSeo }] }],
+      temperature: 0.3,
+      responseMimeType: 'application/json'
+    })) as any;
+
+    const rawText = aiResponse?.reply || (typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse));
+    const cleanJson = rawText.replace(/```json|```/g, '').trim();
+    const parsedResult = JSON.parse(cleanJson.match(/\{[\s\S]*\}/)?.[0] || cleanJson);
+
+    return res.status(200).json({ success: true, data: parsedResult });
+  } catch (error: any) {
+    console.error('[API /api/generate-social-seo] Erro:', error);
+    return res.status(500).json({ success: false, error: 'Erro ao gerar matriz de SEO Social.' });
+  }
+});
+
 // SCRIPTS & TELEPROMPTER
 app.post('/api/scripts/generate', async (req: Request, res: Response) => {
   try {

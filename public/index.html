@@ -1802,6 +1802,83 @@
                     <!-- Ferramenta 2: Inspecionar Criativo Modular (Visão Computacional) -->
                     <div id="container-inspector-video"></div>
 
+                    <!-- Ferramenta: Indexador de SEO Social (Triangulação ASR / OCR / Alt-Text) -->
+                    <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mt-4 mb-4">
+                      <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between cursor-pointer select-none" onclick="window.toggleSocialSeoTool()">
+                        <div class="flex items-center gap-2">
+                          <span class="text-base">⚡</span>
+                          <span class="font-bold text-sm text-emerald-400">Indexador de SEO Social (Triangulação ASR / OCR / Alt-Text)</span>
+                        </div>
+                        <span id="icon-toggle-social-seo" class="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+                          ▼ Expandir Ferramenta
+                        </span>
+                      </div>
+
+                      <div id="body-social-seo" class="hidden p-6 bg-slate-950/40 space-y-5">
+                        <div class="space-y-3">
+                          <label class="block text-xs font-semibold text-slate-300">Roteiro / Título da Pauta Ativa *</label>
+                          <textarea id="seo-script-text" rows="3" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="Cole ou selecione o roteiro/pauta da gravação para calcular a matriz de SEO..."></textarea>
+                        </div>
+
+                        <button type="button" id="btn-generate-social-seo" onclick="window.gerarMatrizSocialSeo()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                          <span>🚀 Gerar Matriz de Indexação Algorítmica</span>
+                        </button>
+
+                        <!-- Painel de Resultados da Matriz em Grid 2x2 -->
+                        <div id="social-seo-results" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          
+                          <!-- Card 1: ASR Audio Triggers -->
+                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2">
+                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                              <span>🎙️</span> Gatilhos de Áudio (ASR - 0 a 5s)
+                            </span>
+                            <p class="text-[10px] text-slate-400">Palavras-chave obrigatórias a pronunciar nos primeiros 5 segundos:</p>
+                            <div id="seo-val-audio-triggers" class="flex flex-wrap gap-1.5 pt-1"></div>
+                          </div>
+
+                          <!-- Card 2: OCR Screen Anchor -->
+                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
+                            <div>
+                              <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                <span>📺</span> Âncora de OCR (Texto na Tela)
+                              </span>
+                              <p id="seo-val-ocr-anchor" class="text-xs text-slate-200 font-semibold mt-2 bg-slate-950 p-2.5 rounded border border-slate-800">-</p>
+                            </div>
+                            <button type="button" onclick="window.copiarTextoSeo('seo-val-ocr-anchor')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
+                              <span>📋 Copiar Texto de Tela</span>
+                            </button>
+                          </div>
+
+                          <!-- Card 3: Alt-Text Semântico -->
+                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
+                            <div>
+                              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                <span>👁️</span> Alt-Text Semântico (Acessibilidade Oculta)
+                              </span>
+                              <p id="seo-val-alt-text" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto leading-relaxed">-</p>
+                            </div>
+                            <button type="button" onclick="window.copiarTextoSeo('seo-val-alt-text')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
+                              <span>📋 Copiar Alt-Text</span>
+                            </button>
+                          </div>
+
+                          <!-- Card 4: Legenda Search-First -->
+                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
+                            <div>
+                              <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                                <span>🔍</span> Legenda Search-First
+                              </span>
+                              <p id="seo-val-caption" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto whitespace-pre-wrap leading-relaxed">-</p>
+                            </div>
+                            <button type="button" onclick="window.copiarTextoSeo('seo-val-caption')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
+                              <span>📋 Copiar Legenda</span>
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+
                     <!-- Ferramenta 3: Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO) -->
                     <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
                       <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('metadata-cert-content', this)">
@@ -3525,7 +3602,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.44.0"></script>
+<script src="/app.js?v=9999.45.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
