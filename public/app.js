@@ -3199,6 +3199,77 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.aplicarEstadoMockupOverlay();
   };
+
+  // ============================================================================
+  // 8. SIMULADOR PREDITIVO DE CPA & ROAS E GERADOR DE UTMS (ABA TRÁFEGO)
+  // ============================================================================
+  window.toggleCpaRoasTool = function() {
+    const content = document.getElementById('cpa-roas-tool-content');
+    const btn = document.getElementById('btn-toggle-cpa-roas');
+    if (!content || !btn) return;
+
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  window.toggleUtmGeneratorTool = function() {
+    const content = document.getElementById('utm-gen-tool-content');
+    const btn = document.getElementById('btn-toggle-utm-gen');
+    if (!content || !btn) return;
+
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  window.calcularCpaRoas = function() {
+    const orcamento = parseFloat(document.getElementById('sim-orcamento-diario')?.value || '100');
+    const ticket = parseFloat(document.getElementById('sim-ticket-medio')?.value || '297');
+    const convLp = parseFloat(document.getElementById('sim-taxa-conversao')?.value || '2.0') / 100;
+    const metaRoas = parseFloat(document.getElementById('sim-meta-roas')?.value || '3.0');
+
+    // Cálculos de Unit Economics
+    const cpaBreakeven = ticket;
+    const cpaDesejado = metaRoas > 0 ? ticket / metaRoas : ticket;
+    const cplMaximo = convLp > 0 ? cpaDesejado * convLp : 0;
+    const faturamentoEstimado = orcamento * metaRoas;
+
+    const fmtBRL = val => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const elCpl = document.getElementById('res-cpl-maximo');
+    const elCpa = document.getElementById('res-cpa-breakeven');
+    const elFat = document.getElementById('res-faturamento-estimado');
+
+    if (elCpl) elCpl.innerText = fmtBRL(cplMaximo);
+    if (elCpa) elCpa.innerText = fmtBRL(cpaBreakeven);
+    if (elFat) elFat.innerText = fmtBRL(faturamentoEstimado);
+  };
+
+  window.atualizarUtmGerada = function() {
+    const base = document.getElementById('utm-base-url')?.value.trim() || 'https://seudominio.com.br/oferta';
+    const source = document.getElementById('utm-source-select')?.value || 'meta_ads';
+    const medium = document.getElementById('utm-medium-select')?.value || 'cpc';
+    const campaign = (document.getElementById('utm-campaign-input')?.value.trim() || 'campanha').toLowerCase().replace(/\s+/g, '_');
+    const content = (document.getElementById('utm-content-input')?.value.trim() || '').toLowerCase().replace(/\s+/g, '_');
+
+    const sep = base.includes('?') ? '&' : '?';
+    let finalUrl = `${base}${sep}utm_source=${source}&utm_medium=${medium}&utm_campaign=${campaign}`;
+    if (content) finalUrl += `&utm_content=${content}`;
+
+    const resEl = document.getElementById('utm-result-url');
+    if (resEl) resEl.innerText = finalUrl;
+  };
+
+  window.copiarUtmFinal = function() {
+    const resEl = document.getElementById('utm-result-url');
+    if (!resEl) return;
+    navigator.clipboard.writeText(resEl.innerText).then(() => {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Link parametrizado copiado com sucesso!', 'success');
+      }
+    });
+  };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
 
