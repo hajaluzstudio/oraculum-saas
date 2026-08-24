@@ -1085,57 +1085,64 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
   // ============================================================================
-  // 1. Extração semântica com segmentação estrita por departamento
+  // 1. FATIADOR RIGOROSO DE CONTEÚDO (Isola o que é de cada equipe)
   function extrairSegmentosEstrategicos(rawText) {
     if (!rawText || typeof rawText !== 'string') return [];
 
     const segments = [];
-    const blocos = rawText.split(/(?=\n(?:\d+\.|\#{1,4}|\*\*[^\*]+\*\*)\s+)/g);
+    
+    // Expressões para detectar onde começa e termina cada bloco
+    const videoHeaderRegex = /(?:1\.\s*Os\s*\d*\s*Ganchos|3\s*Ganchos\s*Visuais|Ganchos\s*Visuais|Roteiro\s*de\s*Vídeo|Ideias\s*de\s*Anúncios\s*em\s*Vídeo)/i;
+    const salesHeaderRegex = /(?:2\.\s*Argumento|Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Argumento\s*Principal|Argumento\s*Direto|Script\s*Comercial)/i;
 
-    const vocabulario = {
-      video: ['vídeo', 'video', 'gancho', 'hook', 'roteiro', 'teleprompter', 'cena', 'visual', 'gravação', 'story', 'reels', 'tiktok'],
-      comercial: ['objeção', 'objecao', 'preço', 'preco', 'valor', 'comercial', 'venda', 'vendas', 'whatsapp', 'atendimento', 'fechamento', 'ticket'],
-      trafego: ['tráfego', 'trafego', 'campanha', 'público', 'publico', 'segmentação', 'cpa', 'cpl', 'roas', 'orçamento'],
-      design: ['design', 'banner', 'landing page', 'layout', 'wireframe'],
-      copywriting: ['copy', 'headline', 'legenda', 'texto', 'artigo', 'persuas', 'cta']
-    };
+    const posVideo = rawText.search(videoHeaderRegex);
+    const posSales = rawText.search(salesHeaderRegex);
 
-    blocos.forEach(bloco => {
-      const textoLimpo = bloco.trim();
-      if (textoLimpo.length < 20) return;
+    // Se encontrou as duas seções no mesmo texto, fatia com precisão cirúrgica
+    if (posVideo !== -1 && posSales !== -1) {
+      let videoText = '';
+      let salesText = '';
 
-      const lower = textoLimpo.toLowerCase();
-      let pontuacoes = { video: 0, comercial: 0, trafego: 0, design: 0, copywriting: 0 };
+      if (posVideo < posSales) {
+        videoText = rawText.substring(posVideo, posSales).trim();
+        salesText = rawText.substring(posSales).trim();
+      } else {
+        salesText = rawText.substring(posSales, posVideo).trim();
+        videoText = rawText.substring(posVideo).trim();
+      }
 
-      for (const [cat, termos] of Object.entries(vocabulario)) {
-        termos.forEach(termo => {
-          if (lower.includes(termo)) pontuacoes[cat] += 1;
+      if (videoText.length > 20) {
+        segments.push({
+          category: 'video',
+          title: '3 Ganchos Visuais e Roteiro de Gravação',
+          content: videoText
         });
       }
 
-      let melhorCategoria = 'copywriting';
-      let maxPontos = 0;
-      for (const [cat, pontos] of Object.entries(pontuacoes)) {
-        if (pontos > maxPontos) {
-          maxPontos = pontos;
-          melhorCategoria = cat;
-        }
+      if (salesText.length > 20) {
+        segments.push({
+          category: 'comercial',
+          title: 'Script de Negociação e Quebra de Objeção',
+          content: salesText
+        });
+        segments.push({
+          category: 'copywriting',
+          title: 'Estrutura de Copy Persuasiva',
+          content: salesText
+        });
       }
-
-      const primeiraLinha = textoLimpo.split('\n')[0].replace(/^[\#\*\d\.\-\s]+/, '').replace(/[\#\*]+$/, '').trim();
-      const titulo = primeiraLinha.length > 5 && primeiraLinha.length < 75 ? primeiraLinha : `Diretriz de ${melhorCategoria.toUpperCase()}`;
+    } else {
+      // Caso o chat tenha respondido sobre apenas um assunto específico
+      const lower = rawText.toLowerCase();
+      let cat = 'copywriting';
+      if (lower.includes('vídeo') || lower.includes('gancho') || lower.includes('reels') || lower.includes('gravação')) cat = 'video';
+      else if (lower.includes('tráfego') || lower.includes('cpa') || lower.includes('anúncio') || lower.includes('público')) cat = 'trafego';
+      else if (lower.includes('design') || lower.includes('banner') || lower.includes('landing page')) cat = 'design';
+      else if (lower.includes('objeção') || lower.includes('venda') || lower.includes('preço') || lower.includes('comercial')) cat = 'comercial';
 
       segments.push({
-        category: melhorCategoria,
-        title: titulo,
-        content: textoLimpo
-      });
-    });
-
-    if (segments.length === 0) {
-      segments.push({
-        category: 'copywriting',
-        title: 'Diretriz Estratégica',
+        category: cat,
+        title: `Diretriz Estratégica [${cat.toUpperCase()}]`,
         content: rawText.trim()
       });
     }
@@ -1143,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return segments;
   }
 
-  // 2. Despacho e Persistência
+  // 2. DESPACHO ATÔMICO PARA SUPABASE E STORAGE SEPARADO
   window.dispatchBriefingToWarRoom = async function (target) {
     const container = typeof target === 'string' ? document.getElementById(target) : target;
     if (!container) return;
@@ -1171,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (supabase) await supabase.from('war_room_tasks').insert([payload]);
       } catch (e) {
-        console.warn('[WarRoom Supabase]:', e);
+        console.warn('[WarRoom Insert Catch]:', e);
       }
 
       const key = `war_room_${clientId}_${seg.category}`;
@@ -1192,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 3. Renderização Completa e Hidratação dos Módulos Nativos
+  // 3. RENDERIZAÇÃO ESTÁVEL COM ISOLAMENTO DE CADA SUB-ABA
   async function carregarSalaOperacaoCompleta() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
@@ -1212,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!error && Array.isArray(data)) tasks = data;
       }
     } catch (e) {
-      console.warn('[WarRoom Query]:', e);
+      console.warn('[WarRoom Query Catch]:', e);
     }
 
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
@@ -1220,75 +1227,62 @@ document.addEventListener('DOMContentLoaded', () => {
       tasks = [...tasks, ...local];
     });
 
-    // Deduplicação
+    // Deduplicação estrita
     const seen = new Set();
     tasks = tasks.filter(t => {
-      const key = `${t.category}_${(t.content || '').slice(0, 30)}`;
+      const key = `${t.category}_${(t.content || '').slice(0, 40)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
 
-    // 4. Injeta os scripts de vídeo no container nativo superior e no Teleprompter
+    // Limpa tarefas antigas inválidas com texto duplicado se houver
     const videoTask = tasks.find(t => t.category === 'video');
     if (videoTask) {
-      // Atualiza o container superior "Estratégia de Vídeo do Oraculum"
-      const topVideoBox = Array.from(warRoom.querySelectorAll('div')).find(el => el.textContent && el.textContent.includes('Estratégia de Vídeo do Oraculum'));
-      if (topVideoBox) {
-        // Remove o texto cinza
-        topVideoBox.querySelectorAll('*').forEach(child => {
-          if (child.textContent && child.textContent.includes('Nenhum script gerado para este cliente')) child.remove();
-        });
-
-        let innerContent = topVideoBox.querySelector('.video-strategy-dynamic-content');
-        if (!innerContent) {
-          innerContent = document.createElement('div');
-          innerContent.className = 'video-strategy-dynamic-content text-xs text-slate-300 leading-relaxed whitespace-pre-wrap mt-3 pt-3 border-t border-[#1B3B36]';
-          topVideoBox.appendChild(innerContent);
-        }
-        innerContent.innerHTML = videoTask.content;
-      }
-
-      // Injeta no card "Roteiro de Gravação" para Teleprompter e Áudio
+      // Injeta apenas na aba de vídeo no local de teleprompter e áudio
       const teleprompterBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
       if (teleprompterBox) {
         teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
       }
     }
 
-    // 5. Injeta o Feed categorizado e isolado
-    let feedContainer = warRoom.querySelector('.war-room-feed-container');
-    if (!feedContainer) {
-      feedContainer = document.createElement('div');
-      feedContainer.className = 'war-room-feed-container space-y-4 my-4';
-      warRoom.appendChild(feedContainer);
+    // Cria ou localiza containers dedicados para as sub-abas sem destruir os cards de ferramentas
+    let nonVideoFeed = warRoom.querySelector('#war-room-nonvideo-feed');
+    if (!nonVideoFeed) {
+      nonVideoFeed = document.createElement('div');
+      nonVideoFeed.id = 'war-room-nonvideo-feed';
+      nonVideoFeed.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 my-4';
+      warRoom.appendChild(nonVideoFeed);
     }
 
-    feedContainer.innerHTML = tasks.map(task => `
-      <div data-category="${task.category}" class="war-room-task-card p-4 bg-[#071311] border border-emerald-500/30 rounded-xl text-slate-200 shadow-lg space-y-2">
-        <div class="flex items-center justify-between border-b border-emerald-950 pb-2">
+    // Renderiza os cards das outras categorias
+    nonVideoFeed.innerHTML = tasks.map(task => `
+      <div data-category="${task.category}" class="war-room-dep-card p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
           <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
-            ${(task.category || 'ESTRATÉGIA').toUpperCase()}
+            ${task.category.toUpperCase()}
           </span>
           <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
         </div>
-        <h4 class="text-xs font-semibold text-emerald-300">${task.title}</h4>
+        <h4 class="text-sm font-semibold text-emerald-300">${task.title}</h4>
         <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${task.content}</div>
       </div>
     `).join('');
 
-    // 6. Vincula e dispara o filtro exclusivo de sub-abas
-    if (typeof configurarSubAbasWarRoom === 'function') configurarSubAbasWarRoom();
+    // Ativa e executa a filtragem visual estrita
+    aplicarFiltroSubAbas();
   }
 
-  function configurarSubAbasWarRoom() {
+  function aplicarFiltroSubAbas() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
     const buttons = warRoom.querySelectorAll('button, .tab-button');
+    const videoTools = Array.from(warRoom.children).filter(el => el.id !== 'war-room-nonvideo-feed' && !el.classList.contains('flex-wrap'));
+
     buttons.forEach(btn => {
       const text = (btn.textContent || '').toLowerCase();
-      if (!text.match(/(vídeo|design|tráfego|trafego|copywriting|comercial)/)) return;
+      if (!text.match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) return;
 
       btn.onclick = function (e) {
         e.preventDefault();
@@ -1301,29 +1295,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Atualiza estilo do botão ativo
         buttons.forEach(b => {
-          if ((b.textContent || '').toLowerCase().match(/(vídeo|design|tráfego|trafego|copywriting|comercial)/)) {
-            b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
+          if ((b.textContent || '').toLowerCase().match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) {
+            b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]';
           }
         });
-        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-colors';
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black';
 
-        // Filtra os cards
-        const cards = warRoom.querySelectorAll('.war-room-task-card');
-        cards.forEach(card => {
-          card.style.display = (card.dataset.category === selectedCat) ? 'block' : 'none';
-        });
+        // Alterna exibição das ferramentas de vídeo vs cards de outras áreas
+        const nonVideoFeed = document.getElementById('war-room-nonvideo-feed');
+        if (selectedCat === 'video') {
+          videoTools.forEach(el => el.style.display = '');
+          if (nonVideoFeed) nonVideoFeed.style.display = 'none';
+        } else {
+          videoTools.forEach(el => el.style.display = 'none');
+          if (nonVideoFeed) {
+            nonVideoFeed.style.display = 'grid';
+            const cards = nonVideoFeed.querySelectorAll('.war-room-dep-card');
+            let countVisible = 0;
+            cards.forEach(card => {
+              if (card.dataset.category === selectedCat) {
+                card.style.display = 'block';
+                countVisible++;
+              } else {
+                card.style.display = 'none';
+              }
+            });
 
-        // Exibe ferramentas de vídeo apenas na sub-aba de vídeo
-        const videoTools = warRoom.querySelectorAll('.video-tool-block, #video-tools-grid');
-        videoTools.forEach(tool => {
-          tool.style.display = (selectedCat === 'video') ? 'grid' : 'none';
-        });
+            if (countVisible === 0) {
+              nonVideoFeed.innerHTML = `
+                <div class="col-span-2 p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
+                  Nenhuma diretriz despachada para a equipe de <strong>${selectedCat.toUpperCase()}</strong> até o momento.
+                </div>
+              `;
+            }
+          }
+        }
       };
     });
 
-    // Ativa a primeira aba por padrão
-    const defaultBtn = Array.from(buttons).find(b => (b.textContent || '').toLowerCase().includes('vídeo'));
-    if (defaultBtn) defaultBtn.click();
+    // Ativa Vídeo por padrão se nenhuma estiver ativa
+    const activeBtn = warRoom.querySelector('button.bg-\\[\\#10B981\\]') || buttons[0];
+    if (activeBtn) activeBtn.click();
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
