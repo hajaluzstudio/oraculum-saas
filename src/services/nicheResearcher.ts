@@ -109,7 +109,7 @@ export async function registerClientAndGenerateDossier(
   console.log(`[Agente de Nicho] 3/5 - Disparando Oráculo Gemini (@google/genai) para o dossiê de "${niche}"...`);
 
   // 3. DISPARO DA IA PARA GERAÇÃO DO DOSSIÊ ESTRATÉGICO DE NICHO
-  const dossier: NicheDossier = await generateNicheStrategicDossier(niche, clientName);
+  const dossier: NicheDossier = await generateNicheStrategicDossier(niche, clientName, website, previousAgencyNotes);
 
   if (topPlayersData) {
     (dossier as any).topPlayersAnalysis = topPlayersData.topPlayers;

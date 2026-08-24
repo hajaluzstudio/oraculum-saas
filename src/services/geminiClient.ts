@@ -268,25 +268,30 @@ const nicheDossierExhaustiveSchema: Schema = {
  */
 export async function generateNicheStrategicDossier(
   niche: string,
-  clientName?: string
+  clientName?: string,
+  website?: string,
+  briefingTexto?: string
 ): Promise<NicheDossier> {
-  const systemInstruction = `Você é o Oráculo Preditivo e Arquiteto Principal de Marketing Híbrido Multicanal e Neuromarketing da plataforma SaaS.
-Seu objetivo é elaborar um DOSSIÊ ESTRATÉGICO EXAUSTIVO, HIPERDETALHADO E MULTICANAL para o nicho informado.
+  const nomeCliente = clientName || 'Cliente Padrão';
+  const nichoMercado = niche || 'Geral';
 
-REGRAS RÍGIDAS DE ABORDAGEM MULTICANAL, INFLUENCERS E PODCASTS:
-1. PLANO DE INFLUENCIADORES E PODCASTS (influencerAndPodcastPartnerships):
-   - targetPodcastCategoriesOrShows (ARRAY DE STRINGS): Estilos ou nomes de podcasts ideais para patrocínio de alto impacto.
-   - influencerTierAndProfile (STRING): Perfil exato do influenciador (micro, macro ou autoridade de nicho).
-   - strategicJustification (STRING): Por que este perfil gera conversão e LTV alto.
-   - expectedRoiOrImpact (STRING): Retorno financeiro estimado e ganho de autoridade.
-2. PLANO MULTICANAL & OFFLINE (traditionalAndOfflineMedia):
-   - radioTV: Spots de rádio, TV e OOH.
-   - experientialAndEvents: Eventos VIP, presenciais em feiras e ações corpo a corpo.
-   - offlineRoiAttribution: Rastreamento via cupons, QR codes ou CRM.
-3. ALOCAÇÃO ORÇAMENTÁRIA PERCENTUAL (budgetAllocation):
-   - digitalTrafficPercent, traditionalMediaPercent, offlineEventsPercent (NUMBERS) e financialJustification (STRING).
-4. PRECIFICAÇÃO E LTV/CAC: Garantir relação LTV/CAC mínima inegociável de 3:1.
-5. REGULAMENTAÇÃO: Respeitar estritamente as regras éticas do nicho (CFM, OAB, CVM, CONAR).`;
+  const systemInstruction = `Você é o Diretor de Estratégia e Neuromarketing do ecossistema Oraculum SaaS.
+Sua missão é criar o DOSSIÊ ESTRATÉGICO PREDITIVO COMPLETO e exclusivo para a marca informada.
+
+DADOS DA MARCA:
+- Nome/Marca: ${nomeCliente}
+- Nicho: ${nichoMercado}
+- Website: ${website || 'Não informado'}
+- Briefing, Branding e Diferenciais: ${briefingTexto || 'Análise setorial de alto padrão'}
+
+DIRETRIZES DE CONSTRUÇÃO OBRIGATÓRIAS:
+1. NÃO GERE TEXTOS GENÉRICOS. Incorpore os diferenciais exatos, objeções e posicionamento informados no Briefing.
+2. Aplique regras regulatórias e éticas reais do conselho de classe do nicho (ex: CFM/CRM para medicina, OAB para advocacia, etc.).
+3. Formate a saída rigorosamente nos 4 blocos estruturados:
+   - VISÃO DE MERCADO & PERFIL ICP (Público A/B, Nível de Consciência, Dores Viscerais).
+   - PSICOLOGIA DE CONSUMO & NEUROECONOMIA (Medos Inconfessáveis, Vieses Cognitivos, Ancoragem de Preço).
+   - MODELAGEM DE PRECIFICAÇÃO & ORÇAMENTO PREDITIVO (Ticket Médio Sugerido, CAC Máximo Aceitável, LTV Projetado, Proporção LTV/CAC Alvo >= 3:1, Orçamento Mensal Recomendado).
+   - DIRETRIZES DE NEUROMARKETING PARA VÍDEO (3 Ganchos Visuais/Hooks de 3s específicos para o tom da marca).`;
 
   const prompt = `Gere o Dossiê Estratégico Preditivo MULTICANAL COMPLETO para o Nicho: "${niche}"${
     clientName ? ` (Cliente: "${clientName}")` : ''

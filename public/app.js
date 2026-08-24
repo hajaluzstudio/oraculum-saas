@@ -480,9 +480,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const clientName = document.getElementById('client-name').value;
-    const niche = document.getElementById('client-niche').value;
-    const sanitizedHistory = document.getElementById('previous-agency-notes').value;
+    const clientName = document.getElementById('client-name')?.value || '';
+    const niche = document.getElementById('client-niche')?.value || '';
+    const website = document.getElementById('client-website')?.value || '';
+    const sanitizedHistory = document.getElementById('previous-agency-notes')?.value || '';
 
     dossierBadge.textContent = '1/1 - Preparando Dossiê...';
     dossierBadge.style.background = 'rgba(6, 182, 212, 0.2)';
@@ -497,14 +498,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // Dispara a geração do Dossiê Estratégico usando o ID selecionado
-      await generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory);
+      await generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website);
     } catch (error) {
       console.error('Erro no fluxo de geração de dossiê:', error);
       alert('Erro inesperado: ' + error.message);
     }
   }
 
-  async function generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory) {
+  async function generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website = '') {
     dossierBadge.textContent = '2/2 - Disparando Oraculum Gemini (Dossiê)...';
 
     dossierContent.innerHTML = `
@@ -525,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
           clientId,
           clientName,
           niche,
+          website,
           previousAgencyNotes: sanitizedHistory
         })
       });
