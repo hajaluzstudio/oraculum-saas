@@ -2431,124 +2431,167 @@ O verdadeiro problema não é a cirurgia em si, mas a falta de clareza sobre té
 
               <!-- 5. COMERCIAL -->
               <div id="wr-tab-comercial" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="card-glass">
-                  <div class="card-header">
-                    <h3><i class="fa-solid fa-handshake"></i> Playbook de Vendas e Quebra de Objeções</h3>
-                  </div>
-                  <!-- Feed de Gavetas de Comercial -->
-                  <div id="feed-gavetas-comercial" class="space-y-4 mt-0 mb-4"></div>
-                  <!-- Container de Entregáveis / Pastas Comercial & Vendas -->
-                  <div id="comercial-deliverables-container" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-4">
+                <div class="space-y-6">
+                  <!-- 1. Bloco Unificado de Entregáveis e Playbooks Comerciais -->
+                  <div id="comercial-deliverables-container" class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center gap-2.5">
                         <span class="text-xl">🤝</span>
-                        <h3 class="text-base font-semibold text-slate-100">Scripts Comerciais, Objeções & Playbook</h3>
+                        <div>
+                          <h3 class="text-base font-semibold text-slate-100">Scripts Comerciais, Objeções & Playbook</h3>
+                          <p class="text-xs text-slate-400">Playbooks de pré-atendimento, matrizes de fechamento e mensagens de WhatsApp.</p>
+                        </div>
                       </div>
                       <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis Estratégicos</span>
                     </div>
                     
                     <div id="comercial-deliverables-list" class="space-y-4">
-                      <div class="text-center py-10 border-2 border-dashed border-slate-800 rounded-xl">
-                        <p class="text-xs text-slate-500">Nenhum script ou playbook despachado para esta equipe ainda. Gere uma estratégia no Chat Estratégico.</p>
+                      <div class="text-center py-12 border-2 border-dashed border-slate-800 rounded-xl">
+                        <span class="text-2xl block mb-2">🤝</span>
+                        <p class="text-xs text-slate-400 font-medium">Nenhum script ou playbook despachado para esta equipe ainda.</p>
+                        <p class="text-[11px] text-slate-600 mt-1">Gere uma nova estratégia no Chat Estratégico para despachar roteiros comerciais para cá.</p>
                       </div>
                     </div>
                   </div>
-                  <div id="wr-sales-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="grid-2col">
-                      <!-- COMERCIAL: A. Battlecards de Objeções -->
-                      <div class="card-glass">
-                        <div class="card-header">
-                          <h3><i class="fa-solid fa-khanda"></i> Battlecards de Objeções</h3>
-                          <p>Scripts táticos de reversão rápida estruturados em Validar > Isolar > Reverter.</p>
-                        </div>
-                        <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
-                          
-                          <!-- Objeção 1 -->
-                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                              <span>💸 "Tá muito caro / Sem Orçamento"</span>
-                              <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
-                              <strong style="color: #34D399;">1. Validar:</strong> "Compreendo. É um investimento importante."<br>
-                              <strong style="color: #34D399;">2. Isolar:</strong> "Fora a questão do valor, tem algo a mais que te impede de avançarmos?"<br>
-                              <strong style="color: #34D399;">3. Reverter:</strong> "Se o valor não fosse problema, esse seria o produto ideal pra você? O que acha de parcelarmos para não pesar no seu fluxo de caixa mensal?"
-                              <div style="margin-top: 10px;">
-                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
-                              </div>
-                            </div>
-                          </div>
 
-                          <!-- Objeção 2 -->
-                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                              <span>⏳ "Vou pensar / Falo com você depois"</span>
-                              <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
-                              <strong style="color: #34D399;">1. Validar:</strong> "Claro, você precisa de segurança."<br>
-                              <strong style="color: #34D399;">2. Isolar:</strong> "Geralmente, quando alguém quer pensar, é por causa de Preço ou Dúvida no Produto. Qual dos dois é o seu caso?"<br>
-                              <strong style="color: #34D399;">3. Reverter:</strong> "Vamos resolver isso agora pra você não perder o bônus de ação rápida que encerra hoje."
-                              <div style="margin-top: 10px;">
-                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <!-- Objeção 3 -->
-                          <div class="objection-card" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
-                            <button class="objection-btn" style="width: 100%; padding: 12px; background: var(--bg-surface); border: none; color: #E2E8F0; text-align: left; font-weight: bold; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                              <span>🤝 "Preciso falar com meu sócio/esposa"</span>
-                              <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-                            <div class="objection-body" style="padding: 12px; background: rgba(0,0,0,0.3); display: none; font-size: 12px; color: #94A3B8; line-height: 1.6;">
-                              <strong style="color: #34D399;">1. Validar:</strong> "Justo, decisões em conjunto são importantes."<br>
-                              <strong style="color: #34D399;">2. Isolar:</strong> "Mas me diz, se dependesse SÓ de você, qual seria a sua decisão agora?"<br>
-                              <strong style="color: #34D399;">3. Reverter:</strong> "Ótimo! Então vamos agendar uma call rápida nós três amanhã às 14h para eu tirar as dúvidas dele(a) também. Funciona pra você?"
-                              <div style="margin-top: 10px;">
-                                <button type="button" class="btn-primary sm" onclick="window.copyToClipboard(this.parentElement.parentElement.innerText.replace('Copiar P/ WhatsApp','').trim())"><i class="fa-brands fa-whatsapp"></i> Copiar Script</button>
-                              </div>
-                            </div>
-                          </div>
-
+                  <!-- 2. Card Retrátil: Battlecards de Objeções (Validar > Isolar > Reverter) -->
+                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleBattlecardsTool()">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xl">🥊</span>
+                        <div>
+                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+                            Battlecards de Objeções & Reversão Rápida
+                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Sales Enablement</span>
+                          </h3>
+                          <p class="text-xs text-slate-400">Scripts táticos estruturados na metodologia Validar → Isolar → Reverter para WhatsApp e ligação.</p>
                         </div>
                       </div>
+                      <button id="btn-toggle-battlecards" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
+                        ▼ Expandir Ferramenta
+                      </button>
+                    </div>
 
-                      <!-- COMERCIAL: B. Calculadora BANT -->
-                      <div class="card-glass">
-                        <div class="card-header">
-                          <h3><i class="fa-solid fa-temperature-three-quarters"></i> Qualificação de Lead (BANT)</h3>
-                          <p>Identifique a temperatura real do lead para priorização do CRM.</p>
+                    <div id="battlecards-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
+                      <!-- Seletor de Objeção -->
+                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button onclick="window.selecionarBattlecard('caro')" id="btn-obj-caro" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 text-center cursor-pointer">
+                          💸 "Está muito caro"
+                        </button>
+                        <button onclick="window.selecionarBattlecard('pensar')" id="btn-obj-pensar" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
+                          ⏳ "Vou pensar / retorno"
+                        </button>
+                        <button onclick="window.selecionarBattlecard('socio')" id="btn-obj-socio" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
+                          👥 "Falar com cônjuge/sócio"
+                        </button>
+                        <button onclick="window.selecionarBattlecard('preco_direto')" id="btn-obj-preco_direto" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
+                          🏷️ "Me passa só o preço"
+                        </button>
+                      </div>
+
+                      <!-- Estrutura do Script em 3 Fases -->
+                      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                          <span id="battlecard-titulo" class="text-xs font-bold text-slate-200 uppercase tracking-wider">Metodologia de Reversão: "Está muito caro"</span>
+                          <button onclick="window.copiarScriptBattlecard()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow cursor-pointer">
+                            📋 Copiar Script WhatsApp
+                          </button>
                         </div>
-                        <div style="margin-top: 14px;">
-                          <form id="form-bant" style="display: flex; flex-direction: column; gap: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
-                              <span><strong>[B]udget:</strong> Tem orçamento alinhado / condição de pagamento.</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
-                              <span><strong>[A]uthority:</strong> É o decisor final ou influencia diretamente.</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
-                              <span><strong>[N]eed:</strong> Tem uma dor clara que nosso produto resolve.</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #E2E8F0; cursor: pointer; background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                              <input type="checkbox" class="bant-check" value="25" style="width: 16px; height: 16px; accent-color: #10B981;">
-                              <span><strong>[T]imeframe:</strong> Tem urgência de compra (próximos 7-15 dias).</span>
-                            </label>
-                          </form>
 
-                          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                              <span style="font-size: 11px; color: #94A3B8;">Temperatura Estimada:</span>
-                              <span id="bant-status" style="font-size: 12px; font-weight: bold; color: #64748B;">Frio (0%)</span>
-                            </div>
-                            <div style="width: 100%; height: 12px; background: var(--bg-surface); border-radius: 6px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1);">
-                              <div id="bant-progress" style="height: 100%; width: 0%; background: #64748B; transition: all 0.3s ease;"></div>
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
+                            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">1. Validar (Empatia)</span>
+                            <p id="battlecard-fase-validar" class="text-slate-300 leading-snug">"Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança financeira é prioridade."</p>
                           </div>
+                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
+                            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">2. Isolar (Checagem Real)</span>
+                            <p id="battlecard-fase-isolar" class="text-slate-300 leading-snug">"Além da questão do investimento, o protocolo e os resultados apresentados fazem 100% de sentido para o seu caso?"</p>
+                          </div>
+                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">3. Reverter (CTA / Fechamento)</span>
+                            <p id="battlecard-fase-reverter" class="text-slate-300 leading-snug">"Se nós conseguirmos flexibilizar as condições no cartão ou parcelamento direto, conseguimos dar o próximo passo hoje?"</p>
+                          </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
+                          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block mb-1">Mensagem Pronta para Envio:</span>
+                          <p id="battlecard-msg-completa" class="text-xs text-emerald-300 font-mono whitespace-pre-line leading-relaxed">Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança é prioridade.
+Além da questão do investimento, o protocolo e os resultados apresentados fazem sentido para você?
+Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horário para esta semana?</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 3. Card Retrátil: Qualificador de Lead BANT & Temperatura de Fechamento -->
+                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleBantTool()">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xl">🌡️</span>
+                        <div>
+                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+                            Qualificador de Lead (Framework BANT)
+                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Lead Scoring</span>
+                          </h3>
+                          <p class="text-xs text-slate-400">Classifique a temperatura e o potencial de compra do lead em 4 perguntas objetivas.</p>
+                        </div>
+                      </div>
+                      <button id="btn-toggle-bant" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
+                        ▼ Expandir Ferramenta
+                      </button>
+                    </div>
+
+                    <div id="bant-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
+                          <input type="checkbox" id="bant-budget" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+                          <div>
+                            <strong class="text-xs text-slate-200 block font-semibold">[B] Budget (Orçamento)</strong>
+                            <span class="text-[11px] text-slate-400">Possui capacidade financeira ou limite no cartão para o investimento.</span>
+                          </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
+                          <input type="checkbox" id="bant-authority" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+                          <div>
+                            <strong class="text-xs text-slate-200 block font-semibold">[A] Authority (Decisor)</strong>
+                            <span class="text-[11px] text-slate-400">É o próprio tomador de decisão final (não depende de aprovação de terceiros).</span>
+                          </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
+                          <input type="checkbox" id="bant-need" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+                          <div>
+                            <strong class="text-xs text-slate-200 block font-semibold">[N] Need (Necessidade Real)</strong>
+                            <span class="text-[11px] text-slate-400">Possui dor ou desejo latente que a solução do cliente resolve diretamente.</span>
+                          </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
+                          <input type="checkbox" id="bant-timeframe" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+                          <div>
+                            <strong class="text-xs text-slate-200 block font-semibold">[T] Timeframe (Urgência)</strong>
+                            <span class="text-[11px] text-slate-400">Pretende iniciar ou fechar nos próximos 7 a 15 dias.</span>
+                          </div>
+                        </label>
+                      </div>
+
+                      <!-- Barra de Temperatura Dinâmica -->
+                      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="text-slate-400 font-semibold uppercase tracking-wider">Classificação de Temperatura CRM:</span>
+                          <span id="bant-temp-badge" class="font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-400 border border-slate-700">❄️ Frio (0%)</span>
+                        </div>
+
+                        <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                          <div id="bant-progress-bar" class="bg-slate-700 h-full transition-all duration-300 w-0"></div>
+                        </div>
+
+                        <div class="p-3 bg-slate-900/70 border border-slate-800/80 rounded-lg flex items-center justify-between gap-3">
+                          <span id="bant-recomendacao-texto" class="text-xs text-slate-300 leading-snug">
+                            📌 <strong>Ação Recomendada:</strong> Nutrir com conteúdos de autoridade e casos de sucesso antes de forçar fechamento.
+                          </span>
+                          <button onclick="window.resetarBant()" class="text-[11px] text-slate-500 hover:text-slate-300 underline shrink-0 cursor-pointer">Resetar</button>
                         </div>
                       </div>
                     </div>
@@ -3831,7 +3874,7 @@ O verdadeiro problema não é a cirurgia em si, mas a falta de clareza sobre té
     });
   }
 </script>
-<script src="/app.js?v=9999.54.0"></script>
+<script src="/app.js?v=9999.55.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

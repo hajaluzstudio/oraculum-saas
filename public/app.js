@@ -3447,6 +3447,149 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof window.showToast === 'function') window.showToast('Modelo de copy copiado com sucesso!', 'success');
     });
   };
+
+  // ============================================================================
+  // 10. BATTLECARDS DE OBJEÇÕES & QUALIFICADOR BANT (ABA COMERCIAL & VENDAS)
+  // ============================================================================
+  window.toggleBattlecardsTool = function() {
+    const content = document.getElementById('battlecards-tool-content');
+    const btn = document.getElementById('btn-toggle-battlecards');
+    if (!content || !btn) return;
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  window.toggleBantTool = function() {
+    const content = document.getElementById('bant-tool-content');
+    const btn = document.getElementById('btn-toggle-bant');
+    if (!content || !btn) return;
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  // Database dos Battlecards
+  window.battlecardsData = {
+    caro: {
+      titulo: 'Metodologia de Reversão: "Está muito caro"',
+      validar: '"Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança financeira é prioridade."',
+      isolar: '"Além da questão do investimento, o protocolo e os resultados apresentados fazem 100% de sentido para o seu caso?"',
+      reverter: '"Se nós conseguirmos flexibilizar as condições no cartão ou parcelamento direto, conseguimos dar o próximo passo hoje?"',
+      msg: 'Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança é prioridade.\n\nAlém da questão do investimento, o protocolo e os resultados apresentados fazem sentido para você?\n\nSe nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horário para esta semana?'
+    },
+    pensar: {
+      titulo: 'Metodologia de Reversão: "Vou pensar / retorno depois"',
+      validar: '"Claro, [Nome], tomar uma decisão consciente e bem planejada é fundamental."',
+      isolar: '"Geralmente quando alguém precisa pensar, é por causa do valor, da agenda ou de alguma dúvida sobre o método. Qual desses pontos te deixou mais receoso?"',
+      reverter: '"Para você não perder a condição exclusiva de hoje, posso segurar sua vaga até amanhã às 12h enquanto você avalia?"',
+      msg: 'Claro, [Nome], tomar uma decisão bem pensada é fundamental!\n\nGeralmente quando alguém precisa avaliar, é por conta do investimento ou de alguma dúvida que ficou. O que mais te deixou em dúvida?\n\nPara não perder a condição especial, posso segurar seu horário até amanhã ao meio-dia enquanto você avalia?'
+    },
+    socio: {
+      titulo: 'Metodologia de Reversão: "Preciso falar com cônjuge/sócio"',
+      validar: '"Perfeito, [Nome], alinhar com quem compartilha as decisões financeiras é essencial."',
+      isolar: '"Se dependesse exclusivamente de você, nós iniciaríamos o procedimento/projeto agora?"',
+      reverter: '"Quer que eu te envie um resumo em PDF de 1 página com os pontos-chave para facilitar a conversa de vocês hoje à noite?"',
+      msg: 'Perfeito, [Nome]! Decisões importantes precisam ser alinhadas em conjunto.\n\nSe dependesse apenas de você, a proposta fez sentido para o que você buscava?\n\nPosso te enviar um resumo em PDF dos pontos principais para você mostrar a ele(a) hoje à noite?'
+    },
+    preco_direto: {
+      titulo: 'Metodologia de Reversão: "Me passa só o preço / Quanto custa?"',
+      validar: '"Com certeza, [Nome], vou te explicar exatamente a faixa de investimento."',
+      isolar: '"Como cada caso possui particularidades clínicas e objetivos específicos, nós temos protocolos personalizados."',
+      reverter: '"Você busca um atendimento focado em estética, função respiratória ou ambos? Me contando em 1 frase já te passo o direcionamento exato."',
+      msg: 'Com certeza, [Nome]! Vou te passar a faixa de valores.\n\nComo cada caso tem necessidades específicas e protocolos sob medida, me conta:\n\nVocê busca um tratamento focado em estética, saúde ou ambos? Assim já te dou a estimativa exata!'
+    }
+  };
+
+  window.selecionarBattlecard = function(key) {
+    const data = window.battlecardsData[key];
+    if (!data) return;
+
+    const titEl = document.getElementById('battlecard-titulo');
+    const valEl = document.getElementById('battlecard-fase-validar');
+    const isoEl = document.getElementById('battlecard-fase-isolar');
+    const revEl = document.getElementById('battlecard-fase-reverter');
+    const msgEl = document.getElementById('battlecard-msg-completa');
+
+    if (titEl) titEl.innerText = data.titulo;
+    if (valEl) valEl.innerText = data.validar;
+    if (isoEl) isoEl.innerText = data.isolar;
+    if (revEl) revEl.innerText = data.reverter;
+    if (msgEl) msgEl.innerText = data.msg;
+
+    ['caro', 'pensar', 'socio', 'preco_direto'].forEach(k => {
+      const b = document.getElementById(`btn-obj-${k}`);
+      if (!b) return;
+      if (k === key) {
+        b.className = 'py-2.5 px-3 rounded-xl text-xs font-semibold transition-all bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 text-center shadow-sm cursor-pointer';
+      } else {
+        b.className = 'py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer';
+      }
+    });
+  };
+
+  window.copiarScriptBattlecard = function() {
+    const msg = document.getElementById('battlecard-msg-completa')?.innerText;
+    if (!msg) return;
+    navigator.clipboard.writeText(msg).then(() => {
+      if (typeof window.showToast === 'function') window.showToast('Script de objeção copiado para o WhatsApp!', 'success');
+    });
+  };
+
+  // Qualificador BANT
+  window.calcularScoreBant = function() {
+    const b = document.getElementById('bant-budget')?.checked ? 1 : 0;
+    const a = document.getElementById('bant-authority')?.checked ? 1 : 0;
+    const n = document.getElementById('bant-need')?.checked ? 1 : 0;
+    const t = document.getElementById('bant-timeframe')?.checked ? 1 : 0;
+
+    const total = b + a + n + t;
+    const pct = total * 25;
+
+    const badge = document.getElementById('bant-temp-badge');
+    const bar = document.getElementById('bant-progress-bar');
+    const rec = document.getElementById('bant-recomendacao-texto');
+
+    if (bar) bar.style.width = `${pct}%`;
+
+    if (total === 0) {
+      if (badge) {
+        badge.className = 'font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-400 border border-slate-700';
+        badge.innerText = '❄️ Frio (0%)';
+      }
+      if (bar) bar.className = 'bg-slate-700 h-full transition-all duration-300';
+      if (rec) rec.innerHTML = '📌 <strong>Ação Recomendada:</strong> Nutrir com conteúdos de autoridade e casos de sucesso antes de forçar fechamento.';
+    } else if (total === 1 || total === 2) {
+      if (badge) {
+        badge.className = 'font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-blue-500/20 text-blue-400 border border-blue-500/40';
+        badge.innerText = `🔥 Morno (${pct}%)`;
+      }
+      if (bar) bar.className = 'bg-blue-500 h-full transition-all duration-300';
+      if (rec) rec.innerHTML = '📌 <strong>Ação Recomendada:</strong> Focar na quebra de objeções específicas (orçamento ou decisor) e agendar pré-avaliação rápida.';
+    } else if (total === 3) {
+      if (badge) {
+        badge.className = 'font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-amber-500/20 text-amber-400 border border-amber-500/40';
+        badge.innerText = `⚡ Muito Quente (${pct}%)`;
+      }
+      if (bar) bar.className = 'bg-amber-500 h-full transition-all duration-300';
+      if (rec) rec.innerHTML = '📌 <strong>Ação Recomendada:</strong> Lead de alta probabilidade. Apresentar proposta personalizada e condições de fechamento.';
+    } else if (total === 4) {
+      if (badge) {
+        badge.className = 'font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+        badge.innerText = '🎯 Pronto para Fechamento (100%)';
+      }
+      if (bar) bar.className = 'bg-emerald-500 h-full transition-all duration-300';
+      if (rec) rec.innerHTML = '📌 <strong>Ação Recomendada:</strong> Prioridade máxima no CRM! Encaminhar contrato/link de pagamento ou reservar horário imediatamente.';
+    }
+  };
+
+  window.resetarBant = function() {
+    ['budget', 'authority', 'need', 'timeframe'].forEach(id => {
+      const el = document.getElementById(`bant-${id}`);
+      if (el) el.checked = false;
+    });
+    window.calcularScoreBant();
+  };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
 
