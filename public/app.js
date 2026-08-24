@@ -8495,7 +8495,43 @@ const BI_BASELINE = {
   cliques: 1420
 };
 
-// 2. FUNÇÃO DIRETA PARA ABRIR O MODAL
+// ============================================================================
+// MODAL DE DIAGNÓSTICO VISUAL DE ERROS (EXIBIÇÃO NA TELA)
+// ============================================================================
+
+window.exibirErroVisualNaTela = function(titulo, erroObj) {
+  // Remove erro anterior se houver
+  const antigo = document.getElementById('bi-modal-erro-visual');
+  if (antigo) antigo.remove();
+
+  const erroMsg = typeof erroObj === 'string' ? erroObj : (erroObj?.message || JSON.stringify(erroObj) || 'Erro desconhecido');
+  const stackTrace = erroObj?.stack || 'Nenhum stack trace disponível.';
+
+  const div = document.createElement('div');
+  div.id = 'bi-modal-erro-visual';
+  div.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(15, 23, 42, 0.92) !important; z-index: 9999999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 20px !important; box-sizing: border-box !important;';
+
+  div.innerHTML = `
+    <div style="background: #1e1b4b !important; border: 2px solid #ef4444 !important; width: 100% !important; max-width: 600px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 50px rgba(0,0,0,0.9) !important; font-family: monospace !important;">
+      <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #3730a3 !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
+        <h3 style="margin: 0 !important; font-size: 16px !important; color: #f87171 !important; font-weight: bold !important;">🚨 DIAGNÓSTICO VISUAL: ${titulo}</h3>
+        <button type="button" onclick="document.getElementById('bi-modal-erro-visual').remove()" style="background: #ef4444 !important; border: none !important; color: #fff !important; font-size: 16px !important; font-weight: bold !important; padding: 6px 12px !important; border-radius: 6px !important; cursor: pointer !important;">FECHAR</button>
+      </div>
+      <div style="font-size: 13px !important; color: #fca5a5 !important; margin-bottom: 12px !important; word-break: break-all !important;">
+        <strong>Mensagem:</strong> ${erroMsg}
+      </div>
+      <div style="font-size: 11px !important; color: #94a3b8 !important; background: #0f172a !important; padding: 12px !important; border-radius: 8px !important; max-height: 200px !important; overflow-y: auto !important; white-space: pre-wrap !important;">
+        <strong>Stack Trace / Detalhes:</strong>\n${stackTrace}
+      </div>
+      <div style="margin-top: 16px !important; text-align: right !important;">
+        <button type="button" onclick="document.getElementById('bi-modal-erro-visual').remove()" style="padding: 8px 16px !important; background: #3730a3 !important; color: #fff !important; border: none !important; border-radius: 6px !important; font-size: 12px !important; cursor: pointer !important;">Entendido</button>
+      </div>
+    </div>
+  `;
+
+  document.documentElement.appendChild(div);
+};
+
 window.abrirModalLancarBI = function(e) {
   if (e) {
     e.preventDefault();
@@ -8503,80 +8539,87 @@ window.abrirModalLancarBI = function(e) {
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
   }
 
-  // Remove modal prévio se existir
-  const modalExistente = document.getElementById('bi-modal-root-container');
-  if (modalExistente) modalExistente.remove();
+  try {
+    console.log('[DIAGNOSTICO] Tentando abrir o modal de BI...');
+    
+    // Verifica se o container raiz do modal anterior existe e remove
+    const antigo = document.getElementById('bi-modal-root-container');
+    if (antigo) antigo.remove();
 
-  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
+    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+    const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+    const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  // Criação do elemento diretamente no documentElement (acima de qualquer HTML/Tailwind)
-  const modalDiv = document.createElement('div');
-  modalDiv.id = 'bi-modal-root-container';
-  modalDiv.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.85) !important; z-index: 999999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; box-sizing: border-box !important; backdrop-filter: blur(6px) !important;';
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'bi-modal-root-container';
+    modalDiv.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.88) !important; z-index: 999999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; box-sizing: border-box !important; backdrop-filter: blur(6px) !important;';
 
-  modalDiv.innerHTML = `
-    <div style="background: #0f172a !important; border: 1px solid #334155 !important; width: 100% !important; max-width: 480px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9) !important; font-family: system-ui, -apple-system, sans-serif !important;">
-      <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #1e293b !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
-        <div>
-          <h3 style="margin: 0 !important; font-size: 15px !important; font-weight: 700 !important; color: #f8fafc !important;">💰 Lançar Métricas de BI</h3>
-          <p style="margin: 3px 0 0 0 !important; font-size: 12px !important; color: #10b981 !important; font-weight: 600 !important;">${clientName}</p>
+    modalDiv.innerHTML = `
+      <div style="background: #0f172a !important; border: 1px solid #334155 !important; width: 100% !important; max-width: 480px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9) !important; font-family: sans-serif !important;">
+        <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #1e293b !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
+          <div>
+            <h3 style="margin: 0 !important; font-size: 15px !important; font-weight: 700 !important; color: #f8fafc !important;">💰 Lançar Métricas de BI</h3>
+            <p style="margin: 3px 0 0 0 !important; font-size: 12px !important; color: #10b981 !important; font-weight: 600 !important;">${clientName}</p>
+          </div>
+          <button type="button" id="btn-close-bi-root" style="background: transparent !important; border: none !important; color: #94a3b8 !important; font-size: 20px !important; cursor: pointer !important; padding: 4px 8px !important;">✕</button>
         </div>
-        <button type="button" id="btn-close-bi-root" style="background: transparent !important; border: none !important; color: #94a3b8 !important; font-size: 20px !important; cursor: pointer !important; padding: 4px 8px !important;">✕</button>
+
+        <form id="form-bi-root" style="display: flex !important; flex-direction: column !important; gap: 14px !important;">
+          <input type="hidden" id="input-root-client-id" value="${clientId}">
+
+          <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important;">
+            <div>
+              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Faturamento (R$)</label>
+              <input type="number" step="0.01" id="input-root-faturamento" required placeholder="Ex: 28900.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+            </div>
+            <div>
+              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Gasto em Tráfego (R$)</label>
+              <input type="number" step="0.01" id="input-root-gasto" required placeholder="Ex: 4500.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+            </div>
+          </div>
+
+          <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important;">
+            <div>
+              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Vendas</label>
+              <input type="number" id="input-root-vendas" required placeholder="Ex: 14" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+            </div>
+            <div>
+              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Leads</label>
+              <input type="number" id="input-root-leads" required placeholder="Ex: 184" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+            </div>
+            <div>
+              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Cliques</label>
+              <input type="number" id="input-root-cliques" placeholder="Ex: 1420" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+            </div>
+          </div>
+
+          <div style="display: flex !important; justify-content: flex-end !important; gap: 10px !important; padding-top: 14px !important; border-top: 1px solid #1e293b !important;">
+            <button type="button" id="btn-cancel-bi-root" style="padding: 8px 16px !important; background: #1e293b !important; border: none !important; color: #cbd5e1 !important; font-size: 12px !important; font-weight: 600 !important; border-radius: 8px !important; cursor: pointer !important;">Cancelar</button>
+            <button type="submit" id="btn-save-bi-root" style="padding: 8px 20px !important; background: #059669 !important; border: none !important; color: #ffffff !important; font-size: 12px !important; font-weight: 700 !important; border-radius: 8px !important; cursor: pointer !important;">💾 Gravar no Supabase</button>
+          </div>
+        </form>
       </div>
-
-      <form id="form-bi-root" style="display: flex !important; flex-direction: column !important; gap: 14px !important;">
-        <input type="hidden" id="input-root-client-id" value="${clientId}">
-
-        <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important;">
-          <div>
-            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Faturamento (R$)</label>
-            <input type="number" step="0.01" id="input-root-faturamento" required placeholder="Ex: 28900.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
-          </div>
-          <div>
-            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Gasto em Tráfego (R$)</label>
-            <input type="number" step="0.01" id="input-root-gasto" required placeholder="Ex: 4500.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
-          </div>
-        </div>
-
-        <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important;">
-          <div>
-            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Vendas</label>
-            <input type="number" id="input-root-vendas" required placeholder="Ex: 14" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
-          </div>
-          <div>
-            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Leads</label>
-            <input type="number" id="input-root-leads" required placeholder="Ex: 184" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
-          </div>
-          <div>
-            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Cliques</label>
-            <input type="number" id="input-root-cliques" placeholder="Ex: 1420" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
-          </div>
-        </div>
-
-        <div style="display: flex !important; justify-content: flex-end !important; gap: 10px !important; padding-top: 14px !important; border-top: 1px solid #1e293b !important;">
-          <button type="button" id="btn-cancel-bi-root" style="padding: 8px 16px !important; background: #1e293b !important; border: none !important; color: #cbd5e1 !important; font-size: 12px !important; font-weight: 600 !important; border-radius: 8px !important; cursor: pointer !important;">Cancelar</button>
-          <button type="submit" id="btn-save-bi-root" style="padding: 8px 20px !important; background: #059669 !important; border: none !important; color: #ffffff !important; font-size: 12px !important; font-weight: 700 !important; border-radius: 8px !important; cursor: pointer !important;">💾 Gravar no Supabase</button>
-        </div>
-      </form>
     </div>
   `;
 
   document.documentElement.appendChild(modalDiv);
+  console.log('[DIAGNOSTICO] Modal inserido com sucesso no DOM.');
 
-  // Handlers dos botões internos do modal
   document.getElementById('btn-close-bi-root').onclick = () => modalDiv.remove();
   document.getElementById('btn-cancel-bi-root').onclick = () => modalDiv.remove();
   document.getElementById('form-bi-root').onsubmit = window.salvarLancamentoBIRoot;
+
+  } catch (err) {
+    console.error('[DIAGNOSTICO ERRO CRÍTICO]:', err);
+    window.exibirErroVisualNaTela("Falha ao Executar abrirModalLancarBI", err);
+  }
 };
 
-// Fechamento e Aliases
+window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalLancarBI = function() {
   const m = document.getElementById('bi-modal-root-container');
   if (m) m.remove();
 };
-window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
 // 3. GRAVAÇÃO NO SUPABASE E RENDERIZAÇÃO
