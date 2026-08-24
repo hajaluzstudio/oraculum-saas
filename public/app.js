@@ -1998,8 +1998,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       utterance.onerror = (e) => {
         window.isAudioGuiaSpeaking = false;
+        const btnAudio = document.getElementById('btn-ouvir-audio-guia');
         if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
-        console.error('[AUDIO-GUIA] Erro na síntese de voz:', e);
+        // 'interrupted' é o comportamento padrão ao pausar/cancelar, não deve logar erro vermelho
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+          console.warn('[AUDIO-GUIA] Evento de síntese:', e.error);
+        }
       };
 
       window.isAudioGuiaSpeaking = true;
@@ -2008,60 +2012,56 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.abrirModalTeleprompter = function() {
-      console.log('[TELEPROMPTER DIAG] Iniciando abertura do Teleprompter...');
-      
-      // 1. Diagnóstico do Texto
       const previewEl = document.getElementById('video-script-preview-area');
       const texto = window.teleprompterState?.text || (previewEl ? previewEl.textContent : '');
 
       if (!texto || !texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
-        const msg = 'Diagnóstico: Nenhum roteiro carregado. Clique em "▶ Carregar no Teleprompter" no card acima primeiro.';
-        console.warn('[TELEPROMPTER DIAG]', msg);
         if (typeof window.showToast === 'function') {
-          window.showToast(msg, 'warning');
-        } else {
-          alert(msg);
+          window.showToast('Selecione um roteiro na gaveta acima primeiro.', 'warning');
         }
         return;
       }
 
-      // 2. Garante que o Modal exista diretamente no document.body
+      // 1. Localiza ou cria o modal
       let modal = document.getElementById('modal-teleprompter');
-      if (!modal) {
-        console.log('[TELEPROMPTER DIAG] Modal não existia no DOM. Injetando no final do body...');
-        if (typeof garantirModalTeleprompterNoDOM === 'function') {
-          garantirModalTeleprompterNoDOM();
-          modal = document.getElementById('modal-teleprompter');
-        }
+      if (!modal && typeof garantirModalTeleprompterNoDOM === 'function') {
+        garantirModalTeleprompterNoDOM();
+        modal = document.getElementById('modal-teleprompter');
       }
 
-      if (!modal) {
-        const err = 'Erro Crítico: Não foi possível instanciar o elemento #modal-teleprompter no DOM.';
-        console.error('[TELEPROMPTER DIAG]', err);
-        alert(err);
-        return;
+      if (!modal) return;
+
+      // 2. CRUCIAL: Move o elemento para ser filho DIRETO do <body> (elimina bloqueios de CSS das abas)
+      if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
       }
 
-      // 3. Atualiza o texto do display
+      // 3. Atualiza o texto interno
       const tpDisplay = document.getElementById('tp-text-display');
       if (tpDisplay) {
         tpDisplay.textContent = texto;
         tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 42) + 'px';
       }
 
-      // 4. Força exibição via Style Direto (Imune a qualquer Tailwind / CSS externo)
-      modal.className = ''; // Remove qualquer classe conflitante como hidden
-      modal.setAttribute('style', 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background-color: rgba(2, 6, 23, 0.98) !important; backdrop-filter: blur(12px) !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; margin: 0 !important; padding: 0 !important;');
+      // 4. Exibição Forçada e Visível
+      modal.classList.remove('hidden');
+      modal.style.cssText = `
+        position: fixed !important;
+        inset: 0px !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: #020617 !important;
+        z-index: 9999999 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        margin: 0px !important;
+        padding: 0px !important;
+      `;
       
       document.body.style.overflow = 'hidden';
 
       const scrollContainer = document.getElementById('tp-scroll-container');
       if (scrollContainer) scrollContainer.scrollTop = 0;
-
-      console.log('[TELEPROMPTER DIAG] Teleprompter aberto com sucesso.');
-      if (typeof window.showToast === 'function') {
-        window.showToast('Teleprompter ativado! Pressione ESPAÇO para rolar e ESC para sair.', 'success');
-      }
     };
 
     window.fecharModalTeleprompter = function() {
