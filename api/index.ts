@@ -1525,20 +1525,28 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
       }
     ];
 
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
+    }
+
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
     // Executa na cascata de fallback
-    const aiResponse = await executarIAComFallback(contents, {
-      temperature: 0.2,
-      responseMimeType: 'application/json'
+    const aiResult = await executarIAComFallback(ai, '', {
+      contents,
+      config: {
+        responseMimeType: 'application/json'
+      }
     });
+
+    const replyText = aiResult?.reply || '';
 
     let reportData: any;
     try {
-      if (typeof aiResponse === 'string') {
-        const jsonMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, aiResponse];
-        reportData = JSON.parse((jsonMatch[1] || aiResponse).trim());
-      } else {
-        reportData = aiResponse;
-      }
+      const jsonMatch = replyText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, replyText];
+      reportData = JSON.parse((jsonMatch[1] || replyText).trim());
     } catch {
       reportData = {
         hookScore: 75,
