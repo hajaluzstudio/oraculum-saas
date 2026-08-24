@@ -2416,6 +2416,26 @@ document.addEventListener('DOMContentLoaded', () => {
       window.renderizarInspecionarCriativoModular('container-inspector-copy', 'image');
     }
 
+    // Restaura o cache do SEO Social de Vídeo e SEO Visual de Design se existirem
+    setTimeout(() => {
+      const cId = activeClientId || 'cliente_ativo';
+      const pautaId = 'pauta_ativa';
+      
+      try {
+        const videoSeoCache = localStorage.getItem(`oraculum_social_seo_${cId}_${pautaId}`);
+        if (videoSeoCache && typeof window.renderizarMatrizSocialSeo === 'function') {
+          window.renderizarMatrizSocialSeo(JSON.parse(videoSeoCache));
+        }
+      } catch (e) {}
+
+      try {
+        const designSeoCache = localStorage.getItem(`oraculum_social_seo_design_${cId}_${pautaId}`);
+        if (designSeoCache && typeof window.renderizarResultadosSeoDesign === 'function') {
+          window.renderizarResultadosSeoDesign(JSON.parse(designSeoCache));
+        }
+      } catch (e) {}
+    }, 100);
+
     // Mantém compat com o container legacy de vídeo (teleprompter automático)
     const videoTask = tasks.find(t => (t.category || '').toLowerCase() === 'video');
     if (videoTask) {
@@ -2982,6 +3002,115 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       if (btn) {
         btn.innerHTML = '<span>🚀 Gerar Matriz de Indexação Algorítmica</span>';
+        btn.disabled = false;
+      }
+    }
+  };
+
+  // ============================================================================
+  // 6. INDEXADOR DE SEO VISUAL (DESIGN & WEB - CARROSSEL, OCR E ALT-TEXT)
+  // ============================================================================
+  window.toggleDesignSeoTool = function() {
+    const body = document.getElementById('body-design-seo');
+    const icon = document.getElementById('icon-toggle-design-seo');
+    if (!body) return;
+    const isHidden = body.classList.contains('hidden');
+    if (isHidden) {
+      body.classList.remove('hidden');
+      if (icon) icon.textContent = '▲ Recolher Ferramenta';
+    } else {
+      body.classList.add('hidden');
+      if (icon) icon.textContent = '▼ Expandir Ferramenta';
+    }
+  };
+
+  window.renderizarResultadosSeoDesign = function(data) {
+    const resultsContainer = document.getElementById('design-seo-results');
+    if (!resultsContainer) return;
+
+    resultsContainer.classList.remove('hidden');
+
+    // Card 1: Slide Hook (Micro-Hook)
+    const hookEl = document.getElementById('design-val-slide-hook');
+    if (hookEl) hookEl.textContent = data.carouselSlideHook || data.slideHook || '-';
+
+    // Card 2: OCR Screen Anchor (Capa / Card 1)
+    const ocrEl = document.getElementById('design-val-ocr-anchor');
+    if (ocrEl) ocrEl.textContent = data.screenAnchorOcr || '-';
+
+    // Card 3: Alt-Text
+    const altEl = document.getElementById('design-val-alt-text');
+    if (altEl) altEl.textContent = data.altText || '-';
+
+    // Card 4: Caption
+    const captionEl = document.getElementById('design-val-caption');
+    if (captionEl) captionEl.textContent = data.searchFirstCaption || '-';
+  };
+
+  window.gerarMatrizSeoDesign = async function() {
+    const scriptText = document.getElementById('design-seo-input')?.value || '';
+    const btn = document.getElementById('btn-generate-design-seo');
+
+    if (!scriptText || !scriptText.trim()) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Insira a pauta ou copy da peça gráfica/carrossel para gerar a matriz.', 'warning');
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.innerHTML = '<span class="animate-spin">🌀</span> Processando Triangulação Visual...';
+      btn.disabled = true;
+    }
+
+    try {
+      const cId = activeClientId || 'cliente_ativo';
+      const payload = {
+        scriptText: scriptText,
+        title: 'Pauta Design & Web',
+        niche: 'Design & Branding',
+        clientName: activeClientName || 'Cliente Ativo',
+        city: 'Geral'
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/generate-social-seo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': activeTenantId,
+          'x-client-id': cId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await response.json();
+      if (resData.success) {
+        const data = resData.data;
+
+        // Persistência em localStorage sob a chave oraculum_social_seo_design_${clientId}_${pautaId}
+        const pautaId = 'pauta_ativa';
+        const cacheKey = `oraculum_social_seo_design_${cId}_${pautaId}`;
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch (e) {
+          console.warn('[Design SEO Cache Error]:', e);
+        }
+
+        window.renderizarResultadosSeoDesign(data);
+
+        if (typeof window.showToast === 'function') {
+          window.showToast('⚡ Matriz de SEO Visual gerada com sucesso!', 'success');
+        }
+      } else {
+        throw new Error(resData.error || 'Falha ao gerar SEO Visual');
+      }
+    } catch (err) {
+      if (typeof window.showToast === 'function') {
+        window.showToast(`Erro no SEO Visual: ${err.message}`, 'error');
+      }
+    } finally {
+      if (btn) {
+        btn.innerHTML = '<span>🚀 Gerar Matriz de Indexação Visual</span>';
         btn.disabled = false;
       }
     }
