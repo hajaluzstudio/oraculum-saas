@@ -1914,10 +1914,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <!-- Container do Visor com a Mira de Leitura Fixa -->
           <div style="position: relative; flex: 1; overflow: hidden;">
             
-            <!-- FAIXA GUIA DE LEITURA (EYELINE MARKER TV) -->
-            <div id="tp-eyeline-marker" style="position: absolute; top: 28%; left: 0; right: 0; height: 130px; border-top: 2px solid rgba(16, 185, 129, 0.45); border-bottom: 2px solid rgba(16, 185, 129, 0.45); background-color: rgba(16, 185, 129, 0.06); pointer-events: none; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; box-shadow: 0 0 30px rgba(16, 185, 129, 0.08);">
+            <!-- FAIXA GUIA DE LEITURA (EYELINE MARKER TV LIMPO) -->
+            <div id="tp-eyeline-marker" style="position: absolute; top: 28%; left: 0; right: 0; height: 130px; border-top: 2px solid rgba(16, 185, 129, 0.45); border-bottom: 2px solid rgba(16, 185, 129, 0.45); background-color: rgba(16, 185, 129, 0.06); pointer-events: none; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; box-shadow: 0 0 30px rgba(16, 185, 129, 0.08);">
               <span style="color: #34d399; font-size: 26px; font-weight: 900; filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));">►</span>
-              <span style="color: rgba(52, 211, 153, 0.7); font-size: 11px; font-family: monospace; letter-spacing: 3px; font-weight: 700; text-transform: uppercase;">LINHA DE VISADA DA CÂMERA</span>
+              <!-- Centro 100% livre e limpo para passagem do texto sem distrações -->
               <span style="color: #34d399; font-size: 26px; font-weight: 900; filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));">◄</span>
             </div>
 
@@ -2085,6 +2085,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (scrollContainer) {
         scrollContainer.scrollTop = 0;
         window.tpScrollAccumulator = 0;
+
+        // Sincroniza imediatamente caso o usuário role com o mouse ou arraste com touch
+        scrollContainer.onwheel = () => {
+          window.tpScrollAccumulator = scrollContainer.scrollTop;
+        };
+        scrollContainer.ontouchmove = () => {
+          window.tpScrollAccumulator = scrollContainer.scrollTop;
+        };
       }
 
       // Vincula Controles
@@ -2152,15 +2160,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const delta = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
 
-        // Calibração de pixels por segundo: 0.2x = ~5px/s, 1.0x = 25px/s, 5.0x = 125px/s
+        // Se o usuário rolou manualmente com o mouse/touchpad, sincroniza o acumulador com a nova posição
+        if (Math.abs(scrollContainer.scrollTop - window.tpScrollAccumulator) > 4) {
+          window.tpScrollAccumulator = scrollContainer.scrollTop;
+        }
+
         const speed = parseFloat(window.teleprompterState.speed) || 1.0;
         const pixelsPerSecond = speed * 25;
 
-        // ACUMULADOR DECIMAL: Evita arredondamento truncado para 0
         window.tpScrollAccumulator += (pixelsPerSecond * delta);
         scrollContainer.scrollTop = window.tpScrollAccumulator;
 
-        // Parada automática ao final
+        // Parada automática ao final do roteiro
         if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 5) {
           window.pausarTeleprompter();
           return;
