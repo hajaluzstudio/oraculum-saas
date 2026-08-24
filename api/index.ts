@@ -1534,11 +1534,13 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
     const ai = new GoogleGenAI({ apiKey });
 
     // Executa na cascata de fallback respeitando os 3 argumentos (ai, prompt, config)
-    const aiResponse = (await executarIAComFallback(ai, '', {
+    const aiResult = (await executarIAComFallback(ai, '', {
       contents: contents,
       temperature: 0.2,
       responseMimeType: 'application/json'
-    })) as string; // Força a tipagem para evitar erro 'never' no .match()
+    })) as any;
+
+    const aiResponse = (aiResult?.reply || aiResult) as string;
 
     let reportData;
     try {
