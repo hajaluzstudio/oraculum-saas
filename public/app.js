@@ -3150,22 +3150,74 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.toggleSafeZoneOverlay = function() {
-    const layer = document.getElementById('mockup-safezone-layer');
-    if (layer) layer.classList.toggle('hidden');
+    const safezoneLayer = document.getElementById('mockup-safezone-layer');
+    const uiLayer916 = document.getElementById('mockup-ui-layer-916');
+    const uiLayerFeed = document.getElementById('mockup-ui-layer-feed');
+    const btn = document.getElementById('btn-toggle-safezone-overlay');
+    const selectFormat = document.getElementById('safezone-format-select')?.value || '9:16';
+
+    window.mockupOverlayMode = ((window.mockupOverlayMode || 1) % 3) + 1;
+    const mode = window.mockupOverlayMode;
+
+    if (mode === 1) {
+      // Modo 1: Imagem Limpa
+      if (safezoneLayer) safezoneLayer.classList.add('hidden');
+      if (uiLayer916) uiLayer916.classList.add('hidden');
+      if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
+      if (btn) btn.innerHTML = '👁️ Modo 1: Imagem Limpa';
+    } else if (mode === 2) {
+      // Modo 2: Interface Nativa Completa (Mockup Realista)
+      if (safezoneLayer) safezoneLayer.classList.add('hidden');
+      if (selectFormat === '9:16') {
+        if (uiLayer916) uiLayer916.classList.remove('hidden');
+        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
+      } else {
+        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
+        if (uiLayer916) uiLayer916.classList.add('hidden');
+      }
+      if (btn) btn.innerHTML = '👁️ Modo 2: Interface Nativa (Realista)';
+    } else if (mode === 3) {
+      // Modo 3: Interface + Linhas Tracejadas de Safe Zone
+      if (safezoneLayer) safezoneLayer.classList.remove('hidden');
+      if (selectFormat === '9:16') {
+        if (uiLayer916) uiLayer916.classList.remove('hidden');
+        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
+      } else {
+        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
+        if (uiLayer916) uiLayer916.classList.add('hidden');
+      }
+      if (btn) btn.innerHTML = '👁️ Modo 3: Safe Zone + Interface Complete';
+    }
   };
 
   window.handleSafeZoneFormatChange = function() {
     const select = document.getElementById('safezone-format-select');
     const viewport = document.getElementById('mockup-preview-viewport');
+    const uiLayer916 = document.getElementById('mockup-ui-layer-916');
+    const uiLayerFeed = document.getElementById('mockup-ui-layer-feed');
     if (!select || !viewport) return;
 
     viewport.classList.remove('aspect-[9/16]', 'aspect-square', 'aspect-[4/5]', 'max-w-[280px]', 'max-w-[340px]', 'max-w-[300px]');
-    if (select.value === '9:16') {
+    
+    const val = select.value;
+    if (val === '9:16') {
       viewport.classList.add('aspect-[9/16]', 'max-w-[280px]');
-    } else if (select.value === '1:1') {
+      if (window.mockupOverlayMode !== 1) {
+        if (uiLayer916) uiLayer916.classList.remove('hidden');
+        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
+      }
+    } else if (val === '1:1') {
       viewport.classList.add('aspect-square', 'max-w-[340px]');
-    } else if (select.value === '4:5') {
+      if (window.mockupOverlayMode !== 1) {
+        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
+        if (uiLayer916) uiLayer916.classList.add('hidden');
+      }
+    } else if (val === '4:5') {
       viewport.classList.add('aspect-[4/5]', 'max-w-[300px]');
+      if (window.mockupOverlayMode !== 1) {
+        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
+        if (uiLayer916) uiLayer916.classList.add('hidden');
+      }
     }
   };
   const reportContent = document.getElementById('creative-report-content');
