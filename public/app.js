@@ -1085,30 +1085,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
   // ============================================================================
+  // 1. Extração semântica com segmentação estrita por departamento
   function extrairSegmentosEstrategicos(rawText) {
     if (!rawText || typeof rawText !== 'string') return [];
 
     const segments = [];
-    
-    // 1. Divide o texto em blocos baseando-se em quebras de seções (Markdown headers, números ou linhas duplas)
-    const blocosBrutos = rawText.split(/(?=\n(?:\d+\.|\#{1,4}|\*\*[^\*]+\*\*)\s+)/g);
+    const blocos = rawText.split(/(?=\n(?:\d+\.|\#{1,4}|\*\*[^\*]+\*\*)\s+)/g);
 
-    // Dicionário de peso por área operacional
     const vocabulario = {
-      video: ['vídeo', 'video', 'gancho', 'hook', 'roteiro', 'teleprompter', 'cena', 'visual', 'gravação', 'áudio', 'story', 'reels', 'tiktok'],
-      comercial: ['objeção', 'objecao', 'preço', 'preco', 'valor', 'comercial', 'venda', 'vendas', 'whatsapp', 'atendimento', 'fechamento', 'negociação', 'ticket'],
-      trafego: ['tráfego', 'trafego', 'campanha', 'público', 'publico', 'segmentação', 'cpa', 'cpl', 'roas', 'orçamento', 'meta ads', 'google ads'],
-      design: ['design', 'banner', 'landing page', 'layout', 'wireframe', 'criativo estático', 'identidade visual'],
-      copywriting: ['copy', 'headline', 'legenda', 'texto', 'artigo', 'persuas', 'carta de vendas', 'email', 'cta']
+      video: ['vídeo', 'video', 'gancho', 'hook', 'roteiro', 'teleprompter', 'cena', 'visual', 'gravação', 'story', 'reels', 'tiktok'],
+      comercial: ['objeção', 'objecao', 'preço', 'preco', 'valor', 'comercial', 'venda', 'vendas', 'whatsapp', 'atendimento', 'fechamento', 'ticket'],
+      trafego: ['tráfego', 'trafego', 'campanha', 'público', 'publico', 'segmentação', 'cpa', 'cpl', 'roas', 'orçamento'],
+      design: ['design', 'banner', 'landing page', 'layout', 'wireframe'],
+      copywriting: ['copy', 'headline', 'legenda', 'texto', 'artigo', 'persuas', 'cta']
     };
 
-    blocosBrutos.forEach(bloco => {
+    blocos.forEach(bloco => {
       const textoLimpo = bloco.trim();
       if (textoLimpo.length < 20) return;
 
       const lower = textoLimpo.toLowerCase();
-      
-      // Pontua o bloco para cada categoria
       let pontuacoes = { video: 0, comercial: 0, trafego: 0, design: 0, copywriting: 0 };
 
       for (const [cat, termos] of Object.entries(vocabulario)) {
@@ -1117,10 +1113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      // Identifica a categoria com maior afinidade
       let melhorCategoria = 'copywriting';
       let maxPontos = 0;
-
       for (const [cat, pontos] of Object.entries(pontuacoes)) {
         if (pontos > maxPontos) {
           maxPontos = pontos;
@@ -1128,24 +1122,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Extrai o primeiro título/linha do próprio texto gerado pela IA
       const primeiraLinha = textoLimpo.split('\n')[0].replace(/^[\#\*\d\.\-\s]+/, '').replace(/[\#\*]+$/, '').trim();
-      const tituloDinamico = primeiraLinha.length > 5 && primeiraLinha.length < 70 
-        ? primeiraLinha 
-        : `Demanda de ${melhorCategoria.toUpperCase()}`;
+      const titulo = primeiraLinha.length > 5 && primeiraLinha.length < 75 ? primeiraLinha : `Diretriz de ${melhorCategoria.toUpperCase()}`;
 
       segments.push({
         category: melhorCategoria,
-        title: tituloDinamico,
+        title: titulo,
         content: textoLimpo
       });
     });
 
-    // Se nenhum corte for encontrado, cria uma demanda unitária dinâmica
     if (segments.length === 0) {
       segments.push({
         category: 'copywriting',
-        title: 'Diretriz Tática Oraculum',
+        title: 'Diretriz Estratégica',
         content: rawText.trim()
       });
     }
@@ -1153,6 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return segments;
   }
 
+  // 2. Despacho e Persistência
   window.dispatchBriefingToWarRoom = async function (target) {
     const container = typeof target === 'string' ? document.getElementById(target) : target;
     if (!container) return;
@@ -1162,23 +1153,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-
-    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"], .btn-approve-chat');
-    if (approveBtn) {
-      approveBtn.disabled = true;
-      approveBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div> Desmembrando e Despachando...`;
-    }
-
-    // Atualiza a interface do chat para mostrar que foi aprovado
-    const actionButtons = container.querySelector('.border-t.border-\\[\\#1B3B36\\]') || container.querySelector('div.mt-4.pt-3');
-    if (actionButtons) {
-      actionButtons.innerHTML = `<span class="text-xs text-emerald-400 font-bold flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Diretriz Enviada para Sala de Operação</span>`;
-    }
-
-    // 1. Parser de Segmentação Multi-Abas
     const segments = extrairSegmentosEstrategicos(rawText);
 
-    // 2. Gravação de cada segmento no Supabase e LocalStorage
     const supabase = window.supabaseClient || window.supabase;
 
     for (const seg of segments) {
@@ -1193,71 +1169,37 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        if (supabase) {
-          await supabase.from('war_room_tasks').insert([payload]);
-        }
-      } catch (err) {
-        console.warn('[WarRoom Task Multi-Insert Catch]:', err);
+        if (supabase) await supabase.from('war_room_tasks').insert([payload]);
+      } catch (e) {
+        console.warn('[WarRoom Supabase]:', e);
       }
 
-      const warRoomStorageKey = `war_room_${clientId}_${seg.category}`;
-      const localList = JSON.parse(localStorage.getItem(warRoomStorageKey) || '[]');
-      localList.unshift(payload);
-      localStorage.setItem(warRoomStorageKey, JSON.stringify(localList));
-
-      // 4. Injeção direta no Container Visual da Sala de Operação correspondente
-      if (typeof injetarDemandaNaAbaSalaOperacao === 'function') {
-        injetarDemandaNaAbaSalaOperacao(seg.category, seg.content);
-      }
+      const key = `war_room_${clientId}_${seg.category}`;
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      list.unshift(payload);
+      localStorage.setItem(key, JSON.stringify(list));
     }
 
-    // 3. Atualização de UI
+    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], .btn-approve-chat');
     if (approveBtn) {
       approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
       const catsSummary = [...new Set(segments.map(s => s.category.toUpperCase()))].join(' & ');
       approveBtn.innerHTML = `✓ Despachado para [${catsSummary}]`;
     }
 
-    if (typeof showToast === 'function') {
-      showToast(`Estratégia distribuída para ${segments.length} áreas da Sala de Operação!`, 'success');
+    if (typeof carregarSalaOperacaoCompleta === 'function') {
+      carregarSalaOperacaoCompleta();
     }
   };
 
-  function injetarDemandaNaAbaSalaOperacao(category, content) {
-    // Mapeia os seletores das seções da Sala de Operação
-    const targets = {
-      video: document.querySelector('#tab-war-room #war-room-video-container, #tab-war-room .video-content, #tab-war-room [data-war-room="video"]'),
-      copywriting: document.querySelector('#tab-war-room #war-room-copy-container, #tab-war-room .copy-content, #tab-war-room [data-war-room="copywriting"]'),
-      comercial: document.querySelector('#tab-war-room #war-room-sales-container, #tab-war-room .sales-content, #tab-war-room [data-war-room="comercial"]'),
-      trafego: document.querySelector('#tab-war-room #war-room-traffic-container, #tab-war-room .traffic-content, #tab-war-room [data-war-room="trafego"]'),
-      design: document.querySelector('#tab-war-room #war-room-design-container, #tab-war-room .design-content, #tab-war-room [data-war-room="design"]')
-    };
-
-    const targetBox = targets[category] || document.querySelector('#tab-war-room .active-tab-content');
-    if (targetBox) {
-      const cardHtml = `
-        <div class="p-5 bg-[#0B1514] border border-[#10B981]/40 rounded-xl my-4 text-slate-200 shadow-xl animate-fadeIn">
-          <div class="flex items-center justify-between border-b border-[#1B3B36] pb-3 mb-3">
-            <span class="px-2.5 py-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase tracking-wider">Demanda Autônoma Oraculum</span>
-            <span class="text-xs text-slate-400">${new Date().toLocaleTimeString()}</span>
-          </div>
-          <div class="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">${content}</div>
-        </div>
-      `;
-      targetBox.insertAdjacentHTML('afterbegin', cardHtml);
-    }
-  }
-
+  // 3. Renderização Completa e Hidratação dos Módulos Nativos
   async function carregarSalaOperacaoCompleta() {
+    const warRoom = document.getElementById('tab-war-room');
+    if (!warRoom) return;
+
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // 1. Inicializa ferramentas nativas da War Room se existirem
-    if (typeof initWarRoomTools === 'function') {
-      try { initWarRoomTools(); } catch (e) { console.warn('[WarRoom Tools init]:', e); }
-    }
-
-    // 2. Busca tarefas no Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
@@ -1270,64 +1212,118 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!error && Array.isArray(data)) tasks = data;
       }
     } catch (e) {
-      console.warn('[WarRoom Supabase Catch]:', e);
+      console.warn('[WarRoom Query]:', e);
     }
 
-    // Mescla com o armazenamento local
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
       const local = JSON.parse(localStorage.getItem(`war_room_${clientId}_${cat}`) || '[]');
       tasks = [...tasks, ...local];
     });
 
-    if (tasks.length === 0) return;
+    // Deduplicação
+    const seen = new Set();
+    tasks = tasks.filter(t => {
+      const key = `${t.category}_${(t.content || '').slice(0, 30)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
-    // 3. Localização segura dos containers no DOM usando IDs e atributos padrão
+    // 4. Injeta os scripts de vídeo no container nativo superior e no Teleprompter
+    const videoTask = tasks.find(t => t.category === 'video');
+    if (videoTask) {
+      // Atualiza o container superior "Estratégia de Vídeo do Oraculum"
+      const topVideoBox = Array.from(warRoom.querySelectorAll('div')).find(el => el.textContent && el.textContent.includes('Estratégia de Vídeo do Oraculum'));
+      if (topVideoBox) {
+        // Remove o texto cinza
+        topVideoBox.querySelectorAll('*').forEach(child => {
+          if (child.textContent && child.textContent.includes('Nenhum script gerado para este cliente')) child.remove();
+        });
+
+        let innerContent = topVideoBox.querySelector('.video-strategy-dynamic-content');
+        if (!innerContent) {
+          innerContent = document.createElement('div');
+          innerContent.className = 'video-strategy-dynamic-content text-xs text-slate-300 leading-relaxed whitespace-pre-wrap mt-3 pt-3 border-t border-[#1B3B36]';
+          topVideoBox.appendChild(innerContent);
+        }
+        innerContent.innerHTML = videoTask.content;
+      }
+
+      // Injeta no card "Roteiro de Gravação" para Teleprompter e Áudio
+      const teleprompterBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
+      if (teleprompterBox) {
+        teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+      }
+    }
+
+    // 5. Injeta o Feed categorizado e isolado
+    let feedContainer = warRoom.querySelector('.war-room-feed-container');
+    if (!feedContainer) {
+      feedContainer = document.createElement('div');
+      feedContainer.className = 'war-room-feed-container space-y-4 my-4';
+      warRoom.appendChild(feedContainer);
+    }
+
+    feedContainer.innerHTML = tasks.map(task => `
+      <div data-category="${task.category}" class="war-room-task-card p-4 bg-[#071311] border border-emerald-500/30 rounded-xl text-slate-200 shadow-lg space-y-2">
+        <div class="flex items-center justify-between border-b border-emerald-950 pb-2">
+          <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
+            ${(task.category || 'ESTRATÉGIA').toUpperCase()}
+          </span>
+          <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
+        </div>
+        <h4 class="text-xs font-semibold text-emerald-300">${task.title}</h4>
+        <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${task.content}</div>
+      </div>
+    `).join('');
+
+    // 6. Vincula e dispara o filtro exclusivo de sub-abas
+    if (typeof configurarSubAbasWarRoom === 'function') configurarSubAbasWarRoom();
+  }
+
+  function configurarSubAbasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
-    // Encontra o container do topo ("Estratégia de Vídeo do Oraculum" ou feed geral)
-    const feedBoxes = warRoom.querySelectorAll('div');
-    let strategyContainer = null;
+    const buttons = warRoom.querySelectorAll('button, .tab-button');
+    buttons.forEach(btn => {
+      const text = (btn.textContent || '').toLowerCase();
+      if (!text.match(/(vídeo|design|tráfego|trafego|copywriting|comercial)/)) return;
 
-    feedBoxes.forEach(box => {
-      if (box.textContent.includes('Estratégia de Vídeo do Oraculum') || box.textContent.includes('Headlines, Hooks e Textos')) {
-        strategyContainer = box;
-      }
+      btn.onclick = function (e) {
+        e.preventDefault();
+        let selectedCat = 'video';
+        if (text.includes('design')) selectedCat = 'design';
+        else if (text.includes('tráfego') || text.includes('trafego')) selectedCat = 'trafego';
+        else if (text.includes('copywriting') || text.includes('copy')) selectedCat = 'copywriting';
+        else if (text.includes('comercial') || text.includes('vendas')) selectedCat = 'comercial';
+        else if (text.includes('vídeo') || text.includes('video')) selectedCat = 'video';
+
+        // Atualiza estilo do botão ativo
+        buttons.forEach(b => {
+          if ((b.textContent || '').toLowerCase().match(/(vídeo|design|tráfego|trafego|copywriting|comercial)/)) {
+            b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
+          }
+        });
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-colors';
+
+        // Filtra os cards
+        const cards = warRoom.querySelectorAll('.war-room-task-card');
+        cards.forEach(card => {
+          card.style.display = (card.dataset.category === selectedCat) ? 'block' : 'none';
+        });
+
+        // Exibe ferramentas de vídeo apenas na sub-aba de vídeo
+        const videoTools = warRoom.querySelectorAll('.video-tool-block, #video-tools-grid');
+        videoTools.forEach(tool => {
+          tool.style.display = (selectedCat === 'video') ? 'grid' : 'none';
+        });
+      };
     });
 
-    if (!strategyContainer) {
-      strategyContainer = warRoom.querySelector('.war-room-feed') || warRoom.firstElementChild;
-    }
-
-    if (strategyContainer) {
-      // Remove os textos de "Nenhum script gerado..."
-      const notices = strategyContainer.querySelectorAll('div, p, span');
-      notices.forEach(el => {
-        if (el.textContent.includes('Nenhum script gerado para este cliente')) {
-          el.style.display = 'none';
-        }
-      });
-
-      // Garante ou cria a caixa injetada
-      let injectedFeed = strategyContainer.querySelector('.oraculum-injected-feed');
-      if (!injectedFeed) {
-        injectedFeed = document.createElement('div');
-        injectedFeed.className = 'oraculum-injected-feed space-y-4 my-4';
-        strategyContainer.appendChild(injectedFeed);
-      }
-
-      injectedFeed.innerHTML = tasks.map(task => `
-        <div class="p-4 bg-[#071311] border border-emerald-500/30 rounded-xl text-slate-200 shadow-lg space-y-2">
-          <div class="flex items-center justify-between border-b border-emerald-950 pb-2">
-            <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
-              ${(task.category || 'ESTRATÉGIA').toUpperCase()}
-            </span>
-            <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
-          </div>
-          <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300 font-sans">${task.content}</div>
-        </div>
-      `).join('');
-    }
+    // Ativa a primeira aba por padrão
+    const defaultBtn = Array.from(buttons).find(b => (b.textContent || '').toLowerCase().includes('vídeo'));
+    if (defaultBtn) defaultBtn.click();
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
