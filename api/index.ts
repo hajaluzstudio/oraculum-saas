@@ -1564,7 +1564,7 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
     try {
       if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
         const organizationId = (req as any).organizationId;
-        const clientId = req.headers['x-client-id'] || 'cliente_ativo';
+        const clientId = req.headers['x-client-id'] || req.body.clientId || 'cliente_ativo';
         await supabase.from('creative_audits').insert({
           organization_id: organizationId || null,
           client_id: clientId,
@@ -1575,6 +1575,7 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
           actionable_fixes: reportData.actionableFixes || [],
           status: (reportData.hookScore >= 70) ? 'APROVADO' : 'REPROVADO',
           drive_link: driveUrl || driveLink || null,
+          diagnosis_json: reportData,
           created_at: new Date().toISOString()
         });
       }

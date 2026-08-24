@@ -2560,6 +2560,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. AI CREATIVE SCORING MODULAR (TODAS AS ABAS DA SALA DE OPERAÇÃO)
   // ============================================================================
   window.selectedCreativeFiles = window.selectedCreativeFiles || {};
+  window.activeInspectFiles = window.selectedCreativeFiles; // Aliases para compatibilidade
+
+  window.obterUltimoScoreCriativo = function(targetId, clientId) {
+    const cId = clientId || activeClientId || 'cliente_ativo';
+    const cacheKey = `oraculum_last_audit_${cId}_${targetId}`;
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.hookScore !== undefined ? parsed.hookScore : parsed.aiHookScore;
+      }
+    } catch (e) {
+      console.warn('[Quality Gate Cache]:', e);
+    }
+    return undefined;
+  };
 
   window.renderizarInspecionarCriativoModular = function(targetElementId, defaultType) {
     const container = document.getElementById(targetElementId);
@@ -2641,6 +2657,21 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
     `;
+
+    // Restaura relatório em cache se existir para este cliente e aba
+    setTimeout(() => {
+      const cId = activeClientId || 'cliente_ativo';
+      const cacheKey = `oraculum_last_audit_${cId}_${targetElementId}`;
+      try {
+        const saved = localStorage.getItem(cacheKey);
+        if (saved) {
+          const cachedData = JSON.parse(saved);
+          window.renderizarRelatorioAuditUI(targetElementId, cachedData);
+        }
+      } catch (e) {
+        console.warn('[Creative Cache Restauração]:', e);
+      }
+    }, 50);
   };
 
   window.toggleCreativeInspector = function(targetId) {
@@ -2657,19 +2688,75 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.handleCreativeFileSelect = function(event, targetId) {
-    const files = event.target.files;
-    if (files && files[0]) {
-      window.selectedCreativeFiles[targetId] = files[0];
-      const label = document.getElementById(`file-label-${targetId}`);
-      if (label) {
-        label.textContent = `📄 ${files[0].name} (${(files[0].size / (1024 * 1024)).toFixed(2)} MB)`;
-        label.className = 'text-xs font-bold text-emerald-400';
-      }
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    window.selectedCreativeFiles[targetId] = file;
+    window.activeInspectFiles = window.activeInspectFiles || {};
+    window.activeInspectFiles[targetId] = file;
+
+    const labelEl = document.getElementById(`file-label-${targetId}`);
+    const dropzone = document.getElementById(`dropzone-${targetId}`);
+    
+    if (labelEl && dropzone) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      labelEl.innerHTML = `
+        <span class="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+          ✅ Arquivo Carregado: <span class="text-slate-100">${file.name}</span> (${fileSizeMB} MB)
+        </span>
+      `;
+      dropzone.classList.remove('border-slate-700/80');
+      dropzone.classList.add('border-emerald-500/80', 'bg-emerald-950/20');
+    }
+  };
+
+  window.renderizarRelatorioAuditUI = function(targetId, data) {
+    const badge = document.getElementById(`badge-status-${targetId}`);
+    const report = document.getElementById(`report-content-${targetId}`);
+
+    if (badge) {
+      badge.textContent = data.hookScore >= 70 ? 'APROVADO (Quality Gate)' : 'AJUSTES NECESSÁRIOS';
+      badge.className = data.hookScore >= 70
+        ? 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold'
+        : 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold';
+    }
+
+    if (report) {
+      report.className = 'py-2 space-y-3 text-left';
+      report.innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
+            <span class="text-[10px] text-slate-400">AI Hook Score (0-100)</span>
+            <h4 class="text-2xl font-extrabold ${data.hookScore >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${data.hookScore}</h4>
+          </div>
+          <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
+            <span class="text-[10px] text-slate-400">Conversion Score</span>
+            <h4 class="text-2xl font-extrabold text-cyan-400">${data.conversionScore}</h4>
+          </div>
+        </div>
+
+        <div class="bg-emerald-950/20 border border-emerald-800/40 p-3 rounded-lg">
+          <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Quebra de Padrão</span>
+          <p class="text-xs text-slate-200 mt-1">${data.patternBreak || '-'}</p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Legibilidade e Elementos</span>
+          <p class="text-xs text-slate-300 mt-1">${data.readability || '-'}</p>
+        </div>
+
+        <div class="bg-red-950/20 border border-red-800/40 p-3 rounded-lg">
+          <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Ajustes Cirúrgicos Recomendados</span>
+          <ul class="text-xs text-slate-200 mt-1.5 list-disc pl-4 space-y-1">
+            ${(data.actionableFixes || []).map(f => `<li>${f}</li>`).join('')}
+          </ul>
+        </div>
+      `;
     }
   };
 
   window.executarScoringVisao = async function(targetId) {
-    const fileObj = window.selectedCreativeFiles[targetId];
+    const fileObj = window.selectedCreativeFiles[targetId] || window.activeInspectFiles?.[targetId];
     const title = document.getElementById(`inspect-title-${targetId}`)?.value || 'Criativo sem título';
     const type = document.getElementById(`inspect-type-${targetId}`)?.value || 'video';
     const niche = document.getElementById(`inspect-niche-${targetId}`)?.value || 'Geral';
@@ -2694,7 +2781,7 @@ document.addEventListener('DOMContentLoaded', () => {
       report.innerHTML = `
         <div class="py-12 text-center text-cyan-400 text-xs flex flex-col items-center gap-3">
           <span class="text-3xl animate-spin">🌀</span>
-          <p class="font-semibold">O Gemini Visão Computacional está lendo os quadros do arquivo...</p>
+          <p class="font-semibold">A Visão Computacional do Oraculum está analisando os quadros do arquivo...</p>
         </div>
       `;
     }
@@ -2712,14 +2799,16 @@ document.addEventListener('DOMContentLoaded', () => {
         frames: base64Frames,
         niche: niche,
         title: title,
-        assetType: type
+        assetType: type,
+        clientId: activeClientId || 'cliente_ativo'
       };
 
       const response = await fetch(`${API_BASE_URL}/api/inspect-creative`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-organization-id': activeTenantId
+          'x-organization-id': activeTenantId,
+          'x-client-id': activeClientId || 'cliente_ativo'
         },
         body: JSON.stringify(payload)
       });
@@ -2727,45 +2816,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const resData = await response.json();
       if (resData.success) {
         const data = resData.data;
-        if (badge) {
-          badge.textContent = data.hookScore >= 70 ? 'APROVADO (Quality Gate)' : 'AJUSTES NECESSÁRIOS';
-          badge.className = data.hookScore >= 70
-            ? 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold'
-            : 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold';
+
+        // Persistência local do relatório por cliente e aba
+        const cId = activeClientId || 'cliente_ativo';
+        const cacheKey = `oraculum_last_audit_${cId}_${targetId}`;
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        } catch (e) {
+          console.warn('[Cache Local Report Error]:', e);
         }
 
-        if (report) {
-          report.className = 'py-2 space-y-3 text-left';
-          report.innerHTML = `
-            <div class="grid grid-cols-2 gap-3">
-              <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
-                <span class="text-[10px] text-slate-400">AI Hook Score (0-100)</span>
-                <h4 class="text-2xl font-extrabold ${data.hookScore >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${data.hookScore}</h4>
-              </div>
-              <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
-                <span class="text-[10px] text-slate-400">Conversion Score</span>
-                <h4 class="text-2xl font-extrabold text-cyan-400">${data.conversionScore}</h4>
-              </div>
-            </div>
-
-            <div class="bg-emerald-950/20 border border-emerald-800/40 p-3 rounded-lg">
-              <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Quebra de Padrão</span>
-              <p class="text-xs text-slate-200 mt-1">${data.patternBreak || '-'}</p>
-            </div>
-
-            <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Legibilidade e Elementos</span>
-              <p class="text-xs text-slate-300 mt-1">${data.readability || '-'}</p>
-            </div>
-
-            <div class="bg-red-950/20 border border-red-800/40 p-3 rounded-lg">
-              <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Ajustes Cirúrgicos Recomendados</span>
-              <ul class="text-xs text-slate-200 mt-1.5 list-disc pl-4 space-y-1">
-                ${(data.actionableFixes || []).map(f => `<li>${f}</li>`).join('')}
-              </ul>
-            </div>
-          `;
-        }
+        window.renderizarRelatorioAuditUI(targetId, data);
       } else {
         throw new Error(resData.error || 'Falha na avaliação do criativo');
       }
