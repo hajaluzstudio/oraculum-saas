@@ -1871,6 +1871,50 @@ document.addEventListener('DOMContentLoaded', () => {
       if (icon) icon.textContent = isHidden ? '▲ Recolher' : '▼ Expandir';
     };
 
+    // Garante o Modal de Teleprompter no DOM
+    function garantirModalTeleprompterNoDOM() {
+      if (document.getElementById('modal-teleprompter')) return;
+
+      const modalHtml = `
+        <div id="modal-teleprompter" style="display: none; z-index: 99999;" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col select-none">
+          <!-- Barra Superior de Controle -->
+          <div class="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/90 shadow-md">
+            <div class="flex items-center gap-4">
+              <span class="text-emerald-400 font-bold text-sm tracking-wide flex items-center gap-2">
+                🎬 MODO TELEPROMPTER
+              </span>
+              <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
+                <label class="text-xs text-slate-300 font-medium">Velocidade:</label>
+                <input type="range" id="tp-speed-slider" min="1" max="10" value="3" class="w-24 accent-emerald-500 cursor-pointer">
+                <span id="tp-speed-val" class="text-xs font-mono text-emerald-400 font-bold">3x</span>
+              </div>
+              <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
+                <label class="text-xs text-slate-300 font-medium">Tamanho:</label>
+                <input type="range" id="tp-font-slider" min="20" max="80" value="42" class="w-24 accent-emerald-500 cursor-pointer">
+                <span id="tp-font-val" class="text-xs font-mono text-emerald-400 font-bold">42px</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button type="button" id="tp-btn-toggle-play" onclick="window.togglePlayTeleprompter()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
+                ▶ Iniciar Rolagem (Espaço)
+              </button>
+              <button type="button" onclick="window.fecharModalTeleprompter()" class="px-3 py-2 text-xs font-bold bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 rounded-lg border border-slate-700 transition-colors cursor-pointer">
+                ✕ Fechar (ESC)
+              </button>
+            </div>
+          </div>
+
+          <!-- Área Central de Rolagem do Texto -->
+          <div id="tp-scroll-container" class="flex-1 overflow-y-auto px-12 md:px-32 py-20 text-center cursor-grab active:cursor-grabbing">
+            <div id="tp-text-display" class="text-slate-100 font-bold leading-relaxed whitespace-pre-wrap max-w-5xl mx-auto tracking-wide" style="font-size: 42px; font-family: system-ui, -apple-system, sans-serif;">
+            </div>
+            <div class="h-[70vh]"></div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
     window.carregarTextoNoTeleprompter = function(texto) {
       if (!texto) return;
       window.teleprompterState = window.teleprompterState || { speed: 3, fontSize: 42, isPlaying: false };
@@ -1880,7 +1924,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const previewArea = document.getElementById('video-script-preview-area');
       if (previewArea) previewArea.textContent = texto;
 
-      // Atualiza o texto do modal
+      // Atualiza o texto do modal se já existir
       const tpDisplay = document.getElementById('tp-text-display');
       if (tpDisplay) tpDisplay.textContent = texto;
 
@@ -1909,17 +1953,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // 2. Abre o Modal Fullscreen do Teleprompter
     window.abrirModalTeleprompter = function() {
+      garantirModalTeleprompterNoDOM();
       const modal = document.getElementById('modal-teleprompter');
-      if (!modal) {
-        console.error('[TELEPROMPTER] Elemento #modal-teleprompter não encontrado no DOM.');
+      if (!modal) return;
+
+      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
+      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
+        if (typeof window.showToast === 'function') window.showToast('Selecione um roteiro primeiro.', 'warning');
         return;
       }
 
-      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
       const tpDisplay = document.getElementById('tp-text-display');
-      if (tpDisplay && texto) tpDisplay.textContent = texto;
+      if (tpDisplay) tpDisplay.textContent = texto;
 
       modal.classList.remove('hidden');
       modal.style.display = 'flex';
@@ -1927,9 +1973,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const scrollContainer = document.getElementById('tp-scroll-container');
       if (scrollContainer) scrollContainer.scrollTop = 0;
+
+      // Bind dos sliders após injeção
+      const speedSlider = document.getElementById('tp-speed-slider');
+      const speedVal = document.getElementById('tp-speed-val');
+      if (speedSlider) {
+        speedSlider.oninput = (e) => {
+          window.teleprompterState.speed = Number(e.target.value);
+          if (speedVal) speedVal.textContent = e.target.value + 'x';
+        };
+      }
+
+      const fontSlider = document.getElementById('tp-font-slider');
+      const fontVal = document.getElementById('tp-font-val');
+      if (fontSlider) {
+        fontSlider.oninput = (e) => {
+          window.teleprompterState.fontSize = Number(e.target.value);
+          if (tpDisplay) tpDisplay.style.fontSize = e.target.value + 'px';
+          if (fontVal) fontVal.textContent = e.target.value + 'px';
+        };
+      }
     };
 
-    // 3. Fecha o Modal Fullscreen do Teleprompter
     window.fecharModalTeleprompter = function() {
       const modal = document.getElementById('modal-teleprompter');
       if (!modal) return;
@@ -1939,12 +2004,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.style.overflow = '';
     };
 
-    // 4. Mecânica de Rolagem Automática
     window.iniciarRolagemTeleprompter = function() {
       const scrollContainer = document.getElementById('tp-scroll-container');
       const btnPlay = document.getElementById('tp-btn-toggle-play');
       if (!scrollContainer) return;
 
+      window.teleprompterState = window.teleprompterState || {};
       window.teleprompterState.isPlaying = true;
       if (btnPlay) {
         btnPlay.textContent = '⏸ Pausar (Espaço)';
@@ -1954,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       clearInterval(window.teleprompterState.scrollInterval);
       window.teleprompterState.scrollInterval = setInterval(() => {
-        scrollContainer.scrollTop += (window.teleprompterState.speed * 0.8);
+        scrollContainer.scrollTop += (Number(window.teleprompterState.speed || 3) * 0.8);
         if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight) {
           window.pausarTeleprompter();
         }
@@ -1963,9 +2028,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.pausarTeleprompter = function() {
       const btnPlay = document.getElementById('tp-btn-toggle-play');
-      window.teleprompterState.isPlaying = false;
-      clearInterval(window.teleprompterState.scrollInterval);
-
+      if (window.teleprompterState) {
+        window.teleprompterState.isPlaying = false;
+        clearInterval(window.teleprompterState.scrollInterval);
+      }
       if (btnPlay) {
         btnPlay.textContent = '▶ Iniciar Rolagem (Espaço)';
         btnPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
@@ -1974,11 +2040,62 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.togglePlayTeleprompter = function() {
-      if (window.teleprompterState.isPlaying) {
+      if (window.teleprompterState?.isPlaying) {
         window.pausarTeleprompter();
       } else {
         window.iniciarRolagemTeleprompter();
       }
+    };
+
+    // ÁUDIO-GUIA (WEB SPEECH API - TTS NATIVO)
+    window.audioGuiaUtterance = null;
+    window.audioGuiaPlaying = false;
+
+    window.ouvirAudioGuia = function() {
+      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
+      const btnAudio = document.getElementById('btn-ouvir-audio-guia');
+
+      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
+        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro antes de ouvir o áudio-guia.', 'warning');
+        return;
+      }
+
+      if (!('speechSynthesis' in window)) {
+        if (typeof window.showToast === 'function') window.showToast('Síntese de voz não suportada neste navegador.', 'error');
+        return;
+      }
+
+      if (window.audioGuiaPlaying) {
+        window.speechSynthesis.cancel();
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+        return;
+      }
+
+      window.speechSynthesis.cancel(); // Limpa filas pendentes
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+        window.audioGuiaPlaying = true;
+        if (btnAudio) btnAudio.innerHTML = '⏸ Pausar Áudio-Guia';
+        if (typeof window.showToast === 'function') window.showToast('Reproduzindo áudio-guia do roteiro...', 'info');
+      };
+
+      utterance.onend = () => {
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+      };
+
+      utterance.onerror = () => {
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+      };
+
+      window.audioGuiaUtterance = utterance;
+      window.speechSynthesis.speak(utterance);
     };
 
     // Vincular Event Listeners do Teleprompter
@@ -7554,8 +7671,21 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.carregarHistoricoChat === 'function') window.carregarHistoricoChat(activeClient);
   if (typeof window.carregarSalaOperacaoCompleta === 'function') window.carregarSalaOperacaoCompleta();
 });
-// Listener universal para captura segura de cliques nas gavetas
+// Listener universal para captura segura de cliques nas gavetas e botões do Estúdio
 document.addEventListener('click', (e) => {
+  // Captura botões diretos do Estúdio
+  if (e.target.closest('#btn-abrir-teleprompter-modal') || e.target.closest('.btn-abrir-tp')) {
+    e.preventDefault();
+    window.abrirModalTeleprompter();
+    return;
+  }
+
+  if (e.target.closest('#btn-ouvir-audio-guia')) {
+    e.preventDefault();
+    window.ouvirAudioGuia();
+    return;
+  }
+
   const target = e.target.closest('[data-action]');
   if (!target) return;
 
@@ -7582,6 +7712,22 @@ document.addEventListener('click', (e) => {
         setTimeout(() => toast.remove(), 2000);
       }
     });
+  }
+});
+
+// Atalhos globais de teclado para o Teleprompter
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('modal-teleprompter');
+  const isModalOpen = modal && modal.style.display === 'flex' && !modal.classList.contains('hidden');
+
+  if (isModalOpen) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      window.togglePlayTeleprompter();
+    } else if (e.code === 'Escape') {
+      e.preventDefault();
+      window.fecharModalTeleprompter();
+    }
   }
 });
 
