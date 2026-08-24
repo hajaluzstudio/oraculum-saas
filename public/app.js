@@ -2011,6 +2011,25 @@ document.addEventListener('DOMContentLoaded', () => {
       window.speechSynthesis.speak(utterance);
     };
 
+    // Funções globais diretas para os sliders (imunes a perda de listeners)
+    window.updateTpSpeed = function(val) {
+      const speed = Number(val) || 3;
+      window.teleprompterState = window.teleprompterState || {};
+      window.teleprompterState.speed = speed;
+      const valEl = document.getElementById('tp-speed-val');
+      if (valEl) valEl.textContent = speed + 'x';
+    };
+
+    window.updateTpFont = function(val) {
+      const size = Number(val) || 42;
+      window.teleprompterState = window.teleprompterState || {};
+      window.teleprompterState.fontSize = size;
+      const valEl = document.getElementById('tp-font-val');
+      if (valEl) valEl.textContent = size + 'px';
+      const displayEl = document.getElementById('tp-text-display');
+      if (displayEl) displayEl.style.fontSize = size + 'px';
+    };
+
     window.abrirModalTeleprompter = function() {
       const previewEl = document.getElementById('video-script-preview-area');
       const texto = window.teleprompterState?.text || (previewEl ? previewEl.textContent : '');
@@ -2041,6 +2060,30 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tpDisplay) {
         tpDisplay.textContent = texto;
         tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 42) + 'px';
+      }
+
+      // Conecta sliders e botões
+      const speedSlider = document.getElementById('tp-speed-slider');
+      if (speedSlider) {
+        speedSlider.value = window.teleprompterState?.speed || 3;
+        speedSlider.oninput = (e) => window.updateTpSpeed(e.target.value);
+        window.updateTpSpeed(speedSlider.value);
+      }
+
+      const fontSlider = document.getElementById('tp-font-slider');
+      if (fontSlider) {
+        fontSlider.value = window.teleprompterState?.fontSize || 42;
+        fontSlider.oninput = (e) => window.updateTpFont(e.target.value);
+        window.updateTpFont(fontSlider.value);
+      }
+
+      const btnPlay = document.getElementById('tp-btn-toggle-play');
+      if (btnPlay) {
+        btnPlay.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.togglePlayTeleprompter();
+        };
       }
 
       // 4. Exibição Forçada e Visível
@@ -2074,6 +2117,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.style.overflow = '';
     };
 
+    window.teleprompterAnimationId = null;
+
     window.iniciarRolagemTeleprompter = function() {
       const scrollContainer = document.getElementById('tp-scroll-container');
       const btnPlay = document.getElementById('tp-btn-toggle-play');
@@ -2081,31 +2126,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
       window.teleprompterState = window.teleprompterState || {};
       window.teleprompterState.isPlaying = true;
+
       if (btnPlay) {
-        btnPlay.textContent = '⏸ Pausar (Espaço)';
-        btnPlay.classList.replace('bg-emerald-600', 'bg-amber-600');
-        btnPlay.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+        btnPlay.innerHTML = '⏸ Pausar (Espaço)';
+        btnPlay.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        btnPlay.classList.add('bg-amber-600', 'hover:bg-amber-500');
       }
 
-      clearInterval(window.teleprompterState.scrollInterval);
-      window.teleprompterState.scrollInterval = setInterval(() => {
-        scrollContainer.scrollTop += (Number(window.teleprompterState.speed || 3) * 0.8);
-        if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight) {
+      // Cancela animação anterior se houver
+      if (window.teleprompterAnimationId) {
+        cancelAnimationFrame(window.teleprompterAnimationId);
+      }
+
+      let lastTime = performance.now();
+
+      function stepScroll(currentTime) {
+        if (!window.teleprompterState?.isPlaying) return;
+
+        const delta = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        // Velocidade proporcional: nível 1 = 28px/s, nível 10 = 280px/s
+        const speed = window.teleprompterState.speed || 3;
+        const pixelsPerSecond = speed * 28;
+
+        scrollContainer.scrollTop += pixelsPerSecond * delta;
+
+        // Verifica se chegou ao fim
+        if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 5) {
           window.pausarTeleprompter();
+          return;
         }
-      }, 30);
+
+        window.teleprompterAnimationId = requestAnimationFrame(stepScroll);
+      }
+
+      window.teleprompterAnimationId = requestAnimationFrame(stepScroll);
     };
 
     window.pausarTeleprompter = function() {
-      const btnPlay = document.getElementById('tp-btn-toggle-play');
       if (window.teleprompterState) {
         window.teleprompterState.isPlaying = false;
-        clearInterval(window.teleprompterState.scrollInterval);
       }
+      if (window.teleprompterAnimationId) {
+        cancelAnimationFrame(window.teleprompterAnimationId);
+        window.teleprompterAnimationId = null;
+      }
+
+      const btnPlay = document.getElementById('tp-btn-toggle-play');
       if (btnPlay) {
-        btnPlay.textContent = '▶ Iniciar Rolagem (Espaço)';
-        btnPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
-        btnPlay.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+        btnPlay.innerHTML = '▶ Iniciar Rolagem (Espaço)';
+        btnPlay.classList.remove('bg-amber-600', 'hover:bg-amber-500');
+        btnPlay.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
       }
     };
 
@@ -2117,19 +2189,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-
-
     // Atalhos globais de teclado para o Teleprompter
     window.addEventListener('keydown', (e) => {
       const modal = document.getElementById('modal-teleprompter');
-      if (!modal || modal.classList.contains('hidden')) return;
+      const isModalOpen = modal && modal.style.display !== 'none' && !modal.classList.contains('hidden');
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        window.togglePlayTeleprompter();
-      } else if (e.code === 'Escape') {
-        e.preventDefault();
-        window.fecharModalTeleprompter();
+      if (isModalOpen) {
+        if (e.code === 'Space' || e.key === ' ') {
+          // Ignora se estiver digitando em algum input
+          if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+          e.preventDefault();
+          window.togglePlayTeleprompter();
+        } else if (e.code === 'Escape' || e.key === 'Escape') {
+          e.preventDefault();
+          window.fecharModalTeleprompter();
+        }
       }
     });
 
