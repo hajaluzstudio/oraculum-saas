@@ -1130,41 +1130,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function carregarSalaOperacaoCompleta() {
-    const warRoomSection = document.getElementById('tab-war-room');
-    if (!warRoomSection) return;
-
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // Se a estrutura de sub-abas sumiu, restaura o layout completo
-    if (!warRoomSection.querySelector('#war-room-subtabs')) {
-      warRoomSection.innerHTML = `
-        <div class="mb-6 flex flex-wrap gap-2" id="war-room-subtabs">
-          <button data-subtab="video" class="war-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black">🎥 Vídeo & Gravação</button>
-          <button data-subtab="design" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎨 Design & Web</button>
-          <button data-subtab="trafego" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎯 Tráfego</button>
-          <button data-subtab="copywriting" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">✍️ Copywriting</button>
-          <button data-subtab="comercial" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🤝 Comercial & Vendas</button>
-        </div>
-
-        <div id="war-room-content-area" class="space-y-4">
-          <div id="war-room-feed" class="space-y-4"></div>
-        </div>
-      `;
-
-      // Event listener para alternar as sub-abas
-      warRoomSection.querySelectorAll('.war-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          warRoomSection.querySelectorAll('.war-tab-btn').forEach(b => {
-            b.className = 'war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]';
-          });
-          btn.className = 'war-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black';
-          filtrarCardsWarRoom(btn.dataset.subtab);
-        });
-      });
+    // 1. Inicializa ferramentas nativas se disponível
+    if (typeof initWarRoomTools === 'function') {
+      initWarRoomTools();
     }
 
-    // Busca tarefas do Supabase e LocalStorage
+    // 2. Busca demandas aprovadas no Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
@@ -1177,7 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!error && data) tasks = data;
       }
     } catch (e) {
-      console.warn('[WarRoom Storage Fallback]:', e);
+      console.warn('[WarRoom Tasks Catch]:', e);
     }
 
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
@@ -1185,46 +1159,38 @@ document.addEventListener('DOMContentLoaded', () => {
       tasks = [...tasks, ...local];
     });
 
-    const feed = document.getElementById('war-room-feed');
-    if (!feed) return;
+    // 3. Localiza os containers existentes das seções sem destruir ferramentas
+    const strategyContainer = document.querySelector('#tab-war-room [data-section="strategy-feed"]') || 
+                              document.querySelector('#tab-war-room .strategy-content') ||
+                              document.querySelector('#tab-war-room .border-[#1B3B36]');
 
-    if (tasks.length === 0) {
-      feed.innerHTML = `
-        <div class="p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-sm">
-          Nenhuma diretriz ou tarefa aprovada no momento. Use o <strong>Chat Estratégico</strong> para despachar novas demandas.
+    if (strategyContainer && tasks.length > 0) {
+      // Remove o aviso de "Nenhum script gerado..."
+      strategyContainer.querySelectorAll('p, span').forEach(el => {
+        if (el.textContent.includes('Nenhum script gerado para este cliente')) {
+          el.remove();
+        }
+      });
+
+      // Injeta os cards aprovados mantendo o restante da interface (Teleprompter, Roteiros) intacto
+      const existingFeed = strategyContainer.querySelector('.injected-feed') || document.createElement('div');
+      existingFeed.className = 'injected-feed space-y-4 my-3';
+      existingFeed.innerHTML = tasks.map(task => `
+        <div class="p-4 bg-[#071311] border border-[#10B981]/30 rounded-xl text-slate-200 shadow-md space-y-2">
+          <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
+            <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase">
+              ${task.category ? task.category.toUpperCase() : 'DIRETRIZ APROVADA'}
+            </span>
+            <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
+          </div>
+          <div class="text-xs leading-relaxed whitespace-pre-wrap">${task.content}</div>
         </div>
-      `;
-      return;
-    }
+      `).join('');
 
-    feed.innerHTML = tasks.map(task => `
-      <div data-category="${task.category || 'copywriting'}" class="war-task-card p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-[#1B3B36] pb-3">
-          <span class="px-2.5 py-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase tracking-wider">
-            ${task.category ? task.category.toUpperCase() : 'ESTRATÉGIA'}
-          </span>
-          <span class="text-xs text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
-        </div>
-        <div class="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">${task.content}</div>
-      </div>
-    `).join('');
-
-    // Aplica filtro inicial na aba ativa
-    const activeBtn = warRoomSection.querySelector('.war-tab-btn.active');
-    if (activeBtn) filtrarCardsWarRoom(activeBtn.dataset.subtab);
-  }
-
-  function filtrarCardsWarRoom(categoria) {
-    const cards = document.querySelectorAll('.war-task-card');
-    cards.forEach(card => {
-      if (categoria === 'video' && (card.dataset.category === 'video' || card.dataset.category === 'chat_strategy')) {
-        card.style.display = 'block';
-      } else if (card.dataset.category === categoria) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
+      if (!strategyContainer.querySelector('.injected-feed')) {
+        strategyContainer.appendChild(existingFeed);
       }
-    });
+    }
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
