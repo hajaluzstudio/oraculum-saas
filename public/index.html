@@ -1837,12 +1837,22 @@
                   </div>
 
                   <!-- SEÇÃO B: IA CREATIVE SCORE -->
-                  <div class="grid-2col" id="wr-vision-section">
-                    <div class="card-glass">
-                      <div class="card-header">
-                        <h3><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
-                        <p>O Gemini analisa quadro a quadro os primeiros 3s (Hook) e o potencial de conversão.</p>
+                  <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('wr-vision-content', this)">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                          <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
+                        </div>
+                        <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
                       </div>
+                    </div>
+                    <div id="wr-vision-content" class="hidden" style="margin-top: 16px;">
+                      <div class="grid-2col" id="wr-vision-section">
+                        <div class="card-glass">
+                          <div class="card-header">
+                            <h3><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
+                            <p>O Gemini analisa quadro a quadro os primeiros 3s (Hook) e o potencial de conversão.</p>
+                          </div>
 
                       <!-- ALTERNADOR DE ORIGEM DE CONTEÚDO (PC vs GOOGLE DRIVE) -->
                       <div class="source-toggle">
@@ -1921,14 +1931,26 @@
                       </div>
                     </div>
                   </div>
+                  </div>
+                  </div>
 
                   <!-- CERTIDÃO DE NASCIMENTO & METADADOS EXIF/GEO -->
-                  <div class="card-glass mt-20" id="metadata-certificate-section">
-                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                      <div>
-                        <h3><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
-                        <p>Blindagem de autoridade e SEO local invisível gravado nos metadados da mídia antes do tráfego.</p>
+                  <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('metadata-cert-content', this)">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                          <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
+                        </div>
+                        <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
                       </div>
+                    </div>
+                    <div id="metadata-cert-content" class="hidden" style="margin-top: 16px;">
+                      <div class="card-glass" id="metadata-certificate-section">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                          <div>
+                            <h3><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
+                            <p>Blindagem de autoridade e SEO local invisível gravado nos metadados da mídia antes do tráfego.</p>
+                          </div>
                       <button type="button" class="btn-primary sm" id="btn-generate-metadata-cert" style="font-size: 11px; padding: 6px 14px;">
                         <i class="fa-solid fa-certificate"></i> Emitir Certidão de Metadados
                       </button>
@@ -1954,6 +1976,8 @@
                         <p id="meta-val-social-copy" style="color: #E2E8F0; margin: 6px 0 0; font-size: 12px; line-height: 1.5; white-space: pre-line;">-</p>
                       </div>
                     </div>
+                  </div>
+                  </div>
                   </div>
                   
                 </div>
@@ -2870,6 +2894,10 @@
       <div style="display: flex; align-items: center; gap: 16px;">
         <span style="font-weight: 700; color: #06B6D4; font-size: 14px;"><i class="fa-solid fa-clapperboard"></i> TELEPROMPTER ORACULUM</span>
         <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 6px;">
+          <span style="font-size: 12px; color: #94A3B8;">Pauta:</span>
+          <select id="tp-drawer-selector" style="background: transparent; color: #FFF; border: none; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; max-width: 150px;"></select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 6px;">
           <span style="font-size: 12px; color: #94A3B8;">Tamanho da Fonte:</span>
           <button type="button" id="prompter-font-dec" style="background: transparent; border: none; color: #FFF; font-size: 14px; font-weight: bold; cursor: pointer; padding: 2px 6px;">A-</button>
           <button type="button" id="prompter-font-inc" style="background: transparent; border: none; color: #06B6D4; font-size: 16px; font-weight: bold; cursor: pointer; padding: 2px 6px;">A+</button>
@@ -3614,7 +3642,61 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.8.0"></script>
+<script src="/app.js?v=9999.9.0"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const selector = document.getElementById('tp-drawer-selector');
+    const prompterTextBody = document.getElementById('prompter-text-body');
+    
+    // Delegate click for open teleprompter because btn might be re-rendered
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btn-open-teleprompter') || e.target.closest('[onclick*="btn-open-teleprompter"]');
+      if (btn && selector) {
+        selector.innerHTML = '';
+        const tasks = window.__WAR_ROOM_TASKS__ || [];
+        const videoTasks = tasks.filter(t => t.category === 'video' || t.category === 'roteiro');
+        
+        if (videoTasks.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.text = 'Nenhuma pauta';
+          selector.appendChild(opt);
+          return;
+        }
+
+        videoTasks.forEach((t, i) => {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.text = (t.title || 'Pauta ' + (i+1)).substring(0, 30) + '...';
+          selector.appendChild(opt);
+        });
+
+        selector.onchange = () => {
+          const selectedTask = videoTasks[selector.value];
+          if (selectedTask && prompterTextBody) {
+            let html = '';
+            const lines = (selectedTask.content || '').split('\\n').filter(l => l.trim() !== '');
+            lines.forEach(line => {
+              let raw = line.trim();
+              if (/^(#+ |Gancho|Copy Principal|Chamada|CTA|Headline)/i.test(raw) && raw.length < 50) {
+                html += '<div class="tp-section-header"><span class="badge">📌 ' + raw.replace(/^#+\\s*/, '') + '</span></div>';
+              } else if (/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?/i.test(raw) || (raw.startsWith('[') && raw.endsWith(']'))) {
+                html += '<div class="tp-action-box"><i class="fa-solid fa-clapperboard"></i> Ação: ' + raw.replace(/^(\\[.*?\\]|\\(.*?\\)|ação|cênica|visual|direção):?\\s*/i, '') + '</div>';
+              } else if (/^(texto na tela|text overlay|lettering|legenda):?/i.test(raw)) {
+                html += '<div class="tp-overlay-box"><i class="fa-solid fa-font"></i> Em Tela: ' + raw.replace(/^(texto na tela|text overlay|lettering|legenda):?\\s*/i, '') + '</div>';
+              } else {
+                html += '<div class="tp-speech-text">' + raw.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>') + '</div>';
+              }
+            });
+            prompterTextBody.innerHTML = html;
+          }
+        };
+        
+        setTimeout(() => { selector.dispatchEvent(new Event('change')); }, 100);
+      }
+    });
+  });
+</script>
 <script src="/oraculo-live.js?t=99999999"></script>
 </body>
 </html>
