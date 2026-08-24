@@ -30,9 +30,9 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-3.7-flash",      // 1ª Opção: Principal (Mais veloz e estratégico do painel)
-  "gemini-3.6-flash",      // 2ª Opção: Fallback direto de alta fidelidade
-  "gemini-3.5-flash",      // 3ª Opção: Resposta rápida
+  "gemini-3.7-flash",      // 1ª Opção: Principal (Ultra veloz e estratégico)
+  "gemini-3.6-flash",      // 2ª Opção: Contingência direta
+  "gemini-3.5-flash",      // 3ª Opção: Resposta padrão
   "gemini-3.5-flash-lite", // 4ª Opção: Alta disponibilidade (15 RPM)
   "gemma-4-26b",           // 5ª Opção: Contingência massiva (30 RPM)
   "gemma-4-31b"            // 6ª Opção: Contingência avançada (30 RPM)
@@ -52,7 +52,7 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       if (systemInstruction) {
         config.systemInstruction = systemInstruction;
       }
-      
+
       const requestOptions: any = {
         model: modelName,
       };
@@ -60,7 +60,7 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       if (promptOuConteudo && promptOuConteudo.contents) {
         requestOptions.contents = promptOuConteudo.contents;
         if (promptOuConteudo.config) {
-            config = { ...promptOuConteudo.config, ...config };
+          config = { ...promptOuConteudo.config, ...config };
         }
       } else {
         requestOptions.contents = [{ role: 'user', parts: [{ text: promptOuConteudo }] }];
@@ -78,18 +78,9 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
+      console.warn(`[Global AI Router] Modelo ${modelName} falhou (${msg.slice(0, 100)}). Pulando para o próximo...`);
       ultimoErro = err;
-
-      const status = err?.status || err?.response?.status;
-      const isRateLimitOrUnavailable = status === 429 || status === 503 || msg.includes('429') || msg.includes('503') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('overloaded');
-
-      if (isRateLimitOrUnavailable) {
-        console.warn(`[Global AI Router] Modelo ${modelName} falhou por limite/sobrecarga (${msg.slice(0, 100)}). Pulando para o próximo...`);
-        continue;
-      }
-
-      console.error(`[Global AI Router] Erro fatal no modelo ${modelName}:`, msg);
-      throw err;
+      continue;
     }
   }
 
@@ -455,7 +446,7 @@ app.get('/api/clients', async (req: Request, res: Response) => {
         if (!error && data) {
           return res.json({ success: true, data });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Fallback: disco local (sem clientes demo)
@@ -612,7 +603,7 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
 app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
   try {
     const { clientId } = req.params;
-    
+
     // Busca apenas por client_id (não filtra por organization_id pois pode ser null)
     const { data, error } = await supabase
       .from('niche_knowledge_base')
@@ -621,7 +612,7 @@ app.get('/api/niche-dossier/:clientId', async (req: Request, res: Response) => {
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-      
+
     if (!error && data) {
       console.log('[API] Dossiê carregado do Supabase para cliente:', clientId);
       return res.json({ success: true, data: data.dossier_data });
@@ -642,7 +633,7 @@ app.post('/api/niche-dossier', async (req: Request, res: Response) => {
     const organizationId = (req as any).organizationId;
     const { clientId, dossier, niche } = req.body;
     if (!clientId) return res.status(400).json({ error: 'clientId é obrigatório.' });
-    
+
     // Verifica se já existe para decidir entre insert e update
     const { data: existing } = await supabase
       .from('niche_knowledge_base')
@@ -713,7 +704,7 @@ app.get('/api/chat', async (req: Request, res: Response) => {
 app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   try {
     const { clientId } = req.params;
-    
+
     const { data: biData, error: biErr } = await supabase
       .from('bi_chat_history')
       .select('*')
@@ -733,7 +724,7 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
       }));
       return res.json({ success: true, data: formatted });
     }
-      
+
     const { data, error } = await supabase
       .from('bi_chat_history')
       .select('*')
@@ -742,19 +733,19 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 
     if (error) {
       console.error('❌ [Supabase GET chat-history error]:', error);
-      
+
       // Fallback para chat_history antigo se falhar
       const { data: oldData, error: oldError } = await supabase
         .from('chat_history')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: true });
-        
+
       if (!oldError && oldData) {
         return res.json({ success: true, data: oldData, source: 'fallback' });
       }
     }
-      
+
     if (!error && data) {
       return res.json({ success: true, data });
     }
@@ -790,7 +781,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     }
 
     let promptInstrucao = "Você é o Oraculum AI.";
-    
+
     if (mode === 'bi_live') {
       promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO participando de uma reunião ao vivo com o usuário.
 
@@ -861,7 +852,7 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
-    
+
     let configArgs: any = {
       temperature: 0.7,
       maxOutputTokens: 1500
@@ -880,7 +871,7 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     const { reply: aiResponse, modelUsed } = await executarIAComFallback(
       ai,
       promptInstrucao,
-      { 
+      {
         contents: requestContents,
         config: configArgs
       }
@@ -905,7 +896,7 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       const parsed = JSON.parse(aiResponse);
       if (parsed.tasks) extractedTasks = parsed.tasks;
       if (parsed.replyText) displayText = parsed.replyText;
-    } catch(e) {}
+    } catch (e) { }
 
     // 3. Grava OBRIGATORIAMENTE a resposta da IA no banco
     const { error: modelInsertError } = await supabase.from('chat_history').insert([{
@@ -919,8 +910,8 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       console.error('[Supabase Model Insert Error]:', modelInsertError);
     }
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       reply: aiResponse,
       replyText: displayText,
       display_text: displayText,
@@ -932,9 +923,9 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
 
   } catch (err: any) {
     console.error('[API Chat Catch]', err);
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      reply: 'Dossiê do Dr. Lucas carregado com sucesso. Como posso orientar sua campanha?' 
+      reply: 'Dossiê do Dr. Lucas carregado com sucesso. Como posso orientar sua campanha?'
     });
   }
 });
@@ -1044,12 +1035,12 @@ app.get(['/api/workflow/:clientId', '/api/kanban/:clientId', '/api/kanban'], asy
   try {
     const organizationId = (req as any).organizationId;
     const { clientId } = req.params;
-    
+
     if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
       let query = supabase.from('kanban_cards').select('*').order('created_at', { ascending: false });
       if (organizationId) query = query.eq('organization_id', organizationId);
       if (clientId) query = query.eq('client_id', clientId);
-      
+
       const { data, error } = await query;
       if (!error && data) {
         // Mapeia para o formato que o frontend espera (se necessário)
@@ -1079,7 +1070,7 @@ app.post('/api/workflow', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId;
     const { card } = req.body;
-    
+
     if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
       const payload = {
         organization_id: organizationId,
@@ -1090,7 +1081,7 @@ app.post('/api/workflow', async (req: Request, res: Response) => {
         asset_type: card.assetType || card.asset_type || '',
         file_path: card.filePath || card.file_path || ''
       };
-      
+
       if (card.id && String(card.id).includes('-')) {
         // Update
         await supabase.from('kanban_cards').update(payload).eq('id', card.id);
@@ -1350,16 +1341,16 @@ app.post(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, r
         password: defaultPassword,
         email_confirm: true,
         user_metadata: {
-           role: 'agency_owner',
-           agency_id: data.id,
-           full_name: req.body.responsible_name || 'Admin Agência'
+          role: 'agency_owner',
+          agency_id: data.id,
+          full_name: req.body.responsible_name || 'Admin Agência'
         }
       });
       if (userError) {
-         console.error('[Supabase] Erro ao criar usuário admin da agência:', userError);
+        console.error('[Supabase] Erro ao criar usuário admin da agência:', userError);
       } else {
-         console.log('[Supabase] ✅ Usuário admin da agência criado:', userData.user.id);
-         userCreated = true;
+        console.log('[Supabase] ✅ Usuário admin da agência criado:', userData.user.id);
+        userCreated = true;
       }
     }
 
@@ -1422,7 +1413,7 @@ const deleteAgencyHandler = async (req: Request, res: Response) => {
     // Delete associated clients first if necessary
     try {
       await supabase.from('clients').delete().eq('agency_id', id);
-    } catch (e) {}
+    } catch (e) { }
 
     const { error } = await supabase.from('agencies').delete().eq('id', id);
     if (error) throw error;
@@ -1454,7 +1445,7 @@ app.post('/api/admin/agencies/toggle-status', async (req: Request, res: Response
 });
 
 app.get('/api/admin/maintenance', (req: Request, res: Response) => {
-    return res.json({ success: true, active: getMaintenanceModeState() });
+  return res.json({ success: true, active: getMaintenanceModeState() });
 });
 
 app.post('/api/admin/maintenance', (req: Request, res: Response) => {
@@ -1513,7 +1504,7 @@ Retorne APENAS um JSON válido no formato:
     });
 
     const replyText = response.text || '';
-    
+
     // Parse the JSON block from response
     const jsonMatch = replyText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, replyText];
     let parsedData;
@@ -1582,20 +1573,20 @@ app.post('/api/kanban/batch', async (req: Request, res: Response) => {
   try {
     const cards = req.body;
     if (!Array.isArray(cards)) return res.status(400).json({ success: false, error: 'Expected an array of cards' });
-    
+
     if (cards.length > 0) {
       const clientId = cards[0].clientId || cards[0].client_id;
       if (clientId) {
         await supabase.from('kanban_tasks').delete().eq('client_id', clientId);
         const mappedCards = cards.map(c => ({
-            id: String(c.id),
-            client_id: c.clientId || c.client_id,
-            title: c.title,
-            description: c.description || c.adjustments_needed,
-            stage: c.stage,
-            asset_type: c.assetType || c.asset_type,
-            locked: c.locked || false,
-            hook_score: c.hook_score || 0
+          id: String(c.id),
+          client_id: c.clientId || c.client_id,
+          title: c.title,
+          description: c.description || c.adjustments_needed,
+          stage: c.stage,
+          asset_type: c.assetType || c.asset_type,
+          locked: c.locked || false,
+          hook_score: c.hook_score || 0
         }));
         const { error } = await supabase.from('kanban_tasks').insert(mappedCards);
         if (error) return res.status(500).json({ success: false, error: error.message });
@@ -1624,10 +1615,10 @@ app.post('/api/kanban/update-status', async (req: Request, res: Response) => {
   try {
     const { cardId, status } = req.body;
     if (!cardId || !status) return res.status(400).json({ success: false, error: 'Missing cardId or status' });
-    
+
     const { error } = await supabase.from('kanban_cards').update({ status, updated_at: new Date().toISOString() }).eq('id', cardId);
     if (error) return res.status(500).json({ success: false, error: error.message });
-    
+
     return res.json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: error.message });

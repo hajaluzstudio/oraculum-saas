@@ -1269,32 +1269,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Função auxiliar de limpeza para a interface
-  function extractCleanChatResponse(rawResponse) {
-    let text = rawResponse;
-    let tasks = [];
+  // Parser isolado para limpar qualquer JSON residual da tela
+  function formatarTextoChatEstrategico(rawContent) {
+    if (!rawContent) return '';
+    
+    let textoFinal = rawContent;
+    let tasksExtraidas = [];
 
-    if (typeof rawResponse === 'object' && rawResponse !== null) {
-      text = rawResponse.replyText || rawResponse.reply || rawResponse.message || JSON.stringify(rawResponse);
-      tasks = Array.isArray(rawResponse.tasks) ? rawResponse.tasks : [];
-    }
-
-    if (typeof text === 'string') {
-      const trimmed = text.trim();
-      if (trimmed.startsWith('{') && trimmed.includes('replyText')) {
+    // Se for objeto direto
+    if (typeof rawContent === 'object' && rawContent !== null) {
+      textoFinal = rawContent.replyText || rawContent.message || rawContent.reply || JSON.stringify(rawContent);
+      if (Array.isArray(rawContent.tasks)) tasksExtraidas = rawContent.tasks;
+    } 
+    // Se for string com JSON embutido
+    else if (typeof rawContent === 'string') {
+      const trimmed = rawContent.trim();
+      if (trimmed.startsWith('{') && trimmed.includes('"replyText"')) {
         try {
           const parsed = JSON.parse(trimmed);
-          text = parsed.replyText || text;
-          if (!tasks.length && Array.isArray(parsed.tasks)) tasks = parsed.tasks;
+          textoFinal = parsed.replyText || textoFinal;
+          if (Array.isArray(parsed.tasks)) tasksExtraidas = parsed.tasks;
         } catch (e) {
-          // Fallback via regex caso o JSON esteja cortado
-          const match = trimmed.match(/"replyText"\s*:\s*"([^"]+)"/);
-          if (match) text = match[1];
+          // Fallback via regex para capturar o replyText sem quebrar
+          const match = trimmed.match(/"replyText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          if (match && match[1]) {
+            textoFinal = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+          }
         }
       }
     }
 
-    return { cleanText: text, tasks: tasks };
+    // Armazena as tasks em memória global para o botão de despacho utilizar sem sujar o DOM
+    if (tasksExtraidas.length > 0) {
+      window.currentPendingTasks = tasksExtraidas;
+    }
+
+    // Converte quebras de linha e limpa escape residual
+    return String(textoFinal)
+      .replace(/\\n/g, '\n')
+      .replace(/^["']|["']$/g, '')
+      .trim();
   }
 
   // Envia prompt para a API do backend
@@ -1349,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      const { cleanText: cleanReplyText, tasks: tasksArray } = extractCleanChatResponse(data);
+      const cleanReplyText = formatarTextoChatEstrategico(data);
 
       // 4. Renderiza a resposta da IA com o card de aprovação
       const aiBubble = document.createElement('div');
@@ -1382,8 +1396,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (typeof window.dispatchBriefingToWarRoom === 'function') {
             // Se houver array de tasks estruturado, despacha o array; caso contrário, passa o texto limpo
-            const payloadToSend = tasksArray.length > 0 ? tasksArray : cleanReplyText;
+            const payloadToSend = (window.currentPendingTasks && window.currentPendingTasks.length > 0) ? window.currentPendingTasks : cleanReplyText;
             await window.dispatchBriefingToWarRoom('all', payloadToSend);
+            window.currentPendingTasks = null;
           }
 
           btnAprovar.innerText = '✓ Despachado com Sucesso!';
