@@ -1389,11 +1389,19 @@ document.addEventListener('DOMContentLoaded', () => {
           btnAprovar.disabled = true;
           btnAprovar.innerText = '⏳ Despachando...';
 
+          const activeClientId = window.currentActiveClientId || window.activeClientId || (window.activeClient && window.activeClient.id) || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('active_client_id') || 'client_1707406730';
+
+          const tasksParaSalvar = (window.currentPendingTasks && window.currentPendingTasks.length > 0) 
+            ? window.currentPendingTasks.map(t => ({ ...t, client_id: activeClientId, created_at: t.created_at || new Date().toISOString() }))
+            : cleanReplyText;
+
           if (typeof window.dispatchBriefingToWarRoom === 'function') {
-            // Se houver array de tasks estruturado, despacha o array; caso contrário, passa o texto limpo
-            const payloadToSend = (window.currentPendingTasks && window.currentPendingTasks.length > 0) ? window.currentPendingTasks : cleanReplyText;
-            await window.dispatchBriefingToWarRoom('all', payloadToSend);
+            await window.dispatchBriefingToWarRoom('all', tasksParaSalvar);
             window.currentPendingTasks = null;
+          }
+
+          if (typeof window.renderWarRoomTasks === 'function') {
+            window.renderWarRoomTasks();
           }
 
           btnAprovar.innerText = '✓ Despachado com Sucesso!';
@@ -1596,8 +1604,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.dispatchBriefingToWarRoom = async function (target, taskPayloadArray) {
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+    const clientId = window.currentActiveClientId || window.activeClientId || (window.activeClient && window.activeClient.id) || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('active_client_id') || 'client_1707406730';
     const supabase = window.supabaseClient || window.supabase;
 
     let tasks = [];
@@ -1622,16 +1629,17 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const t of tasks) {
       const sanitizedContent = sanitizeTaskContent(t.content || t.description || '');
       const item = {
-        client_id: String(clientId),
+        client_id: String(t.client_id || clientId),
         category: t.category || 'geral',
+        theme: t.theme || t.topic || 'Pauta Tática Geral',
         title: t.title || `[${(t.category || 'GERAL').toUpperCase()}] Demanda Estratégica`,
         content: sanitizedContent,
         priority: t.priority || (t.category === 'comercial' || (t.title && t.title.includes('38.000')) ? 'alta' : 'media'),
         deadline: t.deadline || new Date(Date.now() + 48 * 3600 * 1000).toISOString().split('T')[0],
         estimated_time: t.estimated_time || (t.category === 'video' ? '45 min' : '30 min'),
         status: 'pending',
-        created_at: new Date().toISOString(),
-        pauta_master: sessionPautaTitle,
+        created_at: t.created_at || new Date().toISOString(),
+        pauta_master: t.theme || sessionPautaTitle,
         batch_id: batchId
       };
       existing.unshift(item);
