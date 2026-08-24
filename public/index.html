@@ -1765,191 +1765,185 @@
               <div id="wr-video" class="wr-panel active">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                   
-                  <!-- Ferramenta de Teleprompter & Estúdio (Colapsável) -->
-                  <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mb-6">
-                    <button type="button" onclick="window.toggleVideoStudioTool()" class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
-                      <div class="flex items-center gap-2">
-                        <span class="text-emerald-400 text-sm">🎬</span>
-                        <span class="text-xs font-bold text-slate-200 uppercase tracking-wide">Estúdio de Gravação, Áudio-Guia & Teleprompter</span>
-                      </div>
-                      <span id="icon-toggle-video-studio" class="text-xs text-slate-400">▼ Expandir Ferramenta</span>
-                    </button>
-                    <div id="container-video-studio" class="hidden p-5 border-t border-slate-800/80 bg-slate-950/40">
-                      <!-- Conteúdo original do Teleprompter, Audio-Guia e Preview do Script -->
-                      <div class="flex items-center justify-end gap-2 mb-4">
-                        <button type="button" id="btn-ouvir-audio-guia" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1.5">
-                          🔊 Ouvir Áudio-Guia
-                        </button>
-                        <button type="button" id="btn-abrir-teleprompter-modal" onclick="document.getElementById('btn-open-teleprompter') && document.getElementById('btn-open-teleprompter').click()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5">
-                          ▶ Modo Teleprompter
-                        </button>
-                      </div>
-                      <div id="video-script-preview-area" class="p-4 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono min-h-[120px] whitespace-pre-wrap">Selecione um roteiro despachado na gaveta abaixo e clique em "▶ Carregar no Teleprompter" para projetar o texto.</div>
+                  <!-- DADOS INJETADOS PELA IA (JSON - HIDDEN) -->
+                  <div id="wr-video-content" style="display: none;"></div>
+
+                  <!-- 1. FEED DE GAVETAS MESTRAS DE GRAVAÇÃO (PRIORIDADE PRINCIPAL) -->
+                  <div class="mb-4">
+                    <div id="feed-gavetas-video" class="space-y-4">
+                      <!-- Renderizado dinamicamente pelo public/app.js -->
                     </div>
                   </div>
 
-                  <!-- DADOS INJETADOS PELA IA (JSON) -->
-                  <div style="display: flex; flex-direction: column; width: 100%;">
-                    <div id="wr-video-content" style="display: none;"></div>
-                    <!-- Feed de Gavetas de Vídeo -->
-                    <div id="feed-gavetas-video" class="space-y-4 mt-2"></div>
-                  </div>
-
-                  <!-- SEÇÃO B: IA CREATIVE SCORE -->
-                  <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('wr-vision-content', this)">
-                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <div>
-                          <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
+                  <!-- 2. FERRAMENTAS AUXILIARES DE ESTÚDIO E PRODUÇÃO -->
+                  <div class="space-y-3">
+                    <!-- Ferramenta 1: Estúdio de Gravação, Áudio-Guia & Teleprompter -->
+                    <div class="border border-slate-800/80 bg-slate-900/40 rounded-xl overflow-hidden">
+                      <button type="button" onclick="window.toggleVideoStudioTool()" class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
+                        <div class="flex items-center gap-2.5">
+                          <span class="text-emerald-400 text-sm">🎬</span>
+                          <span class="text-xs font-bold text-emerald-400 tracking-wide">Estúdio de Gravação (Áudio-Guia & Teleprompter)</span>
                         </div>
-                        <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
+                        <span id="icon-toggle-video-studio" class="text-xs text-slate-400">▼ Expandir Ferramenta</span>
+                      </button>
+                      <div id="container-video-studio" class="hidden p-5 border-t border-slate-800/80 bg-slate-950/50">
+                        <div class="flex items-center justify-end gap-2 mb-4">
+                          <button type="button" id="btn-ouvir-audio-guia" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1.5">
+                            🔊 Ouvir Áudio-Guia
+                          </button>
+                          <button type="button" id="btn-abrir-teleprompter-modal" onclick="document.getElementById('btn-open-teleprompter') && document.getElementById('btn-open-teleprompter').click()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5">
+                            ▶ Modo Teleprompter
+                          </button>
+                        </div>
+                        <div id="video-script-preview-area" class="p-4 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono min-h-[100px] whitespace-pre-wrap">Selecione um roteiro na gaveta acima e clique em "▶ Carregar no Teleprompter" para projetar o texto.</div>
                       </div>
                     </div>
-                    <div id="wr-vision-content" class="hidden" style="margin-top: 16px;">
-                      <div class="grid-2col" id="wr-vision-section">
-                        <div class="card-glass">
-                          <div class="card-header">
-                            <h3><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
-                            <p>O Gemini analisa quadro a quadro os primeiros 3s (Hook) e o potencial de conversão.</p>
+
+                    <!-- Ferramenta 2: Inspecionar Criativo (Visão Computacional) -->
+                    <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                      <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('wr-vision-content', this)">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                          <div>
+                            <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
+                          </div>
+                          <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
+                        </div>
+                      </div>
+                      <div id="wr-vision-content" class="hidden" style="margin-top: 16px;">
+                        <div class="grid-2col" id="wr-vision-section">
+                          <div class="card-glass">
+                            <div class="card-header">
+                              <h3><i class="fa-solid fa-camera-retro"></i> Inspecionar Criativo (Visão Computacional)</h3>
+                              <p>O Gemini analisa quadro a quadro os primeiros 3s (Hook) e o potencial de conversão.</p>
+                            </div>
+
+                        <!-- ALTERNADOR DE ORIGEM DE CONTEÚDO (PC vs GOOGLE DRIVE) -->
+                        <div class="source-toggle">
+                          <button type="button" class="source-btn active" id="btn-source-pc" data-source="pc">
+                            <i class="fa-solid fa-laptop"></i> Subir do meu PC
+                          </button>
+                          <button type="button" class="source-btn" id="btn-source-drive" data-source="drive">
+                            <i class="fa-brands fa-google-drive"></i> Link do Google Drive
+                          </button>
+                        </div>
+
+                        <form id="form-creative-inspect">
+                          <div class="form-group">
+                            <label for="inspect-title">Título do Criativo *</label>
+                            <input type="text" id="inspect-title" placeholder="Ex: Anúncio Rinoplastia V2 - Carrossel" required>
+                          </div>
+                          <div class="form-group">
+                            <label for="inspect-type">Tipo de Ativo *</label>
+                            <select id="inspect-type">
+                              <option value="video">Vídeo (Foco Hook 3 Segundos)</option>
+                              <option value="image">Imagem / Card Estático</option>
+                              <option value="carousel">Carrossel de Alta Conversão</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label for="inspect-niche">Nicho do Cliente *</label>
+                            <input type="text" id="inspect-niche" placeholder="Ex: Médico Cirurgião Plástico" required>
                           </div>
 
-                      <!-- ALTERNADOR DE ORIGEM DE CONTEÚDO (PC vs GOOGLE DRIVE) -->
-                      <div class="source-toggle">
-                        <button type="button" class="source-btn active" id="btn-source-pc" data-source="pc">
-                          <i class="fa-solid fa-laptop"></i> Subir do meu PC
-                        </button>
-                        <button type="button" class="source-btn" id="btn-source-drive" data-source="drive">
-                          <i class="fa-brands fa-google-drive"></i> Link do Google Drive
-                        </button>
-                      </div>
-
-                      <form id="form-creative-inspect">
-                        <div class="form-group">
-                          <label for="inspect-title">Título do Criativo *</label>
-                          <input type="text" id="inspect-title" placeholder="Ex: Anúncio Rinoplastia V2 - Carrossel" required>
-                        </div>
-                        <div class="form-group">
-                          <label for="inspect-type">Tipo de Ativo *</label>
-                          <select id="inspect-type">
-                            <option value="video">Vídeo (Foco Hook 3 Segundos)</option>
-                            <option value="image">Imagem / Card Estático</option>
-                            <option value="carousel">Carrossel de Alta Conversão</option>
-                          </select>
-                        </div>
-                        <div class="form-group">
-                          <label for="inspect-niche">Nicho do Cliente *</label>
-                          <input type="text" id="inspect-niche" placeholder="Ex: Médico Cirurgião Plástico" required>
-                        </div>
-
-                        <!-- SEÇÃO 1: UPLOAD DO PC (DRAG AND DROP) -->
-                        <div id="section-source-pc" class="source-section active">
-                          <div class="form-group">
-                            <label>Selecione ou Arraste o Arquivo do seu Computador (Vídeo ou Imagem)</label>
-                            <div class="upload-dropzone" id="dropzone-pc">
-                              <input type="file" id="inspect-file-input" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp">
-                              <div class="dropzone-content">
-                                <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
-                                <p class="dropzone-title">Clique ou arraste um vídeo/imagem do seu PC</p>
-                                <span class="dropzone-hint">Formatos suportados: MP4, MOV, WEBM, JPG, PNG, WEBP (até 50MB)</span>
-                                <div id="file-selected-info" class="file-selected-badge" style="display: none;">
-                                  <i class="fa-solid fa-file-video"></i> <span id="file-selected-name">video.mp4</span>
+                          <!-- SEÇÃO 1: UPLOAD DO PC (DRAG AND DROP) -->
+                          <div id="section-source-pc" class="source-section active">
+                            <div class="form-group">
+                              <label>Selecione ou Arraste o Arquivo do seu Computador (Vídeo ou Imagem)</label>
+                              <div class="upload-dropzone" id="dropzone-pc">
+                                <input type="file" id="inspect-file-input" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp">
+                                <div class="dropzone-content">
+                                  <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                                  <p class="dropzone-title">Clique ou arraste um vídeo/imagem do seu PC</p>
+                                  <span class="dropzone-hint">Formatos suportados: MP4, MOV, WEBM, JPG, PNG, WEBP (até 50MB)</span>
+                                  <div id="file-selected-info" class="file-selected-badge" style="display: none;">
+                                    <i class="fa-solid fa-file-video"></i> <span id="file-selected-name">video.mp4</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <!-- SEÇÃO 2: LINK DO GOOGLE DRIVE -->
-                        <div id="section-source-drive" class="source-section" style="display: none;">
-                          <div class="form-group">
-                            <label for="inspect-drive-url">Link de Compartilhamento ou Caminho no Google Drive</label>
-                            <div class="input-with-icon">
-                              <i class="fa-brands fa-google-drive input-icon"></i>
-                              <input type="text" id="inspect-drive-url" placeholder="https://drive.google.com/file/d/1A2B3C... ou /Drive/Cliente_A/Producao/video.mp4">
+                          <!-- SEÇÃO 2: LINK DO GOOGLE DRIVE -->
+                          <div id="section-source-drive" class="source-section" style="display: none;">
+                            <div class="form-group">
+                              <label for="inspect-drive-url">Link de Compartilhamento ou Caminho no Google Drive</label>
+                              <div class="input-with-icon">
+                                <i class="fa-brands fa-google-drive input-icon"></i>
+                                <input type="text" id="inspect-drive-url" placeholder="https://drive.google.com/file/d/1A2B3C... ou /Drive/Cliente_A/Producao/video.mp4">
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <button type="submit" class="btn-primary" id="btn-run-inspect">
-                          <i class="fa-solid fa-eye"></i> Executar AI Scoring de Retenção
-                        </button>
-                      </form>
-                    </div>
+                          <button type="submit" class="btn-primary" id="btn-run-inspect">
+                            <i class="fa-solid fa-eye"></i> Executar AI Scoring de Retenção
+                          </button>
+                        </form>
+                      </div>
 
-                    <!-- PAINEL DE RELATÓRIO DO CRIATIVO -->
-                    <div class="card-glass" id="creative-report-container">
-                      <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-pie"></i> Diagnóstico de Retenção & Hook Score</h3>
-                        <span class="badge-status" id="inspect-verdict-badge">Nenhum criativo testado</span>
-                      </div>
-                      <div class="report-body" id="creative-report-content">
-                        <div class="placeholder-state">
-                          <i class="fa-solid fa-film"></i>
-                          <p>Forneça o arquivo do PC ou o link do Google Drive para a IA executar a avaliação de retenção do Hook dos 3s.</p>
+                      <!-- PAINEL DE RELATÓRIO DO CRIATIVO -->
+                      <div class="card-glass" id="creative-report-container">
+                        <div class="card-header">
+                          <h3><i class="fa-solid fa-chart-pie"></i> Diagnóstico de Retenção & Hook Score</h3>
+                          <span class="badge-status" id="inspect-verdict-badge">Nenhum criativo testado</span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                  </div>
-                  </div>
-
-                  <!-- CERTIDÃO DE NASCIMENTO & METADADOS EXIF/GEO -->
-                  <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('metadata-cert-content', this)">
-                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <div>
-                          <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
-                        </div>
-                        <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
-                      </div>
-                    </div>
-                    <div id="metadata-cert-content" class="hidden" style="margin-top: 16px;">
-                      <div class="card-glass" id="metadata-certificate-section">
-                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                          <div>
-                            <h3><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
-                            <p>Blindagem de autoridade e SEO local invisível gravado nos metadados da mídia antes do tráfego.</p>
+                        <div class="report-body" id="creative-report-content">
+                          <div class="placeholder-state">
+                            <i class="fa-solid fa-film"></i>
+                            <p>Forneça o arquivo do PC ou o link do Google Drive para a IA executar a avaliação de retenção do Hook dos 3s.</p>
                           </div>
-                      <button type="button" class="btn-primary sm" id="btn-generate-metadata-cert" style="font-size: 11px; padding: 6px 14px;">
-                        <i class="fa-solid fa-certificate"></i> Emitir Certidão de Metadados
-                      </button>
-                    </div>
-
-                    <div id="metadata-certificate-output" style="margin-top: 14px; display: none;">
-                      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 12px;">
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                          <span style="font-size: 11px; color: #94A3B8;">Autor & Copyright:</span>
-                          <p id="meta-val-author" style="color: #FFF; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                          <span style="font-size: 11px; color: #94A3B8;">Geolocalização & GPS:</span>
-                          <p id="meta-val-geo" style="color: #00F5A0; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                          <span style="font-size: 11px; color: #94A3B8;">Tags de Compra Injetadas:</span>
-                          <p id="meta-val-keywords" style="color: #06B6D4; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
                         </div>
                       </div>
-                      <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px;">
-                        <span style="font-size: 11px; color: #94A3B8; font-weight: bold;">Legenda Social Media com Gatilho Neuroeconômico:</span>
-                        <p id="meta-val-social-copy" style="color: #E2E8F0; margin: 6px 0 0; font-size: 12px; line-height: 1.5; white-space: pre-line;">-</p>
+                    </div>
+                    </div>
+                    </div>
+
+                    <!-- Ferramenta 3: Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO) -->
+                    <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                      <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('metadata-cert-content', this)">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                          <div>
+                            <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
+                          </div>
+                          <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
+                        </div>
+                      </div>
+                      <div id="metadata-cert-content" class="hidden" style="margin-top: 16px;">
+                        <div class="card-glass" id="metadata-certificate-section">
+                          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                              <h3><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
+                              <p>Blindagem de autoridade e SEO local invisível gravado nos metadados da mídia antes do tráfego.</p>
+                            </div>
+                        <button type="button" class="btn-primary sm" id="btn-generate-metadata-cert" style="font-size: 11px; padding: 6px 14px;">
+                          <i class="fa-solid fa-certificate"></i> Emitir Certidão de Metadados
+                        </button>
+                      </div>
+
+                      <div id="metadata-certificate-output" style="margin-top: 14px; display: none;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 12px;">
+                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                            <span style="font-size: 11px; color: #94A3B8;">Autor & Copyright:</span>
+                            <p id="meta-val-author" style="color: #FFF; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
+                          </div>
+                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                            <span style="font-size: 11px; color: #94A3B8;">Geolocalização & GPS:</span>
+                            <p id="meta-val-geo" style="color: #00F5A0; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
+                          </div>
+                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                            <span style="font-size: 11px; color: #94A3B8;">Tags de Compra Injetadas:</span>
+                            <p id="meta-val-keywords" style="color: #06B6D4; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
+                          </div>
+                        </div>
+                        <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px;">
+                          <span style="font-size: 11px; color: #94A3B8; font-weight: bold;">Legenda Social Media com Gatilho Neuroeconômico:</span>
+                          <p id="meta-val-social-copy" style="color: #E2E8F0; margin: 6px 0 0; font-size: 12px; line-height: 1.5; white-space: pre-line;">-</p>
+                        </div>
                       </div>
                     </div>
+                    </div>
+                    </div>
                   </div>
-                  </div>
-                  </div>
-                  
-                </div>
-              </div>
 
-              <!-- FEED DE GAVETAS DE VÍDEO DESPACHADAS PELO CHAT -->
-              <div class="mt-6 px-1">
-                <div class="flex items-center gap-2 mb-4">
-                  <span class="text-emerald-400 text-base">🎬</span>
-                  <h3 class="text-base font-bold text-slate-100">Roteiros e Ganchos Despachados para Gravação</h3>
-                </div>
-                <div id="video-gavetas-container" class="space-y-4">
-                  <!-- Renderizado dinamicamente pelo public/app.js -->
                 </div>
               </div>
 
@@ -3620,7 +3614,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.28.0"></script>
+<script src="/app.js?v=9999.29.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

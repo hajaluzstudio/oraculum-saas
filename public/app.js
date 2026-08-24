@@ -1871,6 +1871,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewArea = document.getElementById('video-script-preview-area');
         if (previewArea) {
           previewArea.textContent = texto;
+          previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         const tp = document.getElementById('script-content-body');
