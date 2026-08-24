@@ -905,10 +905,10 @@ document.addEventListener('DOMContentLoaded', () => {
   window.descartarSugestaoChat = function(msgId) {
     const el = document.getElementById(msgId);
     if (el) {
-      el.style.transition = 'all 0.3s ease';
-      el.style.opacity = '0';
-      el.style.transform = 'scale(0.95)';
-      setTimeout(() => el.remove(), 300);
+      const actions = el.querySelector('.briefing-actions') || el.querySelector('.mt-4.pt-3');
+      if (actions) {
+        actions.style.display = 'none';
+      }
     }
   };
 
@@ -1091,10 +1091,10 @@ document.addEventListener('DOMContentLoaded', () => {
   window.descartarSugestaoChat = function(msgId) {
     const el = document.getElementById(msgId);
     if (el) {
-      el.style.transition = 'all 0.3s ease';
-      el.style.opacity = '0';
-      el.style.transform = 'scale(0.95)';
-      setTimeout(() => el.remove(), 300);
+      const actions = el.querySelector('.briefing-actions') || el.querySelector('.mt-4.pt-3');
+      if (actions) {
+        actions.style.display = 'none';
+      }
     }
   };
 
@@ -1200,15 +1200,18 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = '';
         data.history.forEach(msg => {
           let parsedTasks = null;
+          let displayText = msg.content;
           try {
             if (msg.role === 'model') {
               const parsed = JSON.parse(msg.content);
               if (parsed.tasks) parsedTasks = parsed.tasks;
+              if (parsed.replyText) displayText = parsed.replyText;
+              else if (parsed.display_text) displayText = parsed.display_text;
             }
           } catch(e) {}
 
           if (typeof appendChatMessage === 'function') {
-            appendChatMessage(msg.role, msg.content, parsedTasks, false);
+            appendChatMessage(msg.role, displayText, parsedTasks, true);
           }
         });
         container.scrollTop = container.scrollHeight;
@@ -1450,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storageKey = `war_room_all_tasks_${clientId}`;
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
-    tasks.forEach(t => {
+    for (const t of tasks) {
       const item = {
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         client_id: clientId,
@@ -1462,9 +1465,14 @@ document.addEventListener('DOMContentLoaded', () => {
       existing.unshift(item);
 
       if (supabase) {
-        supabase.from('war_room_tasks').insert([item]).catch(console.warn);
+        try {
+          const { error } = await supabase.from('war_room_tasks').insert([item]);
+          if (error) console.error('[Supabase Insert Error]:', error);
+        } catch (err) {
+          console.error('[Supabase Catch Error]:', err);
+        }
       }
-    });
+    }
 
     localStorage.setItem(storageKey, JSON.stringify(existing));
 
@@ -1626,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storageKey = `war_room_all_tasks_${clientId}`;
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
-    tasks.forEach(t => {
+    for (const t of tasks) {
       const item = {
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         client_id: clientId,
@@ -1638,9 +1646,14 @@ document.addEventListener('DOMContentLoaded', () => {
       existing.unshift(item);
 
       if (supabase) {
-        supabase.from('war_room_tasks').insert([item]).catch(console.warn);
+        try {
+          const { error } = await supabase.from('war_room_tasks').insert([item]);
+          if (error) console.error('[Supabase Insert Error]:', error);
+        } catch (err) {
+          console.error('[Supabase Catch Error]:', err);
+        }
       }
-    });
+    }
 
     localStorage.setItem(storageKey, JSON.stringify(existing));
 

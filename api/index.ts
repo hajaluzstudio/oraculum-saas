@@ -888,13 +888,17 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       if (parsed.replyText) displayText = parsed.replyText;
     } catch(e) {}
 
-    // 3. Grava no banco a resposta do MODEL
-    await supabase.from('chat_history').insert([{
+    // 3. Grava OBRIGATORIAMENTE a resposta da IA no banco
+    const { error: modelInsertError } = await supabase.from('chat_history').insert([{
       client_id: String(clientId),
       role: 'model',
       content: aiResponse, // Persiste JSON cru ou texto limpo
       created_at: new Date().toISOString()
     }]);
+
+    if (modelInsertError) {
+      console.error('[Supabase Model Insert Error]:', modelInsertError);
+    }
 
     return res.status(200).json({ 
       success: true, 
