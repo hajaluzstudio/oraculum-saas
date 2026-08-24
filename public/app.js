@@ -1876,17 +1876,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (document.getElementById('modal-teleprompter')) return;
 
       const modalHtml = `
-        <div id="modal-teleprompter" style="display: none; z-index: 99999;" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col select-none">
+        <!-- MODAL DE TELEPROMPTER FULLSCREEN COM GUIA DE TV -->
+        <div id="modal-teleprompter" style="display: none; z-index: 9999999;" class="fixed inset-0 bg-slate-950/98 backdrop-blur-md flex flex-col select-none">
           <!-- Barra Superior de Controle -->
-          <div class="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/90 shadow-md">
+          <div class="h-16 border-b border-slate-800/80 px-6 flex items-center justify-between bg-slate-900/90 shadow-md relative z-20">
             <div class="flex items-center gap-4">
               <span class="text-emerald-400 font-bold text-sm tracking-wide flex items-center gap-2">
-                🎬 MODO TELEPROMPTER
+                🎬 TELEPROMPTER DE ESTÚDIO
               </span>
               <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
                 <label class="text-xs text-slate-300 font-medium">Velocidade:</label>
-                <input type="range" id="tp-speed-slider" min="1" max="10" value="3" class="w-24 accent-emerald-500 cursor-pointer">
-                <span id="tp-speed-val" class="text-xs font-mono text-emerald-400 font-bold">3x</span>
+                <input type="range" id="tp-speed-slider" min="0.2" max="5.0" step="0.1" value="1.0" class="w-24 accent-emerald-500 cursor-pointer">
+                <span id="tp-speed-val" class="text-xs font-mono text-emerald-400 font-bold">1.0x</span>
               </div>
               <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
                 <label class="text-xs text-slate-300 font-medium">Tamanho:</label>
@@ -1895,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <button type="button" id="tp-btn-toggle-play" onclick="window.togglePlayTeleprompter()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
+              <button type="button" id="tp-btn-toggle-play" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-950">
                 ▶ Iniciar Rolagem (Espaço)
               </button>
               <button type="button" onclick="window.fecharModalTeleprompter()" class="px-3 py-2 text-xs font-bold bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 rounded-lg border border-slate-700 transition-colors cursor-pointer">
@@ -1904,11 +1905,26 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- Área Central de Rolagem do Texto -->
-          <div id="tp-scroll-container" class="flex-1 overflow-y-auto px-12 md:px-32 py-20 text-center cursor-grab active:cursor-grabbing">
-            <div id="tp-text-display" class="text-slate-100 font-bold leading-relaxed whitespace-pre-wrap max-w-5xl mx-auto tracking-wide" style="font-size: 42px; font-family: system-ui, -apple-system, sans-serif;">
+          <!-- Container Relativo com a Faixa Guia de Leitura Fixa -->
+          <div class="relative flex-1 overflow-hidden">
+            <!-- RETÂNGULO / FAIXA GUIA DE LEITURA (EYELINE MARKER TV) -->
+            <div class="absolute inset-x-0 top-[28%] h-32 border-y-2 border-emerald-500/30 bg-emerald-500/5 backdrop-blur-[0.5px] pointer-events-none z-10 flex items-center justify-between px-6 shadow-[0_0_25px_rgba(16,185,129,0.08)]">
+              <span class="text-emerald-400 font-bold text-xl animate-pulse">►</span>
+              <span class="text-[10px] font-mono tracking-widest text-emerald-500/50 uppercase select-none">Linha de Visada / Foco</span>
+              <span class="text-emerald-400 font-bold text-xl animate-pulse">◄</span>
             </div>
-            <div class="h-[70vh]"></div>
+
+            <!-- Área de Rolagem do Texto -->
+            <div id="tp-scroll-container" class="h-full overflow-y-auto px-12 md:px-32 py-10 text-center cursor-grab active:cursor-grabbing relative z-0">
+              <!-- Espaçador Superior para o texto começar exatamente dentro da Faixa Guia -->
+              <div class="h-[25vh]"></div>
+              
+              <div id="tp-text-display" class="text-slate-100 font-bold leading-relaxed whitespace-pre-wrap max-w-5xl mx-auto tracking-wide" style="font-size: 42px; font-family: system-ui, -apple-system, sans-serif;">
+              </div>
+              
+              <!-- Espaçador Inferior para permitir rolar o final do texto até a Faixa Guia -->
+              <div class="h-[75vh]"></div>
+            </div>
           </div>
         </div>
       `;
@@ -1917,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.carregarTextoNoTeleprompter = function(texto) {
       if (!texto) return;
-      window.teleprompterState = window.teleprompterState || { speed: 3, fontSize: 42, isPlaying: false };
+      window.teleprompterState = window.teleprompterState || { speed: 1.0, fontSize: 42, isPlaying: false };
       window.teleprompterState.text = texto;
 
       // Atualiza a prévia visual
@@ -2013,11 +2029,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Funções globais diretas para os sliders (imunes a perda de listeners)
     window.updateTpSpeed = function(val) {
-      const speed = Number(val) || 3;
+      const speed = Math.max(0.2, parseFloat(val) || 1.0);
       window.teleprompterState = window.teleprompterState || {};
       window.teleprompterState.speed = speed;
+
       const valEl = document.getElementById('tp-speed-val');
-      if (valEl) valEl.textContent = speed + 'x';
+      if (valEl) {
+        valEl.textContent = speed.toFixed(1) + 'x';
+      }
     };
 
     window.updateTpFont = function(val) {
@@ -2065,7 +2084,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Conecta sliders e botões
       const speedSlider = document.getElementById('tp-speed-slider');
       if (speedSlider) {
-        speedSlider.value = window.teleprompterState?.speed || 3;
+        speedSlider.min = '0.2';
+        speedSlider.max = '5.0';
+        speedSlider.step = '0.1';
+        speedSlider.value = window.teleprompterState?.speed || '1.0';
         speedSlider.oninput = (e) => window.updateTpSpeed(e.target.value);
         window.updateTpSpeed(speedSlider.value);
       }
@@ -2146,9 +2168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const delta = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
 
-        // Velocidade proporcional: nível 1 = 28px/s, nível 10 = 280px/s
-        const speed = window.teleprompterState.speed || 3;
-        const pixelsPerSecond = speed * 28;
+        // 0.2x = ~4.4px/s (leitura ultra-pausada) | 1.0x = 22px/s (ritmo normal) | 5.0x = 110px/s (rápido)
+        const speed = parseFloat(window.teleprompterState?.speed) || 1.0;
+        const pixelsPerSecond = speed * 22;
 
         scrollContainer.scrollTop += pixelsPerSecond * delta;
 
