@@ -1533,20 +1533,21 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
 
-    // Executa na cascata de fallback
-    const aiResult = await executarIAComFallback(ai, '', {
-      contents,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
+    // Executa na cascata de fallback respeitando os 3 argumentos (ai, prompt, config)
+    const aiResponse = (await executarIAComFallback(ai, '', {
+      contents: contents,
+      temperature: 0.2,
+      responseMimeType: 'application/json'
+    })) as string; // Força a tipagem para evitar erro 'never' no .match()
 
-    const replyText = aiResult?.reply || '';
-
-    let reportData: any;
+    let reportData;
     try {
-      const jsonMatch = replyText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, replyText];
-      reportData = JSON.parse((jsonMatch[1] || replyText).trim());
+      // Limpeza de markdown caso a IA retorne blocos ```json ... ```
+      const cleanJsonStr = typeof aiResponse === 'string' ? aiResponse.replace(/```json|```/g, '').trim() : aiResponse;
+      const jsonMatch = typeof cleanJsonStr === 'string' ? cleanJsonStr.match(/\{[\s\S]*\}/) : null;
+      
+      const finalJsonStr = jsonMatch ? jsonMatch[0] : (cleanJsonStr as string);
+      reportData = JSON.parse(finalJsonStr);
     } catch {
       reportData = {
         hookScore: 75,
