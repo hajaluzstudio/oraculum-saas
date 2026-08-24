@@ -1,3 +1,4 @@
+export const maxDuration = 60; // Permite até 60s de execução na Vercel
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -29,7 +30,8 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-3.7-flash",       // 1ª Opção: Alta velocidade
+  "gemini-2.5-flash",       // 1ª Opção: Alta velocidade
+  "gemini-1.5-flash",       // 2ª Opção: Baixa latência
   "gemini-3.5-flash-lite",  // 2ª Opção: Alta disponibilidade (500 requisições/dia)
   "gemini-3.6-flash",       // 3ª Opção: Retoma após reset diário
   "gemma-4-26b",            // 4ª Opção: Contingência massiva (14.400 requisições/dia)
@@ -77,9 +79,18 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
-      console.warn(`[Global AI Router] Modelo ${modelName} falhou (${msg.slice(0, 100)}). Pulando para o próximo...`);
       ultimoErro = err;
-      continue;
+
+      const status = err?.status || err?.response?.status;
+      const isRateLimitOrUnavailable = status === 429 || status === 503 || msg.includes('429') || msg.includes('503') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('overloaded');
+
+      if (isRateLimitOrUnavailable) {
+        console.warn(`[Global AI Router] Modelo ${modelName} falhou por limite/sobrecarga (${msg.slice(0, 100)}). Pulando para o próximo...`);
+        continue;
+      }
+
+      console.error(`[Global AI Router] Erro fatal no modelo ${modelName}:`, msg);
+      throw err;
     }
   }
 
@@ -852,17 +863,26 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
     
-    let configArgs: any = {};
+    let configArgs: any = {
+      temperature: 0.7,
+      maxOutputTokens: 1500
+    };
     if (mode !== 'bi_live' && mode !== 'bi_feedback_loop') {
-      configArgs = { responseMimeType: 'application/json' };
+      configArgs.responseMimeType = 'application/json';
     }
+
+    const recentHistory = (history || []).slice(-4).map((msg: any) => ({
+      role: (msg.role === 'assistant' || msg.role === 'model') ? 'model' : 'user',
+      parts: [{ text: msg.content || '' }]
+    }));
+    const requestContents = [...recentHistory, { role: 'user', parts: [{ text: userMessage }] }];
 
     // Chamada à API via SDK Global com Cascata
     const { reply: aiResponse, modelUsed } = await executarIAComFallback(
       ai,
       promptInstrucao,
       { 
-        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        contents: requestContents,
         config: configArgs
       }
     );

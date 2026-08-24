@@ -1269,6 +1269,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Função auxiliar de limpeza para a interface
+  function extractCleanChatResponse(rawResponse) {
+    let text = rawResponse;
+    let tasks = [];
+
+    if (typeof rawResponse === 'object' && rawResponse !== null) {
+      text = rawResponse.replyText || rawResponse.reply || rawResponse.message || JSON.stringify(rawResponse);
+      tasks = Array.isArray(rawResponse.tasks) ? rawResponse.tasks : [];
+    }
+
+    if (typeof text === 'string') {
+      const trimmed = text.trim();
+      if (trimmed.startsWith('{') && trimmed.includes('replyText')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          text = parsed.replyText || text;
+          if (!tasks.length && Array.isArray(parsed.tasks)) tasks = parsed.tasks;
+        } catch (e) {
+          // Fallback via regex caso o JSON esteja cortado
+          const match = trimmed.match(/"replyText"\s*:\s*"([^"]+)"/);
+          if (match) text = match[1];
+        }
+      }
+    }
+
+    return { cleanText: text, tasks: tasks };
+  }
+
   // Envia prompt para a API do backend
   window.handleSendChatMessage = async function handleSendChatMessage() {
     const inputEl = document.getElementById('chat-user-input') || document.getElementById('strategic-chat-input');
@@ -1321,32 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      let cleanReplyText = '';
-      let tasksArray = [];
-
-      try {
-        let parsed = typeof data === 'object' ? data : JSON.parse(data);
-        if (parsed.reply && typeof parsed.reply === 'string' && parsed.reply.trim().startsWith('{')) {
-          parsed = JSON.parse(parsed.reply);
-        } else if (parsed.reply && typeof parsed.reply === 'object') {
-          parsed = parsed.reply;
-        }
-        
-        cleanReplyText = parsed.replyText || parsed.message || (typeof data === 'string' ? data : JSON.stringify(data));
-        tasksArray = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-      } catch (e) {
-        cleanReplyText = typeof data === 'string' ? data : (data.reply || JSON.stringify(data));
-        tasksArray = [];
-      }
-
-      // Se o texto ainda contiver JSON residual, limpa com regex/fallback
-      if (cleanReplyText.trim().startsWith('{') && cleanReplyText.includes('replyText')) {
-        try {
-          const fallback = JSON.parse(cleanReplyText);
-          cleanReplyText = fallback.replyText || cleanReplyText;
-          if (!tasksArray.length && Array.isArray(fallback.tasks)) tasksArray = fallback.tasks;
-        } catch(err) {}
-      }
+      const { cleanText: cleanReplyText, tasks: tasksArray } = extractCleanChatResponse(data);
 
       // 4. Renderiza a resposta da IA com o card de aprovação
       const aiBubble = document.createElement('div');
@@ -1399,8 +1402,14 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('[Chat Error]:', err);
       if (chatContainer) {
         const errBubble = document.createElement('div');
-        errBubble.className = 'text-xs text-red-400 py-2';
-        errBubble.innerText = 'Erro ao processar resposta. Tente novamente.';
+        errBubble.className = 'w-full bg-red-950/40 border border-red-500/30 rounded-2xl p-4 text-red-200 text-sm leading-relaxed shadow-xl mb-6';
+        errBubble.innerHTML = `
+          <div class="mb-2 font-medium flex items-center gap-2 text-red-400">
+            <i class="fa-solid fa-triangle-exclamation"></i> Tempo Esgotado ou Erro de Rede
+          </div>
+          <p class="mb-3">O Oraculum demorou muito para responder (Timeout 504) ou houve uma falha de conexão. Por favor, tente novamente.</p>
+          <button type="button" onclick="this.closest('.w-full').remove();" class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800/80 text-white rounded-lg transition text-xs font-semibold">OK</button>
+        `;
         chatContainer.appendChild(errBubble);
       }
     } finally {
