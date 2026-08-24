@@ -3300,6 +3300,153 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   };
+
+  // ============================================================================
+  // 9. AUDITOR ANTI-BAN & MATRIZ DE ÂNGULOS (ABA COPYWRITING)
+  // ============================================================================
+  window.toggleAntiBanTool = function() {
+    const content = document.getElementById('antiban-tool-content');
+    const btn = document.getElementById('btn-toggle-antiban');
+    if (!content || !btn) return;
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  window.toggleMatrizAngulosTool = function() {
+    const content = document.getElementById('matriz-angulos-content');
+    const btn = document.getElementById('btn-toggle-matriz');
+    if (!content || !btn) return;
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  // Contadores de caracteres e palavras
+  window.atualizarContadoresCopy = function() {
+    const text = document.getElementById('antiban-input-text')?.value || '';
+    const charEl = document.getElementById('copy-char-count');
+    const wordEl = document.getElementById('copy-word-count');
+    if (charEl) charEl.innerText = text.length;
+    if (wordEl) wordEl.innerText = text.trim() ? text.trim().split(/\s+/).length : 0;
+  };
+
+  // Scanner de Compliance Anti-Ban
+  window.analisarPoliticasCopy = function() {
+    const text = document.getElementById('antiban-input-text')?.value.trim() || '';
+    const resultArea = document.getElementById('antiban-result-area');
+    const scoreBadge = document.getElementById('antiban-score-badge');
+    const statusText = document.getElementById('antiban-status-text');
+    const termsContainer = document.getElementById('antiban-terms-container');
+    const sanitizedBox = document.getElementById('antiban-sanitized-box');
+    const sanitizedText = document.getElementById('antiban-sanitized-text');
+
+    if (!text) {
+      if (typeof window.showToast === 'function') window.showToast('Insira um texto para analisar.', 'error');
+      return;
+    }
+
+    if (resultArea) resultArea.classList.remove('hidden');
+
+    // Termos de risco para Meta Ads, Google Ads e CFM
+    const termosRisco = [
+      { termo: 'garantido', risco: 'Promessa Absoluta', sugestao: 'comprovado por metodologia' },
+      { termo: 'perca peso', risco: 'Alegação de Saúde Sensível', sugestao: 'rotina de bem-estar' },
+      { termo: 'antes e depois', risco: 'Regra CFM / Meta Health', sugestao: 'estudo de caso e evolução' },
+      { termo: '100%', risco: 'Garantia Irreal', sugestao: 'alto padrão de consistência' },
+      { termo: 'cura', risco: 'Alegação Médica Estrita', sugestao: 'tratamento e suporte clínico' },
+      { termo: 'fique rico', risco: 'Get Rich Quick', sugestao: 'construção de faturamento sólido' },
+      { termo: 'sem esforço', risco: 'Enganação de Esforço', sugestao: 'processo guiado passo a passo' }
+    ];
+
+    const encontrados = termosRisco.filter(item => new RegExp(`\\b${item.termo}\\b`, 'i').test(text));
+    let score = 100 - (encontrados.length * 25);
+    if (score < 0) score = 0;
+
+    let copyBlindada = text;
+    termsContainer.innerHTML = '';
+
+    if (encontrados.length === 0) {
+      scoreBadge.className = 'px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+      scoreBadge.innerText = '100% SEGURO';
+      statusText.innerText = 'Nenhum termo de alto risco detectado. Copy aprovada para tráfego!';
+      if (sanitizedBox) sanitizedBox.classList.add('hidden');
+    } else {
+      scoreBadge.className = score < 50 
+        ? 'px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-rose-500/20 text-rose-400 border border-rose-500/40'
+        : 'px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-amber-500/20 text-amber-400 border border-amber-500/40';
+      scoreBadge.innerText = `${score}% SEGURO`;
+      statusText.innerText = `${encontrados.length} ponto(s) de atenção detectados nas políticas de anúncios.`;
+
+      encontrados.forEach(item => {
+        const badge = document.createElement('div');
+        badge.className = 'p-2 rounded bg-slate-900 border border-slate-800 text-xs flex items-center justify-between';
+        badge.innerHTML = `<span class="text-rose-400 font-semibold">⚠️ "${item.termo}" (${item.risco})</span> <span class="text-slate-400 text-[11px]">Substituir por: <strong class="text-emerald-400">${item.sugestao}</strong></span>`;
+        termsContainer.appendChild(badge);
+
+        copyBlindada = copyBlindada.replace(new RegExp(item.termo, 'gi'), item.sugestao);
+      });
+
+      if (sanitizedBox && sanitizedText) {
+        sanitizedText.innerText = copyBlindada;
+        sanitizedBox.classList.remove('hidden');
+      }
+    }
+  };
+
+  window.copiarCopyBlindada = function() {
+    const text = document.getElementById('antiban-sanitized-text')?.innerText;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof window.showToast === 'function') window.showToast('Copy blindada copiada com sucesso!', 'success');
+    });
+  };
+
+  // Matriz de Ângulos por Temperatura
+  window.modelosMatrizCopy = {
+    frio: {
+      titulo: '❄️ Ângulo para Público Frio (Inconsciente)',
+      texto: `"Você sente que a respiração pesada ou a estética do nariz afetam sua confiança, mas sempre teve receio de procedimentos invasivos?\n\nO verdadeiro problema não é a cirurgia em si, mas a falta de clareza sobre técnicas modernas e preservadoras. Toque no link e entenda como funciona cada etapa antes de decidir."`
+    },
+    morno: {
+      titulo: '🔥 Ângulo para Público Morno (Reconhece o Problema)',
+      texto: `"Cansado de disfarçar ângulos nas fotos ou conviver com o incômodo constante na respiração?\n\nA rinoplastia ultrassônica estruturada permite tratar a queixa estética e funcional com máxima precisão e recuperação planejada.\n\nConheça nossa metodologia clínica e agende sua avaliação inicial."`
+    },
+    quente: {
+      titulo: '⚡ Ângulo para Público Quente (Pronto para Oferta)',
+      texto: `"Vagas abertas para a agenda cirúrgica deste mês com o Dr. Lucas.\n\nAtendimento exclusivo com protocolo de recuperação acelerada, suporte pós-operatório dedicado e simulação 3D prévia.\n\nToque no botão abaixo e fale diretamente com nossa equipe no WhatsApp para reservar seu horário."`
+    }
+  };
+
+  window.selecionarNivelConsciencia = function(nivel) {
+    const data = window.modelosMatrizCopy[nivel];
+    if (!data) return;
+
+    const titEl = document.getElementById('matriz-nivel-titulo');
+    const prevEl = document.getElementById('matriz-nivel-preview');
+
+    if (titEl) titEl.innerText = data.titulo;
+    if (prevEl) prevEl.innerText = data.texto;
+
+    // Atualiza estilos dos botões
+    ['frio', 'morno', 'quente'].forEach(k => {
+      const b = document.getElementById(`btn-nivel-${k}`);
+      if (!b) return;
+      if (k === nivel) {
+        b.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 shadow-sm cursor-pointer';
+      } else {
+        b.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer';
+      }
+    });
+  };
+
+  window.copiarModeloAngulo = function() {
+    const text = document.getElementById('matriz-nivel-preview')?.innerText;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof window.showToast === 'function') window.showToast('Modelo de copy copiado com sucesso!', 'success');
+    });
+  };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
 
