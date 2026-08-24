@@ -1873,58 +1873,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Garante o Modal de Teleprompter no DOM
     function garantirModalTeleprompterNoDOM() {
-      if (document.getElementById('modal-teleprompter')) return;
+      let modal = document.getElementById('modal-teleprompter');
+      if (modal) {
+        modal.remove(); // Remove versão antiga para garantir novo layout com Eyeline Box
+      }
 
       const modalHtml = `
-        <!-- MODAL DE TELEPROMPTER FULLSCREEN COM GUIA DE TV -->
-        <div id="modal-teleprompter" style="display: none; z-index: 9999999;" class="fixed inset-0 bg-slate-950/98 backdrop-blur-md flex flex-col select-none">
+        <div id="modal-teleprompter" style="display: none; position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; background-color: #020617 !important; z-index: 2147483647 !important; flex-direction: column !important; margin: 0 !important; padding: 0 !important; select: none;">
+          
           <!-- Barra Superior de Controle -->
-          <div class="h-16 border-b border-slate-800/80 px-6 flex items-center justify-between bg-slate-900/90 shadow-md relative z-20">
-            <div class="flex items-center gap-4">
-              <span class="text-emerald-400 font-bold text-sm tracking-wide flex items-center gap-2">
+          <div style="height: 64px; border-bottom: 1px solid rgba(51, 65, 85, 0.6); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; background-color: rgba(15, 23, 42, 0.95); position: relative; z-index: 100;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <span style="color: #34d399; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                 🎬 TELEPROMPTER DE ESTÚDIO
               </span>
-              <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
-                <label class="text-xs text-slate-300 font-medium">Velocidade:</label>
-                <input type="range" id="tp-speed-slider" min="0.2" max="5.0" step="0.1" value="1.0" class="w-24 accent-emerald-500 cursor-pointer">
-                <span id="tp-speed-val" class="text-xs font-mono text-emerald-400 font-bold">1.0x</span>
+              
+              <div style="display: flex; align-items: center; gap: 8px; background: rgba(30, 41, 59, 0.8); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
+                <label style="font-size: 12px; color: #94a3b8; font-weight: 500;">Velocidade:</label>
+                <input type="range" id="tp-speed-slider" min="0.2" max="5.0" step="0.1" value="1.0" style="width: 90px; accent-color: #10b981; cursor: pointer;">
+                <span id="tp-speed-val" style="font-size: 12px; font-family: monospace; color: #34d399; font-weight: 700; min-width: 32px;">1.0x</span>
               </div>
-              <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/60">
-                <label class="text-xs text-slate-300 font-medium">Tamanho:</label>
-                <input type="range" id="tp-font-slider" min="20" max="80" value="42" class="w-24 accent-emerald-500 cursor-pointer">
-                <span id="tp-font-val" class="text-xs font-mono text-emerald-400 font-bold">42px</span>
+
+              <div style="display: flex; align-items: center; gap: 8px; background: rgba(30, 41, 59, 0.8); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
+                <label style="font-size: 12px; color: #94a3b8; font-weight: 500;">Tamanho:</label>
+                <input type="range" id="tp-font-slider" min="20" max="80" value="44" style="width: 90px; accent-color: #10b981; cursor: pointer;">
+                <span id="tp-font-val" style="font-size: 12px; font-family: monospace; color: #34d399; font-weight: 700; min-width: 38px;">44px</span>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <button type="button" id="tp-btn-toggle-play" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-950">
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <button type="button" id="tp-btn-toggle-play" style="padding: 8px 16px; font-size: 12px; font-weight: 700; background-color: #059669; color: #ffffff; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; gap: 6px;">
                 ▶ Iniciar Rolagem (Espaço)
               </button>
-              <button type="button" onclick="window.fecharModalTeleprompter()" class="px-3 py-2 text-xs font-bold bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 rounded-lg border border-slate-700 transition-colors cursor-pointer">
+              <button type="button" onclick="window.fecharModalTeleprompter()" style="padding: 8px 14px; font-size: 12px; font-weight: 700; background-color: #1e293b; color: #cbd5e1; border-radius: 8px; border: 1px solid #334155; cursor: pointer;">
                 ✕ Fechar (ESC)
               </button>
             </div>
           </div>
 
-          <!-- Container Relativo com a Faixa Guia de Leitura Fixa -->
-          <div class="relative flex-1 overflow-hidden">
-            <!-- RETÂNGULO / FAIXA GUIA DE LEITURA (EYELINE MARKER TV) -->
-            <div class="absolute inset-x-0 top-[28%] h-32 border-y-2 border-emerald-500/30 bg-emerald-500/5 backdrop-blur-[0.5px] pointer-events-none z-10 flex items-center justify-between px-6 shadow-[0_0_25px_rgba(16,185,129,0.08)]">
-              <span class="text-emerald-400 font-bold text-xl animate-pulse">►</span>
-              <span class="text-[10px] font-mono tracking-widest text-emerald-500/50 uppercase select-none">Linha de Visada / Foco</span>
-              <span class="text-emerald-400 font-bold text-xl animate-pulse">◄</span>
+          <!-- Container do Visor com a Mira de Leitura Fixa -->
+          <div style="position: relative; flex: 1; overflow: hidden;">
+            
+            <!-- FAIXA GUIA DE LEITURA (EYELINE MARKER TV) -->
+            <div id="tp-eyeline-marker" style="position: absolute; top: 28%; left: 0; right: 0; height: 130px; border-top: 2px solid rgba(16, 185, 129, 0.45); border-bottom: 2px solid rgba(16, 185, 129, 0.45); background-color: rgba(16, 185, 129, 0.06); pointer-events: none; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; box-shadow: 0 0 30px rgba(16, 185, 129, 0.08);">
+              <span style="color: #34d399; font-size: 26px; font-weight: 900; filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));">►</span>
+              <span style="color: rgba(52, 211, 153, 0.7); font-size: 11px; font-family: monospace; letter-spacing: 3px; font-weight: 700; text-transform: uppercase;">LINHA DE VISADA DA CÂMERA</span>
+              <span style="color: #34d399; font-size: 26px; font-weight: 900; filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));">◄</span>
             </div>
 
             <!-- Área de Rolagem do Texto -->
-            <div id="tp-scroll-container" class="h-full overflow-y-auto px-12 md:px-32 py-10 text-center cursor-grab active:cursor-grabbing relative z-0">
-              <!-- Espaçador Superior para o texto começar exatamente dentro da Faixa Guia -->
-              <div class="h-[25vh]"></div>
+            <div id="tp-scroll-container" style="height: 100%; overflow-y: auto; padding: 0 40px; text-align: center; scrollbar-width: none; position: relative; z-index: 10;">
+              <!-- Espaçador Superior Calibrado (o texto nasce abaixo para dar tempo de leitura) -->
+              <div style="height: 38vh;"></div>
               
-              <div id="tp-text-display" class="text-slate-100 font-bold leading-relaxed whitespace-pre-wrap max-w-5xl mx-auto tracking-wide" style="font-size: 42px; font-family: system-ui, -apple-system, sans-serif;">
+              <div id="tp-text-display" style="color: #f8fafc; font-weight: 700; line-height: 1.6; white-space: pre-wrap; max-width: 1000px; margin: 0 auto; letter-spacing: 0.02em; font-size: 44px; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
               </div>
               
-              <!-- Espaçador Inferior para permitir rolar o final do texto até a Faixa Guia -->
-              <div class="h-[75vh]"></div>
+              <!-- Espaçador Final para o encerramento do texto subir até a linha guia -->
+              <div style="height: 80vh;"></div>
             </div>
+
           </div>
         </div>
       `;
@@ -2060,33 +2068,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 1. Localiza ou cria o modal
-      let modal = document.getElementById('modal-teleprompter');
-      if (!modal && typeof garantirModalTeleprompterNoDOM === 'function') {
-        garantirModalTeleprompterNoDOM();
-        modal = document.getElementById('modal-teleprompter');
-      }
-
+      garantirModalTeleprompterNoDOM();
+      const modal = document.getElementById('modal-teleprompter');
       if (!modal) return;
 
-      // 2. CRUCIAL: Move o elemento para ser filho DIRETO do <body> (elimina bloqueios de CSS das abas)
-      if (modal.parentElement !== document.body) {
-        document.body.appendChild(modal);
-      }
-
-      // 3. Atualiza o texto interno
       const tpDisplay = document.getElementById('tp-text-display');
       if (tpDisplay) {
         tpDisplay.textContent = texto;
-        tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 42) + 'px';
+        tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 44) + 'px';
       }
 
-      // Conecta sliders e botões
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+
+      const scrollContainer = document.getElementById('tp-scroll-container');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = 0;
+        window.tpScrollAccumulator = 0;
+      }
+
+      // Vincula Controles
       const speedSlider = document.getElementById('tp-speed-slider');
       if (speedSlider) {
-        speedSlider.min = '0.2';
-        speedSlider.max = '5.0';
-        speedSlider.step = '0.1';
         speedSlider.value = window.teleprompterState?.speed || '1.0';
         speedSlider.oninput = (e) => window.updateTpSpeed(e.target.value);
         window.updateTpSpeed(speedSlider.value);
@@ -2094,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const fontSlider = document.getElementById('tp-font-slider');
       if (fontSlider) {
-        fontSlider.value = window.teleprompterState?.fontSize || 42;
+        fontSlider.value = window.teleprompterState?.fontSize || 44;
         fontSlider.oninput = (e) => window.updateTpFont(e.target.value);
         window.updateTpFont(fontSlider.value);
       }
@@ -2103,30 +2106,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnPlay) {
         btnPlay.onclick = (e) => {
           e.preventDefault();
-          e.stopPropagation();
           window.togglePlayTeleprompter();
         };
       }
-
-      // 4. Exibição Forçada e Visível
-      modal.classList.remove('hidden');
-      modal.style.cssText = `
-        position: fixed !important;
-        inset: 0px !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background-color: #020617 !important;
-        z-index: 9999999 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        margin: 0px !important;
-        padding: 0px !important;
-      `;
-      
-      document.body.style.overflow = 'hidden';
-
-      const scrollContainer = document.getElementById('tp-scroll-container');
-      if (scrollContainer) scrollContainer.scrollTop = 0;
     };
 
     window.fecharModalTeleprompter = function() {
@@ -2139,6 +2121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.style.overflow = '';
     };
 
+    window.tpScrollAccumulator = 0;
     window.teleprompterAnimationId = null;
 
     window.iniciarRolagemTeleprompter = function() {
@@ -2151,11 +2134,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (btnPlay) {
         btnPlay.innerHTML = '⏸ Pausar (Espaço)';
-        btnPlay.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-        btnPlay.classList.add('bg-amber-600', 'hover:bg-amber-500');
+        btnPlay.style.backgroundColor = '#d97706';
       }
 
-      // Cancela animação anterior se houver
+      // Sincroniza acumulador com a posição atual
+      window.tpScrollAccumulator = scrollContainer.scrollTop;
+
       if (window.teleprompterAnimationId) {
         cancelAnimationFrame(window.teleprompterAnimationId);
       }
@@ -2168,13 +2152,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const delta = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
 
-        // 0.2x = ~4.4px/s (leitura ultra-pausada) | 1.0x = 22px/s (ritmo normal) | 5.0x = 110px/s (rápido)
-        const speed = parseFloat(window.teleprompterState?.speed) || 1.0;
-        const pixelsPerSecond = speed * 22;
+        // Calibração de pixels por segundo: 0.2x = ~5px/s, 1.0x = 25px/s, 5.0x = 125px/s
+        const speed = parseFloat(window.teleprompterState.speed) || 1.0;
+        const pixelsPerSecond = speed * 25;
 
-        scrollContainer.scrollTop += pixelsPerSecond * delta;
+        // ACUMULADOR DECIMAL: Evita arredondamento truncado para 0
+        window.tpScrollAccumulator += (pixelsPerSecond * delta);
+        scrollContainer.scrollTop = window.tpScrollAccumulator;
 
-        // Verifica se chegou ao fim
+        // Parada automática ao final
         if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 5) {
           window.pausarTeleprompter();
           return;
@@ -2198,8 +2184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const btnPlay = document.getElementById('tp-btn-toggle-play');
       if (btnPlay) {
         btnPlay.innerHTML = '▶ Iniciar Rolagem (Espaço)';
-        btnPlay.classList.remove('bg-amber-600', 'hover:bg-amber-500');
-        btnPlay.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        btnPlay.style.backgroundColor = '#059669';
       }
     };
 
