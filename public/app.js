@@ -8494,67 +8494,89 @@ window.carregarFeedbackLoopDoBanco = async function(clientId) {
   }
 };
 
-// Telemetria e Abertura com Códigos de Erro Estruturados
-window.abrirModalLancarBI = function(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
+// ============================================================================
+// MÓDULO UNIFICADO: BI & FEEDBACK LOOP (ISOLAMENTO POR CLIENT_ID)
+// ============================================================================
+
+// 1. Abertura do Modal de Lançamento de BI
+window.abrirModalLancarBI = function(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 
-  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+  // Identificação universal do cliente ativo
+  const activeClientId = window.currentClientId 
+                      || window.activeClientId 
+                      || window.currentActiveClientId 
+                      || localStorage.getItem('oraculum_active_client_id')
+                      || localStorage.getItem('oraculum_active_client');
+
   if (!activeClientId) {
-    alert('Selecione um cliente ativo no topo da tela antes de lançar métricas.');
+    if (typeof window.showToast === 'function') window.showToast('Selecione um cliente ativo no topo primeiro.', 'warning');
+    else alert('Selecione um cliente ativo no topo primeiro.');
     return;
   }
 
-  // 1. Remove qualquer instância antiga do modal para evitar duplicações
-  let modalExistente = document.getElementById('modal-lancar-bi');
-  if (modalExistente) {
-    modalExistente.remove();
+  // Identificação do nome do cliente ativo
+  const activeClientSelect = document.getElementById('active-client-select');
+  const clientName = window.currentClientName 
+                  || (activeClientSelect && activeClientSelect.selectedOptions[0] ? activeClientSelect.selectedOptions[0].textContent : null)
+                  || 'Cliente Ativo';
+
+  // Remove modal legado se existir no DOM
+  const modalAntigo = document.getElementById('modal-lancar-bi');
+  if (modalAntigo) modalAntigo.remove();
+
+  // Busca dados já salvos deste cliente específico para preencher o form
+  const rawData = localStorage.getItem(`oraculum_bi_metrics_${activeClientId}`);
+  let saved = {};
+  if (rawData) {
+    try { saved = JSON.parse(rawData); } catch(e) {}
   }
 
-  // 2. Cria o modal diretamente como primeiro filho do <body>
+  // Injeção do Modal Limpo
   const modalHTML = `
     <div id="modal-lancar-bi" style="position: fixed; inset: 0px; width: 100vw; height: 100vh; background-color: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 16px;">
       <div style="background-color: #0f172a; border: 1px solid #334155; width: 100%; max-width: 520px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); padding: 24px; color: #ffffff; font-family: inherit;">
         
-        <!-- Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 18px;">📊</span>
             <div>
               <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; color: #f8fafc;">Lançar Métricas de BI</h3>
-              <p style="font-size: 11px; color: #94a3b8; margin: 0;">Lançamento manual para o cliente ativo</p>
+              <p style="font-size: 11px; color: #10b981; margin: 0; font-weight: 600;">Cliente: ${clientName}</p>
             </div>
           </div>
           <button type="button" onclick="window.fecharModalLancarBI()" style="background: transparent; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px;">✕</button>
         </div>
 
-        <!-- Formulário -->
         <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" style="display: flex; flex-direction: column; gap: 14px;">
+          <input type="hidden" id="bi-modal-client-id" value="${activeClientId}">
+
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Gasto em Tráfego (R$)</label>
-              <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 3500.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Faturamento Total (R$)</label>
+              <input type="number" step="0.01" id="bi-input-faturamento" value="${saved.faturamento || saved.revenue || ''}" required placeholder="Ex: 28900.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
             </div>
             <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Faturamento Total (R$)</label>
-              <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 24000.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Gasto em Tráfego (R$)</label>
+              <input type="number" step="0.01" id="bi-input-gasto" value="${saved.gasto_trafego || saved.ad_spend || ''}" required placeholder="Ex: 4500.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
             <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Cliques no Link</label>
-              <input type="number" id="bi-input-cliques" required placeholder="Ex: 850" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Vendas (Confirmadas)</label>
+              <input type="number" id="bi-input-vendas" value="${saved.vendas || saved.sales || ''}" required placeholder="Ex: 14" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
             </div>
             <div>
               <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Leads Qualificados</label>
-              <input type="number" id="bi-input-leads" required placeholder="Ex: 120" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+              <input type="number" id="bi-input-leads" value="${saved.funil?.leads || saved.leads || ''}" required placeholder="Ex: 184" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
             </div>
             <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Vendas / Fechamentos</label>
-              <input type="number" id="bi-input-vendas" required placeholder="Ex: 8" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Cliques no Link</label>
+              <input type="number" id="bi-input-cliques" value="${saved.funil?.cliques || saved.cliques || ''}" placeholder="Ex: 1420" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
             </div>
           </div>
 
@@ -8568,99 +8590,199 @@ window.abrirModalLancarBI = function(e) {
   `;
 
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-  const inputGasto = document.getElementById('bi-input-gasto');
-  if (inputGasto) {
-    setTimeout(() => inputGasto.focus(), 100);
-  }
 };
 
+// 2. Fechamento do Modal
 window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-lancar-bi');
-  if (modal) {
-    modal.remove();
-  }
+  if (modal) modal.remove();
 };
 
-// Captura Global via Event Delegation (Garante funcionamento mesmo se o HTML da aba for recriado dinamicamente)
-document.addEventListener('click', function(event) {
-  const btnLancar = event.target.closest('#btn-lancar-bi, [data-action="lancar-bi"], button:has(.lucro), .btn-lancar-bi');
-  if (btnLancar || (event.target.innerText && event.target.innerText.includes('Lançar BI'))) {
-    console.log('[BI-DEBUG] [INF-BI-003] Captura de clique via Event Delegation disparada.');
-    window.abrirModalLancarBI(event);
+window.abrirModalBI = window.abrirModalLancarBI;
+window.fecharModalBI = window.fecharModalLancarBI;
+
+// 3. Salvar Lançamento com Isolamento Estrito
+window.salvarLancamentoBI = async function(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
-});
 
-window.atualizarDashboardBIVisual = function(dados) {
-  if (!dados) return;
+  const clientId = document.getElementById('bi-modal-client-id')?.value
+                || window.currentClientId 
+                || window.activeClientId 
+                || localStorage.getItem('oraculum_active_client_id');
 
-  const faturamento = Number(dados.faturamento_total || 0);
-  const gasto = Number(dados.gasto_trafego || 0);
+  if (!clientId) {
+    alert('Erro: Cliente não identificado.');
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btn-submit-bi');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '⏳ Gravando...';
+  }
+
+  const faturamento = parseFloat(document.getElementById('bi-input-faturamento')?.value) || 0;
+  const gasto = parseFloat(document.getElementById('bi-input-gasto')?.value) || 0;
+  const vendas = parseInt(document.getElementById('bi-input-vendas')?.value) || 0;
+  const leads = parseInt(document.getElementById('bi-input-leads')?.value) || 0;
+  const cliques = parseInt(document.getElementById('bi-input-cliques')?.value) || (leads * 8);
+  const impressoes = cliques * 25;
+  const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
   const lucro = faturamento - gasto;
-  const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) : '0.00';
-  const leads = Number(dados.leads_gerados || 0);
-  const vendas = Number(dados.vendas_fechadas || 0);
-  const cliques = Number(dados.cliques || 0);
-  const impressoes = Number(dados.impressoes || (cliques * 25) || 2000);
 
-  const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const payload = {
+    client_id: String(clientId),
+    faturamento: faturamento,
+    faturamento_total: faturamento,
+    revenue: faturamento,
+    gasto_trafego: gasto,
+    gasto: gasto,
+    ad_spend: gasto,
+    vendas: vendas,
+    vendas_fechadas: vendas,
+    sales: vendas,
+    leads: leads,
+    leads_gerados: leads,
+    cliques: cliques,
+    impressoes: impressoes,
+    lucro_liquido: lucro,
+    funil: { impressoes, cliques, leads, agendamentos, vendas },
+    updated_at: new Date().toISOString()
+  };
 
-  // 1. CARDS
-  const setEl = (id, val) => {
+  // 1. Grava no cache exclusivo deste cliente
+  localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
+  localStorage.setItem(`oraculum_bi_client_${clientId}`, JSON.stringify(payload));
+
+  // 2. Sincroniza com Supabase se disponível
+  if (window.supabaseClient) {
+    try {
+      await window.supabaseClient.from('bi_analytics_data').upsert({
+        client_id: String(clientId),
+        reference_date: new Date().toISOString().split('T')[0],
+        gasto_trafego: gasto,
+        faturamento_total: faturamento,
+        lucro_liquido: lucro,
+        cliques: cliques,
+        leads_gerados: leads,
+        vendas_fechadas: vendas
+      }, { onConflict: 'client_id' });
+    } catch(err) {
+      console.warn('[BI] Supabase upsert avisou:', err);
+    }
+  }
+
+  window.fecharModalLancarBI();
+
+  if (typeof window.showToast === 'function') {
+    window.showToast('✓ Métricas salvas com sucesso para este cliente!', 'success');
+  }
+
+  // Recarrega imediatamente as métricas exclusivas do cliente ativo
+  window.carregarMetricasBI(clientId);
+};
+
+// 4. Carregar e Renderizar Métricas Isoladas
+window.carregarMetricasBI = function(clientId) {
+  const targetId = clientId 
+                || window.currentClientId 
+                || window.activeClientId 
+                || window.currentActiveClientId 
+                || localStorage.getItem('oraculum_active_client_id');
+
+  if (!targetId) return;
+
+  // Atualiza Nome do Cliente no Banner do BI
+  const activeClientSelect = document.getElementById('active-client-select');
+  const targetName = window.currentClientName 
+                  || (activeClientSelect && activeClientSelect.selectedOptions[0] ? activeClientSelect.selectedOptions[0].textContent : null)
+                  || 'Cliente Ativo';
+
+  const titleEl = document.getElementById('bi-active-client-title') 
+               || document.getElementById('bi-client-name') 
+               || document.querySelector('[data-bi-client-name]');
+               
+  if (titleEl) {
+    titleEl.innerText = targetName;
+  }
+
+  // Busca dados EXCLUSIVOS deste cliente
+  let data = null;
+  const rawLocal = localStorage.getItem(`oraculum_bi_metrics_${targetId}`) 
+                || localStorage.getItem(`oraculum_bi_client_${targetId}`);
+
+  if (rawLocal) {
+    try { data = JSON.parse(rawLocal); } catch(e) {}
+  }
+
+  // Se não há dados salvos para este cliente, ZERA TODOS OS VALORES (não puxa de outros)
+  const faturamento = data ? Number(data.faturamento || data.faturamento_total || data.revenue || 0) : 0;
+  const gasto = data ? Number(data.gasto_trafego || data.gasto || data.ad_spend || 0) : 0;
+  const vendas = data ? Number(data.vendas || data.vendas_fechadas || data.sales || 0) : 0;
+  const lucro = faturamento - gasto;
+  const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
+  const funil = data?.funil || {
+    impressoes: data?.impressoes || 0,
+    cliques: data?.cliques || 0,
+    leads: data?.leads || data?.leads_gerados || 0,
+    agendamentos: Math.max(vendas, Math.round((data?.leads || 0) * 0.35)),
+    vendas: vendas
+  };
+
+  const leads = funil.leads || 0;
+  const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
+  const ltvCac = (gasto > 0 && vendas > 0) 
+    ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` 
+    : '0.0 : 1';
+
+  const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const setVal = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.innerText = val;
   };
 
-  setEl('bi-val-faturamento', formatBRL(faturamento));
-  setEl('bi-val-gasto', formatBRL(gasto));
+  // Cards Superiores
+  setVal('bi-val-faturamento', fmt(faturamento));
+  setVal('bi-val-revenue', fmt(faturamento));
+  setVal('bi-val-vendas-qtd', `${vendas} Vendas Confirmadas`);
+  setVal('bi-sub-conversions', `${vendas} Vendas Confirmadas`);
+  setVal('bi-val-vendas-sub', `${vendas} Vendas Confirmadas`);
   
-  const elLucro = document.getElementById('bi-val-lucro');
+  setVal('bi-val-gasto', fmt(gasto));
+  setVal('bi-val-spend', fmt(gasto));
+
+  const elLucro = document.getElementById('bi-val-lucro') || document.getElementById('bi-val-profit');
   if (elLucro) {
-    elLucro.innerText = formatBRL(lucro);
+    elLucro.innerText = fmt(lucro);
     elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
   }
 
-  setEl('bi-val-roas', `${roas}x`);
-  // Força atualização em qualquer elemento que mostre ROAS
-  document.querySelectorAll('#tab-bi strong, #tab-bi .text-cyan-400, #tab-bi h3, #tab-bi .text-2xl').forEach(el => {
-    if (el.innerText.includes('0.00x') || el.innerText.includes('ROAS') || el.id === 'bi-val-roas') {
-      if (!el.innerText.includes('ROAS Médio')) el.innerText = `${roas}x`;
-    }
-  });
+  setVal('bi-val-roas', roas);
+  setVal('bi-val-ltv-cac', ltvCac);
+  setVal('bi-val-ltvcac', ltvCac);
+  setVal('bi-val-taxa-conv', taxaConv);
+  setVal('bi-val-conv-rate', taxaConv);
 
-  const taxa = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
-  setEl('bi-val-taxa-conv', `${taxa}%`);
-  setEl('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
+  // Funil Comercial
+  setVal('bi-funil-impressoes', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
+  setVal('funnel-val-impressions', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
+  setVal('bi-funil-cliques', Number(funil.cliques || 0).toLocaleString('pt-BR'));
+  setVal('funnel-val-clicks', Number(funil.cliques || 0).toLocaleString('pt-BR'));
+  setVal('bi-funil-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
+  setVal('funnel-val-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
+  setVal('bi-funil-agendamentos', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
+  setVal('funnel-val-meetings', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
+  setVal('bi-funil-vendas', Number(funil.vendas || 0).toLocaleString('pt-BR'));
+  setVal('funnel-val-sales', `${Number(funil.vendas || 0).toLocaleString('pt-BR')} Vendas`);
 
-  // 2. FUNIL
-  const linhasFunil = document.querySelectorAll('#tab-bi div');
-  linhasFunil.forEach(el => {
-    const txt = el.innerText || '';
-    if (txt.includes('1. Impressões')) {
-      const tag = el.querySelector('span:last-child, .badge, div:last-child');
-      if (tag) tag.innerText = `${impressoes.toLocaleString('pt-BR')} (Topo)`;
-    }
-    if (txt.includes('2. Cliques no Link')) {
-      const tag = el.querySelector('span:last-child, .badge, div:last-child');
-      if (tag) tag.innerText = `${cliques.toLocaleString('pt-BR')} Cliques`;
-    }
-    if (txt.includes('3. Leads Qualificados')) {
-      const tag = el.querySelector('span:last-child, .badge, div:last-child');
-      if (tag) tag.innerText = `${leads} Leads`;
-    }
-    if (txt.includes('4. Avaliações VIP') || txt.includes('Agendadas')) {
-      const tag = el.querySelector('span:last-child, .badge, div:last-child');
-      const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
-      if (tag) tag.innerText = `${agendamentos} Agendamentos`;
-    }
-    if (txt.includes('5. Vendas &') || txt.includes('Fechados')) {
-      const tag = el.querySelector('span:last-child, .badge, div:last-child');
-      if (tag) tag.innerText = `${vendas} Vendas Fechadas`;
-    }
-  });
-
-  // 3. GRÁFICOS (Renderização Direta)
+  // Re-renderização dos Gráficos com Dados Isolados
   if (typeof Chart !== 'undefined') {
+    const semDados = faturamento === 0 && gasto === 0;
+
     const renderChart = (canvasId, index, config) => {
       let canvas = document.getElementById(canvasId) || document.querySelectorAll('#tab-bi canvas')[index];
       if (!canvas) return;
@@ -8669,42 +8791,42 @@ window.atualizarDashboardBIVisual = function(dados) {
       new Chart(canvas, config);
     };
 
-    // Gráfico 1: Evolução
-    renderChart('chart-evolucao', 0, {
+    // 1. Gráfico Evolução
+    renderChart('chart-bi-evolucao', 0, {
       type: 'line',
       data: {
         labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
         datasets: [
-          { label: 'Faturamento (R$)', data: [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
-          { label: 'Investimento (R$)', data: [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
+          { label: 'Faturamento (R$)', data: semDados ? [0,0,0,0] : [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
+          { label: 'Investimento (R$)', data: semDados ? [0,0,0,0] : [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
     });
 
-    // Gráfico 2: Alocação
-    renderChart('chart-alocacao', 1, {
+    // 2. Gráfico Alocação
+    renderChart('chart-bi-alocacao', 1, {
       type: 'doughnut',
       data: {
         labels: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'Outros'],
         datasets: [{
-          data: [gasto * 0.50, gasto * 0.30, gasto * 0.12, gasto * 0.08],
-          backgroundColor: ['#2563eb', '#ef4444', '#f59e0b', '#10b981'],
+          data: semDados ? [1, 1, 1, 1] : [gasto * 0.50, gasto * 0.30, gasto * 0.12, gasto * 0.08],
+          backgroundColor: semDados ? ['#1e293b', '#334155', '#475569', '#64748b'] : ['#2563eb', '#ef4444', '#f59e0b', '#10b981'],
           borderWidth: 0
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '70%' }
+      options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
     });
 
-    // Gráfico 3: CAC
-    const cacBase = vendas > 0 ? (gasto / vendas) : 350;
-    renderChart('chart-cac', 2, {
+    // 3. Gráfico CAC
+    const cacBase = vendas > 0 ? (gasto / vendas) : 0;
+    renderChart('chart-bi-cac', 2, {
       type: 'bar',
       data: {
         labels: ['VSL Hook 3s', 'Reels Bastidores', 'Carrossel Dor', 'Anúncio Estático'],
         datasets: [{
           label: 'CAC Real (R$)',
-          data: [cacBase * 0.8, cacBase * 0.95, cacBase * 1.15, cacBase * 1.3],
+          data: semDados ? [0, 0, 0, 0] : [cacBase * 0.8, cacBase * 0.95, cacBase * 1.15, cacBase * 1.3],
           backgroundColor: ['#10b981', '#06b6d4', '#f59e0b', '#ef4444'],
           borderRadius: 6
         }]
@@ -8714,96 +8836,7 @@ window.atualizarDashboardBIVisual = function(dados) {
   }
 };
 
-// Gravação dos Dados no Supabase e Atualização de Tela
-window.salvarLancamentoBI = async function(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!activeClientId) {
-    alert('Selecione um cliente ativo antes de realizar o lançamento.');
-    return;
-  }
-
-  const btn = document.getElementById('btn-submit-bi');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = `<span class="inline-block animate-spin">⟳</span> Gravando...`;
-  }
-
-  const gasto = parseFloat(document.getElementById('bi-input-gasto')?.value) || 0;
-  const faturamento = parseFloat(document.getElementById('bi-input-faturamento')?.value) || 0;
-  const cliques = parseInt(document.getElementById('bi-input-cliques')?.value) || 0;
-  const leads = parseInt(document.getElementById('bi-input-leads')?.value) || 0;
-  const vendas = parseInt(document.getElementById('bi-input-vendas')?.value) || 0;
-  const lucro = faturamento - gasto;
-
-  const payload = {
-    client_id: String(activeClientId),
-    reference_date: new Date().toISOString().split('T')[0],
-    gasto_trafego: gasto,
-    faturamento_total: faturamento,
-    lucro_liquido: lucro,
-    cliques: cliques,
-    leads_gerados: leads,
-    vendas_fechadas: vendas
-  };
-
-  try {
-    if (window.supabaseClient) {
-      const { data, error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .insert([payload])
-        .select();
-
-      if (error) {
-        console.error('[Supabase BI Error Detalhado]:', error);
-        throw error;
-      }
-      console.log('[BI] Métricas gravadas no Supabase com sucesso:', data);
-    }
-
-    // Atualiza imediatamente a interface e fecha o modal
-    window.atualizarDashboardBIVisual(payload);
-    window.fecharModalLancarBI();
-    alert('✓ Métricas de BI gravadas com sucesso!');
-  } catch (err) {
-    console.error('[BI] Erro ao gravar lançamento:', err);
-    // Mesmo com erro de banco, atualiza o visual da sessão para não travar a apresentação
-    window.atualizarDashboardBIVisual(payload);
-    window.fecharModalLancarBI();
-    alert(`Aviso: Métricas aplicadas na tela. (Detalhe banco: ${err.message || 'Tabela bi_analytics_data pendente no Supabase'})`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = `💾 Gravar & Atualizar Dashboard`;
-    }
-  }
-};
-
-// 2. Garante que ao navegar para a aba BI, ele busca a última métrica salva no Supabase
-window.carregarUltimoBIDoCliente = async function(clientId) {
-  const activeClientId = clientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-  if (!activeClientId || !window.supabaseClient) return;
-
-  try {
-    const { data, error } = await window.supabaseClient
-      .from('bi_analytics_data')
-      .select('*')
-      .eq('client_id', String(activeClientId))
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data) {
-      window.atualizarDashboardBIVisual(data);
-    }
-  } catch (err) {
-    console.warn('[BI] Erro ao carregar métricas persistidas:', err);
-  }
-};
+window.loadClientBiMetrics = window.carregarMetricasBI;
 
 // Adiciona o gatilho de leitura automática na inicialização e troca de aba
 document.addEventListener('DOMContentLoaded', () => {
