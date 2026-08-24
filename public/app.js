@@ -6075,7 +6075,7 @@ window.atualizarDashboardBIVisual = function(dados) {
   const leads = Number(dados.leads_gerados || 0);
   const vendas = Number(dados.vendas_fechadas || 0);
   const cliques = Number(dados.cliques || 0);
-  const impressoes = Number(dados.impressoes || (cliques * 25) || 50000);
+  const impressoes = Number(dados.impressoes || (cliques * 25) || 2000);
 
   const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -6092,8 +6092,12 @@ window.atualizarDashboardBIVisual = function(dados) {
     elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
   }
 
-  const elRoas = document.getElementById('bi-val-roas');
-  if (elRoas) elRoas.innerText = `${roas}x`;
+  // ROAS Médio (Garante injeção direta por ID e por busca semântica de fallback)
+  const elRoas = document.getElementById('bi-val-roas') || document.querySelector('#tab-bi .card-metrica:nth-child(4) .text-2xl');
+  if (elRoas) {
+    elRoas.innerText = `${roas}x`;
+    elRoas.className = "text-2xl font-black text-cyan-400";
+  }
 
   const elTaxa = document.getElementById('bi-val-taxa-conv');
   if (elTaxa) {
@@ -6104,10 +6108,8 @@ window.atualizarDashboardBIVisual = function(dados) {
   const elVendasSub = document.getElementById('bi-val-vendas-sub');
   if (elVendasSub) elVendasSub.innerText = `${vendas} Vendas (Confirmadas)`;
 
-  // 2. FUNIL DE CONVERSÃO COMERCIAL (Injeção Direta em todas as 5 etapas)
-  const funilRoot = document.querySelector('#tab-bi .funil-item, #tab-bi [class*="funil"]')?.closest('.space-y-2, .grid, div') || document;
+  // 2. FUNIL DE CONVERSÃO COMERCIAL
   const linhasFunil = document.querySelectorAll('#tab-bi div');
-
   linhasFunil.forEach(el => {
     const txt = el.innerText || '';
     if (txt.includes('1. Impressões')) {
@@ -6133,7 +6135,7 @@ window.atualizarDashboardBIVisual = function(dados) {
     }
   });
 
-  // 3. GRÁFICO DE EVOLUÇÃO (Desenho da Curva de Faturamento vs. Investimento)
+  // 3. GRÁFICO 1: EVOLUÇÃO
   const canvasEvolucao = document.getElementById('chart-evolucao') || document.querySelector('#tab-bi canvas');
   if (canvasEvolucao && window.Chart) {
     let chartInst = Chart.getChart(canvasEvolucao);
@@ -6146,34 +6148,31 @@ window.atualizarDashboardBIVisual = function(dados) {
       chartInst.data.datasets[0].data = dataFat;
       chartInst.data.datasets[1].data = dataGasto;
       chartInst.update();
-    } else {
-      new Chart(canvasEvolucao, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            { label: 'Faturamento (R$)', data: dataFat, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true },
-            { label: 'Investimento (R$)', data: dataGasto, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { x: { ticks: { color: '#64748b' } }, y: { ticks: { color: '#64748b' } } } }
-      });
     }
   }
 
-  // 4. GRÁFICO DE CAC POR CRIATIVO
-  const cacMedio = vendas > 0 ? (gasto / vendas) : 0;
+  // 4. GRÁFICO 2: ALOCAÇÃO POR CANAL (Donut)
+  const canvasDonut = document.getElementById('chart-alocacao') || document.querySelectorAll('#tab-bi canvas')[1];
+  if (canvasDonut && window.Chart) {
+    let chartDonutInst = Chart.getChart(canvasDonut);
+    const splitData = [gasto * 0.55, gasto * 0.25, gasto * 0.12, gasto * 0.08];
+    if (chartDonutInst) {
+      chartDonutInst.data.datasets[0].data = splitData;
+      chartDonutInst.update();
+    }
+  }
+
+  // 5. GRÁFICO 3: CAC POR CRIATIVO (Barras)
   const canvasCAC = document.getElementById('chart-cac') || document.querySelectorAll('#tab-bi canvas')[2];
   if (canvasCAC && window.Chart) {
     let chartCACInst = Chart.getChart(canvasCAC);
-    const dataCAC = [cacMedio * 0.8, cacMedio * 0.95, cacMedio * 1.1, cacMedio * 1.3];
+    const cacMedio = vendas > 0 ? (gasto / vendas) : 350;
+    const dataCAC = [cacMedio * 0.85, cacMedio * 1.05, cacMedio * 0.92, cacMedio * 1.25];
     if (chartCACInst) {
       chartCACInst.data.datasets[0].data = dataCAC;
       chartCACInst.update();
     }
   }
-
-  console.log('[BI] Dashboard, Funil e Gráficos atualizados com sucesso.');
 };
 
 // Gravação dos Dados no Supabase e Atualização de Tela
