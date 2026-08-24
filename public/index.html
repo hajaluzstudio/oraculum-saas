@@ -1765,72 +1765,34 @@
               <div id="wr-video" class="wr-panel active">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                   
+                  <!-- Ferramenta de Teleprompter & Estúdio (Colapsável) -->
+                  <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mb-6">
+                    <button type="button" onclick="window.toggleVideoStudioTool()" class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 text-sm">🎬</span>
+                        <span class="text-xs font-bold text-slate-200 uppercase tracking-wide">Estúdio de Gravação, Áudio-Guia & Teleprompter</span>
+                      </div>
+                      <span id="icon-toggle-video-studio" class="text-xs text-slate-400">▼ Expandir Ferramenta</span>
+                    </button>
+                    <div id="container-video-studio" class="hidden p-5 border-t border-slate-800/80 bg-slate-950/40">
+                      <!-- Conteúdo original do Teleprompter, Audio-Guia e Preview do Script -->
+                      <div class="flex items-center justify-end gap-2 mb-4">
+                        <button type="button" id="btn-ouvir-audio-guia" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1.5">
+                          🔊 Ouvir Áudio-Guia
+                        </button>
+                        <button type="button" id="btn-abrir-teleprompter-modal" onclick="document.getElementById('btn-open-teleprompter') && document.getElementById('btn-open-teleprompter').click()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5">
+                          ▶ Modo Teleprompter
+                        </button>
+                      </div>
+                      <div id="video-script-preview-area" class="p-4 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono min-h-[120px] whitespace-pre-wrap">Selecione um roteiro despachado na gaveta abaixo e clique em "▶ Carregar no Teleprompter" para projetar o texto.</div>
+                    </div>
+                  </div>
+
                   <!-- DADOS INJETADOS PELA IA (JSON) -->
                   <div style="display: flex; flex-direction: column; width: 100%;">
                     <div id="wr-video-content" style="display: none;"></div>
                     <!-- Feed de Gavetas de Vídeo -->
-                    <div id="feed-gavetas-video" class="space-y-4 mt-6"></div>
-                  </div>
-
-                  <!-- SEÇÃO A: ROTEIROS E TELEPROMPTER -->
-                  <div class="grid-2col" id="wr-scripts-section">
-                    <!-- FORMULÁRIO DE GERAÇÃO DE ROTEIRO -->
-                    <div class="card-glass">
-                      <div class="card-header">
-                        <div>
-                          <h3><i class="fa-solid fa-clapperboard"></i> Criador de Roteiros de Gravação</h3>
-                          <p>A IA estrutura o roteiro segundo a segundo alinhado ao Dossiê do cliente.</p>
-                        </div>
-                        <span class="badge-tag" style="background: rgba(6, 182, 212, 0.15); color: #06B6D4;">HOOK 3S & TELEPROMPTER</span>
-                      </div>
-
-                      <form id="form-generate-script" style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
-                        <div class="form-group">
-                          <label for="script-format-type"><i class="fa-solid fa-film"></i> Formato do Vídeo *</label>
-                          <select id="script-format-type" required class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 text-sm" style="background-color: var(--bg-surface); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.12); padding: 10px; border-radius: 8px;">
-                            <option value="reels_30s" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">📱 Reels / TikTok / Shorts (30s a 60s - Foco em Retenção)</option>
-                            <option value="vsl_60s" selected class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🎬 VSL de Alta Conversão (60s - Dor + Solução)</option>
-                            <option value="authority_video" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🏆 Vídeo de Autoridade & Posicionamento</option>
-                            <option value="objection_killer" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">🛡️ Quebra de Objeção Cirúrgica (Preço & Insegurança)</option>
-                            <option value="depoimento" class="bg-[var(--bg-surface)] text-[var(--text-primary)] py-2" style="background-color: var(--bg-surface); color: #f1f5f9;">⭐ Estudo de Caso / Prova Social</option>
-                          </select>
-                        </div>
-
-                        <div class="form-group">
-                          <label for="script-custom-goal"><i class="fa-solid fa-bullseye"></i> Objetivo Específico do Criativo</label>
-                          <input type="text" id="script-custom-goal" placeholder="Ex: Quebrar o medo de pós-operatório e gerar consultas VIP" value="Atrair pacientes de alto padrão demonstrando precisão e autoridade">
-                        </div>
-
-                        <button type="submit" class="btn-primary" id="btn-submit-script" style="margin-top: 6px;">
-                          <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Roteiro Preditivo por IA
-                        </button>
-                      </form>
-                    </div>
-
-                    <!-- PREVIEW DO ROTEIRO GERADO & BOTÃO TELEPROMPTER -->
-                    <div class="card-glass" id="script-output-container">
-                      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                          <h3 id="script-title-display"><i class="fa-solid fa-scroll"></i> Roteiro de Gravação</h3>
-                          <span style="font-size: 11px; color: #94A3B8;">Pronto para estúdio, gravação mobile e teleprompter</span>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                          <button type="button" id="btn-play-audio-guide" class="btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                            <i class="fa-solid fa-volume-high"></i> 🔊 Ouvir Áudio-Guia
-                          </button>
-                          <button type="button" id="btn-open-teleprompter" class="btn-secondary" style="font-size: 12px; padding: 6px 14px; background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.4); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                            <i class="fa-solid fa-play"></i> 🎥 Modo Teleprompter
-                          </button>
-                        </div>
-                      </div>
-
-                      <div id="script-content-body" style="margin-top: 14px;">
-                        <div class="placeholder-state">
-                          <i class="fa-solid fa-video"></i>
-                          <p>Selecione o formato desejado e clique em "Gerar Roteiro Preditivo" para a IA criar o script detalhado com marcações de cena e modo teleprompter.</p>
-                        </div>
-                      </div>
-                    </div>
+                    <div id="feed-gavetas-video" class="space-y-4 mt-2"></div>
                   </div>
 
                   <!-- SEÇÃO B: IA CREATIVE SCORE -->
@@ -3658,7 +3620,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.27.0"></script>
+<script src="/app.js?v=9999.28.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

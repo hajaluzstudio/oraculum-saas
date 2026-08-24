@@ -1839,6 +1839,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
 
     // Helpers globais de interação
+    window.toggleVideoStudioTool = function() {
+      const container = document.getElementById('container-video-studio');
+      const icon = document.getElementById('icon-toggle-video-studio');
+      if (!container || !icon) return;
+      const isHidden = container.classList.toggle('hidden');
+      icon.textContent = isHidden ? '▼ Expandir Ferramenta' : '▲ Recolher Ferramenta';
+    };
+
     window.toggleGaveta = function(id) {
       const el = document.getElementById(id);
       const icon = document.getElementById('icon-' + id);
@@ -1851,6 +1859,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.carregarNoTeleprompterDirect = function(encodedText) {
       try {
         const texto = decodeURIComponent(encodedText);
+        
+        // Auto expande a ferramenta do estúdio e atualiza preview
+        const studioContainer = document.getElementById('container-video-studio');
+        const studioIcon = document.getElementById('icon-toggle-video-studio');
+        if (studioContainer) {
+          studioContainer.classList.remove('hidden');
+          if (studioIcon) studioIcon.textContent = '▲ Recolher Ferramenta';
+        }
+
+        const previewArea = document.getElementById('video-script-preview-area');
+        if (previewArea) {
+          previewArea.textContent = texto;
+        }
+
         const tp = document.getElementById('script-content-body');
         if (tp) tp.innerHTML = '<div class="text-xs text-slate-200 leading-relaxed" style="white-space:pre-wrap">' + texto + '</div>';
         const btn = document.getElementById('btn-open-teleprompter');
