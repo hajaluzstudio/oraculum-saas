@@ -855,14 +855,15 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
 
     let configArgs: any = {
       temperature: 0.7,
-      maxOutputTokens: 1500
+      maxOutputTokens: 1500,
+      thinkingConfig: { thinkingBudget: 0 }
     };
     if (mode !== 'bi_live' && mode !== 'bi_feedback_loop') {
       configArgs.responseMimeType = 'application/json';
     }
 
     const rawHistory: any = (req.body as any)?.history;
-    const historicoValido: any[] = Array.isArray(rawHistory) ? rawHistory.slice(-4) : [];
+    const historicoValido: any[] = Array.isArray(rawHistory) ? rawHistory.slice(-3) : [];
     const recentHistory = historicoValido.map((msg: any) => ({
       role: (msg.role === 'assistant' || msg.role === 'model') ? 'model' : 'user',
       parts: [{ text: msg.content || '' }]

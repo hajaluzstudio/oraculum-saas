@@ -1270,42 +1270,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Parser isolado para limpar qualquer JSON residual da tela
-  function formatarTextoChatEstrategico(rawContent) {
-    if (!rawContent) return '';
-    
-    let textoFinal = rawContent;
-    let tasksExtraidas = [];
+  function extrairTextoLimpo(resposta) {
+    if (!resposta) return '';
+    let texto = resposta;
+    let tasks = [];
 
-    // Se for objeto direto
-    if (typeof rawContent === 'object' && rawContent !== null) {
-      textoFinal = rawContent.replyText || rawContent.message || rawContent.reply || JSON.stringify(rawContent);
-      if (Array.isArray(rawContent.tasks)) tasksExtraidas = rawContent.tasks;
-    } 
-    // Se for string com JSON embutido
-    else if (typeof rawContent === 'string') {
-      const trimmed = rawContent.trim();
+    if (typeof resposta === 'object' && resposta !== null) {
+      texto = resposta.replyText || resposta.message || resposta.reply || JSON.stringify(resposta);
+      if (Array.isArray(resposta.tasks)) tasks = resposta.tasks;
+    } else if (typeof resposta === 'string') {
+      const trimmed = resposta.trim();
       if (trimmed.startsWith('{') && trimmed.includes('"replyText"')) {
         try {
           const parsed = JSON.parse(trimmed);
-          textoFinal = parsed.replyText || textoFinal;
-          if (Array.isArray(parsed.tasks)) tasksExtraidas = parsed.tasks;
+          texto = parsed.replyText || texto;
+          if (Array.isArray(parsed.tasks)) tasks = parsed.tasks;
         } catch (e) {
-          // Fallback via regex para capturar o replyText sem quebrar
           const match = trimmed.match(/"replyText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
           if (match && match[1]) {
-            textoFinal = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            texto = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
           }
         }
       }
     }
 
-    // Armazena as tasks em memória global para o botão de despacho utilizar sem sujar o DOM
-    if (tasksExtraidas.length > 0) {
-      window.currentPendingTasks = tasksExtraidas;
+    if (tasks.length > 0) {
+      window.currentPendingTasks = tasks;
     }
 
-    // Converte quebras de linha e limpa escape residual
-    return String(textoFinal)
+    return String(texto)
       .replace(/\\n/g, '\n')
       .replace(/^["']|["']$/g, '')
       .trim();
@@ -1363,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      const cleanReplyText = formatarTextoChatEstrategico(data);
+      const cleanReplyText = extrairTextoLimpo(data);
 
       // 4. Renderiza a resposta da IA com o card de aprovação
       const aiBubble = document.createElement('div');
@@ -1373,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="mb-3 text-emerald-400 font-medium flex items-center gap-2">
             <span>👁️ Oraculum Copiloto</span>
           </div>
-          <div class="chat-ai-content whitespace-pre-wrap mb-4 text-slate-300">
+          <div class="chat-ai-content mb-4 text-slate-300" style="white-space: pre-wrap; word-break: break-word;">
             ${cleanReplyText}
           </div>
           <div class="flex items-center gap-3 pt-3 border-t border-slate-800">
@@ -1428,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.appendChild(errBubble);
       }
     } finally {
-      // 5. Garante a remoção incondicional do indicador de loading
+      // 5. Garante a remoção incondicional do indicador de loading e reabilita botão
       const loadingEl = document.getElementById('temp-chat-loading');
       if (loadingEl) loadingEl.remove();
       if (processingIndicator) processingIndicator.classList.add('hidden');
