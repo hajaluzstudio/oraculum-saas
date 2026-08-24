@@ -1805,8 +1805,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+    const clientId = window.currentActiveClientId || window.activeClientId || (window.activeClient && window.activeClient.id) || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('active_client_id') || 'client_1707406730';
 
     // Busca do LocalStorage
     const storageKey = `war_room_all_tasks_${clientId}`;
@@ -1899,11 +1898,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById(containerId);
       if (!container) return;
 
+      // Recupera o ID do cliente atualmente ativo no sistema
+      const activeClientId = window.currentActiveClientId || window.activeClient?.id || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+
+      // Filtra estritamente: categoria correspondente E cliente ativo correspondente
       const tasksDaAba = allTasks.filter(t => {
+        const matchClient = !activeClientId || String(t.client_id || t.clientId) === String(activeClientId);
         const cat = (t.category || '').toLowerCase().trim();
-        if (categoriaAlvo === 'copywriting') return cat === 'copywriting' || cat === 'copy';
-        if (categoriaAlvo === 'video') return cat === 'video' || cat === 'roteiro';
-        return cat === categoriaAlvo;
+        const matchCat = categoriaAlvo === 'copywriting' ? (cat === 'copywriting' || cat === 'copy') : (categoriaAlvo === 'video' ? (cat === 'video' || cat === 'roteiro') : (cat === categoriaAlvo));
+        return matchClient && matchCat;
       });
 
       const emojis = { video: '🎬', design: '🎨', trafego: '🎯', copywriting: '✍️', comercial: '🤝' };
@@ -6664,6 +6667,10 @@ window.addEventListener('clientChanged', (e) => {
   if (!newClient || !newClient.id) return;
   console.log('[STATE MANAGER] Re-renderizando abas para o cliente:', newClient.name);
 
+  // Atualiza a variável global do cliente ativo
+  window.currentActiveClientId = newClient.id;
+  window.activeClientId = newClient.id;
+
   // 1. BI & Feedback Loop — atualiza título e métricas do cliente real
   const biTitle = document.getElementById('bi-active-client-title');
   if (biTitle) biTitle.textContent = newClient.name || 'Cliente Ativo';
@@ -6673,8 +6680,19 @@ window.addEventListener('clientChanged', (e) => {
   }
 
   // 2. Sala de Operação (War Room) & Tráfego
-  if (typeof window.renderWarRoomData === 'function') {
-    window.renderWarRoomData(newClient.name);
+  // Limpa containers imediatamente
+  ['feed-gavetas-video', 'feed-gavetas-design', 'feed-gavetas-trafego', 'feed-gavetas-copywriting', 'feed-gavetas-comercial'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = `
+        <div class="p-8 text-center border border-dashed border-slate-800 rounded-xl bg-slate-900/30">
+          <p class="text-xs text-slate-500 font-medium">Nenhum entregável despachado para esta equipe ainda.</p>
+        </div>`;
+    }
+  });
+
+  if (typeof window.renderWarRoomTasks === 'function') {
+    window.renderWarRoomTasks();
   }
   if (typeof window.loadArchivedTrafficCards === 'function') {
     setTimeout(window.loadArchivedTrafficCards, 50);
