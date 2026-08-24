@@ -1821,7 +1821,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tasks = [...tasks, ...data];
         }
       }
-    } catch (e) {}
+    } catch (e) { console.warn('[War Room] Supabase fetch error:', e); }
 
     // Deduplicação e Sanitização
     const seen = new Set();
@@ -1834,134 +1834,142 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.__WAR_ROOM_TASKS__ = tasks;
 
-    // 1. Renderiza o conteúdo de VÍDEO nos containers fixos E no feed de gavetas
-    const videoTask = tasks.find(t => t.category === 'video' || t.category === 'roteiro');
-    const topVideoText = document.getElementById('wr-video-content');
-    const teleprompterBox = document.getElementById('script-content-body');
+    // ==========================================================================
+    // MOTOR DE GAVETAS - RENDERIZAÇÃO MODULAR E ISOLADA POR ABA
+    // ==========================================================================
 
-    if (videoTask) {
-      if (topVideoText) topVideoText.innerHTML = `<div class="text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
-      if (teleprompterBox && !teleprompterBox.innerHTML.includes('Gerar Roteiro Preditivo')) {
-        teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+    // Helpers globais de interação
+    window.toggleGaveta = function(id) {
+      const el = document.getElementById(id);
+      const icon = document.getElementById('icon-' + id);
+      if (!el) return;
+      const isHidden = el.classList.contains('hidden');
+      el.classList.toggle('hidden', !isHidden);
+      if (icon) icon.textContent = isHidden ? '▲ Recolher' : '▼ Expandir';
+    };
+
+    window.carregarNoTeleprompterDirect = function(encodedText) {
+      try {
+        const texto = decodeURIComponent(encodedText);
+        const tp = document.getElementById('script-content-body');
+        if (tp) tp.innerHTML = '<div class="text-xs text-slate-200 leading-relaxed" style="white-space:pre-wrap">' + texto + '</div>';
+        const btn = document.getElementById('btn-open-teleprompter');
+        if (btn) btn.click();
+      } catch(e) { console.error('[Teleprompter]', e); }
+    };
+
+    window.copiarTextoEntregavel = function(encodedText) {
+      try {
+        const texto = decodeURIComponent(encodedText);
+        navigator.clipboard.writeText(texto).then(() => {
+          const toast = document.createElement('div');
+          toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-xl';
+          toast.textContent = '✓ Copiado para a área de transferência!';
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        });
+      } catch(e) { console.error('[Copiar]', e); }
+    };
+
+    // Função de renderização modular e isolada para cada aba
+    function renderizarGavetasPorAba(categoriaAlvo, containerId, allTasks) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const tasksDaAba = allTasks.filter(t => {
+        const cat = (t.category || '').toLowerCase().trim();
+        if (categoriaAlvo === 'copywriting') return cat === 'copywriting' || cat === 'copy';
+        if (categoriaAlvo === 'video') return cat === 'video' || cat === 'roteiro';
+        return cat === categoriaAlvo;
+      });
+
+      const emojis = { video: '🎬', design: '🎨', trafego: '🎯', copywriting: '✍️', comercial: '🤝' };
+      const labels = { video: 'Copiar Roteiro', design: 'Copiar Briefing Visual', trafego: 'Copiar Parâmetros', copywriting: 'Copiar Copy', comercial: 'Copiar Script de Vendas' };
+
+      if (tasksDaAba.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center border border-dashed border-slate-800 rounded-xl bg-slate-900/30">
+            <p class="text-xs text-slate-500 font-medium">Nenhum entregável despachado para esta equipe ainda. Gere uma estratégia no Chat Estratégico.</p>
+          </div>`;
+        return;
       }
-    }
 
-    // 1b. Renderiza gavetas de VIDEO no container dedicado da aba de Vídeo
-    const videoGavetasContainer = document.getElementById('video-gavetas-container');
-    if (videoGavetasContainer) {
-      const videoTasks = tasks.filter(t => t.category === 'video' || t.category === 'roteiro');
-      if (videoTasks.length === 0) {
-        videoGavetasContainer.innerHTML = `<div class="p-6 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhum roteiro ou gancho despachado ainda. Gere uma estratégia no Chat para preencher esta seção.</div>`;
-      } else {
-        const grouped = window.groupTasksByPauta(videoTasks);
-        videoGavetasContainer.innerHTML = grouped.map((group, idx) => `
-          <div class="p-0 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[#1B3B36] p-4 cursor-pointer hover:bg-[#0A1A17] transition-colors" onclick="window.toggleCollapsibleSection('video-group-${idx}', this)">
+      const gavetasPorTema = {};
+      tasksDaAba.forEach(t => {
+        const tema = t.theme || t.topic || 'Pauta Tática Geral';
+        if (!gavetasPorTema[tema]) {
+          gavetasPorTema[tema] = { data: t.created_at || new Date().toISOString(), items: [] };
+        }
+        gavetasPorTema[tema].items.push(t);
+      });
+
+      let html = '';
+      Object.entries(gavetasPorTema).forEach(([tema, grupo], index) => {
+        const gavetaId = 'gaveta-' + categoriaAlvo + '-' + index;
+        const total = grupo.items.length;
+        const dataFmt = new Date(grupo.data).toLocaleDateString('pt-BR');
+        const emoji = emojis[categoriaAlvo] || '📁';
+        const copyLabel = labels[categoriaAlvo] || 'Copiar';
+
+        html += `
+          <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden shadow-sm">
+            <button onclick="window.toggleGaveta('${gavetaId}')" class="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors text-left">
               <div class="flex items-center gap-3">
-                <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded uppercase">🎬 ROTEIRO</span>
-                <h4 class="text-sm font-semibold text-emerald-300">${group.tema}</h4>
-                <span class="text-[10px] text-slate-400 ml-2">📑 ${group.items.length} Materiais</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${emoji} PAUTA</span>
+                <span class="text-sm font-bold text-slate-200">Tema: ${tema}</span>
+                <span class="text-xs text-slate-500 font-normal ml-2">📄 ${total} ${total === 1 ? 'Material' : 'Materiais'}</span>
               </div>
-              <span class="tool-arrow text-[10px] text-slate-400 ml-2 mt-2 sm:mt-0">▼ Expandir</span>
-            </div>
-            <div id="video-group-${idx}" class="hidden p-5 space-y-4">
-              ${group.items.map((t, ti) => `
-                <div class="bg-black/20 p-3 rounded-lg border border-white/5">
-                  <h5 class="text-xs font-bold text-emerald-200 mb-2 border-b border-white/5 pb-1">${t.title || 'Roteiro'}</h5>
-                  <div class="text-xs leading-relaxed text-slate-300 mb-3" style="white-space: pre-wrap; word-break: break-word;">${t.content}</div>
-                  <div class="flex gap-2 flex-wrap">
-                    <button type="button"
-                      class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
-                      onclick="(function(){
-                        var tp = document.getElementById('script-content-body');
-                        if(tp) tp.innerHTML = '<div class=\'text-xs text-slate-200 leading-relaxed\' style=\'white-space:pre-wrap\'>' + ${JSON.stringify(t.content)} + '</div>';
-                        var btn = document.getElementById('btn-open-teleprompter');
-                        if(btn) btn.click();
-                      })()">
+              <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-400">📅 ${dataFmt}</span>
+                <span id="icon-${gavetaId}" class="text-slate-400 text-xs">▼ Expandir</span>
+              </div>
+            </button>
+            <div id="${gavetaId}" class="hidden px-5 py-4 border-t border-slate-800/80 bg-slate-950/40 space-y-4">
+        `;
+
+        grupo.items.forEach((item, itemIdx) => {
+          const safe = encodeURIComponent(item.content || '');
+          html += `
+            <div class="p-4 rounded-lg border border-slate-800 bg-slate-900/80 hover:border-slate-700 transition-all">
+              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wide">${item.title || 'Entregável #' + (itemIdx + 1)}</h4>
+                <div class="flex items-center gap-2 flex-wrap">
+                  ${categoriaAlvo === 'video' ? `
+                    <button onclick="window.carregarNoTeleprompterDirect('${safe}')" class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1">
                       ▶ Carregar no Teleprompter
                     </button>
-                    <button type="button"
-                      class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
-                      onclick="navigator.clipboard.writeText(${JSON.stringify(t.content)}).then(()=>{ this.innerText='✓ Copiado!'; setTimeout(()=>this.innerHTML='📋 Copiar Roteiro', 1500); })">
-                      📋 Copiar Roteiro
-                    </button>
-                  </div>
+                  ` : ''}
+                  <button onclick="window.copiarTextoEntregavel('${safe}')" class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1">
+                    📋 ${copyLabel}
+                  </button>
                 </div>
-              `).join('')}
+              </div>
+              <div class="text-xs text-slate-300 leading-relaxed" style="white-space: pre-wrap; word-break: break-word; font-family: inherit;">${item.content || ''}</div>
             </div>
-          </div>
-        `).join('');
-      }
+          `;
+        });
+
+        html += `</div></div>`;
+      });
+
+      container.innerHTML = html;
     }
 
-    // 2. Renderiza os feeds das outras categorias
-    ['design', 'trafego', 'copywriting', 'comercial'].forEach(cat => {
-      const panelMap = { 'design': 'wr-design', 'trafego': 'wr-traffic', 'copywriting': 'wr-copy', 'comercial': 'wr-sales' };
-      const panelId = panelMap[cat];
-      const panel = document.getElementById(panelId);
-      if (!panel) return;
+    // Dispara a renderização para todas as 5 abas
+    renderizarGavetasPorAba('video',       'feed-gavetas-video',       tasks);
+    renderizarGavetasPorAba('design',      'feed-gavetas-design',      tasks);
+    renderizarGavetasPorAba('trafego',     'feed-gavetas-trafego',     tasks);
+    renderizarGavetasPorAba('copywriting', 'feed-gavetas-copywriting', tasks);
+    renderizarGavetasPorAba('comercial',   'feed-gavetas-comercial',   tasks);
 
-      let feed = document.getElementById(`${cat}-tasks-feed`);
-      if (!feed) {
-        feed = document.createElement('div');
-        feed.id = `${cat}-tasks-feed`;
-        feed.className = 'mb-4';
-        const contentBox = document.getElementById(`${panelId}-content`);
-        if (contentBox && contentBox.parentElement) {
-          contentBox.parentElement.insertBefore(feed, contentBox);
-        }
+    // Mantém compat com o container legacy de vídeo (teleprompter automático)
+    const videoTask = tasks.find(t => (t.category || '').toLowerCase() === 'video');
+    if (videoTask) {
+      const teleprompterBox = document.getElementById('script-content-body');
+      if (teleprompterBox && !teleprompterBox.innerHTML.includes('Gerar Roteiro Preditivo')) {
+        teleprompterBox.innerHTML = '<div class="text-xs text-slate-200 leading-relaxed" style="white-space:pre-wrap">' + videoTask.content + '</div>';
       }
-
-      const catTasks = tasks.filter(t => t.category === cat);
-
-      if (catTasks.length === 0) {
-        feed.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhuma diretriz despachada para ${cat.toUpperCase()} até o momento.</div>`;
-      } else {
-        const grouped = window.groupTasksByPauta(catTasks);
-        feed.innerHTML = grouped.map((group, idx) => {
-          const priorityColors = {
-            'alta': 'bg-red-500/20 text-red-400 border-red-500/30',
-            'media': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-            'baixa': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-          };
-          const badgeClass = priorityColors[group.priority || 'media'] || priorityColors['media'];
-          const isVideo = cat === 'video' || cat === 'roteiro';
-          
-          return `
-          <div class="p-0 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl mt-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[#1B3B36] p-4 cursor-pointer hover:bg-[#0A1A17] transition-colors" onclick="window.toggleCollapsibleSection('task-group-${cat}-${idx}', this)">
-              <div class="flex items-center gap-3">
-                <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded uppercase">📁 PAUTA</span>
-                <h4 class="text-sm font-semibold text-emerald-300 truncate max-w-[200px] sm:max-w-[300px]">Tema: [${group.tema}]</h4>
-                <span class="text-[10px] text-slate-400 ml-2">📑 ${group.items.length} Materiais</span>
-              </div>
-              <div class="flex items-center gap-3 mt-2 sm:mt-0">
-                <span class="px-2 py-0.5 text-[10px] border rounded font-semibold ${badgeClass}">Prioridade: ${group.priority ? group.priority.toUpperCase() : 'MÉDIA'}</span>
-                <span class="text-[11px] text-slate-400"><i class="fa-regular fa-calendar"></i> ${new Date(group.created_at).toLocaleDateString('pt-BR')}</span>
-                <span class="tool-arrow text-[10px] text-slate-400 ml-2">▼ Expandir</span>
-              </div>
-            </div>
-            <div id="task-group-${cat}-${idx}" class="hidden p-5 space-y-4">
-              ${group.items.map(t => `
-                <div class="bg-black/20 p-3 rounded-lg border border-white/5">
-                  <h5 class="text-xs font-bold text-emerald-200 mb-2 border-b border-white/5 pb-1">${t.title || 'Sub-tópico'}</h5>
-                  <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
-                </div>
-              `).join('')}
-              
-              ${isVideo ? `
-              <div class="mt-4 pt-4 border-t border-[#1B3B36] flex justify-end">
-                <button type="button" class="btn-primary sm" onclick="document.getElementById('tp-drawer-selector').value = '${group.tema}'; document.getElementById('tp-drawer-selector').dispatchEvent(new Event('change')); document.getElementById('btn-open-teleprompter').click();" style="font-size: 11px; padding: 6px 14px;">
-                  <i class="fa-solid fa-play"></i> Carregar Esta Pauta no Teleprompter
-                </button>
-              </div>
-              ` : ''}
-            </div>
-          </div>
-          `;
-        }).join('');
-      }
-    });
+    }
 
     if (typeof vincularAbasEstaticasWarRoom === 'function') {
       vincularAbasEstaticasWarRoom();
