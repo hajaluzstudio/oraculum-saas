@@ -1871,41 +1871,39 @@ document.addEventListener('DOMContentLoaded', () => {
       if (icon) icon.textContent = isHidden ? '▲ Recolher' : '▼ Expandir';
     };
 
-    // 1. Injeta o roteiro no visor da Sala de Operação e prepara o Teleprompter
+    window.carregarTextoNoTeleprompter = function(texto) {
+      if (!texto) return;
+      window.teleprompterState = window.teleprompterState || { speed: 3, fontSize: 42, isPlaying: false };
+      window.teleprompterState.text = texto;
+
+      // Atualiza a prévia visual
+      const previewArea = document.getElementById('video-script-preview-area');
+      if (previewArea) previewArea.textContent = texto;
+
+      // Atualiza o texto do modal
+      const tpDisplay = document.getElementById('tp-text-display');
+      if (tpDisplay) tpDisplay.textContent = texto;
+
+      // Expande a ferramenta do estúdio se estiver fechada
+      const studioContainer = document.getElementById('container-video-studio');
+      const studioIcon = document.getElementById('icon-toggle-video-studio');
+      if (studioContainer && studioContainer.classList.contains('hidden')) {
+        studioContainer.classList.remove('hidden');
+        if (studioIcon) studioIcon.textContent = '▲ Recolher Ferramenta';
+      }
+
+      // Scroll até a ferramenta
+      if (studioContainer) studioContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      if (typeof window.showToast === 'function') {
+        window.showToast('Roteiro pronto! Clique em "Modo Teleprompter" para gravar.', 'success');
+      }
+    };
+
     window.carregarNoTeleprompterDirect = function(encodedText) {
       try {
         const texto = decodeURIComponent(encodedText || '');
-        window.teleprompterState.text = texto;
-
-        // Atualiza o container de prévia da ferramenta na tela
-        const previewArea = document.getElementById('video-script-preview-area');
-        if (previewArea) {
-          previewArea.textContent = texto;
-        }
-
-        // Atualiza o texto interno do modal do teleprompter
-        const tpDisplay = document.getElementById('tp-text-display');
-        if (tpDisplay) {
-          tpDisplay.textContent = texto;
-        }
-
-        // Abre o acordeão do Estúdio se estiver recolhido
-        const studioContainer = document.getElementById('container-video-studio');
-        const studioIcon = document.getElementById('icon-toggle-video-studio');
-        if (studioContainer && studioContainer.classList.contains('hidden')) {
-          studioContainer.classList.remove('hidden');
-          if (studioIcon) studioIcon.textContent = '▲ Recolher Ferramenta';
-        }
-
-        // Scroll suave até a ferramenta do estúdio
-        if (studioContainer) {
-          studioContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        // Notificação Toast visual
-        if (typeof window.showToast === 'function') {
-          window.showToast('Roteiro carregado no Estúdio e Teleprompter!', 'success');
-        }
+        window.carregarTextoNoTeleprompter(texto);
       } catch (err) {
         console.error('[TELEPROMPTER] Erro ao carregar roteiro:', err);
       }
@@ -1914,23 +1912,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Abre o Modal Fullscreen do Teleprompter
     window.abrirModalTeleprompter = function() {
       const modal = document.getElementById('modal-teleprompter');
-      if (!modal) return;
-
-      const textoAtual = window.teleprompterState.text || document.getElementById('video-script-preview-area')?.textContent || '';
-      if (!textoAtual.trim() || textoAtual.includes('Selecione um roteiro na gaveta')) {
-        if (typeof window.showToast === 'function') {
-          window.showToast('Selecione ou carregue um roteiro primeiro na gaveta acima.', 'warning');
-        }
+      if (!modal) {
+        console.error('[TELEPROMPTER] Elemento #modal-teleprompter não encontrado no DOM.');
         return;
       }
 
+      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
       const tpDisplay = document.getElementById('tp-text-display');
-      if (tpDisplay) tpDisplay.textContent = textoAtual;
+      if (tpDisplay && texto) tpDisplay.textContent = texto;
 
       modal.classList.remove('hidden');
+      modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
 
-      // Reseta o scroll para o topo
       const scrollContainer = document.getElementById('tp-scroll-container');
       if (scrollContainer) scrollContainer.scrollTop = 0;
     };
@@ -1939,9 +1933,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.fecharModalTeleprompter = function() {
       const modal = document.getElementById('modal-teleprompter');
       if (!modal) return;
-
       window.pausarTeleprompter();
       modal.classList.add('hidden');
+      modal.style.display = 'none';
       document.body.style.overflow = '';
     };
 
@@ -2165,9 +2159,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         grupo.items.forEach((item, itemIdx) => {
-          const uniqueItemId = `item-${Math.random().toString(36).substr(2, 9)}`;
-          window.oraculumTaskContents = window.oraculumTaskContents || {};
-          window.oraculumTaskContents[uniqueItemId] = item.content || '';
+          const deliverableId = 'deliv_' + Math.random().toString(36).substr(2, 9);
+          window.warRoomDeliverables = window.warRoomDeliverables || {};
+          window.warRoomDeliverables[deliverableId] = item.content || '';
 
           html += `
             <div class="p-4 rounded-lg border border-slate-800 bg-slate-900/80 hover:border-slate-700 transition-all">
@@ -2175,11 +2169,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wide">${item.title || 'Entregável #' + (itemIdx + 1)}</h4>
                 <div class="flex items-center gap-2 flex-wrap">
                   ${categoriaAlvo === 'video' ? `
-                    <button type="button" onclick="window.carregarNoTeleprompterDirectById('${uniqueItemId}')" class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1">
+                    <button type="button" 
+                            data-action="load-teleprompter" 
+                            data-deliverable-id="${deliverableId}" 
+                            class="btn-action-teleprompter px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1 cursor-pointer">
                       ▶ Carregar no Teleprompter
                     </button>
                   ` : ''}
-                  <button type="button" onclick="window.copiarTextoEntregavelById('${uniqueItemId}')" class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1">
+                  <button type="button" 
+                          data-action="copy-content" 
+                          data-deliverable-id="${deliverableId}" 
+                          class="btn-action-copy px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1 cursor-pointer">
                     📋 ${copyLabel}
                   </button>
                 </div>
@@ -7554,6 +7554,34 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.carregarHistoricoChat === 'function') window.carregarHistoricoChat(activeClient);
   if (typeof window.carregarSalaOperacaoCompleta === 'function') window.carregarSalaOperacaoCompleta();
 });
+// Listener universal para captura segura de cliques nas gavetas
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
 
+  const action = target.getAttribute('data-action');
+  const deliverableId = target.getAttribute('data-deliverable-id');
+  const windowDeliverables = window.warRoomDeliverables || {};
+  const conteudo = windowDeliverables[deliverableId] || window.oraculumTaskContents?.[deliverableId] || '';
 
+  if (action === 'load-teleprompter') {
+    e.preventDefault();
+    e.stopPropagation();
+    window.carregarTextoNoTeleprompter(conteudo);
+  } else if (action === 'copy-content') {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(conteudo).then(() => {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Conteúdo copiado!', 'success');
+      } else {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-xl';
+        toast.textContent = '✓ Conteúdo copiado!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+      }
+    });
+  }
+});
 
