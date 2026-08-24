@@ -30,12 +30,11 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-3.7-flash",      // 1ª Opção: Principal (Ultra veloz e estratégico)
-  "gemini-3.6-flash",      // 2ª Opção: Contingência direta
+  "gemini-3.7-flash",      // 1ª Opção: Inteligência máxima (20 req/dia de topo)
+  "gemini-3.5-flash-lite", // 2ª Opção: Assume de imediato com 500 req/dia livres
   "gemini-3.5-flash",      // 3ª Opção: Resposta padrão
-  "gemini-3.5-flash-lite", // 4ª Opção: Alta disponibilidade (15 RPM)
-  "gemma-4-26b",           // 5ª Opção: Contingência massiva (30 RPM)
-  "gemma-4-31b"            // 6ª Opção: Contingência avançada (30 RPM)
+  "gemma-4-26b",           // 4ª Opção: Retaguarda massiva (14.400 req/dia)
+  "gemma-4-31b"            // 5ª Opção: Contingência avançada (14.400 req/dia)
 ];
 
 /**
@@ -46,45 +45,73 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
 
   for (const modelName of GEMINI_MODELS_CASCADE) {
     try {
-      console.log(`[Global AI Router] Processando com modelo: ${modelName}`);
+      console.log(`[AI Cascata] Tentando modelo: ${modelName}`);
 
-      let config: any = {};
+      let config: any = {
+        temperature: 0.7,
+        maxOutputTokens: 1500
+      };
+
+      // thinkingConfig zero-delay exclusivo para Gemini 3.7 (parâmetro inválido em 3.5/Gemma)
+      if (modelName.includes('3.7')) {
+        config.thinkingConfig = { thinkingBudget: 0 };
+      }
+
       if (systemInstruction) {
         config.systemInstruction = systemInstruction;
       }
 
+      // Mescla config externo (ex: responseMimeType) sem sobrescrever temperatura/thinking
+      if (promptOuConteudo?.config) {
+        const { thinkingConfig: _ignored, temperature: _t, maxOutputTokens: _m, ...extraConfig } = promptOuConteudo.config;
+        config = { ...config, ...extraConfig };
+      }
+
       const requestOptions: any = {
         model: modelName,
+        config
       };
 
-      if (promptOuConteudo && promptOuConteudo.contents) {
+      if (promptOuConteudo?.contents) {
         requestOptions.contents = promptOuConteudo.contents;
-        if (promptOuConteudo.config) {
-          config = { ...promptOuConteudo.config, ...config };
-        }
       } else {
         requestOptions.contents = [{ role: 'user', parts: [{ text: promptOuConteudo }] }];
       }
 
-      if (Object.keys(config).length > 0) {
-        requestOptions.config = config;
-      }
-
       const response = await genAI.models.generateContent(requestOptions);
-      const reply = response.text; // SDK @google/genai
+      const reply = response.text;
 
       if (reply && reply.trim().length > 0) {
+        console.log(`[AI Cascata] Sucesso com modelo: ${modelName}`);
         return { reply, modelUsed: modelName };
       }
+
+      // Resposta vazia = modelo indisponível, tenta próximo
+      console.warn(`[AI Cascata] Modelo ${modelName} retornou resposta vazia. Saltando...`);
     } catch (err: any) {
       const msg = err?.message || String(err);
-      console.warn(`[Global AI Router] Modelo ${modelName} falhou (${msg.slice(0, 100)}). Pulando para o próximo...`);
       ultimoErro = err;
-      continue;
+
+      const status = err?.status || err?.response?.status;
+      const isCotaOuIndisponivel =
+        status === 429 || status === 503 ||
+        msg.includes('429') || msg.includes('503') ||
+        msg.toLowerCase().includes('quota') ||
+        msg.toLowerCase().includes('resourceexhausted') ||
+        msg.toLowerCase().includes('overloaded') ||
+        msg.toLowerCase().includes('rate limit');
+
+      if (isCotaOuIndisponivel) {
+        console.warn(`[AI Cascata] Modelo ${modelName} sem cota. Saltando para o próximo...`);
+        continue;
+      }
+
+      console.error(`[AI Cascata] Erro fatal no modelo ${modelName}:`, msg.slice(0, 200));
+      throw err;
     }
   }
 
-  throw new Error(`Todos os modelos de IA da conta falharam ou atingiram cota. Último erro: ${ultimoErro?.message}`);
+  throw new Error(`[AI Cascata] Todos os modelos falharam ou atingiram cota. Último erro: ${ultimoErro?.message}`);
 }
 
 dotenv.config();
@@ -854,13 +881,10 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     const ai = new GoogleGenAI({ apiKey });
 
     let configArgs: any = {
-      temperature: 0.7,
-      maxOutputTokens: 1500,
-      thinkingConfig: { thinkingBudget: 0 }
+      responseMimeType: mode !== 'bi_live' && mode !== 'bi_feedback_loop' ? 'application/json' : undefined
     };
-    if (mode !== 'bi_live' && mode !== 'bi_feedback_loop') {
-      configArgs.responseMimeType = 'application/json';
-    }
+    // Remove chave undefined para não poluir o payload
+    if (!configArgs.responseMimeType) delete configArgs.responseMimeType;
 
     const rawHistory: any = (req.body as any)?.history;
     const historicoValido: any[] = Array.isArray(rawHistory) ? rawHistory.slice(-3) : [];
