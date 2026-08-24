@@ -11,53 +11,20 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
-// Instalação do Service Worker & Cache de Ativos Estáticos
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pré-cache de ativos da interface concluído.');
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Ativação e limpeza de caches antigos
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log('[Service Worker] Removendo cache antigo:', key);
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
   );
+  return self.clients.claim();
 });
 
-// Interceptação de Requisições de Rede (Network First para garantir atualização)
-self.addEventListener('fetch', (event) => {
-  // Ignora requisições de API e extensões do Chrome
-  if (event.request.url.includes('/api/') || event.request.url.startsWith('chrome-extension')) {
-    return;
+self.addEventListener('fetch', (e) => {
+  // Não intercepta scripts e html para evitar travar versão
+  if (e.request.url.includes('.js') || e.request.url.includes('.html')) {
+    e.respondWith(fetch(e.request));
   }
-
-  event.respondWith(
-    fetch(event.request).then((response) => {
-      // Atualiza o cache dinamicamente com a versão mais recente
-      const resClone = response.clone();
-      caches.open(CACHE_NAME).then((cache) => {
-        cache.put(event.request, resClone);
-      });
-      return response;
-    }).catch(() => {
-      // Se falhar (offline), busca no cache
-      return caches.match(event.request).then((response) => {
-        return response || caches.match('/index.html');
-      });
-    })
-  );
 });

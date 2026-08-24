@@ -3600,8 +3600,17 @@
     </form>
   </div>
 </div>
-<script src="/app.js?v=200.0.0"></script>
-<script src="/oraculo-live.js?v=200.0.0"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+</script>
+<script src="/app.js?t=99999999"></script>
+<script src="/oraculo-live.js?t=99999999"></script>
 </body>
 </html>
 
