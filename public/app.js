@@ -1455,11 +1455,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     for (const t of tasks) {
       const item = {
-        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        client_id: clientId,
-        category: t.category,
-        title: t.title,
-        content: t.content,
+        client_id: String(clientId),
+        category: t.category || 'geral',
+        title: t.title || 'Tarefa Estratégica',
+        content: t.content || t.description || '',
+        status: 'pending',
         created_at: new Date().toISOString()
       };
       existing.unshift(item);
@@ -1528,8 +1528,16 @@ document.addEventListener('DOMContentLoaded', () => {
       : 'flex flex-col bg-[#071311] border border-[#1B3B36] rounded-xl p-4 my-3 text-slate-200 text-sm leading-relaxed';
 
     let finalContent = text;
-    if (sender !== 'user' && typeof marked !== 'undefined') {
-      finalContent = marked.parse(text);
+    if (sender !== 'user') {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.replyText) finalContent = parsed.replyText;
+        else if (parsed.display_text) finalContent = parsed.display_text;
+      } catch (e) {}
+
+      if (typeof marked !== 'undefined') {
+        finalContent = marked.parse(finalContent);
+      }
     }
 
     if (sender === 'user') {
@@ -1636,11 +1644,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     for (const t of tasks) {
       const item = {
-        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        client_id: clientId,
-        category: t.category,
-        title: t.title,
-        content: t.content,
+        client_id: String(clientId),
+        category: t.category || 'geral',
+        title: t.title || 'Tarefa Estratégica',
+        content: t.content || t.description || '',
+        status: 'pending',
         created_at: new Date().toISOString()
       };
       existing.unshift(item);
