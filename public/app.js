@@ -3119,6 +3119,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // 7. SIMULADOR DE MOCKUP & SAFE ZONES (DESIGN & WEB)
   // ============================================================================
+  window.safeZoneMockupState = 1; // Inicia exibindo a interface nativa por padrão
+
   window.toggleSafeZoneMockupTool = function() {
     const content = document.getElementById('safezone-mockup-content');
     const btn = document.getElementById('btn-toggle-safezone');
@@ -3129,6 +3131,38 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
   };
 
+  window.toggleSafeZoneOverlay = function() {
+    window.safeZoneMockupState = (window.safeZoneMockupState + 1) % 3;
+    window.aplicarEstadoMockupOverlay();
+  };
+
+  window.aplicarEstadoMockupOverlay = function() {
+    const btn = document.getElementById('btn-toggle-safezone-overlay');
+    const overlay916 = document.getElementById('mockup-native-916');
+    const overlayFeed = document.getElementById('mockup-native-feed');
+    const safeZone = document.getElementById('mockup-safezone-grid');
+    const select = document.getElementById('safezone-format-select');
+    const is916 = !select || select.value === '9:16';
+
+    // Oculta tudo primeiro
+    if (overlay916) overlay916.classList.add('hidden');
+    if (overlayFeed) overlayFeed.classList.add('hidden');
+    if (safeZone) safeZone.classList.add('hidden');
+
+    if (window.safeZoneMockupState === 0) {
+      if (btn) btn.innerHTML = '👁️ Modo: Imagem Limpa';
+    } else if (window.safeZoneMockupState === 1) {
+      if (btn) btn.innerHTML = '👁️ Modo: Interface Nativa (Realista)';
+      if (is916 && overlay916) overlay916.classList.remove('hidden');
+      if (!is916 && overlayFeed) overlayFeed.classList.remove('hidden');
+    } else if (window.safeZoneMockupState === 2) {
+      if (btn) btn.innerHTML = '👁️ Modo: Safe Zone + Interface';
+      if (is916 && overlay916) overlay916.classList.remove('hidden');
+      if (!is916 && overlayFeed) overlayFeed.classList.remove('hidden');
+      if (safeZone) safeZone.classList.remove('hidden');
+    }
+  };
+
   window.handleSafeZoneFileUpload = function(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -3137,64 +3171,19 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.onload = function(e) {
       const img = document.getElementById('mockup-preview-img');
       const placeholder = document.getElementById('mockup-placeholder-text');
-      const layer = document.getElementById('mockup-safezone-layer');
-      
       if (img && placeholder) {
         img.src = e.target.result;
         img.classList.remove('hidden');
         placeholder.classList.add('hidden');
-        if (layer) layer.classList.remove('hidden');
+        window.aplicarEstadoMockupOverlay();
       }
     };
     reader.readAsDataURL(file);
   };
 
-  window.toggleSafeZoneOverlay = function() {
-    const safezoneLayer = document.getElementById('mockup-safezone-layer');
-    const uiLayer916 = document.getElementById('mockup-ui-layer-916');
-    const uiLayerFeed = document.getElementById('mockup-ui-layer-feed');
-    const btn = document.getElementById('btn-toggle-safezone-overlay');
-    const selectFormat = document.getElementById('safezone-format-select')?.value || '9:16';
-
-    window.mockupOverlayMode = ((window.mockupOverlayMode || 1) % 3) + 1;
-    const mode = window.mockupOverlayMode;
-
-    if (mode === 1) {
-      // Modo 1: Imagem Limpa
-      if (safezoneLayer) safezoneLayer.classList.add('hidden');
-      if (uiLayer916) uiLayer916.classList.add('hidden');
-      if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
-      if (btn) btn.innerHTML = '👁️ Modo 1: Imagem Limpa';
-    } else if (mode === 2) {
-      // Modo 2: Interface Nativa Completa (Mockup Realista)
-      if (safezoneLayer) safezoneLayer.classList.add('hidden');
-      if (selectFormat === '9:16') {
-        if (uiLayer916) uiLayer916.classList.remove('hidden');
-        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
-      } else {
-        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
-        if (uiLayer916) uiLayer916.classList.add('hidden');
-      }
-      if (btn) btn.innerHTML = '👁️ Modo 2: Interface Nativa (Realista)';
-    } else if (mode === 3) {
-      // Modo 3: Interface + Linhas Tracejadas de Safe Zone
-      if (safezoneLayer) safezoneLayer.classList.remove('hidden');
-      if (selectFormat === '9:16') {
-        if (uiLayer916) uiLayer916.classList.remove('hidden');
-        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
-      } else {
-        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
-        if (uiLayer916) uiLayer916.classList.add('hidden');
-      }
-      if (btn) btn.innerHTML = '👁️ Modo 3: Safe Zone + Interface Complete';
-    }
-  };
-
   window.handleSafeZoneFormatChange = function() {
     const select = document.getElementById('safezone-format-select');
     const viewport = document.getElementById('mockup-preview-viewport');
-    const uiLayer916 = document.getElementById('mockup-ui-layer-916');
-    const uiLayerFeed = document.getElementById('mockup-ui-layer-feed');
     if (!select || !viewport) return;
 
     viewport.classList.remove('aspect-[9/16]', 'aspect-square', 'aspect-[4/5]', 'max-w-[280px]', 'max-w-[340px]', 'max-w-[300px]');
@@ -3202,23 +3191,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const val = select.value;
     if (val === '9:16') {
       viewport.classList.add('aspect-[9/16]', 'max-w-[280px]');
-      if (window.mockupOverlayMode !== 1) {
-        if (uiLayer916) uiLayer916.classList.remove('hidden');
-        if (uiLayerFeed) uiLayerFeed.classList.add('hidden');
-      }
     } else if (val === '1:1') {
       viewport.classList.add('aspect-square', 'max-w-[340px]');
-      if (window.mockupOverlayMode !== 1) {
-        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
-        if (uiLayer916) uiLayer916.classList.add('hidden');
-      }
     } else if (val === '4:5') {
       viewport.classList.add('aspect-[4/5]', 'max-w-[300px]');
-      if (window.mockupOverlayMode !== 1) {
-        if (uiLayerFeed) uiLayerFeed.classList.remove('hidden');
-        if (uiLayer916) uiLayer916.classList.add('hidden');
-      }
     }
+    
+    window.aplicarEstadoMockupOverlay();
   };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');

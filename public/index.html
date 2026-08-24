@@ -2061,98 +2061,96 @@
                             👁️ Alternar Safe Zone Overlay
                           </button>
                         </div>
-                        <div id="mockup-preview-viewport" class="relative max-w-[280px] w-full aspect-[9/16] bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl overflow-hidden flex items-center justify-center select-none">
-                          <span id="mockup-placeholder-text" class="text-xs text-slate-500 text-center px-4">Faça upload de uma imagem para simular o mockup e conferir as margens de corte</span>
-                          <img id="mockup-preview-img" class="hidden absolute inset-0 w-full h-full object-cover" alt="Preview da Arte">
-                          
-                          <!-- Layer 1: Overlay de Interface Nativa 9:16 (Reels / TikTok / Stories) -->
-                          <div id="mockup-ui-layer-916" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 z-20">
-                            <!-- Topo 9:16 -->
-                            <div class="flex items-center justify-between pt-1 px-1">
-                              <div class="flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-slate-100/60"></span>
-                                <span class="w-2 h-2 rounded-full bg-slate-100/30"></span>
-                                <span class="w-2 h-2 rounded-full bg-slate-100/30"></span>
-                              </div>
-                              <span class="text-[10px] text-white/80 font-semibold drop-shadow">Reels</span>
-                              <span class="text-[12px] text-white/80 drop-shadow">📷</span>
+                        <div id="mockup-preview-viewport" class="relative max-w-[280px] w-full aspect-[9/16] bg-slate-900 border-2 border-dashed border-slate-700 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center select-none">
+                          <!-- Placeholder inicial -->
+                          <span id="mockup-placeholder-text" class="text-xs text-slate-500 text-center px-4">Faça upload de uma imagem para simular o mockup</span>
+
+                          <!-- Imagem Base (Z-10) -->
+                          <img id="mockup-preview-img" class="hidden absolute inset-0 w-full h-full object-cover z-10" alt="Preview da Arte">
+
+                          <!-- Camada 1: Interface Nativa 9:16 Reels/TikTok (Z-20) -->
+                          <div id="mockup-native-916" class="hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3.5 bg-gradient-to-b from-black/40 via-transparent to-black/70">
+                            <!-- Topo -->
+                            <div class="flex items-center justify-between text-white/90 pt-1 text-xs">
+                              <span class="font-semibold tracking-wide">Reels</span>
+                              <span class="text-sm">📷</span>
                             </div>
 
-                            <!-- Meio & Lateral Direita 9:16 -->
-                            <div class="flex justify-end items-end flex-1 pb-14">
-                              <div class="flex flex-col items-center gap-3 pr-1">
-                                <!-- Avatar com botão + -->
-                                <div class="relative w-8 h-8 rounded-full border border-white/60 bg-slate-800/80 flex items-center justify-center text-[10px] text-white font-bold shadow">
-                                  <span>👤</span>
-                                  <span class="absolute -bottom-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] font-extrabold">+</span>
+                            <!-- Centro e Lateral Direita -->
+                            <div class="flex items-end justify-between w-full">
+                              <!-- Coluna da Esquerda (Perfil + Legenda + CTA) -->
+                              <div class="space-y-2 max-w-[70%] text-left pb-1">
+                                <button class="bg-emerald-500/90 text-slate-950 font-bold text-[11px] px-3 py-1 rounded-md shadow-lg flex items-center gap-1">
+                                  Saiba Mais <span>↗</span>
+                                </button>
+                                <div class="flex items-center gap-1.5 text-xs text-white font-medium drop-shadow">
+                                  <div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">HL</div>
+                                  <span>@cliente_ativo</span>
+                                  <span class="text-[10px] text-emerald-300 font-normal">• Seguir</span>
                                 </div>
-                                <!-- Curtir -->
-                                <div class="flex flex-col items-center">
-                                  <span class="text-base text-white drop-shadow">❤️</span>
-                                  <span class="text-[9px] text-white font-mono drop-shadow">24.8k</span>
-                                </div>
-                                <!-- Comentar -->
-                                <div class="flex flex-col items-center">
-                                  <span class="text-base text-white drop-shadow">💬</span>
-                                  <span class="text-[9px] text-white font-mono drop-shadow">512</span>
-                                </div>
-                                <!-- Compartilhar -->
-                                <div class="flex flex-col items-center">
-                                  <span class="text-base text-white drop-shadow">✈️</span>
-                                  <span class="text-[9px] text-white font-mono drop-shadow">1.2k</span>
-                                </div>
-                                <!-- Bookmark -->
-                                <div class="flex flex-col items-center">
-                                  <span class="text-base text-white drop-shadow">🔖</span>
-                                </div>
-                                <!-- Disco de Áudio -->
-                                <div class="w-6 h-6 rounded-full border border-white/60 bg-slate-900 animate-spin flex items-center justify-center text-[8px] text-white">
-                                  🎵
+                                <p class="text-[10px] text-white/90 line-clamp-2 drop-shadow leading-snug">
+                                  Confira os detalhes e transforme seus resultados com nossa metodologia... <span class="text-white/60">mais</span>
+                                </p>
+                                <div class="flex items-center gap-1 text-[9px] text-white/80 drop-shadow">
+                                  <span>♫</span>
+                                  <span class="truncate">Áudio Original • Oraculum Studio</span>
                                 </div>
                               </div>
-                            </div>
 
-                            <!-- Rodapé Esquerdo 9:16 -->
-                            <div class="absolute bottom-3 left-3 right-14 space-y-1 text-left pointer-events-none">
-                              <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/90 text-slate-950 text-[9px] font-extrabold shadow">
-                                Saiba Mais ↗
+                              <!-- Coluna da Direita (Ações) -->
+                              <div class="flex flex-col items-center gap-3 text-white text-right pb-1">
+                                <div class="flex flex-col items-center">
+                                  <span class="text-lg drop-shadow">❤️</span>
+                                  <span class="text-[9px] font-bold drop-shadow">24.8K</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                  <span class="text-lg drop-shadow">💬</span>
+                                  <span class="text-[9px] font-bold drop-shadow">512</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                  <span class="text-lg drop-shadow">✈️</span>
+                                  <span class="text-[9px] font-bold drop-shadow">1.2K</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                  <span class="text-lg drop-shadow">🔖</span>
+                                  <span class="text-[9px] font-bold drop-shadow">Salvar</span>
+                                </div>
+                                <div class="w-6 h-6 rounded-full bg-slate-800 border border-white/40 flex items-center justify-center text-[10px] animate-spin">
+                                  💿
+                                </div>
                               </div>
-                              <p class="text-[11px] font-bold text-white drop-shadow">@cliente_ativo • <span class="font-normal text-[10px] text-slate-200">Seguir</span></p>
-                              <p class="text-[10px] text-slate-200 line-clamp-1 drop-shadow">Veja o resultado completo e garanta a sua vaga... <span class="text-slate-400">mais</span></p>
-                              <p class="text-[9px] text-slate-300 flex items-center gap-1 font-mono drop-shadow">♫ Áudio Original - Oraculum Studio</p>
                             </div>
                           </div>
 
-                          <!-- Layer 2: Overlay de Interface Nativa Feed (1:1 e 4:5) -->
-                          <div id="mockup-ui-layer-feed" class="hidden absolute inset-0 pointer-events-none flex flex-col justify-between p-2 z-20 bg-slate-950/20">
-                            <!-- Cabeçalho Feed -->
-                            <div class="flex items-center justify-between px-2 py-1 bg-slate-950/70 rounded-t-lg backdrop-blur-xs border-b border-white/10">
+                          <!-- Camada 2: Interface Nativa Feed 1:1 e 4:5 (Z-20) -->
+                          <div id="mockup-native-feed" class="hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 bg-gradient-to-b from-black/50 via-transparent to-black/60">
+                            <div class="flex items-center justify-between text-white text-xs pt-1">
                               <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-emerald-500 text-[9px] font-bold text-slate-950 flex items-center justify-center">O</div>
-                                <span class="text-[10px] font-bold text-white">@cliente_ativo</span>
+                                <div class="w-5 h-5 rounded-full bg-emerald-600 text-[10px] font-bold flex items-center justify-center text-white">HL</div>
+                                <span class="font-semibold text-xs">@cliente_ativo</span>
                               </div>
-                              <span class="text-[10px] text-slate-400">•••</span>
+                              <span>•••</span>
                             </div>
-
-                            <!-- Barra de Ações Rodapé Feed -->
-                            <div class="p-2 bg-slate-950/80 rounded-b-lg border-t border-white/10 space-y-1.5 text-left">
-                              <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-xs">
+                            <div class="space-y-1.5 pb-1 text-white">
+                              <div class="w-full bg-emerald-500/90 text-slate-950 text-center font-bold text-[11px] py-1 rounded shadow">
+                                Saiba Mais
+                              </div>
+                              <div class="flex items-center justify-between text-base px-1">
+                                <div class="flex items-center gap-2.5">
                                   <span>❤️</span>
                                   <span>💬</span>
                                   <span>✈️</span>
                                 </div>
-                                <span class="text-xs">🔖</span>
-                              </div>
-                              <div class="w-full py-1 bg-emerald-600/90 text-white font-bold text-[10px] rounded text-center">
-                                Cadastre-se / Saiba Mais &gt;
+                                <span>🔖</span>
                               </div>
                             </div>
                           </div>
 
-                          <!-- Layer 3: Overlay de Guias Técnicas (Safe Zone Bounding Box) -->
-                          <div id="mockup-safezone-layer" class="hidden absolute inset-0 pointer-events-none z-30 border-t-[48px] border-b-[96px] border-r-[54px] border-transparent bg-red-500/10 before:absolute before:inset-0 before:border-2 before:border-dashed before:border-emerald-400/80">
-                            <div class="absolute bottom-2 left-3 right-12 text-[10px] text-emerald-300 font-mono bg-slate-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">Área Segura (Safe Zone)</div>
+                          <!-- Camada 3: Safe Zone Grid (Z-30) -->
+                          <div id="mockup-safezone-grid" class="hidden absolute inset-0 z-30 pointer-events-none border-t-[48px] border-b-[88px] border-r-[52px] border-transparent bg-red-500/15 before:absolute before:inset-0 before:border-2 before:border-dashed before:border-emerald-400">
+                            <div class="absolute bottom-1 left-2 text-[9px] text-emerald-300 font-mono bg-slate-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                              Área Segura (Safe Zone)
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3738,7 +3736,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.49.0"></script>
+<script src="/app.js?v=9999.50.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
