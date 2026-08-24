@@ -994,12 +994,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.remove();
   };
 
-  window.appendChatMessage = function(sender, text) {
+  // Salvar mensagem no histórico consolidado do cliente ativo
+  window.salvarMensagemNoHistorico = function(sender, text) {
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+    const storageKey = `chat_history_${clientId}`;
+
+    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    history.push({
+      role: sender === 'user' ? 'user' : 'assistant',
+      content: text,
+      created_at: new Date().toISOString()
+    });
+
+    localStorage.setItem(storageKey, JSON.stringify(history));
+  };
+
+  // Atualize appendChatMessage para invocar a persistência
+  window.appendChatMessage = function(sender, text, isRestoring = false) {
     if (typeof hideChatLoadingSpinner === 'function') {
       hideChatLoadingSpinner();
     }
-    const container = document.getElementById('chat-messages-container') || document.getElementById('chat-messages-list') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
     if (!container) return;
+
+    // Se não for restauração de histórico na inicialização, persiste
+    if (!isRestoring) {
+      if (typeof window.salvarMensagemNoHistorico === 'function') {
+        window.salvarMensagemNoHistorico(sender, text);
+      }
+    }
 
     const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
     const msgWrapper = document.createElement('div');
@@ -1033,7 +1057,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.appendChild(msgWrapper);
     container.scrollTop = container.scrollHeight;
-  }
+  };
+
+  // Função de restauração do chat ao selecionar cliente ou abrir a aba
+  window.restaurarHistoricoChat = function() {
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+    const storageKey = `chat_history_${clientId}`;
+    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
+    if (!container) return;
+
+    // Limpa mensagens anteriores mantendo o header de contexto
+    const header = container.querySelector('.chat-context-header') || container.firstElementChild;
+    container.innerHTML = '';
+    if (header && header.className && header.className.includes('chat-context-header')) {
+      container.appendChild(header);
+    }
+
+    history.forEach(msg => {
+      window.appendChatMessage(msg.role, msg.content, true);
+    });
+  };
 
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
