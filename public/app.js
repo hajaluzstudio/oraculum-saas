@@ -8462,6 +8462,12 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   }
 };
 
+window.carregarUltimoBIDoCliente = function(clientId) {
+  if (typeof window.carregarMetricasBI === 'function') {
+    window.carregarMetricasBI(clientId);
+  }
+};
+
 // ============================================================================
 // MÓDULO UNIFICADO: BI & FEEDBACK LOOP (RESOLUÇÃO ROBUSTA POR CLIENTE)
 // ============================================================================
@@ -8469,6 +8475,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 // Helper universal para resolver o ID e Nome do cliente ativo em qualquer cenário
 window.getResolvedActiveClient = function() {
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  
   let id = window.currentClientId 
         || window.activeClientId 
         || window.currentActiveClientId 
@@ -8476,19 +8483,27 @@ window.getResolvedActiveClient = function() {
         || localStorage.getItem('oraculum_active_client_id')
         || localStorage.getItem('oraculum_active_client');
 
-  let name = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : null);
-
-  // Se houver select mas sem ID gravado, pega a primeira opção válida
-  if ((!id || id === 'null' || id === 'undefined') && selectEl && selectEl.options.length > 0) {
-    id = selectEl.options[0].value;
-    name = selectEl.options[0].textContent;
+  let name = window.currentClientName;
+  
+  if (!name && selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0]) {
+    name = selectEl.selectedOptions[0].textContent;
   }
 
-  if (!name || name.includes('Cliente Selecionado') || name === 'Cliente') {
+  // Fallback seguro se não houver seleção
+  if (!id || id === 'null' || id === 'undefined') {
+    id = 'client_1787406730';
     name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
   }
 
-  return { id: id || 'client_dr_lucas', name: name };
+  if (!name || name.includes('Cliente Selecionado') || name === 'Cliente') {
+    if (String(id).includes('1787406730') || String(id).toLowerCase().includes('lucas')) {
+      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
+    } else {
+      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
+    }
+  }
+
+  return { id: String(id), name: String(name) };
 };
 
 // 1. Abertura Garantida do Modal de Lançamento de BI (Injeção Direta no Body)
