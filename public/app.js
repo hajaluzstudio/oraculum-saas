@@ -2394,6 +2394,14 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarGavetasPorAba('copywriting', 'feed-gavetas-copywriting', tasks);
     renderizarGavetasPorAba('comercial',   'feed-gavetas-comercial',   tasks);
 
+    // Injeta a Ferramenta Modular de Visão Computacional em todas as abas
+    if (typeof window.renderizarInspecionarCriativoModular === 'function') {
+      window.renderizarInspecionarCriativoModular('container-inspector-video', 'video');
+      window.renderizarInspecionarCriativoModular('container-inspector-design', 'image');
+      window.renderizarInspecionarCriativoModular('container-inspector-trafego', 'video');
+      window.renderizarInspecionarCriativoModular('container-inspector-copy', 'image');
+    }
+
     // Mantém compat com o container legacy de vídeo (teleprompter automático)
     const videoTask = tasks.find(t => (t.category || '').toLowerCase() === 'video');
     if (videoTask) {
@@ -2549,79 +2557,228 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================================
-  // 4. AI CREATIVE SCORING (ORIGEM DO PC VS GOOGLE DRIVE)
+  // 4. AI CREATIVE SCORING MODULAR (TODAS AS ABAS DA SALA DE OPERAÇÃO)
   // ============================================================================
-  const btnSourcePc = document.getElementById('btn-source-pc');
-  const btnSourceDrive = document.getElementById('btn-source-drive');
-  const sectionSourcePc = document.getElementById('section-source-pc');
-  const sectionSourceDrive = document.getElementById('section-source-drive');
-  let currentSource = 'pc';
+  window.selectedCreativeFiles = window.selectedCreativeFiles || {};
 
-  if (btnSourcePc && btnSourceDrive) {
-    btnSourcePc.addEventListener('click', () => {
-      currentSource = 'pc';
-      btnSourcePc.classList.add('active');
-      btnSourceDrive.classList.remove('active');
-      sectionSourcePc.style.display = 'block';
-      sectionSourceDrive.style.display = 'none';
-    });
+  window.renderizarInspecionarCriativoModular = function(targetElementId, defaultType) {
+    const container = document.getElementById(targetElementId);
+    if (!container) return;
 
-    btnSourceDrive.addEventListener('click', () => {
-      currentSource = 'drive';
-      btnSourceDrive.classList.add('active');
-      btnSourcePc.classList.remove('active');
-      sectionSourceDrive.style.display = 'block';
-      sectionSourcePc.style.display = 'none';
-    });
-  }
+    const defaultAsset = defaultType || 'video';
 
-  // File Input / Drag & Drop Handler
-  const fileInputPc = document.getElementById('inspect-file-input');
-  const fileSelectedBadge = document.getElementById('file-selected-info');
-  const fileSelectedName = document.getElementById('file-selected-name');
-  const dropzonePc = document.getElementById('dropzone-pc');
-  let selectedFileObj = null;
+    container.innerHTML = `
+      <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mt-4 mb-4">
+        <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between cursor-pointer select-none" onclick="window.toggleCreativeInspector('${targetElementId}')">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📸</span>
+            <span class="font-bold text-sm text-emerald-400">Inspecionar Criativo (Visão Computacional)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">AI Quality Gate</span>
+          </div>
+          <span id="icon-toggle-inspector-${targetElementId}" class="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+            ▼ Expandir Ferramenta
+          </span>
+        </div>
 
-  if (fileInputPc) {
-    fileInputPc.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        selectedFileObj = e.target.files[0];
-        fileSelectedName.textContent = `${selectedFileObj.name} (${(selectedFileObj.size / (1024 * 1024)).toFixed(2)} MB)`;
-        fileSelectedBadge.style.display = 'inline-flex';
+        <div id="body-inspector-${targetElementId}" class="hidden p-6 bg-slate-950/40">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Formulário de Upload e Configuração -->
+            <div class="lg:col-span-6 space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Título / Identificador do Criativo *</label>
+                <input type="text" id="inspect-title-${targetElementId}" placeholder="Ex: Anúncio Rinoplastia V2" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Ativo *</label>
+                  <select id="inspect-type-${targetElementId}" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                    <option value="video" ${defaultAsset === 'video' ? 'selected' : ''}>Vídeo (Foco Hook 3s)</option>
+                    <option value="image" ${defaultAsset === 'image' ? 'selected' : ''}>Imagem Estática / Banner</option>
+                    <option value="carousel" ${defaultAsset === 'carousel' ? 'selected' : ''}>Carrossel</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nicho / Especialidade *</label>
+                  <input type="text" id="inspect-niche-${targetElementId}" placeholder="Ex: Medicina Estética" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+
+              <!-- Dropzone de Arquivo -->
+              <div id="dropzone-${targetElementId}" class="border-2 border-dashed border-slate-700/80 hover:border-emerald-500/60 bg-slate-900/40 rounded-xl p-6 text-center cursor-pointer transition-colors" onclick="document.getElementById('file-input-${targetElementId}').click()">
+                <input type="file" id="file-input-${targetElementId}" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp" class="hidden" onchange="window.handleCreativeFileSelect(event, '${targetElementId}')">
+                <div class="flex flex-col items-center gap-2">
+                  <span class="text-3xl">☁️</span>
+                  <p id="file-label-${targetElementId}" class="text-xs font-semibold text-slate-300">Clique ou arraste o arquivo do criativo (Vídeo ou Imagem)</p>
+                  <p class="text-[10px] text-slate-500 font-mono">Formatos: MP4, MOV, WEBM, JPG, PNG (Até 50MB)</p>
+                </div>
+              </div>
+
+              <button type="button" id="btn-exec-${targetElementId}" onclick="window.executarScoringVisao('${targetElementId}')" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                <span>👁️ Executar AI Scoring de Retenção</span>
+              </button>
+            </div>
+
+            <!-- Painel Lateral de Resultados da IA -->
+            <div class="lg:col-span-6 border border-slate-800 bg-slate-900/70 rounded-xl p-5 flex flex-col justify-between" id="report-container-${targetElementId}">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span>📊</span> Diagnóstico de Retenção & Hook Score
+                </span>
+                <span id="badge-status-${targetElementId}" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                  Aguardando criativo
+                </span>
+              </div>
+
+              <div id="report-content-${targetElementId}" class="py-12 text-center text-slate-500 text-xs">
+                <p class="text-2xl mb-2">🎬</p>
+                <p>Envie um arquivo para a IA analisar os quadros e o potencial de conversão.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  window.toggleCreativeInspector = function(targetId) {
+    const body = document.getElementById(`body-inspector-${targetId}`);
+    const icon = document.getElementById(`icon-toggle-inspector-${targetId}`);
+    if (!body) return;
+    if (body.classList.contains('hidden')) {
+      body.classList.remove('hidden');
+      if (icon) icon.textContent = '▲ Recolher Ferramenta';
+    } else {
+      body.classList.add('hidden');
+      if (icon) icon.textContent = '▼ Expandir Ferramenta';
+    }
+  };
+
+  window.handleCreativeFileSelect = function(event, targetId) {
+    const files = event.target.files;
+    if (files && files[0]) {
+      window.selectedCreativeFiles[targetId] = files[0];
+      const label = document.getElementById(`file-label-${targetId}`);
+      if (label) {
+        label.textContent = `📄 ${files[0].name} (${(files[0].size / (1024 * 1024)).toFixed(2)} MB)`;
+        label.className = 'text-xs font-bold text-emerald-400';
       }
-    });
-  }
+    }
+  };
 
-  if (dropzonePc) {
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropzonePc.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        dropzonePc.classList.add('dragover');
-      }, false);
-    });
+  window.executarScoringVisao = async function(targetId) {
+    const fileObj = window.selectedCreativeFiles[targetId];
+    const title = document.getElementById(`inspect-title-${targetId}`)?.value || 'Criativo sem título';
+    const type = document.getElementById(`inspect-type-${targetId}`)?.value || 'video';
+    const niche = document.getElementById(`inspect-niche-${targetId}`)?.value || 'Geral';
+    const badge = document.getElementById(`badge-status-${targetId}`);
+    const report = document.getElementById(`report-content-${targetId}`);
 
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropzonePc.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        dropzonePc.classList.remove('dragover');
-      }, false);
-    });
-
-    dropzonePc.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-
-      if (files && files[0]) {
-        fileInputPc.files = files;
-        selectedFileObj = files[0];
-        fileSelectedName.textContent = `${selectedFileObj.name} (${(selectedFileObj.size / (1024 * 1024)).toFixed(2)} MB)`;
-        fileSelectedBadge.style.display = 'inline-flex';
+    if (!fileObj) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Selecione ou arraste um arquivo de vídeo ou imagem primeiro.', 'warning');
+      } else {
+        alert('Selecione ou arraste um arquivo primeiro.');
       }
-    });
-  }
+      return;
+    }
 
-  // Envio do formulário de inspeção
-  const formInspect = document.getElementById('form-creative-inspect');
+    if (badge) {
+      badge.textContent = 'Analisando via Visão Computacional...';
+      badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800';
+    }
+
+    if (report) {
+      report.innerHTML = `
+        <div class="py-12 text-center text-cyan-400 text-xs flex flex-col items-center gap-3">
+          <span class="text-3xl animate-spin">🌀</span>
+          <p class="font-semibold">O Gemini Visão Computacional está lendo os quadros do arquivo...</p>
+        </div>
+      `;
+    }
+
+    try {
+      let base64Frames = [];
+      if (fileObj.type.startsWith('video/')) {
+        base64Frames = await extractVideoFrames(fileObj);
+      } else if (fileObj.type.startsWith('image/')) {
+        const b64 = await fileToBase64(fileObj);
+        base64Frames.push(b64);
+      }
+
+      const payload = {
+        frames: base64Frames,
+        niche: niche,
+        title: title,
+        assetType: type
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/inspect-creative`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': activeTenantId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await response.json();
+      if (resData.success) {
+        const data = resData.data;
+        if (badge) {
+          badge.textContent = data.hookScore >= 70 ? 'APROVADO (Quality Gate)' : 'AJUSTES NECESSÁRIOS';
+          badge.className = data.hookScore >= 70
+            ? 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold'
+            : 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold';
+        }
+
+        if (report) {
+          report.className = 'py-2 space-y-3 text-left';
+          report.innerHTML = `
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
+                <span class="text-[10px] text-slate-400">AI Hook Score (0-100)</span>
+                <h4 class="text-2xl font-extrabold ${data.hookScore >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${data.hookScore}</h4>
+              </div>
+              <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-center">
+                <span class="text-[10px] text-slate-400">Conversion Score</span>
+                <h4 class="text-2xl font-extrabold text-cyan-400">${data.conversionScore}</h4>
+              </div>
+            </div>
+
+            <div class="bg-emerald-950/20 border border-emerald-800/40 p-3 rounded-lg">
+              <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Quebra de Padrão</span>
+              <p class="text-xs text-slate-200 mt-1">${data.patternBreak || '-'}</p>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Legibilidade e Elementos</span>
+              <p class="text-xs text-slate-300 mt-1">${data.readability || '-'}</p>
+            </div>
+
+            <div class="bg-red-950/20 border border-red-800/40 p-3 rounded-lg">
+              <span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Ajustes Cirúrgicos Recomendados</span>
+              <ul class="text-xs text-slate-200 mt-1.5 list-disc pl-4 space-y-1">
+                ${(data.actionableFixes || []).map(f => `<li>${f}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+      } else {
+        throw new Error(resData.error || 'Falha na avaliação do criativo');
+      }
+    } catch (err) {
+      if (badge) {
+        badge.textContent = 'Falha na Inspeção';
+        badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800';
+      }
+      if (report) {
+        report.innerHTML = `<div class="py-6 text-center text-red-400 text-xs">Erro ao processar visão: ${err.message}</div>`;
+      }
+    }
+  };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
 
