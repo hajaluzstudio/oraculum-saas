@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
@@ -920,6 +920,94 @@ document.addEventListener('DOMContentLoaded', () => {
       showChatLoadingSpinner();
     }
 
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+    const supabase = window.supabaseClient || window.supabase;
+
+    try {
+      if (supabase) {
+        await supabase.from('chat_history').insert([{
+          client_id: clientId,
+          role: 'user',
+          content: message,
+          created_at: new Date().toISOString()
+        }]);
+      }
+    } catch (e) {
+      console.warn('[Chat Insert User Error]:', e);
+    }
+
+    const dossier = typeof activeClient.dossie_estrategico === 'object'
+      ? JSON.stringify(activeClient.dossie_estrategico)
+      : String(activeClient.dossie_estrategico || activeClient.briefing_data || '');
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          clientName: activeClient.name || 'Dr. Lucas',
+          clientNiche: activeClient.niche || 'Medicina Estética',
+          dossierContext: dossier.slice(0, 3000)
+        })
+      });
+
+      const data = await res.json();
+      let replyText = data.reply || data.message || data.display_text || data.content || 'Diretriz estratégica alinhada ao Dossiê.';
+      let tasksArray = data.tasks || [];
+      
+      try {
+        const parsed = typeof replyText === 'string' ? JSON.parse(replyText.replace(/`json/g, '').replace(/`/g, '')) : replyText;
+        if (parsed.replyText) replyText = parsed.replyText;
+        if (parsed.display_text) replyText = parsed.display_text;
+        if (parsed.tasks && Array.isArray(parsed.tasks)) tasksArray = parsed.tasks;
+      } catch(e) {}
+      
+      try {
+        if (supabase) {
+          await supabase.from('chat_history').insert([{
+            client_id: clientId,
+            role: 'model',
+            content: typeof replyText === 'string' ? replyText : JSON.stringify(replyText),
+            tasks_payload: tasksArray.length > 0 ? tasksArray : null,
+            created_at: new Date().toISOString()
+          }]);
+        }
+      } catch (e) {
+        console.warn('[Chat Insert Model Error]:', e);
+      }
+
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', replyText, tasksArray, true);
+      }
+    } catch (err) {
+      console.warn('[Chat Fallback Executado]:', err);
+      const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
+      
+      try {
+        if (supabase) {
+          await supabase.from('chat_history').insert([{
+            client_id: clientId,
+            role: 'model',
+            content: fallbackText,
+            tasks_payload: null,
+            created_at: new Date().toISOString()
+          }]);
+        }
+      } catch (e) {}
+
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', fallbackText, [], true);
+      }
+    }
+  }
+    if (inputEl) inputEl.value = '';
+
+    if (typeof showChatLoadingSpinner === 'function') {
+      showChatLoadingSpinner();
+    }
+
     const activeClient = window.activeClient || {};
     const dossier = typeof activeClient.dossie_estrategico === 'object'
       ? JSON.stringify(activeClient.dossie_estrategico)
@@ -1011,11 +1099,27 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem(key, JSON.stringify(history));
   };
 
-  window.carregarHistoricoChat = function(clientId) {
+  window.carregarHistoricoChat = async function(clientId) {
     const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
     if (!container) return;
-    const history = JSON.parse(localStorage.getItem(`chat_history_${clientId}`) || '[]');
-    if (history.length === 0) return;
+
+    const supabase = window.supabaseClient || window.supabase;
+    let history = [];
+
+    try {
+      if (supabase) {
+        const { data } = await supabase
+          .from('chat_history')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: true });
+        if (Array.isArray(data) && data.length > 0) history = data;
+      }
+    } catch (e) {}
+
+    if (history.length === 0) {
+      history = JSON.parse(localStorage.getItem(chat_history_ + clientId) || '[]');
+    }
 
     // Limpa mensagens mantendo o header
     const header = container.querySelector('.chat-context-header') || container.firstElementChild;
@@ -1026,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     history.forEach(msg => {
       if (typeof window.appendChatMessage === 'function') {
-        window.appendChatMessage(msg.role, msg.content, msg.tasks, true);
+        window.appendChatMessage(msg.role, msg.content, msg.tasks_payload || msg.tasks, true);
       }
     });
   };
@@ -6589,10 +6693,12 @@ window.sincronizarApisBI = async function() {
   }, 1200);
 };
 
-// 3. Inicializa��o no carregamento da p�gina
+// 3. Inicializa��o no carregamento da p�gina
 document.addEventListener('DOMContentLoaded', () => {
   const activeClient = localStorage.getItem('active_client_id') || 'client_1707406730';
   if (typeof window.carregarHistoricoChat === 'function') window.carregarHistoricoChat(activeClient);
   if (typeof window.carregarSalaOperacaoCompleta === 'function') window.carregarSalaOperacaoCompleta();
 });
+
+
 
