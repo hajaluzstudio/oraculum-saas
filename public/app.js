@@ -4,6 +4,21 @@
  */
 // 1. Purga imediata de Service Worker travado em cache
 window.persistirMensagemChat = function() { /* No-op: persistência gerenciada pelo Supabase */ };
+
+function sanitizeTaskContent(rawContent) {
+  if (!rawContent) return '';
+  let text = String(rawContent).trim();
+  if (text.startsWith('{') && text.includes('replyText')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.replyText) return parsed.replyText;
+    } catch (e) {
+      // Se falhar o parse, tenta extrair via regex simples ou retorna o texto original limpo
+    }
+  }
+  return text;
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     for (let registration of registrations) {
@@ -1454,11 +1469,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
     for (const t of tasks) {
+      const sanitizedContent = sanitizeTaskContent(t.content || t.description || '');
       const item = {
         client_id: String(clientId),
         category: t.category || 'geral',
         title: t.title || 'Tarefa Estratégica',
-        content: t.content || t.description || '',
+        content: sanitizedContent,
         status: 'pending',
         created_at: new Date().toISOString()
       };
@@ -1643,11 +1659,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
     for (const t of tasks) {
+      const sanitizedContent = sanitizeTaskContent(t.content || t.description || '');
       const item = {
         client_id: String(clientId),
         category: t.category || 'geral',
         title: t.title || 'Tarefa Estratégica',
-        content: t.content || t.description || '',
+        content: sanitizedContent,
         status: 'pending',
         created_at: new Date().toISOString()
       };
@@ -1698,9 +1715,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) {}
 
-    // Deduplicação
+    // Deduplicação e Sanitização
     const seen = new Set();
-    tasks = tasks.filter(t => {
+    tasks = tasks.map(t => ({ ...t, content: sanitizeTaskContent(t.content) })).filter(t => {
       const k = `${t.category}_${(t.content || '').slice(0, 35)}`;
       if (seen.has(k)) return false;
       seen.add(k);
