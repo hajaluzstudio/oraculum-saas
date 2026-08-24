@@ -1003,35 +1003,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.remove();
   };
 
-  // Salvar mensagem no histórico consolidado do cliente ativo
-  window.salvarMensagemNoHistorico = function(sender, text) {
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-    const storageKey = `chat_history_${clientId}`;
+  // --- PERSISTÊNCIA DO CHAT ESTRATÉGICO ---
+  window.persistirMensagemChat = function(clientId, role, content, tasks = null) {
+    const key = `chat_history_${clientId}`;
+    const history = JSON.parse(localStorage.getItem(key) || '[]');
+    history.push({ role, content, tasks, timestamp: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(history));
+  };
 
-    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    history.push({
-      role: sender === 'user' ? 'user' : 'assistant',
-      content: text,
-      created_at: new Date().toISOString()
+  window.carregarHistoricoChat = function(clientId) {
+    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+    if (!container) return;
+    const history = JSON.parse(localStorage.getItem(`chat_history_${clientId}`) || '[]');
+    if (history.length === 0) return;
+
+    // Limpa mensagens mantendo o header
+    const header = container.querySelector('.chat-context-header') || container.firstElementChild;
+    container.innerHTML = '';
+    if (header && header.className && header.className.includes('chat-context-header')) {
+      container.appendChild(header);
+    }
+
+    history.forEach(msg => {
+      if (typeof window.appendChatMessage === 'function') {
+        window.appendChatMessage(msg.role, msg.content, msg.tasks, true);
+      }
     });
-
-    localStorage.setItem(storageKey, JSON.stringify(history));
   };
 
   // Atualize appendChatMessage para invocar a persistência
   window.appendChatMessage = function(sender, text, tasksArray = [], isRestoring = false) {
-    if (typeof hideChatLoadingSpinner === 'function') {
-      hideChatLoadingSpinner();
-    }
+    if (typeof hideChatLoadingSpinner === 'function') hideChatLoadingSpinner();
     const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
     if (!container) return;
 
-    // Se não for restauração de histórico na inicialização, persiste
     if (!isRestoring) {
-      if (typeof window.salvarMensagemNoHistorico === 'function') {
-        window.salvarMensagemNoHistorico(sender, text);
-      }
+      const activeClient = window.activeClient || window.currentClient || {};
+      const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+      window.persistirMensagemChat(clientId, sender, text, tasksArray);
     }
 
     const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
@@ -1067,28 +1076,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.appendChild(msgWrapper);
     container.scrollTop = container.scrollHeight;
-  };
-
-  // Função de restauração do chat ao selecionar cliente ou abrir a aba
-  window.restaurarHistoricoChat = function() {
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-    const storageKey = `chat_history_${clientId}`;
-    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
-
-    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
-    if (!container) return;
-
-    // Limpa mensagens anteriores mantendo o header de contexto
-    const header = container.querySelector('.chat-context-header') || container.firstElementChild;
-    container.innerHTML = '';
-    if (header && header.className && header.className.includes('chat-context-header')) {
-      container.appendChild(header);
-    }
-
-    history.forEach(msg => {
-      window.appendChatMessage(msg.role, msg.content, true);
-    });
   };
 
   // ============================================================================
@@ -1147,66 +1134,58 @@ document.addEventListener('DOMContentLoaded', () => {
     return segments;
   }
 
-  // Despacho determinístico com dados já estruturados pela IA
+  // --- DESPACHO E PERSISTÊNCIA DA WAR ROOM ---
   window.dispatchBriefingToWarRoom = async function (target, taskPayloadArray) {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
     const supabase = window.supabaseClient || window.supabase;
 
-    let tasksToDispatch = [];
-
-    // Se já veio em JSON da IA (Array)
+    let tasks = [];
     if (Array.isArray(taskPayloadArray) && taskPayloadArray.length > 0) {
-      tasksToDispatch = taskPayloadArray;
-    } 
-    // Se target for o objeto de resposta completo (caso renderChatReply)
-    else if (target && typeof target === 'object' && !(target instanceof HTMLElement) && target.tasks && Array.isArray(target.tasks)) {
-      tasksToDispatch = target.tasks;
-    }
-    // Fallback de contingência
-    else {
+      tasks = taskPayloadArray;
+    } else {
       const container = typeof target === 'string' ? document.getElementById(target) : (target instanceof HTMLElement ? target : null);
-      const rawText = container ? (container.querySelector('.chat-content')?.innerText || container.innerText || '') : '';
-      
-      tasksToDispatch = extrairSegmentosEstrategicos(rawText);
+      const text = container ? (container.querySelector('.chat-content')?.innerText || container.innerText || '') : '';
+      tasks = [
+        { category: 'video', title: 'Roteiro de Gravação e Ganchos', content: text },
+        { category: 'copywriting', title: 'Headline & Copy Persuasiva', content: text },
+        { category: 'comercial', title: 'Script Comercial & Quebra de Objeção', content: text }
+      ];
     }
 
-    for (const task of tasksToDispatch) {
-      const payload = {
-        client_id: String(clientId),
-        title: task.title,
-        content: task.content,
-        category: task.category,
-        status: 'todo',
-        priority: 'high',
+    // Salva no LocalStorage permanente do cliente
+    const storageKey = `war_room_all_tasks_${clientId}`;
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    tasks.forEach(t => {
+      const item = {
+        id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        client_id: clientId,
+        category: t.category,
+        title: t.title,
+        content: t.content,
         created_at: new Date().toISOString()
       };
+      existing.unshift(item);
 
-      try {
-        if (supabase) await supabase.from('war_room_tasks').insert([payload]);
-      } catch (e) {
-        console.warn('[WarRoom Supabase Insert]:', e);
+      if (supabase) {
+        supabase.from('war_room_tasks').insert([item]).catch(console.warn);
       }
+    });
 
-      const key = `war_room_${clientId}_${task.category}`;
-      const list = JSON.parse(localStorage.getItem(key) || '[]');
-      list.unshift(payload);
-      localStorage.setItem(key, JSON.stringify(list));
+    localStorage.setItem(storageKey, JSON.stringify(existing));
+
+    // Feedback visual no botão
+    const btn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
+    if (btn) {
+      btn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg pointer-events-none flex items-center gap-1.5';
+      btn.innerHTML = '✓ Despachado com Sucesso!';
     }
 
-    // Atualiza botão do chat
-    const approveBtn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
-    if (approveBtn) {
-      approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 pointer-events-none';
-      approveBtn.innerHTML = '✓ Despachado com Sucesso!';
-    }
-
-    if (typeof carregarSalaOperacaoCompleta === 'function') {
-      carregarSalaOperacaoCompleta();
-    }
+    carregarSalaOperacaoCompleta();
   };
 
-  // Renderizador Estático Seguro (Nunca remove ferramentas da tela)
+  // --- RENDERIZAÇÃO ESTÁTICA BLINDADA DA WAR ROOM ---
   async function carregarSalaOperacaoCompleta() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
@@ -1214,80 +1193,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    let tasks = [];
+    // Busca do LocalStorage
+    const storageKey = `war_room_all_tasks_${clientId}`;
+    let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+    // Busca complementar do Supabase se disponível
     try {
       const supabase = window.supabaseClient || window.supabase;
       if (supabase) {
         const { data } = await supabase.from('war_room_tasks').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
-        if (data) tasks = data;
+        if (Array.isArray(data) && data.length > 0) {
+          tasks = [...tasks, ...data];
+        }
       }
     } catch (e) {}
 
-    ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
-      const local = JSON.parse(localStorage.getItem(`war_room_${clientId}_${cat}`) || '[]');
-      tasks = [...tasks, ...local];
+    // Deduplicação
+    const seen = new Set();
+    tasks = tasks.filter(t => {
+      const k = `${t.category}_${(t.content || '').slice(0, 35)}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
     });
 
     window.__WAR_ROOM_TASKS__ = tasks;
 
-    // Hidratação Segura por Aba
-    // 1. VÍDEO
-    const videoTask = tasks.find(t => t.category === 'video');
+    // 1. Renderiza o conteúdo de VÍDEO nos containers fixos
+    const videoTask = tasks.find(t => t.category === 'video' || t.category === 'roteiro');
+    const topVideoText = document.getElementById('wr-video-content');
+    const teleprompterBox = document.getElementById('script-content-body');
+
     if (videoTask) {
-      // Topbox de Estratégia de Vídeo
-      const videoBox = document.getElementById('wr-video-content');
-      if (videoBox) {
-        videoBox.innerHTML = `<div class="text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
-      }
-      
-      // Teleprompter / Roteiro Gerado Automático (Injetar no #script-content-body se existir, caso não seja gerado local)
-      const scriptDisplay = document.querySelector('#script-content-body, #war-room-teleprompter-content, .teleprompter-text');
-      if (scriptDisplay) {
-        // Se a tarefa contiver marcações de "Roteiro" ou for a única, injeta para não ficar vazio.
-        if (!scriptDisplay.innerHTML.includes('Gerar Roteiro Preditivo')) {
-           scriptDisplay.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
-        }
+      if (topVideoText) topVideoText.innerHTML = `<div class="text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+      if (teleprompterBox && !teleprompterBox.innerHTML.includes('Gerar Roteiro Preditivo')) {
+        teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
       }
     }
 
-    // 2. DESIGN, TRAFEGO, COPY, SALES (Injetamos um card de Estratégia no topo de cada painel sem quebrar as ferramentas)
-    const categoryToPanel = {
-      'design': 'wr-design',
-      'trafego': 'wr-traffic',
-      'copywriting': 'wr-copy',
-      'comercial': 'wr-sales'
-    };
-
-    Object.entries(categoryToPanel).forEach(([cat, panelId]) => {
+    // 2. Renderiza os feeds das outras categorias
+    ['design', 'trafego', 'copywriting', 'comercial'].forEach(cat => {
+      const panelMap = { 'design': 'wr-design', 'trafego': 'wr-traffic', 'copywriting': 'wr-copy', 'comercial': 'wr-sales' };
+      const panelId = panelMap[cat];
       const panel = document.getElementById(panelId);
       if (!panel) return;
-      
-      const latestTask = tasks.find(t => t.category === cat);
-      let strategyCard = panel.querySelector('.injected-strategy-card');
-      
-      if (latestTask) {
-        if (!strategyCard) {
-          // Criar o card e injetar no topo do conteúdo do painel
-          strategyCard = document.createElement('div');
-          strategyCard.className = 'card-glass injected-strategy-card mb-4';
-          strategyCard.style.border = '1px solid rgba(16, 185, 129, 0.4)';
-          
-          const contentBox = document.getElementById(`${panelId}-content`);
-          if (contentBox && contentBox.parentElement) {
-            contentBox.parentElement.insertBefore(strategyCard, contentBox);
-          }
+
+      let feed = document.getElementById(`${cat}-tasks-feed`);
+      if (!feed) {
+        feed = document.createElement('div');
+        feed.id = `${cat}-tasks-feed`;
+        feed.className = 'mb-4';
+        const contentBox = document.getElementById(`${panelId}-content`);
+        if (contentBox && contentBox.parentElement) {
+          contentBox.parentElement.insertBefore(feed, contentBox);
         }
-        
-        strategyCard.innerHTML = `
-          <div class="card-header">
-            <h3><i class="fa-solid fa-bolt text-emerald-400"></i> Diretrizes Oraculum (${cat.toUpperCase()})</h3>
+      }
+
+      const catTasks = tasks.filter(t => t.category === cat);
+
+      if (catTasks.length === 0) {
+        feed.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhuma diretriz despachada para ${cat.toUpperCase()} até o momento.</div>`;
+      } else {
+        feed.innerHTML = catTasks.map(t => `
+          <div class="p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-2 mt-4">
+            <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
+              <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded">${t.category.toUpperCase()}</span>
+              <span class="text-[11px] text-slate-400">${new Date(t.created_at || Date.now()).toLocaleTimeString()}</span>
+            </div>
+            <h4 class="text-sm font-semibold text-emerald-300">${t.title || 'Diretriz Operacional'}</h4>
+            <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
           </div>
-          <div class="p-4 text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${latestTask.content}</div>
-        `;
+        `).join('');
       }
     });
 
-    vincularAbasEstaticasWarRoom();
+    if (typeof vincularAbasEstaticasWarRoom === 'function') {
+      vincularAbasEstaticasWarRoom();
+    }
   }
 
   function vincularAbasEstaticasWarRoom() {
@@ -6606,3 +6588,11 @@ window.sincronizarApisBI = async function() {
     alert('APIs sincronizadas com sucesso! Métricas reais atualizadas no painel.');
   }, 1200);
 };
+
+// 3. Inicializa��o no carregamento da p�gina
+document.addEventListener('DOMContentLoaded', () => {
+  const activeClient = localStorage.getItem('active_client_id') || 'client_1707406730';
+  if (typeof window.carregarHistoricoChat === 'function') window.carregarHistoricoChat(activeClient);
+  if (typeof window.carregarSalaOperacaoCompleta === 'function') window.carregarSalaOperacaoCompleta();
+});
+
