@@ -33,9 +33,8 @@ window.toggleCollapsibleSection = function(containerId, buttonEl) {
 window.groupTasksByPauta = function(tasks) {
   const groups = {};
   tasks.forEach(task => {
-    const match = task.title ? task.title.match(/\\[(.*?)\\]/) : null;
-    const pautaKey = match ? match[1].trim() : (task.title ? task.title.split('-')[0].trim() : 'Estratégia Geral');
-    
+    const pautaKey = task.pauta_master || task.batch_id || `Pauta de Produção - ${task.created_at ? new Date(task.created_at).toLocaleDateString('pt-BR') : 'Geral'}`;
+
     if (!groups[pautaKey]) {
       groups[pautaKey] = {
         tema: pautaKey,
@@ -1502,6 +1501,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const storageKey = `war_room_all_tasks_${clientId}`;
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
     
+    const sessionPautaTitle = `Pauta Estratégica: ${window.currentClientContext?.niche || window.currentClient?.niche || 'Geral'} (${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})})`;
+    const batchId = 'batch_' + Date.now();
+
     for (const t of tasks) {
       const sanitizedContent = sanitizeTaskContent(t.content || t.description || '');
       const item = {
@@ -1513,7 +1515,9 @@ document.addEventListener('DOMContentLoaded', () => {
         deadline: t.deadline || new Date(Date.now() + 48 * 3600 * 1000).toISOString().split('T')[0],
         estimated_time: t.estimated_time || (t.category === 'video' ? '45 min' : '30 min'),
         status: 'pending',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        pauta_master: sessionPautaTitle,
+        batch_id: batchId
       };
       existing.unshift(item);
 
