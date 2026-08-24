@@ -1270,72 +1270,121 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Envia prompt para a API do backend
-  async function handleSendChatMessage(userText) {
-    const inputEl = document.getElementById('strategic-chat-input') || 
-                    document.querySelector('textarea[placeholder*="instrução tática"]') ||
-                    document.querySelector('input[placeholder*="instrução tática"]');
-    
-    if (typeof userText !== 'string' || !userText.trim()) {
-      userText = inputEl ? inputEl.value.trim() : '';
-    }
+  window.handleSendChatMessage = async function handleSendChatMessage() {
+    const inputEl = document.getElementById('strategic-chat-input') || document.getElementById('chat-user-input');
+    const sendBtn = document.getElementById('btn-send-chat') || document.getElementById('chat-send-btn') || document.getElementById('send-strategic-chat-btn');
+    const chatContainer = document.getElementById('strategic-chat-messages') || document.getElementById('chat-history-container') || document.getElementById('chat-messages-container');
+    const processingIndicator = document.getElementById('chat-processing-indicator') || document.querySelector('[id*="processing"]');
 
-    if (!userText || !userText.trim()) return;
-    const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
+    const message = inputEl ? inputEl.value.trim() : '';
+    if (!message) return;
 
-    if (inputEl) inputEl.value = '';
-
-    if (typeof appendChatMessage === 'function') {
-      appendChatMessage('user', userText, null, false);
-    }
-
-    const sendBtn = document.getElementById('send-strategic-chat-btn') || document.querySelector('.chat-send-btn');
+    // 1. Limpa o input e desabilita o botão para evitar envio duplo
+    inputEl.value = '';
     if (sendBtn) sendBtn.disabled = true;
 
-    // Mantém o loading
-    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
-    let loadingDiv = document.getElementById('chat-loading-indicator');
-    if (!loadingDiv && container) {
-      loadingDiv = document.createElement('div');
-      loadingDiv.id = 'chat-loading-indicator';
-      loadingDiv.className = 'text-xs text-emerald-400 animate-pulse flex items-center gap-2 p-3 my-2 bg-emerald-950/20 border border-emerald-800/30 rounded-xl';
-      loadingDiv.innerHTML = '<span>⚡ ORACULUM PROCESSANDO ESTRATÉGIA NO BANCO...</span>';
-      container.appendChild(loadingDiv);
-      container.scrollTop = container.scrollHeight;
+    // 2. Renderiza a mensagem do usuário na tela
+    const userBubble = document.createElement('div');
+    userBubble.className = 'flex justify-end mb-4';
+    userBubble.innerHTML = `
+      <div class="bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-2xl rounded-tr-none max-w-xl text-sm leading-relaxed shadow-lg">
+        ${message}
+      </div>
+    `;
+    if (chatContainer) chatContainer.appendChild(userBubble);
+
+    // 3. Exibe o indicador de processamento
+    let loadingEl = document.getElementById('temp-chat-loading');
+    if (!loadingEl && chatContainer) {
+      loadingEl = document.createElement('div');
+      loadingEl.id = 'temp-chat-loading';
+      loadingEl.className = 'text-xs text-amber-400 font-mono tracking-wide py-2 flex items-center gap-2';
+      loadingEl.innerHTML = `⚡ ORACULUM PROCESSANDO ESTRATÉGIA...`;
+      chatContainer.appendChild(loadingEl);
     }
-    if (loadingDiv) loadingDiv.classList.remove('hidden');
+    if (processingIndicator) processingIndicator.classList.remove('hidden');
 
     try {
+      const activeClientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_padrao';
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userText, client_id: clientId })
+        body: JSON.stringify({
+          message: message,
+          clientId: String(activeClientId),
+          history: window.currentChatHistory || []
+        })
       });
-      
-      if (!res.ok) {
-        throw new Error(`Erro na API do Chat: status ${res.status}`);
-      }
-      
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
-      
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', data.display_text || data.replyText || data.reply, data.tasks, true);
+      let replyText = data.reply || data.response || data.message || '';
+      if (typeof replyText === 'object') {
+        replyText = replyText.replyText || JSON.stringify(replyText);
       }
-    } catch (e) {
-      console.error('[Chat Estratégico] Falha na comunicação com a IA:', e);
-      if (typeof showToast === 'function') {
-        showToast('Erro ao obter resposta da IA. Tente novamente.', 'error');
-      } else {
-        alert('Erro ao comunicar com o servidor: ' + e.message);
+
+      // 4. Renderiza a resposta da IA com o card de aprovação
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'flex flex-col items-start mb-6 w-full';
+      aiBubble.innerHTML = `
+        <div class="w-full bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 text-slate-200 text-sm leading-relaxed shadow-xl">
+          <div class="mb-3 text-emerald-400 font-medium flex items-center gap-2">
+            <span>👁️ Oraculum Copiloto</span>
+          </div>
+          <div class="chat-ai-content whitespace-pre-wrap mb-4 text-slate-300">
+            ${replyText}
+          </div>
+          <div class="flex items-center gap-3 pt-3 border-t border-slate-800">
+            <button type="button" class="btn-aprovar-despacho px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-950">
+              ✓ Aprovar & Enviar para Sala de Operação
+            </button>
+            <button type="button" onclick="this.closest('.flex-col').remove()" class="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 text-xs rounded-lg transition-colors">
+              🗑 Recusar
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Vincula o clique do botão de aprovação ao despacho
+      const btnAprovar = aiBubble.querySelector('.btn-aprovar-despacho');
+      if (btnAprovar) {
+        btnAprovar.addEventListener('click', async () => {
+          btnAprovar.disabled = true;
+          btnAprovar.innerText = '⏳ Despachando...';
+          if (typeof window.dispatchBriefingToWarRoom === 'function') {
+            await window.dispatchBriefingToWarRoom('all', replyText);
+          }
+          btnAprovar.innerText = '✓ Despachado com Sucesso!';
+          btnAprovar.className = 'px-4 py-2 bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-xs font-semibold rounded-lg cursor-default';
+        });
+      }
+
+      if (chatContainer) chatContainer.appendChild(aiBubble);
+
+      // Salva no histórico em memória
+      if (!window.currentChatHistory) window.currentChatHistory = [];
+      window.currentChatHistory.push({ role: 'user', content: message });
+      window.currentChatHistory.push({ role: 'assistant', content: replyText });
+
+    } catch (err) {
+      console.error('[Chat Error]:', err);
+      if (chatContainer) {
+        const errBubble = document.createElement('div');
+        errBubble.className = 'text-xs text-red-400 py-2';
+        errBubble.innerText = 'Erro ao processar resposta. Tente novamente.';
+        chatContainer.appendChild(errBubble);
       }
     } finally {
-      if (loadingDiv) {
-        loadingDiv.classList.add('hidden');
-        loadingDiv.remove();
-      }
+      // 5. Garante a remoção incondicional do indicador de loading
+      const loadingEl = document.getElementById('temp-chat-loading');
+      if (loadingEl) loadingEl.remove();
+      if (processingIndicator) processingIndicator.classList.add('hidden');
       if (sendBtn) sendBtn.disabled = false;
-      if (inputEl) inputEl.value = '';
+      if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-  }
+  };
 
   // Inicia o carregamento direto do banco no carregamento da tela e na troca de cliente
   window.carregarHistoricoChat = carregarHistoricoChat;
