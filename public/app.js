@@ -1543,7 +1543,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (supabase) {
         try {
-          const { error } = await supabase.from('war_room_tasks').insert([item]);
+          const supabasePayload = {
+            client_id: String(clientId),
+            category: String(t.category || 'geral'),
+            title: String(t.title || `[${(t.category || 'GERAL').toUpperCase()}] Pauta Estratégica`),
+            content: sanitizedContent,
+            status: 'pending'
+          };
+          const { error } = await supabase.from('war_room_tasks').insert([supabasePayload]);
           if (error) console.error('[Supabase Insert Error]:', error);
         } catch (err) {
           console.error('[Supabase Catch Error]:', err);
@@ -1696,65 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return segments;
   }
 
-  // --- DESPACHO E PERSISTÊNCIA DA WAR ROOM ---
-  window.dispatchBriefingToWarRoom = async function (target, taskPayloadArray) {
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-    const supabase = window.supabaseClient || window.supabase;
-
-    let tasks = [];
-    if (Array.isArray(taskPayloadArray) && taskPayloadArray.length > 0) {
-      tasks = taskPayloadArray;
-    } else {
-      const container = typeof target === 'string' ? document.getElementById(target) : (target instanceof HTMLElement ? target : null);
-      const text = container ? (container.querySelector('.chat-content')?.innerText || container.innerText || '') : '';
-      tasks = [
-        { category: 'video', title: 'Roteiro de Gravação e Ganchos', content: text },
-        { category: 'copywriting', title: 'Headline & Copy Persuasiva', content: text },
-        { category: 'comercial', title: 'Script Comercial & Quebra de Objeção', content: text }
-      ];
-    }
-
-    // Salva no LocalStorage permanente do cliente
-    const storageKey = `war_room_all_tasks_${clientId}`;
-    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    
-    for (const t of tasks) {
-      const sanitizedContent = sanitizeTaskContent(t.content || t.description || '');
-      const item = {
-        client_id: String(clientId),
-        category: t.category || 'geral',
-        title: t.title || `[${(t.category || 'GERAL').toUpperCase()}] Demanda Estratégica`,
-        content: sanitizedContent,
-        priority: t.priority || (t.category === 'comercial' || (t.title && t.title.includes('38.000')) ? 'alta' : 'media'),
-        deadline: t.deadline || new Date(Date.now() + 48 * 3600 * 1000).toISOString().split('T')[0],
-        estimated_time: t.estimated_time || (t.category === 'video' ? '45 min' : '30 min'),
-        status: 'pending',
-        created_at: new Date().toISOString()
-      };
-      existing.unshift(item);
-
-      if (supabase) {
-        try {
-          const { error } = await supabase.from('war_room_tasks').insert([item]);
-          if (error) console.error('[Supabase Insert Error]:', error);
-        } catch (err) {
-          console.error('[Supabase Catch Error]:', err);
-        }
-      }
-    }
-
-    localStorage.setItem(storageKey, JSON.stringify(existing));
-
-    // Feedback visual no botão
-    const btn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
-    if (btn) {
-      btn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg pointer-events-none flex items-center gap-1.5';
-      btn.innerHTML = '✓ Despachado com Sucesso!';
-    }
-
-    carregarSalaOperacaoCompleta();
-  };
+  // (Duplicate dispatchBriefingToWarRoom declaration removed)
 
   // --- RENDERIZAÇÃO ESTÁTICA BLINDADA DA WAR ROOM ---
   async function carregarSalaOperacaoCompleta() {
