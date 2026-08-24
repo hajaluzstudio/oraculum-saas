@@ -146,6 +146,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      if (targetTab === 'tab-chat' && typeof window.inicializarEventosChatEstrategico === 'function') {
+        window.inicializarEventosChatEstrategico();
+      }
+
       if (targetTab === 'tab-spy' && typeof window.loadCompetitors === 'function') { // tab-spy is Radar
         window.loadCompetitors();
       }
@@ -855,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function handleSendChatMessage() {
-    const inputEl = document.getElementById('chat-input') || document.getElementById('strategic-chat-input') || document.getElementById('chat-user-input');
+    const inputEl = document.querySelector('#strategic-chat-input, #chat-input, textarea[placeholder*="instrução tática"], input[placeholder*="instrução tática"]');
     const text = inputEl?.value?.trim();
     if (!text) return;
 
@@ -939,12 +943,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (btnSendChat) btnSendChat.addEventListener('click', handleSendChatMessage);
-  if (chatUserInput) {
-    chatUserInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleSendChatMessage();
-    });
-  }
+  window.inicializarEventosChatEstrategico = function() {
+    // Captura qualquer variação de input existente no DOM
+    const input = document.querySelector('#strategic-chat-input, #chat-input, textarea[placeholder*="instrução tática"], input[placeholder*="instrução tática"]');
+    const sendBtn = document.querySelector('#send-strategic-chat-btn, #send-chat-btn, button:has(svg), .chat-send-btn, #btn-send-chat');
+
+    if (sendBtn && !sendBtn.dataset.listenerAttached) {
+      sendBtn.dataset.listenerAttached = 'true';
+      sendBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleSendChatMessage();
+      });
+    }
+
+    if (input && !input.dataset.listenerAttached) {
+      input.dataset.listenerAttached = 'true';
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSendChatMessage();
+        }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', window.inicializarEventosChatEstrategico);
 
   function appendChatMessage(role, content) {
     const msgId = 'msg-' + Date.now();
