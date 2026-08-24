@@ -855,23 +855,27 @@ O JSON deve ter exatamente esta estrutura:
   "tasks": [
     {
       "category": "video",
-      "title": "Ganchos e Roteiro de Gravação",
+      "theme": "Rinoplastia: Ganchos de Alta Conversão",
+      "title": "Gancho 1 - Quebra de Objeção de Perfil",
       "content": "Conteúdo exato a ser enviado para a equipe de vídeo e injetado no teleprompter."
     },
     {
       "category": "copywriting",
-      "title": "Diretriz de Copy",
+      "theme": "Rinoplastia: Copy de Conversão",
+      "title": "Diretriz de Copy - Oferta e Objeções",
       "content": "Argumentos, quebra de objeções e copys."
     },
     {
       "category": "comercial",
-      "title": "Script de Negociação",
+      "theme": "Rinoplastia: Roteiro Comercial",
+      "title": "Script de Negociação - Ticket Alto",
       "content": "Roteiro de vendas e contorno de objeções de preço."
     }
   ]
 }
 
 - A chave "tasks" é um array onde as "category" suportadas são apenas: video, copywriting, comercial, trafego, design.
+- O campo "theme" É OBRIGATÓRIO em cada task. Deve ser descritivo e temático, refletindo o assunto real da pauta (ex: "Rinoplastia: Ganchos de Alta Conversão", "Procedimento X: Script WhatsApp"). NUNCA use "Geral" como tema.
 - Coloque as seções estritas do seu conselho separadas neste array de tasks. Se uma categoria não for aplicável, simplesmente não a inclua no array.
 Responda com base estrita no Dossiê e nas regras do setor.`;
     }
