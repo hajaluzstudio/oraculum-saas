@@ -1133,12 +1133,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // 1. Inicializa ferramentas nativas se disponível
+    // 1. Inicializa ferramentas nativas da War Room se existirem
     if (typeof initWarRoomTools === 'function') {
-      initWarRoomTools();
+      try { initWarRoomTools(); } catch (e) { console.warn('[WarRoom Tools init]:', e); }
     }
 
-    // 2. Busca demandas aprovadas no Supabase e LocalStorage
+    // 2. Busca tarefas no Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
@@ -1148,48 +1148,66 @@ document.addEventListener('DOMContentLoaded', () => {
           .select('*')
           .eq('client_id', clientId)
           .order('created_at', { ascending: false });
-        if (!error && data) tasks = data;
+        if (!error && Array.isArray(data)) tasks = data;
       }
     } catch (e) {
-      console.warn('[WarRoom Tasks Catch]:', e);
+      console.warn('[WarRoom Supabase Catch]:', e);
     }
 
+    // Mescla com o armazenamento local
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
       const local = JSON.parse(localStorage.getItem(`war_room_${clientId}_${cat}`) || '[]');
       tasks = [...tasks, ...local];
     });
 
-    // 3. Localiza os containers existentes das seções sem destruir ferramentas
-    const strategyContainer = document.querySelector('#tab-war-room [data-section="strategy-feed"]') || 
-                              document.querySelector('#tab-war-room .strategy-content') ||
-                              document.querySelector('#tab-war-room .border-[#1B3B36]');
+    if (tasks.length === 0) return;
 
-    if (strategyContainer && tasks.length > 0) {
-      // Remove o aviso de "Nenhum script gerado..."
-      strategyContainer.querySelectorAll('p, span').forEach(el => {
+    // 3. Localização segura dos containers no DOM usando IDs e atributos padrão
+    const warRoom = document.getElementById('tab-war-room');
+    if (!warRoom) return;
+
+    // Encontra o container do topo ("Estratégia de Vídeo do Oraculum" ou feed geral)
+    const feedBoxes = warRoom.querySelectorAll('div');
+    let strategyContainer = null;
+
+    feedBoxes.forEach(box => {
+      if (box.textContent.includes('Estratégia de Vídeo do Oraculum') || box.textContent.includes('Headlines, Hooks e Textos')) {
+        strategyContainer = box;
+      }
+    });
+
+    if (!strategyContainer) {
+      strategyContainer = warRoom.querySelector('.war-room-feed') || warRoom.firstElementChild;
+    }
+
+    if (strategyContainer) {
+      // Remove os textos de "Nenhum script gerado..."
+      const notices = strategyContainer.querySelectorAll('div, p, span');
+      notices.forEach(el => {
         if (el.textContent.includes('Nenhum script gerado para este cliente')) {
-          el.remove();
+          el.style.display = 'none';
         }
       });
 
-      // Injeta os cards aprovados mantendo o restante da interface (Teleprompter, Roteiros) intacto
-      const existingFeed = strategyContainer.querySelector('.injected-feed') || document.createElement('div');
-      existingFeed.className = 'injected-feed space-y-4 my-3';
-      existingFeed.innerHTML = tasks.map(task => `
-        <div class="p-4 bg-[#071311] border border-[#10B981]/30 rounded-xl text-slate-200 shadow-md space-y-2">
-          <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
-            <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase">
-              ${task.category ? task.category.toUpperCase() : 'DIRETRIZ APROVADA'}
+      // Garante ou cria a caixa injetada
+      let injectedFeed = strategyContainer.querySelector('.oraculum-injected-feed');
+      if (!injectedFeed) {
+        injectedFeed = document.createElement('div');
+        injectedFeed.className = 'oraculum-injected-feed space-y-4 my-4';
+        strategyContainer.appendChild(injectedFeed);
+      }
+
+      injectedFeed.innerHTML = tasks.map(task => `
+        <div class="p-4 bg-[#071311] border border-emerald-500/30 rounded-xl text-slate-200 shadow-lg space-y-2">
+          <div class="flex items-center justify-between border-b border-emerald-950 pb-2">
+            <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
+              ${(task.category || 'ESTRATÉGIA').toUpperCase()}
             </span>
             <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
           </div>
-          <div class="text-xs leading-relaxed whitespace-pre-wrap">${task.content}</div>
+          <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300 font-sans">${task.content}</div>
         </div>
       `).join('');
-
-      if (!strategyContainer.querySelector('.injected-feed')) {
-        strategyContainer.appendChild(existingFeed);
-      }
     }
   }
 
