@@ -915,19 +915,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (inputEl) inputEl.value = '';
 
-    const chatContainer = document.getElementById('chat-messages-list') || document.querySelector('.chat-history');
-    let loadingId = null;
-    
-    if (chatContainer) {
-      loadingId = 'loading-' + Date.now();
-      const loadingHtml = `
-        <div id="${loadingId}" class="flex items-center space-x-3 p-4 bg-[#0B1514] border border-[#10B981]/30 rounded-xl my-3 animate-pulse">
-          <div class="w-5 h-5 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin"></div>
-          <span class="text-xs text-[#10B981] font-semibold tracking-wide uppercase">Oraculum analisando diretrizes do Dossiê...</span>
-        </div>
-      `;
-      chatContainer.insertAdjacentHTML('beforeend', loadingHtml);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (typeof showChatLoadingSpinner === 'function') {
+      showChatLoadingSpinner();
     }
 
     const activeClient = window.activeClient || {};
@@ -950,27 +939,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       const replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
       
-      if (loadingId) {
-        const loadEl = document.getElementById(loadingId);
-        if (loadEl) loadEl.remove();
-      }
-
-      if (chatContainer) {
-        chatContainer.insertAdjacentHTML('beforeend', formatModelMessageWithActions(replyText));
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', replyText);
       }
     } catch (err) {
-      if (loadingId) {
-        const loadEl = document.getElementById(loadingId);
-        if (loadEl) loadEl.remove();
-      }
-
       console.warn('[Chat Fallback Executado]:', err);
       const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
       
-      if (chatContainer) {
-        chatContainer.insertAdjacentHTML('beforeend', formatModelMessageWithActions(fallbackText));
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', fallbackText);
       }
     }
   }
@@ -994,26 +971,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function appendChatMessage(role, content) {
-    const msgId = 'msg-' + Date.now();
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `chat-msg ${role}`;
-    msgDiv.id = msgId;
+  window.showChatLoadingSpinner = function() {
+    const container = document.getElementById('chat-messages-container') || document.getElementById('chat-messages-list') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
+    if (!container) return;
+    
+    // Remove anterior se houver
+    document.getElementById('chat-loading-spinner')?.remove();
 
-    const finalContent = role === 'model' && typeof marked !== 'undefined' ? marked.parse(content) : `<p>${content}</p>`;
-
-    msgDiv.innerHTML = `
-      <div class="avatar" style="display: flex; align-items: center; justify-content: center;">
-        ${role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<img src="logo-oraculum-03.svg" alt="AI" style="width: 26px; height: 26px; object-fit: contain; transform: translateY(1px);">'}
-      </div>
-      <div class="bubble"><div class="markdown-body">${finalContent}</div></div>
+    const spinnerDiv = document.createElement('div');
+    spinnerDiv.id = 'chat-loading-spinner';
+    spinnerDiv.className = 'flex items-center space-x-3 p-4 bg-[#0B1514] border border-[#10B981]/40 rounded-xl my-3 animate-pulse';
+    spinnerDiv.innerHTML = `
+      <div class="w-5 h-5 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-xs text-[#10B981] font-semibold tracking-wider uppercase">Oraculum analisando diretrizes do Dossiê...</span>
     `;
+    container.appendChild(spinnerDiv);
+    container.scrollTop = container.scrollHeight;
+  };
 
-    chatMessagesList.appendChild(msgDiv);
-    chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+  window.hideChatLoadingSpinner = function() {
+    const el = document.getElementById('chat-loading-spinner');
+    if (el) el.remove();
+  };
 
-    chatHistory.push({ role, content, timestamp: new Date().toISOString() });
-    return msgId;
+  window.appendChatMessage = function(sender, text) {
+    if (typeof hideChatLoadingSpinner === 'function') {
+      hideChatLoadingSpinner();
+    }
+    const container = document.getElementById('chat-messages-container') || document.getElementById('chat-messages-list') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
+    if (!container) return;
+
+    const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
+    const msgWrapper = document.createElement('div');
+    msgWrapper.id = msgId;
+    msgWrapper.className = sender === 'user' 
+      ? 'flex justify-end my-3' 
+      : 'flex flex-col bg-[#071311] border border-[#1B3B36] rounded-xl p-4 my-3 text-slate-200 text-sm leading-relaxed';
+
+    let finalContent = text;
+    if (sender !== 'user' && typeof marked !== 'undefined') {
+      finalContent = marked.parse(text);
+    }
+
+    if (sender === 'user') {
+      msgWrapper.innerHTML = `<div class="bg-[#10B981]/20 border border-[#10B981]/30 text-white rounded-xl px-4 py-2 max-w-[80%]">${finalContent}</div>`;
+    } else {
+      msgWrapper.innerHTML = `
+        <div class="chat-content prose prose-invert max-w-none text-slate-200 markdown-body">${finalContent}</div>
+        <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
+          <button onclick="document.getElementById('${msgId}').remove()" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/50 border border-rose-800/50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Recusar
+          </button>
+          <button onclick="if(typeof dispatchBriefingToWarRoom === 'function'){ dispatchBriefingToWarRoom(document.getElementById('${msgId}')); } else if(typeof window.dispatchBriefingToWarRoom === 'function'){ window.dispatchBriefingToWarRoom(document.getElementById('${msgId}')); } else { alert('Estratégia Aprovada e Despachada para a Sala de Operação!'); }" class="px-4 py-1.5 text-xs font-semibold text-[#041210] bg-[#10B981] hover:bg-[#059669] rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Aprovar & Enviar para Sala de Operação
+          </button>
+        </div>
+      `;
+    }
+
+    container.appendChild(msgWrapper);
+    container.scrollTop = container.scrollHeight;
   }
 
   // ============================================================================
