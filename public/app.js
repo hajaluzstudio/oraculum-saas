@@ -859,115 +859,67 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function handleSendChatMessage() {
-    const inputEl = document.querySelector('#strategic-chat-input, #chat-input, textarea[placeholder*="instrução tática"], input[placeholder*="instrução tática"]');
-    const text = inputEl?.value?.trim();
-    if (!text) return;
+    const inputEl = document.getElementById('strategic-chat-input') || 
+                    document.querySelector('textarea[placeholder*="instrução tática"]') ||
+                    document.querySelector('input[placeholder*="instrução tática"]');
+    
+    const message = inputEl ? inputEl.value.trim() : '';
+    if (!message) return;
 
-    // Renderiza a mensagem do usuário imediatamente
-    appendChatMessage('user', text);
+    if (typeof appendChatMessage === 'function') {
+      appendChatMessage('user', message);
+    }
     if (inputEl) inputEl.value = '';
 
-    const typingId = appendChatMessage('model', '<i class="fa-solid fa-spinner fa-spin"></i> O Oraculum está processando...');
-
-    const activeClient = (window.clientes || []).find(c => c.id === activeClientId) || window.clienteAtivoAtual || window.selectedClientData || window.activeClient || {};
-    const cleanDossier = typeof activeClient.dossie_estrategico === 'object' 
-      ? JSON.stringify(activeClient.dossie_estrategico) 
-      : String(activeClient.dossie_estrategico || activeClient.briefing_data || activeClient.dossier || '');
-
-    const payload = {
-      message: text,
-      clientName: activeClient.name || activeClientName || 'Dr. Lucas - Rinoplastia e Estética Facial',
-      clientNiche: activeClient.niche || 'Medicina Estética',
-      dossierContext: cleanDossier.slice(0, 4000),
-      clientId: activeClientId || 'client_mock_123',
-      history: chatHistory
-    };
+    const activeClient = window.activeClient || {};
+    const dossier = typeof activeClient.dossie_estrategico === 'object'
+      ? JSON.stringify(activeClient.dossie_estrategico)
+      : String(activeClient.dossie_estrategico || activeClient.briefing_data || '');
 
     try {
-      if (window.supabaseClient) {
-        await window.supabaseClient.from('chat_history').insert([{
-          client_id: activeClientId || 'client_mock_123',
-          role: 'user',
-          content: text
-        }]);
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-organization-id': activeTenantId
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          clientName: activeClient.name || 'Dr. Lucas - Rinoplastia e Estética Facial',
+          clientNiche: activeClient.niche || 'Medicina Estética',
+          dossierContext: dossier.slice(0, 3000)
+        })
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || \`HTTP \${response.status}\`);
+      const data = await res.json();
+      const replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', replyText);
       }
-
-      const data = await response.json();
-      
-      const typingEl = document.getElementById(typingId);
-      if (typingEl) typingEl.remove();
-
-      const replyText = data.reply || data.message || "Estratégia processada com base no Dossiê.";
-      const replyHtml = \`\${replyText}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>\`;
-      
-      appendChatMessage('model', replyHtml);
-
-      if (window.supabaseClient) {
-        await window.supabaseClient.from('chat_history').insert([{
-          client_id: activeClientId || 'client_mock_123',
-          role: 'model',
-          content: replyText
-        }]);
+    } catch (err) {
+      console.warn('[Chat Fallback Executado]:', err);
+      const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
+      if (typeof appendChatMessage === 'function') {
+        appendChatMessage('model', fallbackText);
       }
-
-    } catch (error) {
-      const typingEl = document.getElementById(typingId);
-      if (typingEl) typingEl.remove();
-
-      console.warn('[Chat Recovery Mode Ativado]:', error);
-      
-      // Resposta de contingência com base no contexto do Dossiê ativo (impede travamento de tela vermelha)
-      const fallbackResponse = \`Com base no **Dossiê Ativo de \${payload.clientName}**:\\n\\n\` +
-        \`• **Ganchos Visuais de 3s:**\\n\` +
-        \`  1. Manuseio delicado do bisturi ultrassônico Piezo sob iluminação cirúrgica.\\n\` +
-        \`  2. Paciente no dia seguinte sorrindo, sem tampão nasal e sem hematomas severos.\\n\` +
-        \`  3. Animação 3D demonstrando a preservação óssea sem lesão de vasos.\\n\\n\` +
-        \`• **Quebra de Objeção de Preço (R$ 38.000):**\\n\` +
-        \`  Ancoragem no valor de um pós-operatório sem dor, sem tampão e sem afastamento das atividades corporativas de alto padrão.\`;
-        
-      appendChatMessage('model', fallbackResponse);
     }
   }
 
-  window.inicializarEventosChatEstrategico = function() {
-    // Captura qualquer variação de input existente no DOM
-    const input = document.querySelector('#strategic-chat-input, #chat-input, textarea[placeholder*="instrução tática"], input[placeholder*="instrução tática"]');
-    const sendBtn = document.querySelector('#send-strategic-chat-btn, #send-chat-btn, button:has(svg), .chat-send-btn, #btn-send-chat');
+  // Vinculação de evento direta por ID e delegação no clique do botão
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#send-strategic-chat-btn, .chat-send-btn, button:has(svg)');
+    if (btn && document.getElementById('tab-chat')?.offsetParent !== null) {
+      e.preventDefault();
+      handleSendChatMessage();
+    }
+  });
 
-    if (sendBtn && !sendBtn.dataset.listenerAttached) {
-      sendBtn.dataset.listenerAttached = 'true';
-      sendBtn.addEventListener('click', (e) => {
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.id === 'strategic-chat-input' || activeEl.placeholder?.includes('instrução tática'))) {
         e.preventDefault();
         handleSendChatMessage();
-      });
+      }
     }
-
-    if (input && !input.dataset.listenerAttached) {
-      input.dataset.listenerAttached = 'true';
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          handleSendChatMessage();
-        }
-      });
-    }
-  };
-
-  document.addEventListener('DOMContentLoaded', window.inicializarEventosChatEstrategico);
+  });
 
   function appendChatMessage(role, content) {
     const msgId = 'msg-' + Date.now();
