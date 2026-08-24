@@ -8435,6 +8435,8 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     // 5. Validação da Resposta
     if (!resData || (!resData.reply && !resData.replyText)) {
       throw new Error(`[ERR-FB-005] Resposta da IA vazia ou com formato inválido: ${JSON.stringify(resData)}`);
+    }
+
     const textoFinal = resData.reply || resData.replyText;
 
     // Renderização com sucesso
