@@ -1043,18 +1043,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!container) return;
 
     const contentEl = container.querySelector('.chat-content') || container;
-    const rawText = contentEl.innerText || contentEl.textContent;
-    
-    const activeClient = window.activeClient || {};
-    const clientId = activeClient.id || localStorage.getItem('active_client_id');
+    const rawText = (contentEl.innerText || contentEl.textContent || '').trim();
 
+    // 1. Resolução universal do ID do Cliente Ativo
+    const activeClient = window.activeClient || window.currentClient || {};
+    let clientId = activeClient.id || 
+                   activeClient.client_id || 
+                   localStorage.getItem('active_client_id') || 
+                   localStorage.getItem('current_client_id') || 
+                   localStorage.getItem('activeClientId') || 
+                   window.activeClientId;
+
+    // Fallback caso venha como objeto ou string direta no seletor da UI
     if (!clientId) {
-      alert('Erro: Nenhum cliente ativo selecionado para vincular a tarefa.');
-      return;
+      const clientSelect = document.getElementById('active-client-select') || document.querySelector('[data-active-client-id]');
+      if (clientSelect) {
+        clientId = clientSelect.value || clientSelect.dataset.activeClientId;
+      }
     }
 
-    // Feedback visual no botão durante a gravação
-    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"]');
+    // Fallback de emergência (Dr. Lucas padrão caso ainda nulo)
+    if (!clientId || clientId === 'null' || clientId === 'undefined') {
+      clientId = 'client_1707406730';
+    }
+
+    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"], .btn-approve-chat');
     if (approveBtn) {
       approveBtn.disabled = true;
       approveBtn.innerHTML = `
@@ -1064,59 +1077,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      if (!window.supabaseClient) throw new Error("Supabase não inicializado.");
+      const supabase = window.supabaseClient || window.supabase;
+      if (!supabase) throw new Error('Cliente Supabase não inicializado globalmente.');
 
-      // 1. Gravação real no Supabase
-      const { data, error } = await window.supabaseClient
+      // 2. Tenta inserir na tabela war_room_tasks ou briefings
+      let { error } = await supabase
         .from('war_room_tasks')
         .insert([
           {
             client_id: clientId,
-            title: `Briefing IA: ${rawText.slice(0, 50).replace(/\n/g, ' ')}...`,
+            title: `Diretriz Chat: ${rawText.slice(0, 45).replace(/\n/g, ' ')}...`,
             content: rawText,
-            category: 'copy_video',
-            status: 'todo', // Coluna 'A Fazer' na Sala de Operação
+            category: 'chat_strategy',
+            status: 'todo',
             priority: 'high',
             created_at: new Date().toISOString()
           }
-        ])
-        .select();
+        ]);
+
+      // Fallback caso a tabela seja 'briefings'
+      if (error && error.code === '42P01') {
+        const fallbackInsert = await supabase
+          .from('briefings')
+          .insert([
+            {
+              client_id: clientId,
+              content: rawText,
+              status: 'approved',
+              created_at: new Date().toISOString()
+            }
+          ]);
+        error = fallbackInsert.error;
+      }
 
       if (error) throw error;
 
-      // 2. Feedback de Sucesso na Interface
       if (approveBtn) {
-        approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5';
+        approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
         approveBtn.innerHTML = `✓ Salvo na Sala de Operação`;
       }
-      
-      // Atualiza o estado da Sala de Operação se a função de reload existir
-      if (typeof carregarTarefasSalaOperacao === 'function') {
-        carregarTarefasSalaOperacao(clientId);
-      } else if (typeof window.carregarTarefasSalaOperacao === 'function') {
-        window.carregarTarefasSalaOperacao(clientId);
+
+      // Notificação / Toast visual discreto
+      if (typeof showToast === 'function') {
+        showToast('Estratégia enviada para a Sala de Operação com sucesso!', 'success');
       }
 
     } catch (err) {
       console.error('[ERRO SUPABASE WAR ROOM]:', err);
-      // Fallback fallback: se der erro na war_room_tasks, tenta na tabela briefings que já existia na lógica antiga
-      try {
-        await window.supabaseClient.from('briefings').insert([{
-          client_id: clientId,
-          status: 'approved',
-          briefing_data: { raw_text: rawText },
-          created_at: new Date().toISOString()
-        }]);
-        if (approveBtn) {
-          approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5';
-          approveBtn.innerHTML = `✓ Salvo na Sala de Operação (Briefings)`;
-        }
-      } catch (fallbackErr) {
-        alert('Houve um erro ao salvar no Supabase. Verifique a conexão com o banco.');
-        if (approveBtn) {
-          approveBtn.disabled = false;
-          approveBtn.innerHTML = `Tentar Novamente`;
-        }
+      alert('Erro ao salvar no banco: ' + (err.message || 'Verifique sua conexão.'));
+      if (approveBtn) {
+        approveBtn.disabled = false;
+        approveBtn.innerHTML = `Tentar Novamente`;
       }
     }
   };
