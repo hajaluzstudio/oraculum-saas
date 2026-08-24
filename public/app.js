@@ -1845,7 +1845,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // MOTOR DE GAVETAS - RENDERIZAÇÃO MODULAR E ISOLADA POR ABA
     // ==========================================================================
 
-    // Helpers globais de interação
+    // Estado global do Teleprompter
+    window.teleprompterState = {
+      text: '',
+      isPlaying: false,
+      speed: 3,
+      fontSize: 42,
+      scrollInterval: null
+    };
+
     window.toggleVideoStudioTool = function() {
       const container = document.getElementById('container-video-studio');
       const icon = document.getElementById('icon-toggle-video-studio');
@@ -1863,30 +1871,173 @@ document.addEventListener('DOMContentLoaded', () => {
       if (icon) icon.textContent = isHidden ? '▲ Recolher' : '▼ Expandir';
     };
 
+    // 1. Injeta o roteiro no visor da Sala de Operação e prepara o Teleprompter
     window.carregarNoTeleprompterDirect = function(encodedText) {
       try {
-        const texto = decodeURIComponent(encodedText);
-        
-        // Auto expande a ferramenta do estúdio e atualiza preview
+        const texto = decodeURIComponent(encodedText || '');
+        window.teleprompterState.text = texto;
+
+        // Atualiza o container de prévia da ferramenta na tela
+        const previewArea = document.getElementById('video-script-preview-area');
+        if (previewArea) {
+          previewArea.textContent = texto;
+        }
+
+        // Atualiza o texto interno do modal do teleprompter
+        const tpDisplay = document.getElementById('tp-text-display');
+        if (tpDisplay) {
+          tpDisplay.textContent = texto;
+        }
+
+        // Abre o acordeão do Estúdio se estiver recolhido
         const studioContainer = document.getElementById('container-video-studio');
         const studioIcon = document.getElementById('icon-toggle-video-studio');
-        if (studioContainer) {
+        if (studioContainer && studioContainer.classList.contains('hidden')) {
           studioContainer.classList.remove('hidden');
           if (studioIcon) studioIcon.textContent = '▲ Recolher Ferramenta';
         }
 
-        const previewArea = document.getElementById('video-script-preview-area');
-        if (previewArea) {
-          previewArea.textContent = texto;
-          previewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Scroll suave até a ferramenta do estúdio
+        if (studioContainer) {
+          studioContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        const tp = document.getElementById('script-content-body');
-        if (tp) tp.innerHTML = '<div class="text-xs text-slate-200 leading-relaxed" style="white-space:pre-wrap">' + texto + '</div>';
-        const btn = document.getElementById('btn-open-teleprompter');
-        if (btn) btn.click();
-      } catch(e) { console.error('[Teleprompter]', e); }
+        // Notificação Toast visual
+        if (typeof window.showToast === 'function') {
+          window.showToast('Roteiro carregado no Estúdio e Teleprompter!', 'success');
+        }
+      } catch (err) {
+        console.error('[TELEPROMPTER] Erro ao carregar roteiro:', err);
+      }
     };
+
+    // 2. Abre o Modal Fullscreen do Teleprompter
+    window.abrirModalTeleprompter = function() {
+      const modal = document.getElementById('modal-teleprompter');
+      if (!modal) return;
+
+      const textoAtual = window.teleprompterState.text || document.getElementById('video-script-preview-area')?.textContent || '';
+      if (!textoAtual.trim() || textoAtual.includes('Selecione um roteiro na gaveta')) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Selecione ou carregue um roteiro primeiro na gaveta acima.', 'warning');
+        }
+        return;
+      }
+
+      const tpDisplay = document.getElementById('tp-text-display');
+      if (tpDisplay) tpDisplay.textContent = textoAtual;
+
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+
+      // Reseta o scroll para o topo
+      const scrollContainer = document.getElementById('tp-scroll-container');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+    };
+
+    // 3. Fecha o Modal Fullscreen do Teleprompter
+    window.fecharModalTeleprompter = function() {
+      const modal = document.getElementById('modal-teleprompter');
+      if (!modal) return;
+
+      window.pausarTeleprompter();
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    };
+
+    // 4. Mecânica de Rolagem Automática
+    window.iniciarRolagemTeleprompter = function() {
+      const scrollContainer = document.getElementById('tp-scroll-container');
+      const btnPlay = document.getElementById('tp-btn-toggle-play');
+      if (!scrollContainer) return;
+
+      window.teleprompterState.isPlaying = true;
+      if (btnPlay) {
+        btnPlay.textContent = '⏸ Pausar (Espaço)';
+        btnPlay.classList.replace('bg-emerald-600', 'bg-amber-600');
+        btnPlay.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+      }
+
+      clearInterval(window.teleprompterState.scrollInterval);
+      window.teleprompterState.scrollInterval = setInterval(() => {
+        scrollContainer.scrollTop += (window.teleprompterState.speed * 0.8);
+        if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight) {
+          window.pausarTeleprompter();
+        }
+      }, 30);
+    };
+
+    window.pausarTeleprompter = function() {
+      const btnPlay = document.getElementById('tp-btn-toggle-play');
+      window.teleprompterState.isPlaying = false;
+      clearInterval(window.teleprompterState.scrollInterval);
+
+      if (btnPlay) {
+        btnPlay.textContent = '▶ Iniciar Rolagem (Espaço)';
+        btnPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+        btnPlay.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+      }
+    };
+
+    window.togglePlayTeleprompter = function() {
+      if (window.teleprompterState.isPlaying) {
+        window.pausarTeleprompter();
+      } else {
+        window.iniciarRolagemTeleprompter();
+      }
+    };
+
+    // Vincular Event Listeners do Teleprompter
+    setTimeout(() => {
+      const btnStudioTp = document.getElementById('btn-abrir-teleprompter-modal');
+      if (btnStudioTp) {
+        btnStudioTp.onclick = () => window.abrirModalTeleprompter();
+      }
+
+      const btnTogglePlay = document.getElementById('tp-btn-toggle-play');
+      if (btnTogglePlay) {
+        btnTogglePlay.onclick = () => window.togglePlayTeleprompter();
+      }
+
+      const speedSlider = document.getElementById('tp-speed-slider');
+      const speedVal = document.getElementById('tp-speed-val');
+      if (speedSlider) {
+        speedSlider.oninput = (e) => {
+          const val = Number(e.target.value);
+          window.teleprompterState.speed = val;
+          if (speedVal) speedVal.textContent = val + 'x';
+          if (window.teleprompterState.isPlaying) {
+            window.iniciarRolagemTeleprompter();
+          }
+        };
+      }
+
+      const fontSlider = document.getElementById('tp-font-slider');
+      const fontVal = document.getElementById('tp-font-val');
+      const tpDisplay = document.getElementById('tp-text-display');
+      if (fontSlider) {
+        fontSlider.oninput = (e) => {
+          const val = e.target.value;
+          window.teleprompterState.fontSize = val;
+          if (fontVal) fontVal.textContent = val + 'px';
+          if (tpDisplay) tpDisplay.style.fontSize = val + 'px';
+        };
+      }
+    }, 300);
+
+    // Atalhos globais de teclado para o Teleprompter
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('modal-teleprompter');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        window.togglePlayTeleprompter();
+      } else if (e.code === 'Escape') {
+        e.preventDefault();
+        window.fecharModalTeleprompter();
+      }
+    });
 
     window.copiarTextoEntregavel = function(encodedText) {
       try {

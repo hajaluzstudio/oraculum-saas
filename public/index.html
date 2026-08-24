@@ -3614,7 +3614,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.31.0"></script>
+<script src="/app.js?v=9999.32.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
@@ -3673,6 +3673,44 @@
     });
   });
 </script>
+<!-- MODAL DE TELEPROMPTER FULLSCREEN -->
+<div id="modal-teleprompter" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-md flex flex-col">
+  <!-- Barra Superior de Controle do Teleprompter -->
+  <div class="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/80">
+    <div class="flex items-center gap-4">
+      <span class="text-emerald-400 font-bold text-sm tracking-wide flex items-center gap-2">
+        🎬 TELEPROMPTER PROFISSIONAL
+      </span>
+      <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/50">
+        <label class="text-xs text-slate-300 font-medium">Velocidade:</label>
+        <input type="range" id="tp-speed-slider" min="1" max="10" value="3" class="w-24 accent-emerald-500 cursor-pointer">
+        <span id="tp-speed-val" class="text-xs font-mono text-emerald-400 font-bold">3x</span>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/50">
+        <label class="text-xs text-slate-300 font-medium">Tamanho:</label>
+        <input type="range" id="tp-font-slider" min="20" max="80" value="42" class="w-24 accent-emerald-500 cursor-pointer">
+        <span id="tp-font-val" class="text-xs font-mono text-emerald-400 font-bold">42px</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="button" id="tp-btn-toggle-play" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5">
+        ▶ Iniciar Rolagem (Espaço)
+      </button>
+      <button type="button" onclick="window.fecharModalTeleprompter()" class="px-3 py-2 text-xs font-bold bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 rounded-lg border border-slate-700 transition-colors">
+        ✕ Fechar (ESC)
+      </button>
+    </div>
+  </div>
+
+  <!-- Área de Rolagem do Texto do Teleprompter -->
+  <div id="tp-scroll-container" class="flex-1 overflow-y-auto px-12 md:px-24 py-16 text-center select-none cursor-grab active:cursor-grabbing">
+    <div id="tp-text-display" class="text-slate-100 font-bold leading-relaxed whitespace-pre-wrap max-w-4xl mx-auto" style="font-size: 42px;">
+      Nenhum roteiro carregado.
+    </div>
+    <div class="h-[60vh]"></div> <!-- Espaçador para rolagem fluida até o final -->
+  </div>
+</div>
+
 <script src="/oraculo-live.js?t=99999999"></script>
 </body>
 </html>
