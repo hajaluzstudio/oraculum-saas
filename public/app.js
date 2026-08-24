@@ -1271,10 +1271,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Envia prompt para a API do backend
   window.handleSendChatMessage = async function handleSendChatMessage() {
-    const inputEl = document.getElementById('strategic-chat-input') || document.getElementById('chat-user-input');
+    const inputEl = document.getElementById('chat-user-input') || document.getElementById('strategic-chat-input');
     const sendBtn = document.getElementById('btn-send-chat') || document.getElementById('chat-send-btn') || document.getElementById('send-strategic-chat-btn');
-    const chatContainer = document.getElementById('strategic-chat-messages') || document.getElementById('chat-history-container') || document.getElementById('chat-messages-container');
+    const chatContainer = document.getElementById('chat-messages-list') || document.getElementById('strategic-chat-messages') || document.getElementById('chat-history-container') || document.getElementById('chat-messages-container');
     const processingIndicator = document.getElementById('chat-processing-indicator') || document.querySelector('[id*="processing"]');
+
 
     const message = inputEl ? inputEl.value.trim() : '';
     if (!message) return;
