@@ -1953,22 +1953,78 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
+    window.ouvirAudioGuia = function() {
+      const btnAudio = document.getElementById('btn-ouvir-audio-guia');
+      
+      // Se já estiver tocando, cancela e reseta imediatamente
+      if (window.audioGuiaPlaying || (window.speechSynthesis && window.speechSynthesis.speaking)) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+        return;
+      }
+
+      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
+      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
+        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro antes de ouvir o áudio-guia.', 'warning');
+        return;
+      }
+
+      if (!('speechSynthesis' in window)) {
+        if (typeof window.showToast === 'function') window.showToast('Síntese de voz não suportada neste navegador.', 'error');
+        return;
+      }
+
+      window.speechSynthesis.cancel(); // Limpa filas pendentes
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onstart = () => {
+        window.audioGuiaPlaying = true;
+        if (btnAudio) btnAudio.innerHTML = '⏹ Parar Áudio-Guia';
+      };
+
+      utterance.onend = () => {
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+      };
+
+      utterance.onerror = () => {
+        window.audioGuiaPlaying = false;
+        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
     window.abrirModalTeleprompter = function() {
-      garantirModalTeleprompterNoDOM();
-      const modal = document.getElementById('modal-teleprompter');
+      let modal = document.getElementById('modal-teleprompter');
+      if (!modal) {
+        if (typeof garantirModalTeleprompterNoDOM === 'function') {
+          garantirModalTeleprompterNoDOM();
+          modal = document.getElementById('modal-teleprompter');
+        }
+      }
       if (!modal) return;
 
       const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
       if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
-        if (typeof window.showToast === 'function') window.showToast('Selecione um roteiro primeiro.', 'warning');
+        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro na gaveta acima primeiro.', 'warning');
         return;
       }
 
       const tpDisplay = document.getElementById('tp-text-display');
-      if (tpDisplay) tpDisplay.textContent = texto;
+      if (tpDisplay) {
+        tpDisplay.textContent = texto;
+        tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 42) + 'px';
+      }
 
+      // Remove a classe hidden e força display flex inline com prioridade máxima
       modal.classList.remove('hidden');
-      modal.style.display = 'flex';
+      modal.style.setProperty('display', 'flex', 'important');
+      modal.style.setProperty('z-index', '999999', 'important');
       document.body.style.overflow = 'hidden';
 
       const scrollContainer = document.getElementById('tp-scroll-container');
@@ -1979,6 +2035,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const speedVal = document.getElementById('tp-speed-val');
       if (speedSlider) {
         speedSlider.oninput = (e) => {
+          window.teleprompterState = window.teleprompterState || {};
           window.teleprompterState.speed = Number(e.target.value);
           if (speedVal) speedVal.textContent = e.target.value + 'x';
         };
@@ -1988,6 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const fontVal = document.getElementById('tp-font-val');
       if (fontSlider) {
         fontSlider.oninput = (e) => {
+          window.teleprompterState = window.teleprompterState || {};
           window.teleprompterState.fontSize = Number(e.target.value);
           if (tpDisplay) tpDisplay.style.fontSize = e.target.value + 'px';
           if (fontVal) fontVal.textContent = e.target.value + 'px';
@@ -1998,9 +2056,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.fecharModalTeleprompter = function() {
       const modal = document.getElementById('modal-teleprompter');
       if (!modal) return;
+
       window.pausarTeleprompter();
       modal.classList.add('hidden');
-      modal.style.display = 'none';
+      modal.style.setProperty('display', 'none', 'important');
       document.body.style.overflow = '';
     };
 
@@ -2047,94 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // ÁUDIO-GUIA (WEB SPEECH API - TTS NATIVO)
-    window.audioGuiaUtterance = null;
-    window.audioGuiaPlaying = false;
 
-    window.ouvirAudioGuia = function() {
-      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
-      const btnAudio = document.getElementById('btn-ouvir-audio-guia');
-
-      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
-        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro antes de ouvir o áudio-guia.', 'warning');
-        return;
-      }
-
-      if (!('speechSynthesis' in window)) {
-        if (typeof window.showToast === 'function') window.showToast('Síntese de voz não suportada neste navegador.', 'error');
-        return;
-      }
-
-      if (window.audioGuiaPlaying) {
-        window.speechSynthesis.cancel();
-        window.audioGuiaPlaying = false;
-        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
-        return;
-      }
-
-      window.speechSynthesis.cancel(); // Limpa filas pendentes
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-
-      utterance.onstart = () => {
-        window.audioGuiaPlaying = true;
-        if (btnAudio) btnAudio.innerHTML = '⏸ Pausar Áudio-Guia';
-        if (typeof window.showToast === 'function') window.showToast('Reproduzindo áudio-guia do roteiro...', 'info');
-      };
-
-      utterance.onend = () => {
-        window.audioGuiaPlaying = false;
-        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
-      };
-
-      utterance.onerror = () => {
-        window.audioGuiaPlaying = false;
-        if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
-      };
-
-      window.audioGuiaUtterance = utterance;
-      window.speechSynthesis.speak(utterance);
-    };
-
-    // Vincular Event Listeners do Teleprompter
-    setTimeout(() => {
-      const btnStudioTp = document.getElementById('btn-abrir-teleprompter-modal');
-      if (btnStudioTp) {
-        btnStudioTp.onclick = () => window.abrirModalTeleprompter();
-      }
-
-      const btnTogglePlay = document.getElementById('tp-btn-toggle-play');
-      if (btnTogglePlay) {
-        btnTogglePlay.onclick = () => window.togglePlayTeleprompter();
-      }
-
-      const speedSlider = document.getElementById('tp-speed-slider');
-      const speedVal = document.getElementById('tp-speed-val');
-      if (speedSlider) {
-        speedSlider.oninput = (e) => {
-          const val = Number(e.target.value);
-          window.teleprompterState.speed = val;
-          if (speedVal) speedVal.textContent = val + 'x';
-          if (window.teleprompterState.isPlaying) {
-            window.iniciarRolagemTeleprompter();
-          }
-        };
-      }
-
-      const fontSlider = document.getElementById('tp-font-slider');
-      const fontVal = document.getElementById('tp-font-val');
-      const tpDisplay = document.getElementById('tp-text-display');
-      if (fontSlider) {
-        fontSlider.oninput = (e) => {
-          const val = e.target.value;
-          window.teleprompterState.fontSize = val;
-          if (fontVal) fontVal.textContent = val + 'px';
-          if (tpDisplay) tpDisplay.style.fontSize = val + 'px';
-        };
-      }
-    }, 300);
 
     // Atalhos globais de teclado para o Teleprompter
     window.addEventListener('keydown', (e) => {
@@ -7673,16 +7645,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // Listener universal para captura segura de cliques nas gavetas e botões do Estúdio
 document.addEventListener('click', (e) => {
-  // Captura botões diretos do Estúdio
-  if (e.target.closest('#btn-abrir-teleprompter-modal') || e.target.closest('.btn-abrir-tp')) {
+  // Trata o botão de áudio-guia de forma atômica
+  const btnAudioTarget = e.target.closest('#btn-ouvir-audio-guia');
+  if (btnAudioTarget) {
     e.preventDefault();
-    window.abrirModalTeleprompter();
+    e.stopImmediatePropagation();
+    window.ouvirAudioGuia();
     return;
   }
 
-  if (e.target.closest('#btn-ouvir-audio-guia')) {
+  // Trata o botão de modo teleprompter de forma atômica
+  const btnTpTarget = e.target.closest('#btn-abrir-teleprompter-modal') || e.target.closest('.btn-abrir-tp');
+  if (btnTpTarget) {
     e.preventDefault();
-    window.ouvirAudioGuia();
+    e.stopImmediatePropagation();
+    window.abrirModalTeleprompter();
     return;
   }
 
