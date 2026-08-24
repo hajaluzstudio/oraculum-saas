@@ -3,6 +3,7 @@
  * Lógica de Interface Client-Side & Conexão com a API Backend
  */
 // 1. Purga imediata de Service Worker travado em cache
+window.persistirMensagemChat = function() { /* No-op: persistência gerenciada pelo Supabase */ };
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     for (let registration of registrations) {
@@ -1509,11 +1510,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages') || document.querySelector('#tab-chat .overflow-y-auto');
     if (!container) return;
 
-    if (!isRestoring) {
-      const activeClient = window.activeClient || window.currentClient || {};
-      const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-      window.persistirMensagemChat(clientId, sender, text, tasksArray);
-    }
+
 
     const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
     const msgWrapper = document.createElement('div');
