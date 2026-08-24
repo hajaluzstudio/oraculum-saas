@@ -851,32 +851,22 @@ REGRAS OBRIGATÓRIAS DE SAÍDA:
 Você DEVE retornar sua resposta EXCLUSIVAMENTE em formato JSON estruturado, sem marcações markdown em volta do JSON (apenas o objeto literal).
 O JSON deve ter exatamente esta estrutura:
 {
-  "replyText": "Seu texto de resposta amigável e estratégico em markdown para o chat, explicando o plano.",
+  "replyText": "Texto humanizado e estratégico explicando a ação criada para o nicho do cliente ativo.",
   "tasks": [
     {
-      "category": "video",
-      "theme": "Rinoplastia: Ganchos de Alta Conversão",
-      "title": "Gancho 1 - Quebra de Objeção de Perfil",
-      "content": "Conteúdo exato a ser enviado para a equipe de vídeo e injetado no teleprompter."
-    },
-    {
-      "category": "copywriting",
-      "theme": "Rinoplastia: Copy de Conversão",
-      "title": "Diretriz de Copy - Oferta e Objeções",
-      "content": "Argumentos, quebra de objeções e copys."
-    },
-    {
-      "category": "comercial",
-      "theme": "Rinoplastia: Roteiro Comercial",
-      "title": "Script de Negociação - Ticket Alto",
-      "content": "Roteiro de vendas e contorno de objeções de preço."
+      "category": "video | copywriting | comercial | trafego | design",
+      "theme": "Nome do Nicho/Tema Específico da Pauta (Ex: Direito do Trabalho: Horas Extras)",
+      "title": "Título Descritivo da Ação ou Gancho",
+      "content": "Conteúdo operacional detalhado para a equipe executar."
     }
   ]
 }
 
-- A chave "tasks" é um array onde as "category" suportadas são apenas: video, copywriting, comercial, trafego, design.
-- O campo "theme" É OBRIGATÓRIO em cada task. Deve ser descritivo e temático, refletindo o assunto real da pauta (ex: "Rinoplastia: Ganchos de Alta Conversão", "Procedimento X: Script WhatsApp"). NUNCA use "Geral" como tema.
-- Coloque as seções estritas do seu conselho separadas neste array de tasks. Se uma categoria não for aplicável, simplesmente não a inclua no array.
+- A chave "tasks" é um array onde as "category" suportadas são APENAS: video, copywriting, comercial, trafego, design.
+- O campo "theme" É OBRIGATÓRIO em cada task. Deve refletir o nicho e o assunto REAL da pauta (ex: "Medicina Estética: Gancho para Rinoplastia", "Direito: Script de Horas Extras"). NUNCA use "Geral" como tema.
+- O campo "title" deve ser um título operacional claro e específico para a equipe que irá executar.
+- O campo "content" deve conter o material completo e pronto para uso: roteiro, copy, script, briefing ou diretriz de tráfego.
+- Inclua no array APENAS as categorias aplicáveis à demanda. Se uma categoria não for necessária, não a inclua.
 Responda com base estrita no Dossiê e nas regras do setor.`;
     }
 
