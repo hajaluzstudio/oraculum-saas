@@ -12,6 +12,38 @@ if ('caches' in window) {
   });
 }
 
+// BOTÃO FLUTUANTE DE CONTINGÊNCIA E TESTE DIRETO NO ROOT
+(function injetarBotaoFlutuanteBI() {
+  const antigo = document.getElementById('btn-bi-flutuante-root');
+  if (antigo) antigo.remove();
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-bi-flutuante-root';
+  btn.type = 'button';
+  btn.innerHTML = '⚡ Lançar BI (Root)';
+  btn.style.cssText = 'position: fixed !important; bottom: 20px !important; right: 20px !important; z-index: 2147483647 !important; background: #059669 !important; color: #ffffff !important; border: 2px solid #34d399 !important; padding: 12px 20px !important; border-radius: 9999px !important; font-weight: 800 !important; font-size: 13px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.8) !important; cursor: pointer !important; font-family: sans-serif !important;';
+
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.abrirModalLancarBI(e);
+  }, true);
+
+  if (document.documentElement) {
+    document.documentElement.appendChild(btn);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => document.documentElement.appendChild(btn));
+  }
+})();
+
+document.addEventListener('mousedown', function(e) {
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (el && (el.innerText?.includes('Lançar BI') || el.id?.includes('lancar-bi'))) {
+    console.log('[BI-INSPECTION] Elemento clicado:', el.tagName, el.id, el.className);
+    window.abrirModalLancarBI(e);
+  }
+}, true);
+
 // [ANTI-CRASH GLOBAL]: Declaração antecipada para evitar TypeErrors durante o parsing
 window.carregarUltimoBIDoCliente = function(clientId) {
   if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId);
