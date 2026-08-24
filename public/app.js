@@ -1189,10 +1189,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Chamar sempre que o usuário clicar na aba tab-war-room
+  // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
   document.addEventListener('click', function(e) {
-    if (e.target.closest('[data-tab="tab-war-room"], #btn-nav-war-room, a[href*="sala-de-operacao"], button:contains("Sala de Operação")')) {
-      setTimeout(carregarSalaOperacaoCompleta, 150);
+    const target = e.target;
+    if (!target) return;
+
+    const isWarRoomNav = 
+      target.closest('[data-tab="tab-war-room"]') ||
+      target.closest('#btn-nav-war-room') ||
+      target.closest('a[href*="sala-de-operacao"]') ||
+      target.closest('button[data-target="tab-war-room"]') ||
+      (target.textContent && target.textContent.includes('Sala de Operação'));
+
+    if (isWarRoomNav) {
+      setTimeout(() => {
+        if (typeof carregarSalaOperacaoCompleta === 'function') {
+          carregarSalaOperacaoCompleta();
+        }
+      }, 100);
     }
   });
 
