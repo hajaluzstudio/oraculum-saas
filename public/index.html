@@ -1439,6 +1439,9 @@
                   <button id="btn-periodo-trimestre" onclick="window.selecionarPeriodoBI('trimestre')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Trimestre</button>
                   <button id="btn-periodo-ano" onclick="window.selecionarPeriodoBI('ano')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Ano</button>
                 </div>
+                <button type="button" id="btn-lancar-bi-topo" onclick="window.abrirModalLancarBI(event)" class="px-3 py-1.5 text-xs font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl border border-amber-500/40 flex items-center gap-1.5 cursor-pointer shadow">
+                  💰 Lançar BI
+                </button>
                 <button id="btn-modo-apresentacao" onclick="window.alternarModoApresentacao()" class="px-3 py-1.5 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 flex items-center gap-1.5">
                   📺 Modo Apresentação
                 </button>
@@ -3859,7 +3862,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.69.0"></script>
+<script src="/app.js?v=9999.70.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
