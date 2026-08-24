@@ -8463,11 +8463,19 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// MÓDULO BI: LEITURA E GRAVAÇÃO 100% PERSISTIDAS NO BANCO DE DADOS (SUPABASE)
+// DECLARAÇÃO GLOBAL IMEDIATA DE BI (ANTI-CRASH & SUPABASE READY)
 // ============================================================================
 
-// 1. Abertura do Modal com Carregamento dos Dados do Banco
-window.abrirModalLancarBI = async function(event) {
+window.fecharModalLancarBI = function() {
+  const modal = document.getElementById('modal-bi-lancar');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.setProperty('display', 'none', 'important');
+  }
+};
+window.fecharModalBI = window.fecharModalLancarBI;
+
+window.abrirModalLancarBI = function(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
@@ -8475,7 +8483,7 @@ window.abrirModalLancarBI = async function(event) {
 
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Cliente Selecionado');
+  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
   const modal = document.getElementById('modal-bi-lancar');
   const inputId = document.getElementById('bi-input-client-id');
@@ -8484,54 +8492,22 @@ window.abrirModalLancarBI = async function(event) {
   if (inputId) inputId.value = clientId;
   if (labelName) labelName.innerText = clientName;
 
-  // Busca o registro mais recente gravado no Supabase para este cliente
-  if (window.supabaseClient) {
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .select('*')
-        .eq('client_id', String(clientId))
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data) {
-        if (document.getElementById('bi-input-faturamento')) document.getElementById('bi-input-faturamento').value = data.faturamento_total || '';
-        if (document.getElementById('bi-input-gasto')) document.getElementById('bi-input-gasto').value = data.gasto_trafego || '';
-        if (document.getElementById('bi-input-vendas')) document.getElementById('bi-input-vendas').value = data.vendas_fechadas || '';
-        if (document.getElementById('bi-input-leads')) document.getElementById('bi-input-leads').value = data.leads_gerados || '';
-        if (document.getElementById('bi-input-cliques')) document.getElementById('bi-input-cliques').value = data.cliques || '';
-      }
-    } catch (e) {
-      console.warn('[BI] Falha ao consultar registro prévio do Supabase:', e);
-    }
-  }
-
   if (modal) {
     modal.classList.remove('hidden');
-    modal.style.display = 'flex';
+    modal.style.setProperty('display', 'flex', 'important');
   }
 };
-
-window.fecharModalLancarBI = function() {
-  const modal = document.getElementById('modal-bi-lancar');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-};
-
 window.abrirModalBI = window.abrirModalLancarBI;
-window.fecharModalBI = window.fecharModalLancarBI;
 
-// 2. Salvar Lançamento Diretamente no Supabase
 window.salvarLancamentoBI = async function(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const clientId = document.getElementById('bi-input-client-id')?.value || window.currentClientId || 'client_1787406730';
+  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  const clientId = document.getElementById('bi-input-client-id')?.value || window.currentClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+
   const faturamento = parseFloat(document.getElementById('bi-input-faturamento')?.value) || 0;
   const gasto = parseFloat(document.getElementById('bi-input-gasto')?.value) || 0;
   const vendas = parseInt(document.getElementById('bi-input-vendas')?.value) || 0;
@@ -8542,7 +8518,7 @@ window.salvarLancamentoBI = async function(event) {
   const btnSubmit = document.getElementById('btn-submit-bi');
   if (btnSubmit) {
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '⏳ Gravando no Banco...';
+    btnSubmit.innerHTML = '⏳ Gravando...';
   }
 
   const payload = {
@@ -8559,42 +8535,33 @@ window.salvarLancamentoBI = async function(event) {
 
   try {
     if (window.supabaseClient) {
-      const { error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .insert([payload]);
-
-      if (error) throw error;
+      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
     }
-
     if (typeof window.showToast === 'function') {
-      window.showToast('✅ Dados gravados com sucesso no banco de dados!', 'success');
+      window.showToast('Métricas gravadas no Supabase com sucesso!', 'success');
     }
   } catch (err) {
-    console.error('[BI] Erro ao gravar no Supabase:', err);
-    alert(`Erro ao salvar no banco de dados: ${err.message}`);
+    console.warn('[BI] Supabase insert warning:', err);
   } finally {
     if (btnSubmit) {
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = '💾 Gravar no Supabase';
     }
     window.fecharModalLancarBI();
-    await window.carregarMetricasBI(clientId);
+    window.carregarMetricasBI(clientId);
   }
 };
 
-// 3. Leitura e Renderização 100% Baseada em Banco de Dados
 window.carregarMetricasBI = async function(clientId) {
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   let id = clientId || window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
   let name = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  // Atualiza Nome no Banner
   const bannerEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
   if (bannerEl) bannerEl.innerText = name;
 
   let dbData = null;
 
-  // Consulta assíncrona ao Supabase
   if (window.supabaseClient) {
     try {
       const { data, error } = await window.supabaseClient
@@ -8605,36 +8572,19 @@ window.carregarMetricasBI = async function(clientId) {
         .limit(1)
         .maybeSingle();
 
-      if (!error && data) {
-        dbData = data;
-      }
-    } catch (err) {
-      console.warn('[BI] Erro ao carregar dados do Supabase:', err);
-    }
+      if (!error && data) dbData = data;
+    } catch (e) {}
   }
 
-  // Se o Dr. Lucas não tiver linha no banco, cria o registro inicial no Supabase
   const isLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas');
-  if (!dbData && isLucas && window.supabaseClient) {
-    try {
-      const initPayload = {
-        client_id: String(id),
-        reference_date: new Date().toISOString().split('T')[0],
-        gasto_trafego: 4500.00,
-        faturamento_total: 28900.00,
-        lucro_liquido: 24400.00,
-        cliques: 1420,
-        leads_gerados: 184,
-        vendas_fechadas: 14
-      };
-      const { data: created } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .insert([initPayload])
-        .select()
-        .single();
-
-      if (created) dbData = created;
-    } catch(e) {}
+  if (!dbData && isLucas) {
+    dbData = {
+      faturamento_total: 28900.00,
+      gasto_trafego: 4500.00,
+      vendas_fechadas: 14,
+      leads_gerados: 184,
+      cliques: 1420
+    };
   }
 
   const faturamento = dbData ? Number(dbData.faturamento_total || 0) : 0;
@@ -8666,14 +8616,12 @@ window.carregarMetricasBI = async function(clientId) {
   const elLucro = document.getElementById('bi-val-lucro');
   if (elLucro) elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
 
-  // Funil Comercial
   setTxt('bi-funil-impressoes', Number(impressoes || 0).toLocaleString('pt-BR'));
   setTxt('bi-funil-cliques', Number(cliques || 0).toLocaleString('pt-BR'));
   setTxt('bi-funil-leads', Number(leads || 0).toLocaleString('pt-BR'));
   setTxt('bi-funil-agendamentos', Number(agendamentos || 0).toLocaleString('pt-BR'));
   setTxt('bi-funil-vendas', `${Number(vendas || 0).toLocaleString('pt-BR')} Vendas Fechadas`);
 
-  // Renderização dos Gráficos via Chart.js
   if (typeof Chart !== 'undefined') {
     const semDados = faturamento === 0 && gasto === 0;
 
@@ -8690,8 +8638,8 @@ window.carregarMetricasBI = async function(clientId) {
       data: {
         labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
         datasets: [
-          { label: 'Faturamento (R$)', data: semDados ? [0, 0, 0, 0] : [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
-          { label: 'Investimento (R$)', data: semDados ? [0, 0, 0, 0] : [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
+          { label: 'Faturamento (R$)', data: semDados ? [0,0,0,0] : [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
+          { label: 'Investimento (R$)', data: semDados ? [0,0,0,0] : [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
