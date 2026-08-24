@@ -2468,10 +2468,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Fallback seguro caso window.alternarModoApresentacao não exista
-  if (typeof window.alternarModoApresentacao !== 'function') {
-    window.alternarModoApresentacao = function() { console.log('Modo Apresentação'); };
-  }
+  // BI Controls: Modo Apresentação em Tela Cheia
+  window.alternarModoApresentacao = function() {
+    const painelBI = document.getElementById('tab-bi') || document.getElementById('bi-dashboard-container');
+    const btnApresentacao = document.getElementById('btn-modo-apresentacao') || document.getElementById('btn-presentation-mode') || document.querySelector('[onclick*="alternarModoApresentacao"]');
+    
+    if (!painelBI) return;
+
+    const isFullscreen = painelBI.classList.contains('bi-fullscreen-mode');
+
+    if (!isFullscreen) {
+      painelBI.classList.add('bi-fullscreen-mode', 'fixed', 'inset-0', 'z-50', 'bg-slate-950', 'p-8', 'overflow-y-auto');
+      if (btnApresentacao) btnApresentacao.innerHTML = '✕ Sair da Apresentação';
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      painelBI.classList.remove('bi-fullscreen-mode', 'fixed', 'inset-0', 'z-50', 'bg-slate-950', 'p-8', 'overflow-y-auto');
+      if (btnApresentacao) btnApresentacao.innerHTML = '📺 Modo Apresentação';
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  // BI Controls: Exportar Relatório PDF
+  window.exportarRelatorioPDF = function() {
+    if (typeof window.showToast === 'function') {
+      window.showToast('Preparando relatório para exportação...', 'info');
+    }
+    
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
+
+  // BI Controls: Seleção Dinâmica de Períodos
+  window.periodoBIAtivo = '30d';
+
+  window.selecionarPeriodoBI = function(periodo) {
+    window.periodoBIAtivo = periodo;
+
+    const periodos = ['7d', '30d', 'trimestre', 'ano'];
+    periodos.forEach(p => {
+      const btn = document.getElementById(`btn-periodo-${p}`) || document.querySelector(`[data-period="${p}"]`) || document.querySelector(`[data-periodo="${p}"]`);
+      if (!btn) return;
+      
+      if (p === periodo || (p === 'trimestre' && periodo === '90d') || (p === 'ano' && periodo === '365d')) {
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600/30 text-emerald-400 border border-emerald-500/50 shadow-sm';
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.color = '#34D399';
+        btn.style.border = '1px solid rgba(16, 185, 129, 0.5)';
+      } else {
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent';
+        btn.style.background = 'transparent';
+        btn.style.color = '#94A3B8';
+        btn.style.border = 'none';
+      }
+    });
+
+    if (typeof window.carregarMetricasBI === 'function') {
+      const activeClientId = window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
+      window.carregarMetricasBI(activeClientId, periodo);
+    }
+  };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
   window.switchWarRoomTab = function(tabKey) {
@@ -3592,9 +3652,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
+  const formInspectEl = document.getElementById('form-inspect-criativo') || document.querySelector('#formInspect');
 
-  if (formInspect) {
-    formInspect.addEventListener('submit', async (e) => {
+  if (formInspectEl) {
+    formInspectEl.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const title = document.getElementById('inspect-title').value;
