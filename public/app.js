@@ -1085,6 +1085,74 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
   // ============================================================================
+  function extrairSegmentosEstrategicos(rawText) {
+    if (!rawText || typeof rawText !== 'string') return [];
+
+    const segments = [];
+    
+    // 1. Divide o texto em blocos baseando-se em quebras de seções (Markdown headers, números ou linhas duplas)
+    const blocosBrutos = rawText.split(/(?=\n(?:\d+\.|\#{1,4}|\*\*[^\*]+\*\*)\s+)/g);
+
+    // Dicionário de peso por área operacional
+    const vocabulario = {
+      video: ['vídeo', 'video', 'gancho', 'hook', 'roteiro', 'teleprompter', 'cena', 'visual', 'gravação', 'áudio', 'story', 'reels', 'tiktok'],
+      comercial: ['objeção', 'objecao', 'preço', 'preco', 'valor', 'comercial', 'venda', 'vendas', 'whatsapp', 'atendimento', 'fechamento', 'negociação', 'ticket'],
+      trafego: ['tráfego', 'trafego', 'campanha', 'público', 'publico', 'segmentação', 'cpa', 'cpl', 'roas', 'orçamento', 'meta ads', 'google ads'],
+      design: ['design', 'banner', 'landing page', 'layout', 'wireframe', 'criativo estático', 'identidade visual'],
+      copywriting: ['copy', 'headline', 'legenda', 'texto', 'artigo', 'persuas', 'carta de vendas', 'email', 'cta']
+    };
+
+    blocosBrutos.forEach(bloco => {
+      const textoLimpo = bloco.trim();
+      if (textoLimpo.length < 20) return;
+
+      const lower = textoLimpo.toLowerCase();
+      
+      // Pontua o bloco para cada categoria
+      let pontuacoes = { video: 0, comercial: 0, trafego: 0, design: 0, copywriting: 0 };
+
+      for (const [cat, termos] of Object.entries(vocabulario)) {
+        termos.forEach(termo => {
+          if (lower.includes(termo)) pontuacoes[cat] += 1;
+        });
+      }
+
+      // Identifica a categoria com maior afinidade
+      let melhorCategoria = 'copywriting';
+      let maxPontos = 0;
+
+      for (const [cat, pontos] of Object.entries(pontuacoes)) {
+        if (pontos > maxPontos) {
+          maxPontos = pontos;
+          melhorCategoria = cat;
+        }
+      }
+
+      // Extrai o primeiro título/linha do próprio texto gerado pela IA
+      const primeiraLinha = textoLimpo.split('\n')[0].replace(/^[\#\*\d\.\-\s]+/, '').replace(/[\#\*]+$/, '').trim();
+      const tituloDinamico = primeiraLinha.length > 5 && primeiraLinha.length < 70 
+        ? primeiraLinha 
+        : `Demanda de ${melhorCategoria.toUpperCase()}`;
+
+      segments.push({
+        category: melhorCategoria,
+        title: tituloDinamico,
+        content: textoLimpo
+      });
+    });
+
+    // Se nenhum corte for encontrado, cria uma demanda unitária dinâmica
+    if (segments.length === 0) {
+      segments.push({
+        category: 'copywriting',
+        title: 'Diretriz Tática Oraculum',
+        content: rawText.trim()
+      });
+    }
+
+    return segments;
+  }
+
   window.dispatchBriefingToWarRoom = async function (target) {
     const container = typeof target === 'string' ? document.getElementById(target) : target;
     if (!container) return;
@@ -1108,49 +1176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 1. Parser de Segmentação Multi-Abas
-    const segments = [];
-
-    // Padrão de corte por seções
-    const videoRegex = /(?:1\.\s*Os\s*\d*\s*Ganchos|Ganchos\s*Visuais|Roteiro|Roteiros|Vídeo)[\s\S]*?(?=(?:2\.\s*Argumento|Quebra\s*de\s*Objeção|Comercial|$))/i;
-    const copySalesRegex = /(?:2\.\s*Argumento|Quebra\s*de\s*Objeção|Objeção\s*do\s*Preço|Comercial)[\s\S]*$/i;
-
-    const videoMatch = rawText.match(videoRegex);
-    const copySalesMatch = rawText.match(copySalesRegex);
-
-    if (videoMatch && videoMatch[0].trim().length > 30) {
-      segments.push({
-        category: 'video',
-        title: 'Diretriz de Ganchos e Roteiro de Vídeo',
-        content: videoMatch[0].trim()
-      });
-    }
-
-    if (copySalesMatch && copySalesMatch[0].trim().length > 30) {
-      segments.push({
-        category: 'copywriting',
-        title: 'Diretriz de Copywriting & Quebra de Objeção',
-        content: copySalesMatch[0].trim()
-      });
-      segments.push({
-        category: 'comercial',
-        title: 'Script Comercial & Ancoragem de R$ 38k',
-        content: copySalesMatch[0].trim()
-      });
-    }
-
-    // Fallback caso não encontre divisões claras: despacha o conteúdo integral
-    if (segments.length === 0) {
-      let cat = 'copywriting';
-      const lower = rawText.toLowerCase();
-      if (lower.includes('gancho') || lower.includes('vídeo') || lower.includes('roteiro')) cat = 'video';
-      else if (lower.includes('objeção') || lower.includes('38.000') || lower.includes('vendas')) cat = 'comercial';
-      
-      segments.push({
-        category: cat,
-        title: `Estratégia Chat [${cat.toUpperCase()}]`,
-        content: rawText
-      });
-    }
+    const segments = extrairSegmentosEstrategicos(rawText);
 
     // 2. Gravação de cada segmento no Supabase e LocalStorage
     const supabase = window.supabaseClient || window.supabase;
