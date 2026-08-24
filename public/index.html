@@ -2305,6 +2305,22 @@
                   </div>
                   <!-- Feed de Gavetas de Copywriting -->
                   <div id="feed-gavetas-copywriting" class="space-y-4 mt-0 mb-4"></div>
+                  <!-- Container de Entregáveis / Pastas de Copywriting -->
+                  <div id="copy-deliverables-container" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center gap-2.5">
+                        <span class="text-xl">✍️</span>
+                        <h3 class="text-base font-semibold text-slate-100">Copies de Anúncios, Páginas & VSLs</h3>
+                      </div>
+                      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis Estratégicos</span>
+                    </div>
+                    
+                    <div id="copy-deliverables-list" class="space-y-4">
+                      <div class="text-center py-10 border-2 border-dashed border-slate-800 rounded-xl">
+                        <p class="text-xs text-slate-500">Nenhum entregável de copy despachado para esta equipe ainda. Gere uma estratégia no Chat Estratégico.</p>
+                      </div>
+                    </div>
+                  </div>
                   <!-- Ferramenta Inspecionar Criativo Modular (Copywriting) -->
                   <div id="container-inspector-copy" class="mb-4"></div>
                   <div id="wr-copy-content" class="wr-data-box" style="margin-top: 16px;">
@@ -2389,6 +2405,22 @@
                   </div>
                   <!-- Feed de Gavetas de Comercial -->
                   <div id="feed-gavetas-comercial" class="space-y-4 mt-0 mb-4"></div>
+                  <!-- Container de Entregáveis / Pastas Comercial & Vendas -->
+                  <div id="comercial-deliverables-container" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center gap-2.5">
+                        <span class="text-xl">🤝</span>
+                        <h3 class="text-base font-semibold text-slate-100">Scripts Comerciais, Objeções & Playbook</h3>
+                      </div>
+                      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis Estratégicos</span>
+                    </div>
+                    
+                    <div id="comercial-deliverables-list" class="space-y-4">
+                      <div class="text-center py-10 border-2 border-dashed border-slate-800 rounded-xl">
+                        <p class="text-xs text-slate-500">Nenhum script ou playbook despachado para esta equipe ainda. Gere uma estratégia no Chat Estratégico.</p>
+                      </div>
+                    </div>
+                  </div>
                   <div id="wr-sales-content" class="wr-data-box" style="margin-top: 16px;">
                     <div class="grid-2col">
                       <!-- COMERCIAL: A. Battlecards de Objeções -->
@@ -3767,7 +3799,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.51.0"></script>
+<script src="/app.js?v=9999.52.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

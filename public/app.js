@@ -2406,7 +2406,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarGavetasPorAba('design',      'feed-gavetas-design',      tasks);
     renderizarGavetasPorAba('trafego',     'feed-gavetas-trafego',     tasks);
     renderizarGavetasPorAba('copywriting', 'feed-gavetas-copywriting', tasks);
+    renderizarGavetasPorAba('copywriting', 'copy-deliverables-list',   tasks);
     renderizarGavetasPorAba('comercial',   'feed-gavetas-comercial',   tasks);
+    renderizarGavetasPorAba('comercial',   'comercial-deliverables-list', tasks);
 
     // Injeta a Ferramenta Modular de Visão Computacional em todas as abas
     if (typeof window.renderizarInspecionarCriativoModular === 'function') {
