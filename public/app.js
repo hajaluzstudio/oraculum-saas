@@ -1070,10 +1070,6 @@ document.addEventListener('DOMContentLoaded', () => {
     printWin.document.close();
   }
 
-  const btnExportPdf = document.getElementById('btn-export-dossier-pdf');
-  if (btnExportPdf) {
-    btnExportPdf.addEventListener('click', exportDossierToPDF);
-  }
 
   // ============================================================================
   // 3. CHAT ESTRATÉGICO DE CO-CRIAÇÃO
