@@ -2495,12 +2495,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // BI Controls: Exportar Relatório PDF
   window.exportarRelatorioPDF = function() {
     if (typeof window.showToast === 'function') {
-      window.showToast('Preparando relatório para exportação...', 'info');
+      window.showToast('Formatando relatório executivo para PDF...', 'info');
     }
-    
+
+    // Redimensiona instâncias do Chart.js para o viewport de impressão
+    if (window.Chart && window.Chart.instances) {
+      Object.values(window.Chart.instances).forEach(chart => {
+        if (typeof chart.resize === 'function') {
+          chart.resize();
+        }
+      });
+    }
+
+    // Pequeno timeout para o navegador renderizar os gráficos antes de abrir o diálogo
     setTimeout(() => {
       window.print();
-    }, 300);
+    }, 400);
   };
 
   // BI Controls: Seleção Dinâmica de Períodos
