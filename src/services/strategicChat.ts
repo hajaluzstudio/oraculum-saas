@@ -29,11 +29,18 @@ export interface BudgetAllocationProposal {
   justification: string;
 }
 
+export interface TaskPayload {
+  category: string;
+  title: string;
+  content: string;
+}
+
 export interface StrategicChatResponse {
   replyText: string;
+  tasks?: TaskPayload[];
   suggestedBriefing?: SuggestedBriefing;
   budgetAllocationProposal?: BudgetAllocationProposal;
-  actionableNextSteps: string[];
+  actionableNextSteps?: string[];
 }
 
 export interface ChatSessionContext {
@@ -58,6 +65,19 @@ const strategicChatResponseSchema: Schema = {
     replyText: {
       type: Type.STRING,
       description: "Resposta fundamentada do Oráculo para o estrategista com justificativa técnica e financeira",
+    },
+    tasks: {
+      type: Type.ARRAY,
+      description: "Array de tarefas operacionais estratificadas para a War Room. Separe os conteúdos exclusivos para: video, copywriting, comercial, trafego, design.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          category: { type: Type.STRING, description: "Obrigatório usar uma destas chaves: video, copywriting, comercial, trafego, design" },
+          title: { type: Type.STRING, description: "Título curto da tarefa" },
+          content: { type: Type.STRING, description: "Conteúdo completo e detalhado da tarefa para o departamento" }
+        },
+        required: ["category", "title", "content"]
+      }
     },
     suggestedBriefing: {
       type: Type.OBJECT,
@@ -88,7 +108,7 @@ const strategicChatResponseSchema: Schema = {
       description: "Próximos passos operacionais imediatos para a equipe",
     },
   },
-  required: ["replyText", "actionableNextSteps"],
+  required: ["replyText"],
 };
 
 import { loadClientsFromDisk, loadDossiersFromDisk } from './diskStorage';

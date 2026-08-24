@@ -793,18 +793,53 @@ DIRETRIZES:
       promptInstrucao = `Você é o Copiloto Estratégico do Oraculum.
 Cliente Ativo: ${clientName || 'Dr. Lucas'} (${clientNiche || 'Medicina Estética'}).
 Dossiê Ativo: ${dossierContext || ''}
+
+REGRAS OBRIGATÓRIAS DE SAÍDA:
+Você DEVE retornar sua resposta EXCLUSIVAMENTE em formato JSON estruturado, sem marcações markdown em volta do JSON (apenas o objeto literal).
+O JSON deve ter exatamente esta estrutura:
+{
+  "replyText": "Seu texto de resposta amigável e estratégico em markdown para o chat, explicando o plano.",
+  "tasks": [
+    {
+      "category": "video",
+      "title": "Ganchos e Roteiro de Gravação",
+      "content": "Conteúdo exato a ser enviado para a equipe de vídeo e injetado no teleprompter."
+    },
+    {
+      "category": "copywriting",
+      "title": "Diretriz de Copy",
+      "content": "Argumentos, quebra de objeções e copys."
+    },
+    {
+      "category": "comercial",
+      "title": "Script de Negociação",
+      "content": "Roteiro de vendas e contorno de objeções de preço."
+    }
+  ]
+}
+
+- A chave "tasks" é um array onde as "category" suportadas são apenas: video, copywriting, comercial, trafego, design.
+- Coloque as seções estritas do seu conselho separadas neste array de tasks. Se uma categoria não for aplicável, simplesmente não a inclua no array.
 Responda com base estrita no Dossiê e nas regras do setor.`;
     }
 
     // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
+    
+    let configArgs: any = {};
+    if (mode !== 'bi_live' && mode !== 'bi_feedback_loop') {
+      configArgs = { responseMimeType: 'application/json' };
+    }
 
     // Chamada à API via SDK Global com Cascata
     const { reply: aiResponse, modelUsed } = await executarIAComFallback(
       ai,
       promptInstrucao,
-      { contents: [{ role: 'user', parts: [{ text: userMessage }] }] }
+      { 
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        config: configArgs
+      }
     );
 
     if (mode === 'bi_feedback_loop' && clientId && supabase) {

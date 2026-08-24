@@ -938,10 +938,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const data = await res.json();
-      const replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
+      let replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
+      let tasksArray = [];
+      
+      try {
+        const parsed = typeof replyText === 'string' ? JSON.parse(replyText.replace(/```json/g, '').replace(/```/g, '')) : replyText;
+        if (parsed.replyText) replyText = parsed.replyText;
+        if (parsed.display_text) replyText = parsed.display_text;
+        if (parsed.tasks && Array.isArray(parsed.tasks)) tasksArray = parsed.tasks;
+      } catch(e) {}
       
       if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', replyText);
+        appendChatMessage('model', replyText, tasksArray);
       }
     } catch (err) {
       console.warn('[Chat Fallback Executado]:', err);
@@ -1012,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Atualize appendChatMessage para invocar a persistência
-  window.appendChatMessage = function(sender, text, isRestoring = false) {
+  window.appendChatMessage = function(sender, text, tasksArray = [], isRestoring = false) {
     if (typeof hideChatLoadingSpinner === 'function') {
       hideChatLoadingSpinner();
     }
@@ -1041,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sender === 'user') {
       msgWrapper.innerHTML = `<div class="bg-[#10B981]/20 border border-[#10B981]/30 text-white rounded-xl px-4 py-2 max-w-[80%]">${finalContent}</div>`;
     } else {
+      const escapedTasks = JSON.stringify(tasksArray).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
       msgWrapper.innerHTML = `
         <div class="chat-content prose prose-invert max-w-none text-slate-200 markdown-body">${finalContent}</div>
         <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
@@ -1048,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             Recusar
           </button>
-          <button onclick="if(typeof dispatchBriefingToWarRoom === 'function'){ dispatchBriefingToWarRoom(document.getElementById('${msgId}')); } else if(typeof window.dispatchBriefingToWarRoom === 'function'){ window.dispatchBriefingToWarRoom(document.getElementById('${msgId}')); } else { alert('Estratégia Aprovada e Despachada para a Sala de Operação!'); }" class="px-4 py-1.5 text-xs font-semibold text-[#041210] bg-[#10B981] hover:bg-[#059669] rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 cursor-pointer">
+          <button data-tasks="${escapedTasks}" onclick="const t=this.dataset.tasks?JSON.parse(this.dataset.tasks):[]; if(typeof dispatchBriefingToWarRoom === 'function'){ dispatchBriefingToWarRoom(document.getElementById('${msgId}'), t); } else if(typeof window.dispatchBriefingToWarRoom === 'function'){ window.dispatchBriefingToWarRoom(document.getElementById('${msgId}'), t); } else { alert('Estratégia Aprovada e Despachada para a Sala de Operação!'); }" class="px-4 py-1.5 text-xs font-semibold text-[#041210] bg-[#10B981] hover:bg-[#059669] rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 cursor-pointer btn-approve-chat">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Aprovar & Enviar para Sala de Operação
           </button>
@@ -1085,60 +1094,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
   // ============================================================================
-  // 1. FATIADOR RIGOROSO DE CONTEÚDO (Isola o que é de cada equipe)
   function extrairSegmentosEstrategicos(rawText) {
     if (!rawText || typeof rawText !== 'string') return [];
 
     const segments = [];
-    
-    // Expressões para detectar onde começa e termina cada bloco
-    const videoHeaderRegex = /(?:1\.\s*Os\s*\d*\s*Ganchos|3\s*Ganchos\s*Visuais|Ganchos\s*Visuais|Roteiro\s*de\s*Vídeo|Ideias\s*de\s*Anúncios\s*em\s*Vídeo)/i;
-    const salesHeaderRegex = /(?:2\.\s*Argumento|Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Argumento\s*Principal|Argumento\s*Direto|Script\s*Comercial)/i;
+    const lower = rawText.toLowerCase();
 
-    const posVideo = rawText.search(videoHeaderRegex);
-    const posSales = rawText.search(salesHeaderRegex);
+    // 1. Caça bloco de vídeo em qualquer lugar do texto
+    const videoRegex = /(?:(?:\d+\.\s*)?Ganchos?\s*Visuais|Roteiro(?:\s*de\s*Gravação|\s*de\s*Vídeo)?|3\s*Ganchos|Ideias\s*de\s*Vídeo)[\s\S]*?(?=(?:Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Playbook\s*de\s*Vendas|Script\s*Comercial|$))/i;
+    const matchVideo = rawText.match(videoRegex);
 
-    // Se encontrou as duas seções no mesmo texto, fatia com precisão cirúrgica
-    if (posVideo !== -1 && posSales !== -1) {
-      let videoText = '';
-      let salesText = '';
+    if (matchVideo && matchVideo[0].trim().length > 30) {
+      segments.push({
+        category: 'video',
+        title: '3 Ganchos Visuais e Roteiro de Gravação',
+        content: matchVideo[0].trim()
+      });
+    }
 
-      if (posVideo < posSales) {
-        videoText = rawText.substring(posVideo, posSales).trim();
-        salesText = rawText.substring(posSales).trim();
-      } else {
-        salesText = rawText.substring(posSales, posVideo).trim();
-        videoText = rawText.substring(posVideo).trim();
-      }
+    // 2. Caça bloco de quebra de objeção / comercial
+    const salesRegex = /(?:Argumento\s*para\s*Quebrar|Quebra\s*de\s*Objeção|Playbook\s*de\s*Vendas|Script\s*Comercial|Argumento\s*Principal)[\s\S]*$/i;
+    const matchSales = rawText.match(salesRegex);
 
-      if (videoText.length > 20) {
-        segments.push({
-          category: 'video',
-          title: '3 Ganchos Visuais e Roteiro de Gravação',
-          content: videoText
-        });
-      }
+    if (matchSales && matchSales[0].trim().length > 30) {
+      segments.push({
+        category: 'comercial',
+        title: 'Script de Quebra de Objeção e Vendas',
+        content: matchSales[0].trim()
+      });
+      segments.push({
+        category: 'copywriting',
+        title: 'Diretriz de Copywriting & Headlines',
+        content: matchSales[0].trim()
+      });
+    }
 
-      if (salesText.length > 20) {
-        segments.push({
-          category: 'comercial',
-          title: 'Script de Negociação e Quebra de Objeção',
-          content: salesText
-        });
-        segments.push({
-          category: 'copywriting',
-          title: 'Estrutura de Copy Persuasiva',
-          content: salesText
-        });
-      }
-    } else {
-      // Caso o chat tenha respondido sobre apenas um assunto específico
-      const lower = rawText.toLowerCase();
+    // Fallback caso o texto seja de assunto único
+    if (segments.length === 0) {
       let cat = 'copywriting';
-      if (lower.includes('vídeo') || lower.includes('gancho') || lower.includes('reels') || lower.includes('gravação')) cat = 'video';
-      else if (lower.includes('tráfego') || lower.includes('cpa') || lower.includes('anúncio') || lower.includes('público')) cat = 'trafego';
-      else if (lower.includes('design') || lower.includes('banner') || lower.includes('landing page')) cat = 'design';
-      else if (lower.includes('objeção') || lower.includes('venda') || lower.includes('preço') || lower.includes('comercial')) cat = 'comercial';
+      if (lower.includes('vídeo') || lower.includes('gancho') || lower.includes('roteiro')) cat = 'video';
+      else if (lower.includes('objeção') || lower.includes('venda') || lower.includes('comercial')) cat = 'comercial';
+      else if (lower.includes('tráfego') || lower.includes('cpa')) cat = 'trafego';
+      else if (lower.includes('design')) cat = 'design';
 
       segments.push({
         category: cat,
@@ -1150,26 +1147,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return segments;
   }
 
-  // 2. DESPACHO ATÔMICO PARA SUPABASE E STORAGE SEPARADO
-  window.dispatchBriefingToWarRoom = async function (target) {
-    const container = typeof target === 'string' ? document.getElementById(target) : target;
-    if (!container) return;
-
-    const contentEl = container.querySelector('.chat-content') || container;
-    const rawText = (contentEl.innerText || contentEl.textContent || '').trim();
-
+  // Despacho determinístico com dados já estruturados pela IA
+  window.dispatchBriefingToWarRoom = async function (target, taskPayloadArray) {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-    const segments = extrairSegmentosEstrategicos(rawText);
-
     const supabase = window.supabaseClient || window.supabase;
 
-    for (const seg of segments) {
+    let tasksToDispatch = [];
+
+    // Se já veio em JSON da IA (Array)
+    if (Array.isArray(taskPayloadArray) && taskPayloadArray.length > 0) {
+      tasksToDispatch = taskPayloadArray;
+    } 
+    // Se target for o objeto de resposta completo (caso renderChatReply)
+    else if (target && typeof target === 'object' && !(target instanceof HTMLElement) && target.tasks && Array.isArray(target.tasks)) {
+      tasksToDispatch = target.tasks;
+    }
+    // Fallback de contingência
+    else {
+      const container = typeof target === 'string' ? document.getElementById(target) : (target instanceof HTMLElement ? target : null);
+      const rawText = container ? (container.querySelector('.chat-content')?.innerText || container.innerText || '') : '';
+      
+      tasksToDispatch = extrairSegmentosEstrategicos(rawText);
+    }
+
+    for (const task of tasksToDispatch) {
       const payload = {
         client_id: String(clientId),
-        title: seg.title,
-        content: seg.content,
-        category: seg.category,
+        title: task.title,
+        content: task.content,
+        category: task.category,
         status: 'todo',
         priority: 'high',
         created_at: new Date().toISOString()
@@ -1178,20 +1185,20 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (supabase) await supabase.from('war_room_tasks').insert([payload]);
       } catch (e) {
-        console.warn('[WarRoom Insert Catch]:', e);
+        console.warn('[WarRoom Supabase Insert]:', e);
       }
 
-      const key = `war_room_${clientId}_${seg.category}`;
+      const key = `war_room_${clientId}_${task.category}`;
       const list = JSON.parse(localStorage.getItem(key) || '[]');
       list.unshift(payload);
       localStorage.setItem(key, JSON.stringify(list));
     }
 
-    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], .btn-approve-chat');
+    // Atualiza botão do chat
+    const approveBtn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
     if (approveBtn) {
-      approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
-      const catsSummary = [...new Set(segments.map(s => s.category.toUpperCase()))].join(' & ');
-      approveBtn.innerHTML = `✓ Despachado para [${catsSummary}]`;
+      approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 pointer-events-none';
+      approveBtn.innerHTML = '✓ Despachado com Sucesso!';
     }
 
     if (typeof carregarSalaOperacaoCompleta === 'function') {
@@ -1199,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 3. RENDERIZAÇÃO ESTÁVEL COM ISOLAMENTO DE CADA SUB-ABA
+  // Renderizador Estático Seguro (Nunca remove ferramentas da tela)
   async function carregarSalaOperacaoCompleta() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
@@ -1207,144 +1214,133 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // 1. Garante que os widgets de vídeo (Teleprompter, Áudio) existam
-    if (typeof initWarRoomTools === 'function') {
-      try { initWarRoomTools(); } catch (e) { console.warn('[WarRoom Tools]:', e); }
-    }
-
-    // 2. Busca tarefas no Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
       if (supabase) {
-        const { data, error } = await supabase
-          .from('war_room_tasks')
-          .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) tasks = data;
+        const { data } = await supabase.from('war_room_tasks').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+        if (data) tasks = data;
       }
-    } catch (e) {
-      console.warn('[WarRoom Supabase Catch]:', e);
-    }
+    } catch (e) {}
 
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
       const local = JSON.parse(localStorage.getItem(`war_room_${clientId}_${cat}`) || '[]');
       tasks = [...tasks, ...local];
     });
 
-    // Deduplicação estrita
-    const seen = new Set();
-    tasks = tasks.filter(t => {
-      const key = `${t.category}_${(t.content || '').slice(0, 40)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    // 3. Atualiza o conteúdo de vídeo se houver tarefa de vídeo
+    // 1. Alimenta o Teleprompter e o Roteiro com o conteúdo de vídeo
     const videoTask = tasks.find(t => t.category === 'video');
     if (videoTask) {
-      const teleprompterBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
-      if (teleprompterBox) {
-        teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+      const teleBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
+      if (teleBox) teleBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+    }
+
+    // 2. Garante o container dos feeds das outras abas
+    let feedBox = document.getElementById('war-room-unified-feed');
+    if (!feedBox) {
+      feedBox = document.createElement('div');
+      feedBox.id = 'war-room-unified-feed';
+      feedBox.className = 'my-4 space-y-4';
+      warRoom.appendChild(feedBox);
+    }
+
+    // Preenchimento dos containers mestres superiores por categoria
+    const categoryTopContainers = {
+      video: warRoom.querySelector('.video-strategy-card, [data-section="video-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Estratégia de Vídeo do Oraculum')),
+      copywriting: warRoom.querySelector('.copy-strategy-card, [data-section="copy-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Headlines, Hooks e Textos')),
+      comercial: warRoom.querySelector('.sales-strategy-card, [data-section="sales-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Playbook de Vendas'))
+    };
+
+    Object.entries(categoryTopContainers).forEach(([cat, box]) => {
+      if (!box) return;
+      const latestTask = tasks.find(t => t.category === cat);
+      if (latestTask) {
+        // Oculta/remove o aviso cinza
+        box.querySelectorAll('p, span, div').forEach(el => {
+          if (el.textContent.includes('Nenhum script gerado para este cliente')) {
+            el.style.display = 'none';
+          }
+        });
+
+        let displayEl = box.querySelector('.top-strategy-dynamic-content');
+        if (!displayEl) {
+          displayEl = document.createElement('div');
+          displayEl.className = 'top-strategy-dynamic-content text-xs text-slate-300 leading-relaxed whitespace-pre-wrap mt-3 pt-3 border-t border-[#1B3B36]';
+          box.appendChild(displayEl);
+        }
+        displayEl.innerHTML = latestTask.content;
+      }
+    });
+
+    // Hidratação do bloco do Roteiro de Gravação / Teleprompter
+    const videoTaskUpdated = tasks.find(t => t.category === 'video');
+    if (videoTaskUpdated) {
+      const scriptDisplay = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display, [data-section="script-display"]');
+      if (scriptDisplay) {
+        scriptDisplay.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTaskUpdated.content}</div>`;
       }
     }
 
-    // 4. Cria container de feed exclusivo para as outras sub-abas
-    let otherFeed = warRoom.querySelector('#war-room-other-categories-feed');
-    if (!otherFeed) {
-      otherFeed = document.createElement('div');
-      otherFeed.id = 'war-room-other-categories-feed';
-      otherFeed.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 my-4';
-      warRoom.appendChild(otherFeed);
-    }
-
-    window.warRoomTasksCache = tasks;
-    configurarNavegacaoSubAbasWarRoom();
+    window.__WAR_ROOM_TASKS__ = tasks;
+    ativarAbasNativasWarRoom();
   }
 
-  function configurarNavegacaoSubAbasWarRoom() {
+  function ativarAbasNativasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
-    // Localiza os botões do topo da Sala de Operação
-    const navContainer = Array.from(warRoom.querySelectorAll('div')).find(div => 
-      div.textContent.includes('Vídeo & Gravação') && div.textContent.includes('Copywriting')
-    );
-
-    const buttons = navContainer ? navContainer.querySelectorAll('button') : warRoom.querySelectorAll('button');
-    const otherFeed = document.getElementById('war-room-other-categories-feed');
-
-    // Identifica todos os blocos de conteúdo da aba de vídeo (exceto a barra de navegação e o feed das outras abas)
-    const videoContentBlocks = Array.from(warRoom.children).filter(child => 
-      child !== navContainer && 
-      child !== otherFeed && 
-      !child.contains(navContainer)
-    );
-
-    function selecionarSubAba(categoria, botaoAtivo) {
-      // Atualiza o estilo visual dos botões
-      buttons.forEach(b => {
-        b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors cursor-pointer';
-      });
-      if (botaoAtivo) {
-        botaoAtivo.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors cursor-pointer';
-      }
-
-      if (categoria === 'video') {
-        // Exibe todas as ferramentas de vídeo (Criador, Teleprompter, Visão Computacional)
-        videoContentBlocks.forEach(el => el.style.display = '');
-        if (otherFeed) otherFeed.style.display = 'none';
-      } else {
-        // Oculta ferramentas de vídeo e abre o feed da categoria selecionada
-        videoContentBlocks.forEach(el => el.style.display = 'none');
-        if (otherFeed) {
-          otherFeed.style.display = 'grid';
-          const tasks = (window.warRoomTasksCache || []).filter(t => t.category === categoria);
-
-          if (tasks.length === 0) {
-            otherFeed.innerHTML = `
-              <div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
-                Nenhuma diretriz despachada para a equipe de <strong class="text-emerald-400">${categoria.toUpperCase()}</strong> até o momento.
-              </div>
-            `;
-          } else {
-            otherFeed.innerHTML = tasks.map(task => `
-              <div class="p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
-                <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
-                  <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
-                    ${task.category.toUpperCase()}
-                  </span>
-                  <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
-                </div>
-                <h4 class="text-sm font-semibold text-emerald-300">${task.title}</h4>
-                <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${task.content}</div>
-              </div>
-            `).join('');
-          }
-        }
-      }
-    }
+    const buttons = warRoom.querySelectorAll('.war-room-subnav button, [data-subtab], button');
+    const feedBox = document.getElementById('war-room-unified-feed');
+    const videoElements = warRoom.querySelectorAll('.video-tool-wrapper, .video-module, #video-tools-grid');
 
     buttons.forEach(btn => {
-      const text = btn.textContent.toLowerCase();
+      const label = (btn.textContent || '').toLowerCase();
+      if (!label.match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) return;
       let cat = 'video';
-      if (text.includes('design')) cat = 'design';
-      else if (text.includes('tráfego') || text.includes('trafego')) cat = 'trafego';
-      else if (text.includes('copywriting') || text.includes('copy')) cat = 'copywriting';
-      else if (text.includes('comercial') || text.includes('vendas')) cat = 'comercial';
-      else if (text.includes('vídeo') || text.includes('video')) cat = 'video';
+      if (label.includes('design')) cat = 'design';
+      else if (label.includes('tráfego') || label.includes('trafego')) cat = 'trafego';
+      else if (label.includes('copywriting') || label.includes('copy')) cat = 'copywriting';
+      else if (label.includes('comercial') || label.includes('vendas')) cat = 'comercial';
+      else if (label.includes('vídeo') || label.includes('video')) cat = 'video';
 
       btn.onclick = (e) => {
-        e.preventDefault();
-        selecionarSubAba(cat, btn);
+        if (e) e.preventDefault();
+        buttons.forEach(b => {
+           if ((b.textContent || '').toLowerCase().match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) {
+              b.classList.remove('bg-[#10B981]', 'text-black', 'active');
+              b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors cursor-pointer';
+           }
+        });
+        btn.classList.add('bg-[#10B981]', 'text-black', 'active');
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors cursor-pointer active';
+
+        if (cat === 'video') {
+          videoElements.forEach(el => el.style.display = '');
+          if (feedBox) feedBox.style.display = 'none';
+        } else {
+          videoElements.forEach(el => el.style.display = 'none');
+          if (feedBox) {
+            feedBox.style.display = 'block';
+            const filtered = (window.__WAR_ROOM_TASKS__ || []).filter(t => t.category === cat);
+            if (filtered.length === 0) {
+              feedBox.innerHTML = `<div class="p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhuma diretriz despachada para <strong class="text-emerald-400">${cat.toUpperCase()}</strong> ainda.</div>`;
+            } else {
+              feedBox.innerHTML = filtered.map(t => `
+                <div class="p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-2">
+                  <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded">${t.category.toUpperCase()}</span>
+                  <h4 class="text-sm font-semibold text-emerald-300">${t.title}</h4>
+                  <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
+                </div>
+              `).join('');
+            }
+          }
+        }
       };
     });
-
+    
     // Ativa Vídeo & Gravação por padrão
-    const videoBtn = Array.from(buttons).find(b => b.textContent.toLowerCase().includes('vídeo')) || buttons[0];
-    if (videoBtn) selecionarSubAba('video', videoBtn);
+    const videoBtn = Array.from(buttons).find(b => (b.textContent || '').toLowerCase().includes('vídeo')) || buttons[0];
+    if (videoBtn) videoBtn.click();
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
