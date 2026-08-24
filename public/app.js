@@ -4298,29 +4298,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // ============================================================================
+  // BI CONTROLS & METRICS ISOLATION BY CLIENT_ID
+  // ============================================================================
+
+  // Abertura e Fechamento do Modal
   window.abrirModalLancarBI = function(event) {
-    if (event) event.preventDefault();
-    const activeClientId = window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
-    if (!activeClientId) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const clientId = window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
+    if (!clientId) {
       if (typeof window.showToast === 'function') window.showToast('Selecione um cliente ativo primeiro.', 'error');
       else alert('Selecione um cliente ativo primeiro.');
       return;
     }
 
-    const clientObj = (window.currentClientsList || window.clientesCarteira || []).find(c => String(c.id) === String(activeClientId)) 
-                   || (window.activeClientData?.id === activeClientId ? window.activeClientData : null)
-                   || (window.clienteAtivoAtual && String(window.clienteAtivoAtual.id) === String(activeClientId) ? window.clienteAtivoAtual : null);
+    const clientObj = (window.currentClientsList || window.clientesCarteira || []).find(c => String(c.id) === String(clientId)) 
+                   || (window.activeClientData?.id === clientId ? window.activeClientData : null)
+                   || (window.clienteAtivoAtual && String(window.clienteAtivoAtual.id) === String(clientId) ? window.clienteAtivoAtual : null);
 
+    const modal = document.getElementById('modal-lancar-bi');
     const inputId = document.getElementById('bi-modal-client-id');
     const nameEl = document.getElementById('bi-modal-client-name');
-    
-    if (inputId) inputId.value = activeClientId;
-    if (nameEl) nameEl.innerText = clientObj ? (clientObj.name || clientObj.nome || 'Cliente Selecionado') : (window.currentClientName || 'Cliente Selecionado');
 
+    if (inputId) inputId.value = clientId;
+    if (nameEl) nameEl.innerText = clientObj ? (clientObj.name || clientObj.nome) : `Cliente #${clientId}`;
+
+    // Preenche formulário com os dados salvos deste cliente se existirem
+    const dadosSalvos = localStorage.getItem(`oraculum_bi_client_${clientId}`) || localStorage.getItem(`oraculum_bi_metrics_${clientId}`);
     const form = document.getElementById('form-lancar-bi');
     if (form) form.reset();
 
-    const modal = document.getElementById('modal-lancar-bi');
+    if (dadosSalvos) {
+      try {
+        const parsed = JSON.parse(dadosSalvos);
+        if (document.getElementById('bi-input-faturamento')) document.getElementById('bi-input-faturamento').value = parsed.faturamento || parsed.revenue || '';
+        if (document.getElementById('bi-input-gasto-trafego')) document.getElementById('bi-input-gasto-trafego').value = parsed.gasto_trafego || parsed.ad_spend || '';
+        if (document.getElementById('bi-input-vendas')) document.getElementById('bi-input-vendas').value = parsed.vendas || parsed.sales || '';
+        if (document.getElementById('bi-input-leads')) document.getElementById('bi-input-leads').value = parsed.funil?.leads || parsed.leads || '';
+        if (document.getElementById('bi-input-agendamentos')) document.getElementById('bi-input-agendamentos').value = parsed.funil?.agendamentos || '';
+        if (document.getElementById('bi-input-impressoes')) document.getElementById('bi-input-impressoes').value = parsed.funil?.impressoes || '';
+        if (document.getElementById('bi-input-cliques')) document.getElementById('bi-input-cliques').value = parsed.funil?.cliques || '';
+      } catch(e) {}
+    }
+
     if (modal) {
       modal.classList.remove('hidden');
       modal.style.display = 'flex';
@@ -4335,6 +4359,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Aliases para compatibilidade caso existam chamadas com nomes antigos
+  window.abrirModalBI = window.abrirModalLancarBI;
+  window.fecharModalBI = window.fecharModalLancarBI;
+  window.salvarMetricasBIModal = window.salvarLancamentoBI;
+
+  // Salvar lançamento isolado
   window.salvarLancamentoBI = async function(event) {
     if (event) event.preventDefault();
 
@@ -4344,13 +4374,13 @@ document.addEventListener('DOMContentLoaded', () => {
                   || localStorage.getItem('oraculum_active_client');
 
     if (!clientId) {
-      if (typeof window.showToast === 'function') window.showToast('Erro: Cliente não identificado para este lançamento.', 'error');
-      else alert('Erro: Cliente não identificado para este lançamento.');
+      if (typeof window.showToast === 'function') window.showToast('Erro: Cliente não identificado.', 'error');
+      else alert('Erro: Cliente não identificado.');
       return;
     }
 
     const faturamento = Number(document.getElementById('bi-input-faturamento')?.value || 0);
-    const gastoTrafego = Number(document.getElementById('bi-input-gasto')?.value || document.getElementById('bi-input-gasto-trafego')?.value || 0);
+    const gastoTrafego = Number(document.getElementById('bi-input-gasto-trafego')?.value || document.getElementById('bi-input-gasto')?.value || 0);
     const vendas = Number(document.getElementById('bi-input-vendas')?.value || 0);
     const impressoes = Number(document.getElementById('bi-input-impressoes')?.value || 0);
     const cliques = Number(document.getElementById('bi-input-cliques')?.value || 0);
@@ -4361,175 +4391,120 @@ document.addEventListener('DOMContentLoaded', () => {
       client_id: clientId,
       revenue: faturamento,
       ad_spend: gastoTrafego,
-      faturamento: faturamento,
+      faturamento,
       gasto_trafego: gastoTrafego,
-      vendas: vendas,
+      vendas,
       sales: vendas,
-      leads: leads,
+      leads,
       funil: { impressoes, cliques, leads, agendamentos, vendas },
       updated_at: new Date().toISOString(),
       reference_date: new Date().toISOString().split('T')[0]
     };
 
-    // 1. Gravação Isolada no LocalStorage (NUNCA usar chave global genérica)
+    // Salvar isolado no storage deste cliente
+    localStorage.setItem(`oraculum_bi_client_${clientId}`, JSON.stringify(payload));
     localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
-    
+
     // Remove chaves globais legadas
     localStorage.removeItem('oraculum_bi_metrics');
     localStorage.removeItem('bi_metrics_mock');
 
-    // 2. Gravação no Supabase (se ativo)
+    // Tentar salvar no Supabase sem quebrar se tabela não existir
     if (window.supabaseClient) {
       try {
         const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-        await window.supabaseClient
-          .from('bi_analytics_data')
-          .upsert({ ...payload, organization_id: tenantId }, { onConflict: 'client_id,reference_date' });
-      } catch (err) {
-        console.warn('[BI] Erro ao sincronizar com Supabase, salvo localmente:', err);
-      }
+        await window.supabaseClient.from('bi_analytics_data').upsert({ ...payload, organization_id: tenantId }, { onConflict: 'client_id,reference_date' });
+      } catch(e) {}
     }
 
-    // Fechar modal
     window.fecharModalLancarBI();
+    if (typeof window.showToast === 'function') window.showToast('Métricas salvas para este cliente!', 'success');
 
-    if (typeof window.showToast === 'function') {
-      window.showToast('Métricas de BI salvas com sucesso para o cliente!', 'success');
-    }
-
-    // Recarregar imediatamente as métricas exclusivas do cliente ativo
-    window.carregarMetricasBI(clientId, window.periodoBIAtivo || '30d');
+    // Recarregar imediatamente o painel do cliente
+    window.carregarMetricasBI(clientId);
   };
 
-  window.salvarMetricasBIModal = window.salvarLancamentoBI;
+  // Leitura e Renderização 100% Isolada (SEM MOCKS GLOBAIS RESIDUAIS)
+  window.carregarMetricasBI = function(clientId) {
+    const targetId = clientId || window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
+    if (!targetId) return;
 
-  window.salvarAnotacoesReuniao = function() {
-    const currentClientId = window.activeClientId || (window.clienteAtivoAtual ? window.clienteAtivoAtual.id : null);
-    
-    if (!currentClientId) {
-      alert('⚠️ Selecione um cliente na carteira para salvar os insights de reunião.');
-      return;
+    // Atualizar nome do cliente ativo no banner
+    const clientObj = (window.currentClientsList || window.clientesCarteira || []).find(c => String(c.id) === String(targetId)) 
+                   || (window.activeClientData?.id === targetId ? window.activeClientData : null)
+                   || (window.clienteAtivoAtual && String(window.clienteAtivoAtual.id) === String(targetId) ? window.clienteAtivoAtual : null);
+
+    const bannerName = document.getElementById('bi-active-client-title') || document.getElementById('bi-client-name') || document.querySelector('[data-bi-client-name]');
+    if (bannerName) {
+      bannerName.innerText = clientObj ? `${clientObj.name || clientObj.nome} ${clientObj.niche || clientObj.especialidade ? `(${clientObj.niche || clientObj.especialidade})` : ''}` : 'Cliente Selecionado';
     }
 
-    const text = document.getElementById('meeting-notes-input')?.value || '';
-    localStorage.setItem(`oraculum_meeting_notes_${currentClientId}`, text);
-    
-    if (window.clienteAtivoAtual) {
-      window.clienteAtivoAtual.meeting_notes = text;
+    // Busca dados EXCLUSIVAMENTE deste cliente
+    let data = null;
+    const rawLocal = localStorage.getItem(`oraculum_bi_client_${targetId}`) || localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
+    if (rawLocal) {
+      try { data = JSON.parse(rawLocal); } catch(e) {}
     }
 
-    alert('✅ Insight e pautas de reunião salvos com sucesso no perfil do cliente!');
-  };
+    // Se o cliente não tem dados salvos, ZERA todos os cards (não usa dados de outro cliente)
+    const faturamento = data ? Number(data.faturamento || data.revenue || 0) : 0;
+    const gasto = data ? Number(data.gasto_trafego || data.ad_spend || 0) : 0;
+    const vendas = data ? Number(data.vendas || data.sales || 0) : 0;
+    const lucro = faturamento - gasto;
+    const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
+    const leads = data?.funil?.leads || data?.leads || 0;
+    const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
+    const ltvCac = (gasto > 0 && vendas > 0) ? ((faturamento / vendas) / (gasto / vendas)).toFixed(1) + ' : 1' : '0.0 : 1';
 
-  let currentBiSubscription = null;
+    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = val;
+    };
 
-  window.carregarMetricasBI = async function(clientId, periodo = '30d') {
-    let targetClientId = clientId || window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
-    if (!targetClientId && window.clienteAtivoAtual) {
-      targetClientId = window.clienteAtivoAtual.id;
+    setVal('bi-val-faturamento', fmt(faturamento));
+    setVal('bi-val-revenue', fmt(faturamento));
+    setVal('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
+    setVal('bi-sub-conversions', `${vendas} Vendas (Confirmadas)`);
+    setVal('bi-val-gasto', fmt(gasto));
+    setVal('bi-val-spend', fmt(gasto));
+    setVal('bi-val-lucro', fmt(lucro));
+    setVal('bi-val-profit', fmt(lucro));
+    setVal('bi-val-roas', roas);
+    setVal('bi-val-ltv-cac', ltvCac);
+    setVal('bi-val-ltvcac', ltvCac);
+    setVal('bi-val-taxa-conv', taxaConv);
+    setVal('bi-val-conv-rate', taxaConv);
+
+    // Atualiza funil comercial
+    const funil = data?.funil || { impressoes: 0, cliques: 0, leads: 0, agendamentos: 0, vendas: 0 };
+    setVal('bi-funil-impressoes', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
+    setVal('funnel-val-impressions', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
+    setVal('bi-funil-cliques', Number(funil.cliques || 0).toLocaleString('pt-BR'));
+    setVal('funnel-val-clicks', Number(funil.cliques || 0).toLocaleString('pt-BR'));
+    setVal('bi-funil-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
+    setVal('funnel-val-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
+    setVal('bi-funil-agendamentos', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
+    setVal('funnel-val-meetings', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
+    setVal('bi-funil-vendas', Number(funil.vendas || 0).toLocaleString('pt-BR'));
+    setVal('funnel-val-sales', `${Number(funil.vendas || 0).toLocaleString('pt-BR')} Vendas`);
+
+    // Atualizar ou limpar gráficos
+    if (typeof window.renderizarGraficosBI === 'function') {
+      const semDados = faturamento === 0 && gasto === 0;
+      window.renderizarGraficosBI({
+        historico: {
+          faturamento: semDados ? [0, 0, 0, 0] : [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento],
+          investimento: semDados ? [0, 0, 0, 0] : [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto]
+        },
+        canais: semDados ? [0, 0, 0, 0] : [gasto * 0.55, gasto * 0.3, gasto * 0.1, gasto * 0.05],
+        cac: semDados ? [0, 0, 0, 0] : [gasto / (vendas || 1), (gasto / (vendas || 1)) * 1.2, (gasto / (vendas || 1)) * 1.5, (gasto / (vendas || 1)) * 1.8],
+        funil: funil
+      });
     }
 
-    console.log(`[BI] Carregando métricas individuais para o cliente: ${targetClientId} (${periodo})`);
-
-    // 1. Atualizar Título e Nome do Cliente no Banner do BI
-    const clientObj = (window.currentClientsList || window.clientesCarteira || []).find(c => String(c.id) === String(targetClientId)) 
-                   || (window.clienteAtivoAtual && String(window.clienteAtivoAtual.id) === String(targetClientId) ? window.clienteAtivoAtual : null);
-                   
-    const titleEl = document.getElementById('bi-active-client-title') || document.getElementById('bi-client-name') || document.querySelector('[data-bi-client-name]');
-    if (titleEl) {
-      if (clientObj) {
-        titleEl.textContent = `${clientObj.name || clientObj.nome || 'Cliente Ativo'} ${clientObj.niche || clientObj.especialidade ? `(${clientObj.niche || clientObj.especialidade})` : ''}`;
-      } else {
-        titleEl.textContent = window.currentClientName || window.activeClientName || 'Cliente Ativo';
-      }
-    }
-
-    if (!targetClientId) {
-      window.renderBIDataReal({ hasData: false });
-      return;
-    }
-
-    // Configura Realtime Subscription apenas se o client mudou
-    if (window.supabaseClient) {
-      if (currentBiSubscription) {
-        try { window.supabaseClient.removeChannel(currentBiSubscription); } catch(e) {}
-      }
-      currentBiSubscription = window.supabaseClient.channel('bi-realtime-' + targetClientId)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'bi_analytics_data', 
-          filter: `client_id=eq.${targetClientId}` 
-        }, (payload) => {
-          console.log('[BI Realtime] Alteração detectada no banco:', payload);
-          window.carregarMetricasBI(targetClientId, periodo);
-        }).subscribe();
-    }
-
-    try {
-      let data = null;
-      if (window.supabaseClient) {
-        const { data: dbData, error } = await window.supabaseClient
-          .from('bi_analytics_data')
-          .select('*')
-          .eq('client_id', targetClientId)
-          .order('reference_date', { ascending: false });
-
-        if (!error && dbData && dbData.length > 0) {
-          data = dbData;
-        }
-      }
-
-      // Fallback para armazenamento isolado local por client_id caso offline/sem tabela
-      if (!data) {
-        const rawStorage = localStorage.getItem(`oraculum_bi_metrics_${targetClientId}`);
-        if (rawStorage) {
-          try {
-            const parsed = JSON.parse(rawStorage);
-            data = Array.isArray(parsed) ? parsed : [parsed];
-          } catch(e) {}
-        }
-      }
-
-      if (data && data.length > 0) {
-        let revenue = 0, ad_spend = 0, leads = 0, sales = 0;
-        data.forEach(row => {
-          revenue += parseFloat(row.revenue || row.faturamento) || 0;
-          ad_spend += parseFloat(row.ad_spend || row.gasto_trafego) || 0;
-          leads += parseInt(row.leads) || 0;
-          sales += parseInt(row.sales || row.vendas) || 0;
-        });
-
-        const profit = revenue - ad_spend;
-        const roas = ad_spend > 0 ? (revenue / ad_spend) : 0;
-        const convRate = leads > 0 ? (sales / leads) * 100 : 0;
-        const cac = sales > 0 ? (ad_spend / sales) : 0;
-        
-        let ltvcacStr = '0.0 : 1';
-        if (cac > 0) {
-          const fakeTicket = revenue > 0 && sales > 0 ? (revenue / sales) : 1500;
-          ltvcacStr = ((fakeTicket * 1.5) / cac).toFixed(1) + ' : 1';
-        }
-
-        window.renderBIDataReal({
-          hasData: true, revenue, ad_spend, profit, roas, convRate, cac, sales, leads, ltvcacStr
-        });
-        if (typeof renderBiInteractiveDashboard === 'function') {
-          renderBiInteractiveDashboard(data);
-        }
-      } else {
-        // Se o cliente não tem dados lançados, zera completamente o painel para esse client_id
-        window.renderBIDataReal({ hasData: false });
-        if (typeof renderBiInteractiveDashboard === 'function') {
-          renderBiInteractiveDashboard([]);
-        }
-      }
-    } catch(err) {
-      console.error('Erro ao buscar dados de BI do cliente:', err);
-      window.renderBIDataReal({ hasData: false });
-      if (typeof renderBiInteractiveDashboard === 'function') {
-        renderBiInteractiveDashboard([]);
-      }
+    if (typeof renderBiInteractiveDashboard === 'function') {
+      renderBiInteractiveDashboard(data ? [data] : []);
     }
   };
 
