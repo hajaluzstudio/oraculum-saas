@@ -6079,34 +6079,31 @@ window.atualizarDashboardBIVisual = function(dados) {
 
   const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  // 1. CARDS DO TOPO
-  const elFat = document.getElementById('bi-val-faturamento');
-  if (elFat) elFat.innerText = formatBRL(faturamento);
+  // 1. CARDS SUPERIORES
+  const setEl = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
 
-  const elGasto = document.getElementById('bi-val-gasto');
-  if (elGasto) elGasto.innerText = formatBRL(gasto);
-
+  setEl('bi-val-faturamento', formatBRL(faturamento));
+  setEl('bi-val-gasto', formatBRL(gasto));
+  
   const elLucro = document.getElementById('bi-val-lucro');
   if (elLucro) {
     elLucro.innerText = formatBRL(lucro);
     elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
   }
 
-  // ROAS Médio (Garante injeção direta por ID e por busca semântica de fallback)
-  const elRoas = document.getElementById('bi-val-roas') || document.querySelector('#tab-bi .card-metrica:nth-child(4) .text-2xl');
-  if (elRoas) {
-    elRoas.innerText = `${roas}x`;
-    elRoas.className = "text-2xl font-black text-cyan-400";
-  }
+  // ROAS Médio (Atualização direta e semântica)
+  setEl('bi-val-roas', `${roas}x`);
+  const roasCards = document.querySelectorAll('#tab-bi .text-cyan-400, #tab-bi [class*="cyan"]');
+  roasCards.forEach(c => {
+    if (c.innerText.includes('x') || c.id === 'bi-val-roas') c.innerText = `${roas}x`;
+  });
 
-  const elTaxa = document.getElementById('bi-val-taxa-conv');
-  if (elTaxa) {
-    const taxa = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
-    elTaxa.innerText = `${taxa}%`;
-  }
-
-  const elVendasSub = document.getElementById('bi-val-vendas-sub');
-  if (elVendasSub) elVendasSub.innerText = `${vendas} Vendas (Confirmadas)`;
+  const taxa = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0.00';
+  setEl('bi-val-taxa-conv', `${taxa}%`);
+  setEl('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
 
   // 2. FUNIL DE CONVERSÃO COMERCIAL
   const linhasFunil = document.querySelectorAll('#tab-bi div');
@@ -6135,42 +6132,101 @@ window.atualizarDashboardBIVisual = function(dados) {
     }
   });
 
-  // 3. GRÁFICO 1: EVOLUÇÃO
-  const canvasEvolucao = document.getElementById('chart-evolucao') || document.querySelector('#tab-bi canvas');
-  if (canvasEvolucao && window.Chart) {
-    let chartInst = Chart.getChart(canvasEvolucao);
-    const labels = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'];
-    const dataGasto = [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto];
-    const dataFat = [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento];
+  // 3. GRÁFICOS CHART.JS
+  if (typeof Chart !== 'undefined') {
+    // GRÁFICO 1: EVOLUÇÃO (LINHA)
+    const cEvol = document.getElementById('chart-evolucao') || document.querySelector('#tab-bi canvas:nth-of-type(1)');
+    if (cEvol) {
+      const oldInst = Chart.getChart(cEvol);
+      if (oldInst) oldInst.destroy();
 
-    if (chartInst) {
-      chartInst.data.labels = labels;
-      chartInst.data.datasets[0].data = dataFat;
-      chartInst.data.datasets[1].data = dataGasto;
-      chartInst.update();
+      new Chart(cEvol, {
+        type: 'line',
+        data: {
+          labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
+          datasets: [
+            {
+              label: 'Faturamento (R$)',
+              data: [faturamento * 0.15, faturamento * 0.40, faturamento * 0.70, faturamento],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              fill: true,
+              tension: 0.35
+            },
+            {
+              label: 'Investimento (R$)',
+              data: [gasto * 0.20, gasto * 0.45, gasto * 0.75, gasto],
+              borderColor: '#3b82f6',
+              backgroundColor: 'transparent',
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8' } } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+          }
+        }
+      });
     }
-  }
 
-  // 4. GRÁFICO 2: ALOCAÇÃO POR CANAL (Donut)
-  const canvasDonut = document.getElementById('chart-alocacao') || document.querySelectorAll('#tab-bi canvas')[1];
-  if (canvasDonut && window.Chart) {
-    let chartDonutInst = Chart.getChart(canvasDonut);
-    const splitData = [gasto * 0.55, gasto * 0.25, gasto * 0.12, gasto * 0.08];
-    if (chartDonutInst) {
-      chartDonutInst.data.datasets[0].data = splitData;
-      chartDonutInst.update();
+    // GRÁFICO 2: ALOCAÇÃO POR CANAL (DONUT)
+    const cDonut = document.getElementById('chart-alocacao') || document.querySelector('#tab-bi canvas:nth-of-type(2)');
+    if (cDonut) {
+      const oldDonut = Chart.getChart(cDonut);
+      if (oldDonut) oldDonut.destroy();
+
+      new Chart(cDonut, {
+        type: 'doughnut',
+        data: {
+          labels: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'Outros'],
+          datasets: [{
+            data: [gasto * 0.50, gasto * 0.30, gasto * 0.12, gasto * 0.08],
+            backgroundColor: ['#2563eb', '#ef4444', '#f59e0b', '#10b981'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          cutout: '70%'
+        }
+      });
     }
-  }
 
-  // 5. GRÁFICO 3: CAC POR CRIATIVO (Barras)
-  const canvasCAC = document.getElementById('chart-cac') || document.querySelectorAll('#tab-bi canvas')[2];
-  if (canvasCAC && window.Chart) {
-    let chartCACInst = Chart.getChart(canvasCAC);
-    const cacMedio = vendas > 0 ? (gasto / vendas) : 350;
-    const dataCAC = [cacMedio * 0.85, cacMedio * 1.05, cacMedio * 0.92, cacMedio * 1.25];
-    if (chartCACInst) {
-      chartCACInst.data.datasets[0].data = dataCAC;
-      chartCACInst.update();
+    // GRÁFICO 3: CAC POR CRIATIVO (BARRAS)
+    const cCAC = document.getElementById('chart-cac') || document.querySelector('#tab-bi canvas:nth-of-type(3)');
+    if (cCAC) {
+      const oldCAC = Chart.getChart(cCAC);
+      if (oldCAC) oldCAC.destroy();
+
+      const cacBase = vendas > 0 ? (gasto / vendas) : 350;
+      new Chart(cCAC, {
+        type: 'bar',
+        data: {
+          labels: ['Vídeo 1 (Feed)', 'Imagem 3 (Story)', 'Carrossel (Lead)', 'Reels Ads'],
+          datasets: [{
+            label: 'Custo de Aquisição (R$)',
+            data: [cacBase * 0.85, cacBase * 1.05, cacBase * 0.92, cacBase * 1.25],
+            backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+          }
+        }
+      });
     }
   }
 };
