@@ -1038,123 +1038,88 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // UNIFIED BRIEFING DISPATCH & KANBAN CREATION
   // ============================================================================
-  async function dispatchBriefingToWarRoom(briefingData, options = {}) {
-    try {
-      const isDraft = options.draft || false;
-      const targetClientId = activeClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_ativo';
+  window.dispatchBriefingToWarRoom = async function (target) {
+    const container = typeof target === 'string' ? document.getElementById(target) : target;
+    if (!container) return;
 
-      if (briefingData instanceof HTMLElement) {
-        const bubble = briefingData.closest('.bubble');
-        let text = bubble ? bubble.innerText.replace('✅ Aprovar & Despachar para Sala de Operação', '').trim() : '';
+    const contentEl = container.querySelector('.chat-content') || container;
+    const rawText = contentEl.innerText || contentEl.textContent;
+    
+    const activeClient = window.activeClient || {};
+    const clientId = activeClient.id || localStorage.getItem('active_client_id');
 
-        const extractSection = (regex, fallback) => {
-          const match = text.match(regex);
-          return match && match[1] ? match[1].trim() : fallback;
-        };
-
-        const gancho = extractSection(/(?:gancho|hook|3s|atenção)[\s\S]*?[:\-*]*\s*([^\n]+)/i, "Gancho sugerido pela estratégia (3s).");
-        const headline = extractSection(/(?:headline|título|promessa)[\s\S]*?[:\-*]*\s*([^\n]+)/i, "Headline Principal focada em Conversão.");
-        const roteiro_teleprompter = extractSection(/(?:roteiro|teleprompter|script de vídeo|gravação|vídeo)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|Headline|Copy|Design|Tráfego|Comercial|WhatsApp)|$)/i, text);
-        const script_whatsapp = extractSection(/(?:whatsapp|script|vendas|comercial)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|Design|Tráfego)|$)/i, "Script base focado em vendas via WhatsApp.");
-        const copy_corpo = extractSection(/(?:copy|texto principal|corpo)[\s\S]*?[:\-*]*\s*([\s\S]+?)(?=\n(?:#|\*\*|WhatsApp|Design|Tráfego)|$)/i, text.substring(0, 500) + '...');
-        
-        briefingData = {
-          video: { 
-             gancho_3s: gancho,
-             roteiro_teleprompter: roteiro_teleprompter,
-             direcao_cenica: "Dinâmico, foco na retenção visual e autoridade técnica."
-          },
-          copy: { 
-             headline: headline,
-             corpo_texto: copy_corpo,
-             cta: "Clique em Saiba Mais e fale com a equipe"
-          },
-          design: { 
-             conceito_visual: "Design limpo, focado em conversão, contraste AA.",
-             elementos_obrigatorios: "Cores da marca, CTA evidente, fontes legíveis.",
-             formato: "Stories/Reels (9:16) e Feed (4:5)"
-          },
-          trafego: {
-             canais: ["Meta Ads", "Google Ads"],
-             publicos_alvo: ["Base de contatos quente", "Lookalike 1%", "Interesses segmentados"],
-             distribuicao_verba: "70% Captação / 30% Remarketing",
-             kpis_alvo: "CPA Máx = Ticket / 3"
-          },
-          vendas: { 
-             script_whatsapp: script_whatsapp,
-             quebra_objecoes: "Preço: Focar no LTV e ROI. Tempo: Focar na agilidade do método."
-          },
-          raw_text: text
-        };
-      }
-
-      // 1. Renderiza os dados no War Room (5 Equipes)
-      if (typeof window.renderWarRoomFromJSON === 'function') {
-        window.renderWarRoomFromJSON(briefingData);
-      }
-
-      // 2. Salva no Supabase (ou localStorage)
-      if (window.supabaseClient) {
-        try {
-          await window.supabaseClient.from('briefings').insert([{
-            client_id: targetClientId,
-            organization_id: activeTenantId || null,
-            status: isDraft ? 'draft' : 'approved',
-            briefing_data: briefingData,
-            created_at: new Date().toISOString()
-          }]);
-        } catch (e) {
-          console.warn("Aviso ao salvar briefing no Supabase:", e);
-        }
-      }
-      localStorage.setItem(`oraculum_briefing_${targetClientId}`, JSON.stringify(briefingData));
-
-      // 3. Se não for apenas rascunho, gera cards na coluna "A Fazer" do Kanban
-      if (!isDraft) {
-        const newCards = [
-          { title: '🎬 [VÍDEO] Gravação do Hook & Roteiro', description: briefingData.video?.gancho_3s || 'Roteiro de vídeo', assetType: 'video', category: 'Vídeo' },
-          { title: '🎨 [DESIGN] Criativos Visuais & Carrossel', description: briefingData.design?.conceito_visual || 'Design e conceito', assetType: 'image', category: 'Design' },
-          { title: '🚀 [TRÁFEGO] Configuração de Campanhas & Públicos', description: briefingData.trafego?.kpis_alvo || 'Campanha e KPI', assetType: 'text', category: 'Tráfego' },
-          { title: '✍️ [COPY] Copy de Anúncio & Quebra de Objeções', description: briefingData.copy?.headline || 'Headline principal', assetType: 'text', category: 'Copy' },
-          { title: '💼 [COMERCIAL] Script de Fechamento WhatsApp', description: 'Atendimento comercial', assetType: 'text', category: 'Vendas' }
-        ];
-
-        let savedCards = [];
-        for (const card of newCards) {
-          const isStrict = card.title.includes('[VÍDEO]') || card.title.includes('[DESIGN]');
-          savedCards.push({ ...card, clientId: targetClientId, id: Date.now() + Math.random(), stage: 'producing', locked: isStrict });
-        }
-        
-        localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(savedCards));
-        
-        // Dispara gravação em lote no backend (se houver rota)
-        fetch(`${API_BASE_URL}/api/kanban/batch`, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json', 'x-organization-id': activeTenantId },
-           body: JSON.stringify(savedCards)
-        }).catch(e => console.warn('Aviso backend batch Kanban:', e));
-
-        if (typeof renderKanbanBoard === 'function') {
-          renderKanbanBoard();
-        }
-      }
-
-      // 4. Feedback visual em Toast
-      const msg = isDraft ? "📝 Briefing salvo como Rascunho!" : "🚀 Briefing aprovado e enviado para a Sala de Operações e Kanban!";
-      const toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
-      toast.innerHTML = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-
-      return true;
-    } catch (err) {
-      console.error("[dispatchBriefingToWarRoom] Erro:", err);
-      alert("Erro ao despachar briefing: " + err.message);
-      return false;
+    if (!clientId) {
+      alert('Erro: Nenhum cliente ativo selecionado para vincular a tarefa.');
+      return;
     }
-  }
-  window.dispatchBriefingToWarRoom = dispatchBriefingToWarRoom;
+
+    // Feedback visual no botão durante a gravação
+    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"]');
+    if (approveBtn) {
+      approveBtn.disabled = true;
+      approveBtn.innerHTML = `
+        <div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div>
+        Salvando no Supabase...
+      `;
+    }
+
+    try {
+      if (!window.supabaseClient) throw new Error("Supabase não inicializado.");
+
+      // 1. Gravação real no Supabase
+      const { data, error } = await window.supabaseClient
+        .from('war_room_tasks')
+        .insert([
+          {
+            client_id: clientId,
+            title: `Briefing IA: ${rawText.slice(0, 50).replace(/\n/g, ' ')}...`,
+            content: rawText,
+            category: 'copy_video',
+            status: 'todo', // Coluna 'A Fazer' na Sala de Operação
+            priority: 'high',
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+
+      // 2. Feedback de Sucesso na Interface
+      if (approveBtn) {
+        approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5';
+        approveBtn.innerHTML = `✓ Salvo na Sala de Operação`;
+      }
+      
+      // Atualiza o estado da Sala de Operação se a função de reload existir
+      if (typeof carregarTarefasSalaOperacao === 'function') {
+        carregarTarefasSalaOperacao(clientId);
+      } else if (typeof window.carregarTarefasSalaOperacao === 'function') {
+        window.carregarTarefasSalaOperacao(clientId);
+      }
+
+    } catch (err) {
+      console.error('[ERRO SUPABASE WAR ROOM]:', err);
+      // Fallback fallback: se der erro na war_room_tasks, tenta na tabela briefings que já existia na lógica antiga
+      try {
+        await window.supabaseClient.from('briefings').insert([{
+          client_id: clientId,
+          status: 'approved',
+          briefing_data: { raw_text: rawText },
+          created_at: new Date().toISOString()
+        }]);
+        if (approveBtn) {
+          approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5';
+          approveBtn.innerHTML = `✓ Salvo na Sala de Operação (Briefings)`;
+        }
+      } catch (fallbackErr) {
+        alert('Houve um erro ao salvar no Supabase. Verifique a conexão com o banco.');
+        if (approveBtn) {
+          approveBtn.disabled = false;
+          approveBtn.innerHTML = `Tentar Novamente`;
+        }
+      }
+    }
+  };
 
   function renderChatReply(reply) {
     let html = `<p style="line-height: 1.5;">${reply.replyText}</p>`;
