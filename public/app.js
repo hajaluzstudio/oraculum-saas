@@ -858,6 +858,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  window.descartarSugestaoChat = function(msgId) {
+    const el = document.getElementById(msgId);
+    if (el) {
+      el.style.transition = 'all 0.3s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'scale(0.95)';
+      setTimeout(() => el.remove(), 300);
+    }
+  };
+
+  window.aprovarParaSalaOperacao = function(msgId) {
+    const el = document.getElementById(msgId);
+    if (el) {
+      if (typeof window.dispatchBriefingToWarRoom === 'function') {
+        window.dispatchBriefingToWarRoom(el);
+      } else if (typeof dispatchBriefingToWarRoom === 'function') {
+        dispatchBriefingToWarRoom(el);
+      }
+      el.style.border = '1px solid #10B981';
+      el.style.backgroundColor = '#06261f';
+    }
+  };
+
+  function formatModelMessageWithActions(text) {
+    const messageId = 'msg-' + Date.now();
+    return `
+      <div class="chat-message-ai p-4 bg-[#071311] border border-[#1B3B36] rounded-xl my-3 text-slate-200 text-sm leading-relaxed" id="${messageId}">
+        <div class="whitespace-pre-wrap markdown-body">${typeof marked !== 'undefined' ? marked.parse(text) : text}</div>
+        
+        <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
+          <button onclick="descartarSugestaoChat('${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            Descartar
+          </button>
+          
+          <button onclick="aprovarParaSalaOperacao('${messageId}')" class="px-4 py-1.5 text-xs font-semibold text-[#041210] bg-[#10B981] hover:bg-[#059669] rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Aprovar & Enviar para Sala de Operação
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   async function handleSendChatMessage() {
     const inputEl = document.getElementById('strategic-chat-input') || 
                     document.querySelector('textarea[placeholder*="instrução tática"]') ||
@@ -870,6 +914,21 @@ document.addEventListener('DOMContentLoaded', () => {
       appendChatMessage('user', message);
     }
     if (inputEl) inputEl.value = '';
+
+    const chatContainer = document.getElementById('chat-messages-list') || document.querySelector('.chat-history');
+    let loadingId = null;
+    
+    if (chatContainer) {
+      loadingId = 'loading-' + Date.now();
+      const loadingHtml = `
+        <div id="${loadingId}" class="flex items-center space-x-3 p-4 bg-[#0B1514] border border-[#10B981]/30 rounded-xl my-3 animate-pulse">
+          <div class="w-5 h-5 border-2 border-[#10B981] border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs text-[#10B981] font-semibold tracking-wide uppercase">Oraculum analisando diretrizes do Dossiê...</span>
+        </div>
+      `;
+      chatContainer.insertAdjacentHTML('beforeend', loadingHtml);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 
     const activeClient = window.activeClient || {};
     const dossier = typeof activeClient.dossie_estrategico === 'object'
@@ -890,14 +949,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await res.json();
       const replyText = data.reply || data.message || 'Diretriz estratégica alinhada ao Dossiê.';
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', replyText);
+      
+      if (loadingId) {
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) loadEl.remove();
+      }
+
+      if (chatContainer) {
+        chatContainer.insertAdjacentHTML('beforeend', formatModelMessageWithActions(replyText));
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       }
     } catch (err) {
+      if (loadingId) {
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) loadEl.remove();
+      }
+
       console.warn('[Chat Fallback Executado]:', err);
       const fallbackText = "Dossiê Ativo (Dr. Lucas):\n- Ganchos Visuais: Motor Piezo, sem tampão e sem hematomas severos.\n- Ancoragem: R$ 38.000 ancorados no conforto, rápida recuperação e atendimento concierge.";
-      if (typeof appendChatMessage === 'function') {
-        appendChatMessage('model', fallbackText);
+      
+      if (chatContainer) {
+        chatContainer.insertAdjacentHTML('beforeend', formatModelMessageWithActions(fallbackText));
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       }
     }
   }
