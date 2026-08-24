@@ -861,7 +861,7 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       configArgs.responseMimeType = 'application/json';
     }
 
-    const recentHistory = (history || []).slice(-4).map((msg: any) => ({
+    const recentHistory = (Array.isArray(history) ? history : []).slice(-4).map((msg: any) => ({
       role: (msg.role === 'assistant' || msg.role === 'model') ? 'model' : 'user',
       parts: [{ text: msg.content || '' }]
     }));
