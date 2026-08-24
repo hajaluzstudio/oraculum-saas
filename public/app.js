@@ -8565,130 +8565,116 @@ window.exibirErroVisualNaTela = function(titulo, erroObj) {
 };
 
 // ============================================================================
-// MODAL DE BI NATIVO COM TAG <dialog> DO HTML5 (IMUNE A EVENT BUBBLING)
+// MODAL DE BI DEFINITIVO (INJEÇÃO NO NÓ RAIZ HTML - 100% VISÍVEL)
 // ============================================================================
 
 window.abrirModalLancarBI = function(e) {
   if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
   }
 
-  // 1. Remove qualquer instância anterior
-  const antigo = document.getElementById('bi-modal-native-dialog');
-  if (antigo) {
-    try { antigo.close(); } catch (_) {}
-    antigo.remove();
-  }
+  // Remove qualquer modal anterior
+  const anterior = document.getElementById('bi-modal-wrapper-master');
+  if (anterior) anterior.remove();
 
-  // 2. Identificação do Cliente Ativo
+  // Identificação do Cliente Ativo
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
   const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  // 3. Criação do elemento <dialog> nativo do navegador
-  const dialog = document.createElement('dialog');
-  dialog.id = 'bi-modal-native-dialog';
-  dialog.style.cssText = `
+  // Criação do container fixado no <html> (imune a qualquer transform ou overflow do body)
+  const overlay = document.createElement('div');
+  overlay.id = 'bi-modal-wrapper-master';
+  overlay.setAttribute('style', `
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 1px solid #334155 !important;
-    border-radius: 16px !important;
-    background: #0f172a !important;
-    color: #ffffff !important;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95) !important;
+    top: 0px !important;
+    left: 0px !important;
+    right: 0px !important;
+    bottom: 0px !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(2, 6, 23, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     z-index: 2147483647 !important;
-    width: 90vw !important;
-    max-width: 480px !important;
-    outline: none !important;
-  `;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  `);
 
-  // Previne que cliques dentro do modal fechem o diálogo
-  dialog.addEventListener('click', (ev) => ev.stopPropagation());
-
-  dialog.innerHTML = `
-    <div style="padding: 24px; font-family: system-ui, -apple-system, sans-serif;">
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
+  overlay.innerHTML = `
+    <div style="background: #0f172a !important; border: 1px solid #334155 !important; width: 100% !important; max-width: 460px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95) !important; font-family: system-ui, -apple-system, sans-serif !important; box-sizing: border-box !important;">
+      
+      <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #1e293b !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
         <div>
-          <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #f8fafc;">💰 Lançar Métricas de BI</h3>
-          <p style="margin: 3px 0 0 0; font-size: 12px; color: #10b981; font-weight: 600;">${clientName}</p>
+          <h3 style="margin: 0 !important; font-size: 15px !important; font-weight: 700 !important; color: #f8fafc !important;">💰 Lançar Métricas no Supabase</h3>
+          <p style="margin: 3px 0 0 0 !important; font-size: 11px !important; color: #10b981 !important; font-weight: 600 !important;">${clientName}</p>
         </div>
-        <button type="button" id="btn-dialog-close-x" style="background: transparent; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1;">✕</button>
+        <button type="button" id="btn-fechar-bi-x" style="background: #1e293b !important; border: 1px solid #334155 !important; color: #94a3b8 !important; font-size: 16px !important; cursor: pointer !important; width: 28px !important; height: 28px !important; border-radius: 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important;">✕</button>
       </div>
 
-      <form id="form-dialog-bi" style="display: flex; flex-direction: column; gap: 14px;">
-        <input type="hidden" id="input-dialog-client-id" value="${clientId}">
+      <form id="form-bi-master-submit" style="display: flex !important; flex-direction: column !important; gap: 12px !important; margin: 0 !important;">
+        <input type="hidden" id="bi-input-master-id" value="${clientId}">
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important;">
           <div>
-            <label style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Faturamento Total (R$)</label>
-            <input type="number" step="0.01" id="input-dialog-fat" required placeholder="Ex: 28900.00" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none;" />
+            <label style="display: block !important; font-size: 10px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Faturamento (R$)</label>
+            <input type="number" step="0.01" id="bi-input-master-fat" required placeholder="28900.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 10px !important; color: #ffffff !important; font-size: 13px !important; outline: none !important;" />
           </div>
           <div>
-            <label style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Gasto em Tráfego (R$)</label>
-            <input type="number" step="0.01" id="input-dialog-gas" required placeholder="Ex: 4500.00" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none;" />
+            <label style="display: block !important; font-size: 10px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Gasto em Tráfego (R$)</label>
+            <input type="number" step="0.01" id="bi-input-master-gas" required placeholder="4500.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 10px !important; color: #ffffff !important; font-size: 13px !important; outline: none !important;" />
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+        <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 8px !important;">
           <div>
-            <label style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Vendas</label>
-            <input type="number" id="input-dialog-ven" required placeholder="Ex: 14" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none;" />
+            <label style="display: block !important; font-size: 10px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Vendas</label>
+            <input type="number" id="bi-input-master-ven" required placeholder="14" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 10px !important; color: #ffffff !important; font-size: 13px !important; outline: none !important;" />
           </div>
           <div>
-            <label style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Leads</label>
-            <input type="number" id="input-dialog-lea" required placeholder="Ex: 184" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none;" />
+            <label style="display: block !important; font-size: 10px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Leads</label>
+            <input type="number" id="bi-input-master-lea" required placeholder="184" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 10px !important; color: #ffffff !important; font-size: 13px !important; outline: none !important;" />
           </div>
           <div>
-            <label style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Cliques</label>
-            <input type="number" id="input-dialog-cli" placeholder="Ex: 1420" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none;" />
+            <label style="display: block !important; font-size: 10px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Cliques</label>
+            <input type="number" id="bi-input-master-cli" placeholder="1420" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 10px !important; color: #ffffff !important; font-size: 13px !important; outline: none !important;" />
           </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #1e293b;">
-          <button type="button" id="btn-dialog-cancel" style="padding: 8px 16px; background: #1e293b; border: none; color: #cbd5e1; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer;">Cancelar</button>
-          <button type="submit" id="btn-dialog-submit" style="padding: 8px 20px; background: #059669; border: none; color: #ffffff; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer;">💾 Gravar no Supabase</button>
+        <div style="display: flex !important; justify-content: flex-end !important; gap: 8px !important; padding-top: 12px !important; border-top: 1px solid #1e293b !important; margin-top: 4px !important;">
+          <button type="button" id="btn-fechar-bi-cancel" style="padding: 7px 14px !important; background: #1e293b !important; border: 1px solid #334155 !important; color: #cbd5e1 !important; font-size: 12px !important; font-weight: 600 !important; border-radius: 8px !important; cursor: pointer !important;">Cancelar</button>
+          <button type="submit" id="btn-salvar-bi-master" style="padding: 7px 18px !important; background: #059669 !important; border: none !important; color: #ffffff !important; font-size: 12px !important; font-weight: 700 !important; border-radius: 8px !important; cursor: pointer !important;">💾 Gravar no Supabase</button>
         </div>
       </form>
     </div>
   `;
 
-  document.body.appendChild(dialog);
+  // Anexa diretamente no nó raiz <html>
+  document.documentElement.appendChild(overlay);
 
-  // Executa o método nativo de exibição modal
-  if (typeof dialog.showModal === 'function') {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute('open', '');
-  }
+  // Handlers de Fechamento
+  const fechar = () => overlay.remove();
+  document.getElementById('btn-fechar-bi-x').onclick = fechar;
+  document.getElementById('btn-fechar-bi-cancel').onclick = fechar;
 
-  // Fechamento seguro
-  const fechar = () => {
-    try { dialog.close(); } catch (_) {}
-    dialog.remove();
-  };
-
-  document.getElementById('btn-dialog-close-x').onclick = fechar;
-  document.getElementById('btn-dialog-cancel').onclick = fechar;
-
-  // Submissão do Formulário ao Supabase
-  document.getElementById('form-dialog-bi').onsubmit = async function(evt) {
+  // Handler de Gravação
+  document.getElementById('form-bi-master-submit').onsubmit = async function(evt) {
     evt.preventDefault();
     evt.stopPropagation();
 
-    const faturamento = parseFloat(document.getElementById('input-dialog-fat')?.value) || 0;
-    const gasto = parseFloat(document.getElementById('input-dialog-gas')?.value) || 0;
-    const vendas = parseInt(document.getElementById('input-dialog-ven')?.value) || 0;
-    const leads = parseInt(document.getElementById('input-dialog-lea')?.value) || 0;
-    const cliques = parseInt(document.getElementById('input-dialog-cli')?.value) || (leads * 8);
-    const lucro = faturamento - gasto;
+    const fat = parseFloat(document.getElementById('bi-input-master-fat')?.value) || 0;
+    const gas = parseFloat(document.getElementById('bi-input-master-gas')?.value) || 0;
+    const ven = parseInt(document.getElementById('bi-input-master-ven')?.value) || 0;
+    const lea = parseInt(document.getElementById('bi-input-master-lea')?.value) || 0;
+    const cli = parseInt(document.getElementById('bi-input-master-cli')?.value) || (lea * 8);
+    const luc = fat - gas;
 
-    const btnSub = document.getElementById('btn-dialog-submit');
+    const btnSub = document.getElementById('btn-salvar-bi-master');
     if (btnSub) {
       btnSub.disabled = true;
       btnSub.innerText = '⏳ Gravando...';
@@ -8697,12 +8683,12 @@ window.abrirModalLancarBI = function(e) {
     const payload = {
       client_id: String(clientId),
       reference_date: new Date().toISOString().split('T')[0],
-      gasto_trafego: gasto,
-      faturamento_total: faturamento,
-      lucro_liquido: lucro,
-      cliques: cliques,
-      leads_gerados: leads,
-      vendas_fechadas: vendas,
+      gasto_trafego: gas,
+      faturamento_total: fat,
+      lucro_liquido: luc,
+      cliques: cli,
+      leads_gerados: lea,
+      vendas_fechadas: ven,
       updated_at: new Date().toISOString()
     };
 
@@ -8710,8 +8696,8 @@ window.abrirModalLancarBI = function(e) {
       if (window.supabaseClient) {
         await window.supabaseClient.from('bi_analytics_data').insert([payload]);
       }
-    } catch (err) {
-      console.warn('[BI Supabase]', err);
+    } catch(err) {
+      console.warn('[BI Supabase]:', err);
     } finally {
       fechar();
       if (typeof window.renderizarPainelBINAInterface === 'function') {
@@ -8721,16 +8707,37 @@ window.abrirModalLancarBI = function(e) {
   };
 };
 
-// Aliases globais
 window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalLancarBI = function() {
-  const d = document.getElementById('bi-modal-native-dialog');
-  if (d) {
-    try { d.close(); } catch(_) {}
-    d.remove();
-  }
+  const m = document.getElementById('bi-modal-wrapper-master');
+  if (m) m.remove();
 };
 window.fecharModalBI = window.fecharModalLancarBI;
+
+// CARGA IMEDIATA DOS DADOS PADRÃO DO DR. LUCAS
+window.renderizarDadosPadraoLucas = function() {
+  const baseline = {
+    faturamento_total: 28900.00,
+    gasto_trafego: 4500.00,
+    vendas_fechadas: 14,
+    leads_gerados: 184,
+    cliques: 1420
+  };
+  if (typeof window.renderizarPainelBINAInterface === 'function') {
+    window.renderizarPainelBINAInterface(baseline);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(window.renderizarDadosPadraoLucas, 50);
+});
+
+// Listener de troca para a aba BI
+document.addEventListener('click', (e) => {
+  if (e.target && (e.target.closest('[data-tab="tab-bi"]') || e.target.innerText?.includes('BI & Feedback Loop'))) {
+    setTimeout(window.renderizarDadosPadraoLucas, 50);
+  }
+});
 
 // ATIVAÇÃO EXCLUSIVA NO EVENTO 'CLICK' (COM DEBOUNCE ANTI-FLASH)
 let ultimoCliqueBI = 0;
@@ -8738,9 +8745,9 @@ document.addEventListener('click', function(e) {
   const target = e.target;
   const btn = target.closest('#btn-lancar-bi, #btn-lancar-bi-topo, #btn-bi-flutuante-root, [data-action="lancar-bi"]');
 
-  if (btn || (target.innerText && target.innerText.includes('Lançar BI'))) {
+  if (btn || (target.innerText && target.innerText.trim() === '⚡ Lançar BI (Root)' || (target.innerText && target.innerText.includes('Lançar BI') && !target.closest('#bi-modal-wrapper-master')))) {
     const agora = Date.now();
-    if (agora - ultimoCliqueBI < 500) return; // Debounce de 500ms
+    if (agora - ultimoCliqueBI < 500) return;
     ultimoCliqueBI = agora;
 
     e.preventDefault();
