@@ -1074,10 +1074,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   // 3. CHAT ESTRATÉGICO DE CO-CRIAÇÃO
   // ============================================================================
-  const btnSendChat = document.getElementById('btn-send-chat');
-  const chatUserInput = document.getElementById('chat-user-input');
-  const chatMessagesList = document.getElementById('chat-messages-list');
-  const btnClearChat = document.getElementById('btn-clear-chat');
 
   if (btnClearChat) {
     btnClearChat.addEventListener('click', () => {
