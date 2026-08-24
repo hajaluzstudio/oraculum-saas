@@ -8660,28 +8660,42 @@ window.salvarLancamentoBI = async function(event) {
   window.carregarMetricasBI(clientId);
 };
 
-// 3. Renderização Isolada com Baseline Seguro para Dr. Lucas
+// Função Mestra de Leitura e Renderização do BI
 window.carregarMetricasBI = function(clientId) {
-  const client = window.getResolvedActiveClient();
-  const targetId = clientId || client.id;
+  // 1. Identificar Nome e ID do Cliente Ativo
+  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  let id = clientId 
+        || window.currentClientId 
+        || window.activeClientId 
+        || (selectEl ? selectEl.value : null)
+        || localStorage.getItem('oraculum_active_client_id')
+        || 'client_1787406730';
 
-  // Atualiza Nome do Cliente no Banner do BI
-  const titleEl = document.getElementById('bi-active-client-title') 
-               || document.getElementById('bi-client-name') 
-               || document.querySelector('[data-bi-client-name]');
-  if (titleEl) {
-    titleEl.innerText = client.name;
+  let name = '';
+  if (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0]) {
+    name = selectEl.selectedOptions[0].textContent;
+  }
+  if (!name || name.includes('Cliente Selecionado') || name === 'Cliente') {
+    if (String(id).includes('1787406730') || String(id).toLowerCase().includes('lucas')) {
+      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
+    } else {
+      name = 'Cliente Ativo';
+    }
   }
 
-  // Busca dados salvos para este cliente
+  // 2. Atualiza o Banner
+  const bannerNameEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
+  if (bannerNameEl) bannerNameEl.innerText = name;
+
+  // 3. Busca Dados Salvos do Cliente
   let data = null;
-  const raw = localStorage.getItem(`oraculum_bi_metrics_${targetId}`) || localStorage.getItem(`oraculum_bi_client_${targetId}`);
+  const raw = localStorage.getItem(`oraculum_bi_metrics_${id}`) || localStorage.getItem(`oraculum_bi_client_${id}`);
   if (raw) {
     try { data = JSON.parse(raw); } catch(e) {}
   }
 
-  // Baseline padrão para o Dr. Lucas se ainda não houver lançamento gravado
-  const isDrLucas = String(client.name).toLowerCase().includes('lucas') || String(targetId).toLowerCase().includes('lucas');
+  // Baseline padrão para o Dr. Lucas se não houver dados personalizados gravados
+  const isDrLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas');
   if (!data && isDrLucas) {
     data = {
       faturamento: 28900.00,
@@ -8691,7 +8705,7 @@ window.carregarMetricasBI = function(clientId) {
     };
   }
 
-  // Se for outro cliente (ex: Costa Prado) e não tiver dados, ZERA TUDO
+  // Se for outro cliente sem dados, zera
   const faturamento = data ? Number(data.faturamento || data.faturamento_total || data.revenue || 0) : 0;
   const gasto = data ? Number(data.gasto_trafego || data.ad_spend || 0) : 0;
   const vendas = data ? Number(data.vendas || data.sales || 0) : 0;
@@ -8703,43 +8717,29 @@ window.carregarMetricasBI = function(clientId) {
   const ltvCac = (gasto > 0 && vendas > 0) ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` : '0.0 : 1';
 
   const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
+  const setVal = (elementId, val) => {
+    const el = document.getElementById(elementId);
     if (el) el.innerText = val;
   };
 
-  // Cards
   setVal('bi-val-faturamento', fmt(faturamento));
-  setVal('bi-val-revenue', fmt(faturamento));
-  setVal('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
-  setVal('bi-sub-conversions', `${vendas} Vendas (Confirmadas)`);
-  setVal('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
   setVal('bi-val-gasto', fmt(gasto));
-  setVal('bi-val-spend', fmt(gasto));
-
-  const elLucro = document.getElementById('bi-val-lucro') || document.getElementById('bi-val-profit');
-  if (elLucro) {
-    elLucro.innerText = fmt(lucro);
-    elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
-  }
-
+  setVal('bi-val-lucro', fmt(lucro));
   setVal('bi-val-roas', roas);
   setVal('bi-val-ltv-cac', ltvCac);
-  setVal('bi-val-ltvcac', ltvCac);
   setVal('bi-val-taxa-conv', taxaConv);
-  setVal('bi-val-conv-rate', taxaConv);
+  setVal('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
+  setVal('bi-val-vendas-sub', `${vendas} Vendas Fechadas`);
+
+  const elLucro = document.getElementById('bi-val-lucro');
+  if (elLucro) elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
 
   // Funil
   setVal('bi-funil-impressoes', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
-  setVal('funnel-val-impressions', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
   setVal('bi-funil-cliques', Number(funil.cliques || 0).toLocaleString('pt-BR'));
-  setVal('funnel-val-clicks', Number(funil.cliques || 0).toLocaleString('pt-BR'));
   setVal('bi-funil-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
-  setVal('funnel-val-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
   setVal('bi-funil-agendamentos', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
-  setVal('funnel-val-meetings', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
-  setVal('bi-funil-vendas', Number(funil.vendas || 0).toLocaleString('pt-BR'));
-  setVal('funnel-val-sales', `${Number(funil.vendas || 0).toLocaleString('pt-BR')} Vendas`);
+  setVal('bi-funil-vendas', `${Number(funil.vendas || 0).toLocaleString('pt-BR')} Vendas Fechadas`);
 
   // Gráficos Chart.js
   if (typeof Chart !== 'undefined') {
@@ -8753,7 +8753,6 @@ window.carregarMetricasBI = function(clientId) {
       new Chart(canvas, config);
     };
 
-    // 1. Evolução
     renderChart('chart-bi-evolucao', 0, {
       type: 'line',
       data: {

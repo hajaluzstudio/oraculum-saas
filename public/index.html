@@ -1418,85 +1418,84 @@
 
         <!-- ABA 5: BI & DASHBOARD INTERATIVO DE RESULTADOS -->
         <section id="tab-bi" class="tab-panel">
-          <!-- CABEÇALHO DO DASHBOARD EXECUTIVO -->
-          <div style="margin-bottom: 20px; background: var(--bg-surface); border: 1px solid rgba(6, 182, 212,0.3); border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge-tag" style="background: rgba(0,245,160,0.15); color: #00F5A0; font-size: 10px;">DASHBOARD DO CLIENTE ATIVO</span>
-                <span style="font-size: 12px; color: #94A3B8;">Relatório de Performance Comercial & ROI:</span>
-              </div>
-              <h3 id="bi-active-client-title" style="color: #FFF; margin: 4px 0 0; font-size: 20px; font-weight: 800;">Cliente Ativo</h3>
-            </div>
-
-            <!-- CONTROLES DE PERÍODO & AÇÕES EXECUTIVAS -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <!-- Seletor de Período -->
-              <div style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: flex; gap: 4px;">
-                <button type="button" id="btn-periodo-7d" onclick="window.selecionarPeriodoBI('7d')" class="btn-period" data-period="7d" style="background: transparent; border: none; color: #94A3B8; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">7D</button>
-                <button type="button" id="btn-periodo-30d" onclick="window.selecionarPeriodoBI('30d')" class="btn-period active" data-period="30d" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #34D399; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">30D</button>
-                <button type="button" id="btn-periodo-trimestre" onclick="window.selecionarPeriodoBI('trimestre')" class="btn-period" data-period="90d" style="background: transparent; border: none; color: #94A3B8; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">Trimestre</button>
-                <button type="button" id="btn-periodo-ano" onclick="window.selecionarPeriodoBI('ano')" class="btn-period" data-period="365d" style="background: transparent; border: none; color: #94A3B8; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">Ano</button>
+          <!-- Banner de Identificação do Cliente Ativo no BI -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 mb-6">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold">
+                  DASHBOARD DO CLIENTE ATIVO
+                </span>
+                <span class="text-xs text-slate-400 ml-2">Relatório de Performance Comercial & ROI:</span>
+                <h2 id="bi-client-banner-name" class="text-xl font-bold text-slate-100 mt-1.5">
+                  Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)
+                </h2>
               </div>
 
-              <!-- Botão Modo Apresentação em Tela Cheia -->
-              <button type="button" id="btn-modo-apresentacao" onclick="window.alternarModoApresentacao()" class="btn-secondary" style="font-size: 11px; padding: 7px 14px; background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                <i class="fa-solid fa-expand"></i> 📽️ Modo Apresentação
-              </button>
-
-              <!-- Exportar Relatório PDF -->
-              <button type="button" id="btn-export-bi-pdf" onclick="window.exportarRelatorioPDF()" class="btn-secondary" style="font-size: 11px; padding: 7px 14px; background: rgba(0, 245, 160, 0.15); color: #00F5A0; border: 1px solid rgba(0, 245, 160, 0.4); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                <i class="fa-solid fa-file-pdf"></i> 📄 Exportar PDF
-              </button>
-
-              <!-- Sincronizar APIs -->
-              <button type="button" id="btn-sync-live-bi" onclick="window.sincronizarApisBI()" class="btn-primary" style="font-size: 11px; padding: 7px 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; pointer-events: auto; cursor: pointer;">
-                🔄 Sincronizar APIs
-              </button>
+              <!-- Controles do Topo -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  <button id="btn-periodo-7d" onclick="window.selecionarPeriodoBI('7d')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">7D</button>
+                  <button id="btn-periodo-30d" onclick="window.selecionarPeriodoBI('30d')" class="px-2.5 py-1 rounded-lg text-emerald-400 bg-emerald-600/30 border border-emerald-500/40 font-bold">30D</button>
+                  <button id="btn-periodo-trimestre" onclick="window.selecionarPeriodoBI('trimestre')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Trimestre</button>
+                  <button id="btn-periodo-ano" onclick="window.selecionarPeriodoBI('ano')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Ano</button>
+                </div>
+                <button id="btn-modo-apresentacao" onclick="window.alternarModoApresentacao()" class="px-3 py-1.5 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 flex items-center gap-1.5">
+                  📺 Modo Apresentação
+                </button>
+                <button id="btn-export-bi-pdf" onclick="window.exportarRelatorioPDF()" class="px-3 py-1.5 text-xs font-bold text-slate-950 bg-emerald-500 hover:bg-emerald-400 rounded-xl flex items-center gap-1.5 shadow">
+                  📄 Exportar PDF
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- GRADE DE 6 KPIS PRINCIPAIS -->
-          <div class="bi-metrics-grid" style="grid-template-columns: repeat(6, 1fr); gap: 12px;">
-            <div class="metric-card">
-              <span class="label">Faturamento Total</span>
-              <h2 class="value green" id="bi-val-faturamento" style="font-size: 20px;">R$ 0,00</h2>
-              <span class="sub" id="bi-val-vendas-sub">0 Vendas Fechadas</span>
+          <!-- Grid de Métricas Principais -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <!-- Card 1: Faturamento -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">Faturamento Total</span>
+              <h3 id="bi-val-faturamento" class="text-lg font-bold text-slate-100 font-mono">R$ 28.900,00</h3>
+              <span id="bi-val-vendas-qtd" class="text-[10px] text-slate-500 block mt-1">14 Vendas (Confirmadas)</span>
             </div>
-            <div class="metric-card">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="label">Gasto em Tráfego</span>
-                <!-- Botão no Card de Gasto em Tráfego -->
-                <button 
-                  id="btn-lancar-bi" 
-                  type="button" 
-                  onclick="window.abrirModalLancarBI(event)" 
-                  class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1">
-                  <span>✍️</span>
-                  <span>Lançar BI</span>
+
+            <!-- Card 2: Gasto em Tráfego com Botão Lançar BI -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl relative">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] text-slate-400">Gasto em Tráfego</span>
+                <button type="button" onclick="window.abrirModalLancarBI(event)" class="text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded cursor-pointer transition-colors shadow">
+                  💰 Lançar BI
                 </button>
               </div>
-              <h2 class="value" id="bi-val-gasto" style="font-size: 20px;">R$ 0,00</h2>
-              <span class="sub">Meta & Google Ads</span>
+              <h3 id="bi-val-gasto" class="text-lg font-bold text-slate-100 font-mono">R$ 4.500,00</h3>
+              <span class="text-[10px] text-slate-500 block mt-1">Meta & Google Ads</span>
             </div>
-            <div class="metric-card">
-              <span class="label">Lucro Líquido Caixa</span>
-              <h2 class="value green" id="bi-val-lucro" style="font-size: 20px; color: #00F5A0;">R$ 0,00</h2>
-              <span class="sub">Margem Real</span>
+
+            <!-- Card 3: Lucro Líquido -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">Lucro Líquido Caixa</span>
+              <h3 id="bi-val-lucro" class="text-lg font-bold text-emerald-400 font-mono">R$ 24.400,00</h3>
+              <span class="text-[10px] text-slate-500 block mt-1">Margem Real</span>
             </div>
-            <div class="metric-card">
-              <span class="label">ROAS Médio</span>
-              <h2 class="value cyan" id="bi-val-roas" style="font-size: 20px;">0.00x</h2>
-              <span class="sub">Retorno do Anúncio</span>
+
+            <!-- Card 4: ROAS Médio -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">ROAS Médio</span>
+              <h3 id="bi-val-roas" class="text-lg font-bold text-sky-400 font-mono">6.42x</h3>
+              <span class="text-[10px] text-slate-500 block mt-1">Retorno do Anúncio</span>
             </div>
-            <div class="metric-card">
-              <span class="label">Proporção LTV / CAC</span>
-              <h2 class="value gold" id="bi-val-ltv-cac" style="font-size: 20px;">0.0 : 1</h2>
-              <span class="sub badge-healthy" id="bi-val-health">Saudável (≥ 3:1)</span>
+
+            <!-- Card 5: Proporção LTV / CAC -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">Proporção LTV / CAC</span>
+              <h3 id="bi-val-ltv-cac" class="text-lg font-bold text-amber-400 font-mono">0.0 : 1</h3>
+              <span class="text-[10px] text-slate-500 block mt-1">Saudável (≥ 3:1)</span>
             </div>
-            <div class="metric-card">
-              <span class="label">Taxa Conv. Global</span>
-              <h2 class="value" id="bi-val-taxa-conv" style="font-size: 20px; color: #38BDF8;">0.00%</h2>
-              <span class="sub">Lead ➔ Contrato</span>
+
+            <!-- Card 6: Taxa Conversão -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">Taxa Conv. Global</span>
+              <h3 id="bi-val-taxa-conv" class="text-lg font-bold text-cyan-400 font-mono">7.61%</h3>
+              <span class="text-[10px] text-slate-500 block mt-1">Lead → Contrato</span>
             </div>
           </div>
 
@@ -3869,7 +3868,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.64.0"></script>
+<script src="/app.js?v=9999.65.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
