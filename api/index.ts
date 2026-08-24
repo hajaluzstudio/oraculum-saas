@@ -790,13 +790,10 @@ DIRETRIZES:
 - Se os dados estiverem zerados, use os benchmarks de alta performance do nicho como base analítica.
 - Seja direto, conciso e tático.`;
     } else {
-      promptInstrucao = systemPrompt || `Você é o Copiloto de Estratégia do Oraculum.
-Cliente Ativo: ${clientName || 'Cliente'} (Nicho: ${clientNiche || 'Geral'}).
-
-DOSSIÊ ESTRATÉGICO DO CLIENTE:
-${dossierContext || 'Atue como estrategista sênior.'}
-
-Responda à dúvida do usuário aplicando as diretrizes, público-alvo, técnicas e metas contidas no Dossiê acima.`;
+      promptInstrucao = `Você é o Copiloto Estratégico do Oraculum.
+Cliente Ativo: ${clientName || 'Dr. Lucas'} (${clientNiche || 'Medicina Estética'}).
+Dossiê Ativo: ${dossierContext || ''}
+Responda com base estrita no Dossiê e nas regras do setor.`;
     }
 
     // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
@@ -804,7 +801,7 @@ Responda à dúvida do usuário aplicando as diretrizes, público-alvo, técnica
     const ai = new GoogleGenAI({ apiKey });
 
     // Chamada à API via SDK Global com Cascata
-    const { reply: generatedText, modelUsed } = await executarIAComFallback(
+    const { reply: aiResponse, modelUsed } = await executarIAComFallback(
       ai,
       promptInstrucao,
       { contents: [{ role: 'user', parts: [{ text: userMessage }] }] }
@@ -814,7 +811,7 @@ Responda à dúvida do usuário aplicando as diretrizes, público-alvo, técnica
       try {
         await supabase
           .from('clients')
-          .update({ last_feedback_loop: generatedText })
+          .update({ last_feedback_loop: aiResponse })
           .eq('id', clientId);
         console.log(`[Supabase] Feedback loop salvo com sucesso para o cliente ${clientId}`);
       } catch (dbErr) {
@@ -822,17 +819,12 @@ Responda à dúvida do usuário aplicando as diretrizes, público-alvo, técnica
       }
     }
 
-    return res.status(200).json({
-      success: true,
-      reply: generatedText,
-      replyText: generatedText,
-      data: generatedText,
-      model: modelUsed,
-      debug: {
-        provider: "@google/genai SDK (Cascata)",
-        model: modelUsed,
-        keyPrefix: apiKey.substring(0, 4) + "..."
-      }
+    return res.status(200).json({ 
+      success: true, 
+      reply: aiResponse,
+      replyText: aiResponse,
+      data: aiResponse,
+      model: modelUsed
     });
 
   } catch (err: any) {
