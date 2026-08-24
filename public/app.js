@@ -1130,10 +1130,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function carregarSalaOperacaoCompleta() {
+    const warRoomSection = document.getElementById('tab-war-room');
+    if (!warRoomSection) return;
+
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // 1. Busca tarefas salvas no Supabase para a War Room
+    // Se a estrutura de sub-abas sumiu, restaura o layout completo
+    if (!warRoomSection.querySelector('#war-room-subtabs')) {
+      warRoomSection.innerHTML = `
+        <div class="mb-6 flex flex-wrap gap-2" id="war-room-subtabs">
+          <button data-subtab="video" class="war-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black">🎥 Vídeo & Gravação</button>
+          <button data-subtab="design" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎨 Design & Web</button>
+          <button data-subtab="trafego" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎯 Tráfego</button>
+          <button data-subtab="copywriting" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">✍️ Copywriting</button>
+          <button data-subtab="comercial" class="war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🤝 Comercial & Vendas</button>
+        </div>
+
+        <div id="war-room-content-area" class="space-y-4">
+          <div id="war-room-feed" class="space-y-4"></div>
+        </div>
+      `;
+
+      // Event listener para alternar as sub-abas
+      warRoomSection.querySelectorAll('.war-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          warRoomSection.querySelectorAll('.war-tab-btn').forEach(b => {
+            b.className = 'war-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]';
+          });
+          btn.className = 'war-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black';
+          filtrarCardsWarRoom(btn.dataset.subtab);
+        });
+      });
+    }
+
+    // Busca tarefas do Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
@@ -1143,50 +1174,57 @@ document.addEventListener('DOMContentLoaded', () => {
           .select('*')
           .eq('client_id', clientId)
           .order('created_at', { ascending: false });
-        
         if (!error && data) tasks = data;
       }
     } catch (e) {
-      console.warn('[War Room] Fallback para storage local:', e);
+      console.warn('[WarRoom Storage Fallback]:', e);
     }
 
-    // 2. Mescla com o cache local
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
       const local = JSON.parse(localStorage.getItem(`war_room_${clientId}_${cat}`) || '[]');
       tasks = [...tasks, ...local];
     });
 
-    // 3. Se houver tarefas ou dossiê, limpa o aviso "Nenhum script gerado" e injeta os cards
-    const videoContainer = document.querySelector('#tab-war-room #war-room-video-container, #tab-war-room .video-content, #tab-war-room [data-war-room="video"]');
-    const copyContainer = document.querySelector('#tab-war-room #war-room-copy-container, #tab-war-room .copy-content, #tab-war-room [data-war-room="copywriting"]');
-    const salesContainer = document.querySelector('#tab-war-room #war-room-sales-container, #tab-war-room .sales-content, #tab-war-room [data-war-room="comercial"]');
+    const feed = document.getElementById('war-room-feed');
+    if (!feed) return;
 
-    // Limpa mensagens vazias se existirem demandas
-    if (tasks.length > 0) {
-      document.querySelectorAll('#tab-war-room p, #tab-war-room div').forEach(el => {
-        if (el.textContent.includes('Nenhum script gerado para este cliente')) {
-          el.remove();
-        }
-      });
-
-      tasks.forEach(task => {
-        const targetBox = (task.category === 'video' ? videoContainer : 
-                          task.category === 'comercial' ? salesContainer : copyContainer) || videoContainer;
-        
-        if (targetBox && !targetBox.querySelector(`[data-task-id="${task.id || task.created_at}"]`)) {
-          const cardHtml = `
-            <div data-task-id="${task.id || task.created_at}" class="p-5 bg-[#0B1514] border border-[#10B981]/40 rounded-xl my-4 text-slate-200 shadow-xl">
-              <div class="flex items-center justify-between border-b border-[#1B3B36] pb-3 mb-3">
-                <span class="px-2.5 py-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase tracking-wider">${task.title || 'Demanda Oraculum'}</span>
-                <span class="text-xs text-slate-400">${new Date(task.created_at).toLocaleTimeString()}</span>
-              </div>
-              <div class="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">${task.content}</div>
-            </div>
-          `;
-          targetBox.insertAdjacentHTML('beforeend', cardHtml);
-        }
-      });
+    if (tasks.length === 0) {
+      feed.innerHTML = `
+        <div class="p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-sm">
+          Nenhuma diretriz ou tarefa aprovada no momento. Use o <strong>Chat Estratégico</strong> para despachar novas demandas.
+        </div>
+      `;
+      return;
     }
+
+    feed.innerHTML = tasks.map(task => `
+      <div data-category="${task.category || 'copywriting'}" class="war-task-card p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-[#1B3B36] pb-3">
+          <span class="px-2.5 py-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase tracking-wider">
+            ${task.category ? task.category.toUpperCase() : 'ESTRATÉGIA'}
+          </span>
+          <span class="text-xs text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
+        </div>
+        <div class="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">${task.content}</div>
+      </div>
+    `).join('');
+
+    // Aplica filtro inicial na aba ativa
+    const activeBtn = warRoomSection.querySelector('.war-tab-btn.active');
+    if (activeBtn) filtrarCardsWarRoom(activeBtn.dataset.subtab);
+  }
+
+  function filtrarCardsWarRoom(categoria) {
+    const cards = document.querySelectorAll('.war-task-card');
+    cards.forEach(card => {
+      if (categoria === 'video' && (card.dataset.category === 'video' || card.dataset.category === 'chat_strategy')) {
+        card.style.display = 'block';
+      } else if (card.dataset.category === categoria) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
