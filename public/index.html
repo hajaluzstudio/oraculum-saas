@@ -2020,84 +2020,52 @@
                       </div>
                     </div>
                   </div>
-                  <div id="wr-design-content" class="wr-data-box" style="margin-top: 16px;">
-                    <div class="grid-2col">
-                      <!-- DESIGN: A. Simulador de Safe Zones -->
-                      <div class="card-glass">
-                        <div class="card-header">
-                          <h3><i class="fa-solid fa-crop-simple"></i> Simulador de Mockup & Safe Zones</h3>
-                          <p>Verifique se o texto ou CTA colide com a interface do TikTok / Reels.</p>
+                  <!-- Ferramenta: Simulador de Mockup & Safe Zones (Reels / TikTok / Stories) -->
+                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-6 transition-all duration-300">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleSafeZoneMockupTool()">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xl">📱</span>
+                        <div>
+                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+                            Simulador de Mockup & Safe Zones (Reels / TikTok / Stories)
+                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Interface Guard</span>
+                          </h3>
+                          <p class="text-xs text-slate-400">Validação visual de margens de segurança e sobreposição de botões da interface nativa.</p>
                         </div>
-                        <div style="margin-top: 14px;">
-                          <div class="form-group">
-                            <label>Formato do Criativo</label>
-                            <select id="mockup-format" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 text-sm">
-                              <option value="9_16">Story / Reels / TikTok (9:16)</option>
-                              <option value="4_5">Feed Vertical (4:5)</option>
-                              <option value="1_1">Feed Quadrado (1:1)</option>
-                            </select>
-                          </div>
-                          <div class="form-group" style="margin-top:10px;">
-                            <label>Upload da Arte (Imagem)</label>
-                            <input type="file" id="mockup-file" accept="image/*" class="w-full text-[var(--text-primary)] text-sm">
-                          </div>
-                          <div style="margin-top: 16px; display: flex; gap: 8px;">
-                            <button type="button" class="btn-secondary sm" id="btn-toggle-safezone"><i class="fa-solid fa-layer-group"></i> Toggle Safe Zone</button>
-                          </div>
-                          
-                          <!-- Box de Preview Visual -->
-                          <div id="mockup-preview-container" style="margin-top: 16px; border: 2px dashed rgba(255,255,255,0.1); border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; width: 100%; max-width: 250px; aspect-ratio: 9/16; margin-left: auto; margin-right: auto;">
-                            <span style="color: #64748B; font-size: 12px; position: absolute; z-index: 0;">Preview da Imagem</span>
-                            <img id="mockup-image" src="" style="width: 100%; height: 100%; object-fit: contain; display: none; position: relative; z-index: 1;">
-                            <!-- Overlay de Safe Zone (CSS injetado via JS) -->
-                            <div id="mockup-safezone-overlay" style="position: absolute; inset: 0; pointer-events: none; z-index: 2; display: none; border: 4px solid rgba(239, 68, 68, 0.4);">
-                                <div style="position: absolute; top:0; left:0; right:0; height: 15%; background: rgba(239, 68, 68, 0.2);"></div>
-                                <div style="position: absolute; bottom:0; left:0; right:0; height: 25%; background: rgba(239, 68, 68, 0.2);"></div>
-                                <div style="position: absolute; right:0; top: 15%; bottom: 25%; width: 15%; background: rgba(239, 68, 68, 0.2);"></div>
-                            </div>
-                          </div>
+                      </div>
+                      <button id="btn-toggle-safezone" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
+                        ▼ Expandir Ferramenta
+                      </button>
+                    </div>
+
+                    <div id="safezone-mockup-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-5">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Formato do Criativo / Rede *</label>
+                          <select id="safezone-format-select" onchange="window.handleSafeZoneFormatChange()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="9:16">Story / Reels / TikTok (9:16 Vertical)</option>
+                            <option value="1:1">Feed Quadrado (1:1)</option>
+                            <option value="4:5">Feed Retrato (4:5)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Upload da Peça Gráfica (Imagem) *</label>
+                          <input type="file" id="safezone-file-input" accept="image/*" onchange="window.handleSafeZoneFileUpload(event)" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
                         </div>
                       </div>
 
-                      <!-- DESIGN: B. Verificador de Contraste (WCAG) -->
-                      <div class="card-glass">
-                        <div class="card-header">
-                          <h3><i class="fa-solid fa-eye-dropper"></i> Verificador de Contraste (WCAG 2.1)</h3>
-                          <p>Garanta que seus anúncios sejam legíveis antes de veicular.</p>
+                      <!-- Preview Container Centralizado com Overlay de Safe Zone -->
+                      <div class="flex flex-col items-center justify-center p-4 bg-slate-950/60 border border-slate-800 rounded-xl">
+                        <div class="flex items-center gap-3 mb-4">
+                          <button id="btn-toggle-safezone-overlay" onclick="window.toggleSafeZoneOverlay()" class="text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg hover:bg-emerald-600/30 transition-all font-medium flex items-center gap-1.5 cursor-pointer">
+                            👁️ Alternar Safe Zone Overlay
+                          </button>
                         </div>
-                        <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 14px;">
-                          <div style="display: flex; gap: 14px;">
-                            <div class="form-group" style="flex: 1;">
-                              <label>Cor de Fundo</label>
-                              <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="color" id="color-bg" value="var(--bg-surface)" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
-                                <input type="text" id="color-bg-hex" value="var(--bg-surface)" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)] text-sm uppercase">
-                              </div>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                              <label>Cor do Texto</label>
-                              <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="color" id="color-text" value="#10B981" style="width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 4px; background: transparent;">
-                                <input type="text" id="color-text-hex" value="#10B981" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]/80 rounded-xl px-4 py-2 text-[var(--text-primary)] text-sm uppercase">
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <!-- Box de Preview de Contraste -->
-                          <div id="contrast-preview-box" style="padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: center; background-color: var(--bg-surface); color: #10B981;">
-                            <h4 style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">Texto de Exemplo</h4>
-                            <p style="font-size: 12px;">Se a leitura for difícil, as conversões vão cair.</p>
-                          </div>
-
-                          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                            <div>
-                              <span style="font-size: 11px; color: #94A3B8;">Taxa de Contraste (Ratio):</span>
-                              <p id="contrast-ratio" style="font-size: 16px; font-weight: bold; color: #fff;">- : 1</p>
-                            </div>
-                            <div>
-                              <span style="font-size: 11px; color: #94A3B8;">Legibilidade (WCAG AA):</span>
-                              <p id="contrast-status" style="font-size: 14px; font-weight: bold; color: #94A3B8;">-</p>
-                            </div>
+                        <div id="mockup-preview-viewport" class="relative max-w-[280px] w-full aspect-[9/16] bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl overflow-hidden flex items-center justify-center">
+                          <span id="mockup-placeholder-text" class="text-xs text-slate-500 text-center px-4">Faça upload de uma imagem para simular o mockup e conferir as margens de corte</span>
+                          <img id="mockup-preview-img" class="hidden absolute inset-0 w-full h-full object-cover" alt="Preview da Arte">
+                          <div id="mockup-safezone-layer" class="hidden absolute inset-0 pointer-events-none border-t-[48px] border-b-[96px] border-r-[54px] border-transparent bg-red-500/10 before:absolute before:inset-0 before:border-2 before:border-dashed before:border-emerald-400/80">
+                            <div class="absolute bottom-2 left-3 right-12 text-[10px] text-emerald-300 font-mono bg-slate-950/80 px-1.5 py-0.5 rounded">Área Segura (Safe Zone)</div>
                           </div>
                         </div>
                       </div>
@@ -3683,7 +3651,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.47.0"></script>
+<script src="/app.js?v=9999.48.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

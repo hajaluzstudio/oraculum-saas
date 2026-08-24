@@ -3115,6 +3115,59 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   };
+
+  // ============================================================================
+  // 7. SIMULADOR DE MOCKUP & SAFE ZONES (DESIGN & WEB)
+  // ============================================================================
+  window.toggleSafeZoneMockupTool = function() {
+    const content = document.getElementById('safezone-mockup-content');
+    const btn = document.getElementById('btn-toggle-safezone');
+    if (!content || !btn) return;
+
+    const isHidden = content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '▲ Recolher Ferramenta' : '▼ Expandir Ferramenta';
+  };
+
+  window.handleSafeZoneFileUpload = function(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('mockup-preview-img');
+      const placeholder = document.getElementById('mockup-placeholder-text');
+      const layer = document.getElementById('mockup-safezone-layer');
+      
+      if (img && placeholder) {
+        img.src = e.target.result;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        if (layer) layer.classList.remove('hidden');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.toggleSafeZoneOverlay = function() {
+    const layer = document.getElementById('mockup-safezone-layer');
+    if (layer) layer.classList.toggle('hidden');
+  };
+
+  window.handleSafeZoneFormatChange = function() {
+    const select = document.getElementById('safezone-format-select');
+    const viewport = document.getElementById('mockup-preview-viewport');
+    if (!select || !viewport) return;
+
+    viewport.classList.remove('aspect-[9/16]', 'aspect-square', 'aspect-[4/5]', 'max-w-[280px]', 'max-w-[340px]', 'max-w-[300px]');
+    if (select.value === '9:16') {
+      viewport.classList.add('aspect-[9/16]', 'max-w-[280px]');
+    } else if (select.value === '1:1') {
+      viewport.classList.add('aspect-square', 'max-w-[340px]');
+    } else if (select.value === '4:5') {
+      viewport.classList.add('aspect-[4/5]', 'max-w-[300px]');
+    }
+  };
   const reportContent = document.getElementById('creative-report-content');
   const verdictBadge = document.getElementById('inspect-verdict-badge');
 
