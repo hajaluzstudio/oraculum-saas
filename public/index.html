@@ -3801,60 +3801,51 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
   <!-- Script JS -->
   <script src="/oraculo-live.js?v=85.0.0"></script>
 
-  <!-- Modal de Lançamento Manual (Filho direto do body) -->
-<div id="modal-lancar-bi" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-  <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+  <!-- Modal Fixo de Lançamento de BI no Banco de Dados -->
+<div id="modal-bi-lancar" class="hidden fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 text-slate-100">
     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
       <div>
-        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">💰 Lançar Métricas de BI</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Cliente: <strong id="bi-modal-client-name" class="text-emerald-400">Selecionando...</strong></p>
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <span>💾</span> Lançar Métricas no Banco de Dados
+        </h3>
+        <p class="text-xs text-slate-400 mt-0.5">Cliente: <strong id="bi-modal-client-label" class="text-emerald-400">Dr. Lucas</strong></p>
       </div>
-      <button type="button" onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-slate-200 text-lg font-bold p-1">✕</button>
+      <button type="button" onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-slate-200 text-xl font-bold p-1">✕</button>
     </div>
 
-    <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" class="space-y-3 text-xs">
-      <input type="hidden" id="bi-modal-client-id" value="">
+    <form id="form-bi-lancar" onsubmit="window.salvarLancamentoBI(event)" class="space-y-4 text-xs">
+      <input type="hidden" id="bi-input-client-id" value="">
 
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Faturamento Total (R$)</label>
-          <input type="number" step="0.01" id="bi-input-faturamento" placeholder="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 28900.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
         </div>
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Gasto em Tráfego (R$)</label>
-          <input type="number" step="0.01" id="bi-input-gasto-trafego" placeholder="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 4500.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
         </div>
       </div>
 
       <div class="grid grid-cols-3 gap-3">
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Vendas (Qtd)</label>
-          <input type="number" id="bi-input-vendas" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          <input type="number" id="bi-input-vendas" required placeholder="Ex: 14" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
         </div>
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Leads (Qtd)</label>
-          <input type="number" id="bi-input-leads" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Agendamentos</label>
-          <input type="number" id="bi-input-agendamentos" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Impressões</label>
-          <input type="number" id="bi-input-impressoes" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          <input type="number" id="bi-input-leads" required placeholder="Ex: 184" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
         </div>
         <div>
           <label class="block font-semibold text-slate-300 mb-1">Cliques no Link</label>
-          <input type="number" id="bi-input-cliques" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500">
+          <input type="number" id="bi-input-cliques" placeholder="Ex: 1420" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
         </div>
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
         <button type="button" onclick="window.fecharModalLancarBI()" class="px-4 py-2 rounded-lg text-slate-400 hover:text-slate-200">Cancelar</button>
-        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-5 py-2 rounded-lg transition-colors">Salvar Métricas</button>
+        <button type="submit" id="btn-submit-bi" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-5 py-2 rounded-lg transition-colors">💾 Gravar no Supabase</button>
       </div>
     </form>
   </div>
@@ -3868,7 +3859,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.65.0"></script>
+<script src="/app.js?v=9999.66.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

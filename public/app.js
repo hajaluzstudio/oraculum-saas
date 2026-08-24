@@ -8462,298 +8462,230 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   }
 };
 
-window.carregarUltimoBIDoCliente = function(clientId) {
-  if (typeof window.carregarMetricasBI === 'function') {
-    window.carregarMetricasBI(clientId);
-  }
-};
-
 // ============================================================================
-// MÓDULO UNIFICADO: BI & FEEDBACK LOOP (RESOLUÇÃO ROBUSTA POR CLIENTE)
+// MÓDULO BI: LEITURA E GRAVAÇÃO 100% PERSISTIDAS NO BANCO DE DADOS (SUPABASE)
 // ============================================================================
 
-// Helper universal para resolver o ID e Nome do cliente ativo em qualquer cenário
-window.getResolvedActiveClient = function() {
-  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  
-  let id = window.currentClientId 
-        || window.activeClientId 
-        || window.currentActiveClientId 
-        || (selectEl ? selectEl.value : null)
-        || localStorage.getItem('oraculum_active_client_id')
-        || localStorage.getItem('oraculum_active_client');
-
-  let name = window.currentClientName;
-  
-  if (!name && selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0]) {
-    name = selectEl.selectedOptions[0].textContent;
-  }
-
-  // Fallback seguro se não houver seleção
-  if (!id || id === 'null' || id === 'undefined') {
-    id = 'client_1787406730';
-    name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
-  }
-
-  if (!name || name.includes('Cliente Selecionado') || name === 'Cliente') {
-    if (String(id).includes('1787406730') || String(id).toLowerCase().includes('lucas')) {
-      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
-    } else {
-      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
-    }
-  }
-
-  return { id: String(id), name: String(name) };
-};
-
-// 1. Abertura Garantida do Modal de Lançamento de BI (Injeção Direta no Body)
-window.abrirModalLancarBI = function(event) {
+// 1. Abertura do Modal com Carregamento dos Dados do Banco
+window.abrirModalLancarBI = async function(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const client = window.getResolvedActiveClient();
+  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Cliente Selecionado');
 
-  // Remove qualquer modal legado preso no DOM
-  const modalAntigo = document.getElementById('modal-lancar-bi');
-  if (modalAntigo) modalAntigo.remove();
+  const modal = document.getElementById('modal-bi-lancar');
+  const inputId = document.getElementById('bi-input-client-id');
+  const labelName = document.getElementById('bi-modal-client-label');
 
-  // Carrega dados previamente salvos deste cliente
-  const rawData = localStorage.getItem(`oraculum_bi_metrics_${client.id}`);
-  let saved = {};
-  if (rawData) {
-    try { saved = JSON.parse(rawData); } catch(e) {}
+  if (inputId) inputId.value = clientId;
+  if (labelName) labelName.innerText = clientName;
+
+  // Busca o registro mais recente gravado no Supabase para este cliente
+  if (window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .select('*')
+        .eq('client_id', String(clientId))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        if (document.getElementById('bi-input-faturamento')) document.getElementById('bi-input-faturamento').value = data.faturamento_total || '';
+        if (document.getElementById('bi-input-gasto')) document.getElementById('bi-input-gasto').value = data.gasto_trafego || '';
+        if (document.getElementById('bi-input-vendas')) document.getElementById('bi-input-vendas').value = data.vendas_fechadas || '';
+        if (document.getElementById('bi-input-leads')) document.getElementById('bi-input-leads').value = data.leads_gerados || '';
+        if (document.getElementById('bi-input-cliques')) document.getElementById('bi-input-cliques').value = data.cliques || '';
+      }
+    } catch (e) {
+      console.warn('[BI] Falha ao consultar registro prévio do Supabase:', e);
+    }
   }
 
-  const modalHTML = `
-    <div id="modal-lancar-bi" style="position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; background-color: rgba(2, 6, 23, 0.85) !important; backdrop-filter: blur(8px) !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; margin: 0 !important;">
-      <div style="background-color: #0f172a; border: 1px solid #334155; width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); padding: 24px; color: #ffffff; font-family: inherit; position: relative;">
-        
-        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
-          <div>
-            <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
-              <span>💰</span> Lançar Métricas de BI
-            </h3>
-            <p style="font-size: 11px; color: #10b981; margin: 2px 0 0 0; font-weight: 600;">Cliente: ${client.name}</p>
-          </div>
-          <button type="button" onclick="window.fecharModalLancarBI()" style="background: transparent; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px; line-height: 1;">✕</button>
-        </div>
-
-        <form id="form-lancar-bi" onsubmit="window.salvarLancamentoBI(event)" style="display: flex; flex-direction: column; gap: 14px;">
-          <input type="hidden" id="bi-modal-client-id" value="${client.id}">
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Faturamento Total (R$)</label>
-              <input type="number" step="0.01" id="bi-input-faturamento" value="${saved.faturamento || ''}" required placeholder="Ex: 28900.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Gasto em Tráfego (R$)</label>
-              <input type="number" step="0.01" id="bi-input-gasto" value="${saved.gasto_trafego || ''}" required placeholder="Ex: 4500.00" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-            <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Vendas (Qtd)</label>
-              <input type="number" id="bi-input-vendas" value="${saved.vendas || ''}" required placeholder="Ex: 14" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Leads</label>
-              <input type="number" id="bi-input-leads" value="${saved.funil?.leads || ''}" required placeholder="Ex: 184" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Cliques</label>
-              <input type="number" id="bi-input-cliques" value="${saved.funil?.cliques || ''}" placeholder="Ex: 1420" style="width: 100%; box-sizing: border-box; background-color: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #ffffff; font-size: 12px; outline: none;" />
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 14px; border-top: 1px solid #1e293b; margin-top: 4px;">
-            <button type="button" onclick="window.fecharModalLancarBI()" style="padding: 8px 16px; background-color: #1e293b; border: none; color: #cbd5e1; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer;">Cancelar</button>
-            <button type="submit" id="btn-submit-bi" style="padding: 8px 20px; background-color: #059669; border: none; color: #ffffff; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer;">💾 Gravar & Atualizar Dashboard</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
 };
 
 window.fecharModalLancarBI = function() {
-  const modal = document.getElementById('modal-lancar-bi');
-  if (modal) modal.remove();
+  const modal = document.getElementById('modal-bi-lancar');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
 };
 
 window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
-// 2. Salvar Dados Isolados por Cliente
+// 2. Salvar Lançamento Diretamente no Supabase
 window.salvarLancamentoBI = async function(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const client = window.getResolvedActiveClient();
-  const clientId = document.getElementById('bi-modal-client-id')?.value || client.id;
-
-  const btnSubmit = document.getElementById('btn-submit-bi');
-  if (btnSubmit) {
-    btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '⏳ Gravando...';
-  }
-
+  const clientId = document.getElementById('bi-input-client-id')?.value || window.currentClientId || 'client_1787406730';
   const faturamento = parseFloat(document.getElementById('bi-input-faturamento')?.value) || 0;
   const gasto = parseFloat(document.getElementById('bi-input-gasto')?.value) || 0;
   const vendas = parseInt(document.getElementById('bi-input-vendas')?.value) || 0;
   const leads = parseInt(document.getElementById('bi-input-leads')?.value) || 0;
   const cliques = parseInt(document.getElementById('bi-input-cliques')?.value) || (leads * 8);
-  const impressoes = cliques * 25;
-  const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
   const lucro = faturamento - gasto;
+
+  const btnSubmit = document.getElementById('btn-submit-bi');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '⏳ Gravando no Banco...';
+  }
 
   const payload = {
     client_id: String(clientId),
-    faturamento,
-    faturamento_total: faturamento,
-    revenue: faturamento,
+    reference_date: new Date().toISOString().split('T')[0],
     gasto_trafego: gasto,
-    ad_spend: gasto,
-    vendas,
-    vendas_fechadas: vendas,
-    sales: vendas,
-    leads,
-    leads_gerados: leads,
-    cliques,
-    impressoes,
+    faturamento_total: faturamento,
     lucro_liquido: lucro,
-    funil: { impressoes, cliques, leads, agendamentos, vendas },
+    cliques: cliques,
+    leads_gerados: leads,
+    vendas_fechadas: vendas,
     updated_at: new Date().toISOString()
   };
 
-  // Gravação exclusiva deste cliente
-  localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
+  try {
+    if (window.supabaseClient) {
+      const { error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .insert([payload]);
 
-  if (window.supabaseClient) {
-    try {
-      await window.supabaseClient.from('bi_analytics_data').upsert({
-        client_id: String(clientId),
-        reference_date: new Date().toISOString().split('T')[0],
-        gasto_trafego: gasto,
-        faturamento_total: faturamento,
-        lucro_liquido: lucro,
-        cliques,
-        leads_gerados: leads,
-        vendas_fechadas: vendas
-      }, { onConflict: 'client_id' });
-    } catch(e) {}
+      if (error) throw error;
+    }
+
+    if (typeof window.showToast === 'function') {
+      window.showToast('✅ Dados gravados com sucesso no banco de dados!', 'success');
+    }
+  } catch (err) {
+    console.error('[BI] Erro ao gravar no Supabase:', err);
+    alert(`Erro ao salvar no banco de dados: ${err.message}`);
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '💾 Gravar no Supabase';
+    }
+    window.fecharModalLancarBI();
+    await window.carregarMetricasBI(clientId);
   }
-
-  window.fecharModalLancarBI();
-
-  if (typeof window.showToast === 'function') {
-    window.showToast('Métricas salvas para este cliente!', 'success');
-  }
-
-  window.carregarMetricasBI(clientId);
 };
 
-// Função Mestra de Leitura e Renderização do BI
-window.carregarMetricasBI = function(clientId) {
-  // 1. Identificar Nome e ID do Cliente Ativo
+// 3. Leitura e Renderização 100% Baseada em Banco de Dados
+window.carregarMetricasBI = async function(clientId) {
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  let id = clientId 
-        || window.currentClientId 
-        || window.activeClientId 
-        || (selectEl ? selectEl.value : null)
-        || localStorage.getItem('oraculum_active_client_id')
-        || 'client_1787406730';
+  let id = clientId || window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+  let name = window.currentClientName || (selectEl && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  let name = '';
-  if (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0]) {
-    name = selectEl.selectedOptions[0].textContent;
-  }
-  if (!name || name.includes('Cliente Selecionado') || name === 'Cliente') {
-    if (String(id).includes('1787406730') || String(id).toLowerCase().includes('lucas')) {
-      name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
-    } else {
-      name = 'Cliente Ativo';
+  // Atualiza Nome no Banner
+  const bannerEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
+  if (bannerEl) bannerEl.innerText = name;
+
+  let dbData = null;
+
+  // Consulta assíncrona ao Supabase
+  if (window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .select('*')
+        .eq('client_id', String(id))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        dbData = data;
+      }
+    } catch (err) {
+      console.warn('[BI] Erro ao carregar dados do Supabase:', err);
     }
   }
 
-  // 2. Atualiza o Banner
-  const bannerNameEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
-  if (bannerNameEl) bannerNameEl.innerText = name;
+  // Se o Dr. Lucas não tiver linha no banco, cria o registro inicial no Supabase
+  const isLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas');
+  if (!dbData && isLucas && window.supabaseClient) {
+    try {
+      const initPayload = {
+        client_id: String(id),
+        reference_date: new Date().toISOString().split('T')[0],
+        gasto_trafego: 4500.00,
+        faturamento_total: 28900.00,
+        lucro_liquido: 24400.00,
+        cliques: 1420,
+        leads_gerados: 184,
+        vendas_fechadas: 14
+      };
+      const { data: created } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .insert([initPayload])
+        .select()
+        .single();
 
-  // 3. Busca Dados Salvos do Cliente
-  let data = null;
-  const raw = localStorage.getItem(`oraculum_bi_metrics_${id}`) || localStorage.getItem(`oraculum_bi_client_${id}`);
-  if (raw) {
-    try { data = JSON.parse(raw); } catch(e) {}
+      if (created) dbData = created;
+    } catch(e) {}
   }
 
-  // Baseline padrão para o Dr. Lucas se não houver dados personalizados gravados
-  const isDrLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas');
-  if (!data && isDrLucas) {
-    data = {
-      faturamento: 28900.00,
-      gasto_trafego: 4500.00,
-      vendas: 14,
-      funil: { impressoes: 35500, cliques: 1420, leads: 184, agendamentos: 64, vendas: 14 }
-    };
-  }
-
-  // Se for outro cliente sem dados, zera
-  const faturamento = data ? Number(data.faturamento || data.faturamento_total || data.revenue || 0) : 0;
-  const gasto = data ? Number(data.gasto_trafego || data.ad_spend || 0) : 0;
-  const vendas = data ? Number(data.vendas || data.sales || 0) : 0;
+  const faturamento = dbData ? Number(dbData.faturamento_total || 0) : 0;
+  const gasto = dbData ? Number(dbData.gasto_trafego || 0) : 0;
+  const vendas = dbData ? Number(dbData.vendas_fechadas || 0) : 0;
+  const leads = dbData ? Number(dbData.leads_gerados || 0) : 0;
+  const cliques = dbData ? Number(dbData.cliques || 0) : 0;
+  const impressoes = cliques * 25;
+  const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
   const lucro = faturamento - gasto;
   const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
-  const funil = data?.funil || { impressoes: 0, cliques: 0, leads: 0, agendamentos: 0, vendas: 0 };
-  const leads = funil.leads || 0;
   const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
   const ltvCac = (gasto > 0 && vendas > 0) ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` : '0.0 : 1';
 
   const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const setVal = (elementId, val) => {
-    const el = document.getElementById(elementId);
+  const setTxt = (elId, val) => {
+    const el = document.getElementById(elId);
     if (el) el.innerText = val;
   };
 
-  setVal('bi-val-faturamento', fmt(faturamento));
-  setVal('bi-val-gasto', fmt(gasto));
-  setVal('bi-val-lucro', fmt(lucro));
-  setVal('bi-val-roas', roas);
-  setVal('bi-val-ltv-cac', ltvCac);
-  setVal('bi-val-taxa-conv', taxaConv);
-  setVal('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
-  setVal('bi-val-vendas-sub', `${vendas} Vendas Fechadas`);
+  setTxt('bi-val-faturamento', fmt(faturamento));
+  setTxt('bi-val-gasto', fmt(gasto));
+  setTxt('bi-val-lucro', fmt(lucro));
+  setTxt('bi-val-roas', roas);
+  setTxt('bi-val-ltv-cac', ltvCac);
+  setTxt('bi-val-taxa-conv', taxaConv);
+  setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
 
   const elLucro = document.getElementById('bi-val-lucro');
   if (elLucro) elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
 
-  // Funil
-  setVal('bi-funil-impressoes', Number(funil.impressoes || 0).toLocaleString('pt-BR'));
-  setVal('bi-funil-cliques', Number(funil.cliques || 0).toLocaleString('pt-BR'));
-  setVal('bi-funil-leads', Number(funil.leads || 0).toLocaleString('pt-BR'));
-  setVal('bi-funil-agendamentos', Number(funil.agendamentos || 0).toLocaleString('pt-BR'));
-  setVal('bi-funil-vendas', `${Number(funil.vendas || 0).toLocaleString('pt-BR')} Vendas Fechadas`);
+  // Funil Comercial
+  setTxt('bi-funil-impressoes', Number(impressoes || 0).toLocaleString('pt-BR'));
+  setTxt('bi-funil-cliques', Number(cliques || 0).toLocaleString('pt-BR'));
+  setTxt('bi-funil-leads', Number(leads || 0).toLocaleString('pt-BR'));
+  setTxt('bi-funil-agendamentos', Number(agendamentos || 0).toLocaleString('pt-BR'));
+  setTxt('bi-funil-vendas', `${Number(vendas || 0).toLocaleString('pt-BR')} Vendas Fechadas`);
 
-  // Gráficos Chart.js
+  // Renderização dos Gráficos via Chart.js
   if (typeof Chart !== 'undefined') {
     const semDados = faturamento === 0 && gasto === 0;
 
-    const renderChart = (canvasId, index, config) => {
-      let canvas = document.getElementById(canvasId) || document.querySelectorAll('#tab-bi canvas')[index];
+    const desenhar = (canvasId, config) => {
+      const canvas = document.getElementById(canvasId);
       if (!canvas) return;
       const old = Chart.getChart(canvas);
       if (old) old.destroy();
       new Chart(canvas, config);
     };
 
-    renderChart('chart-bi-evolucao', 0, {
+    desenhar('chart-bi-evolucao', {
       type: 'line',
       data: {
         labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
