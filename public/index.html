@@ -141,17 +141,64 @@
   }
 
   /* Cabeçalho Executivo Exclusivo para Impressão */
-  .print-only-header {
+  .print-only-header,
+  .bi-print-header,
+  #bi-report-header,
+  [data-print-header] {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
     box-sizing: border-box !important;
     border-bottom: 1.5px solid #1f2937 !important;
-    padding: 8px 6px 14px 6px !important;
-    margin-bottom: 16px !important;
+    padding: 6px 0 12px 0 !important;
+    margin-bottom: 8px !important;
+    max-height: 55px !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+
+  /* Logotipo do Oraculum (SVG ou Imagem) compacto */
+  .print-only-header img,
+  .print-only-header svg,
+  .bi-print-header svg,
+  .bi-print-header img,
+  #bi-print-logo,
+  #oraculum-logo-print,
+  .brand-logo-print {
+    max-height: 38px !important;
+    max-width: 140px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Caso o logo seja um SVG avulso com o olho grande */
+  svg.oraculum-eye-logo,
+  .logo-container svg,
+  .brand-logo svg {
+    width: 36px !important;
+    height: 36px !important;
+    max-height: 36px !important;
+  }
+
+  /* Texto da Marca ("ORACULUM BI & FEEDBACK LOOP") */
+  .bi-print-header .brand-title,
+  .bi-print-header h1,
+  .print-only-header h1 {
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  .bi-print-header .brand-subtitle,
+  .bi-print-header p,
+  .print-only-header p {
+    font-size: 0.6rem !important;
+    color: #94a3b8 !important;
+    margin: 0 !important;
   }
 }
 
@@ -3811,7 +3858,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.57.0"></script>
+<script src="/app.js?v=9999.58.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
