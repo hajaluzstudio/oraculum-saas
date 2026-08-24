@@ -1092,9 +1092,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentEl = container.querySelector('.chat-content') || container;
     const rawText = (contentEl.innerText || contentEl.textContent || '').trim();
 
-    // 1. Identificar automaticamente o pilar/categoria com base no conteúdo
-    let category = 'copywriting'; // padrão
-    const lowerText = rawText.toLowerCase();
+    const activeClient = window.activeClient || window.currentClient || {};
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
+
+    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"], .btn-approve-chat');
+    if (approveBtn) {
+      approveBtn.disabled = true;
+      approveBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div> Desmembrando e Despachando...`;
+    }
 
     // Atualiza a interface do chat para mostrar que foi aprovado
     const actionButtons = container.querySelector('.border-t.border-\\[\\#1B3B36\\]') || container.querySelector('div.mt-4.pt-3');
@@ -1102,58 +1107,93 @@ document.addEventListener('DOMContentLoaded', () => {
       actionButtons.innerHTML = `<span class="text-xs text-emerald-400 font-bold flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Diretriz Enviada para Sala de Operação</span>`;
     }
 
-    if (lowerText.includes('gancho') || lowerText.includes('vídeo') || lowerText.includes('roteiro') || lowerText.includes('teleprompter') || lowerText.includes('cena')) {
-      category = 'video';
-    } else if (lowerText.includes('objeção') || lowerText.includes('38.000') || lowerText.includes('comercial') || lowerText.includes('fechamento') || lowerText.includes('whatsapp')) {
-      category = 'comercial';
-    } else if (lowerText.includes('público') || lowerText.includes('tráfego') || lowerText.includes('cpa') || lowerText.includes('campanha') || lowerText.includes('orçamento')) {
-      category = 'trafego';
-    } else if (lowerText.includes('design') || lowerText.includes('banner') || lowerText.includes('landing page') || lowerText.includes('layout')) {
-      category = 'design';
+    // 1. Parser de Segmentação Multi-Abas
+    const segments = [];
+
+    // Padrão de corte por seções
+    const videoRegex = /(?:1\.\s*Os\s*\d*\s*Ganchos|Ganchos\s*Visuais|Roteiro|Roteiros|Vídeo)[\s\S]*?(?=(?:2\.\s*Argumento|Quebra\s*de\s*Objeção|Comercial|$))/i;
+    const copySalesRegex = /(?:2\.\s*Argumento|Quebra\s*de\s*Objeção|Objeção\s*do\s*Preço|Comercial)[\s\S]*$/i;
+
+    const videoMatch = rawText.match(videoRegex);
+    const copySalesMatch = rawText.match(copySalesRegex);
+
+    if (videoMatch && videoMatch[0].trim().length > 30) {
+      segments.push({
+        category: 'video',
+        title: 'Diretriz de Ganchos e Roteiro de Vídeo',
+        content: videoMatch[0].trim()
+      });
     }
 
-    // 2. Resolução de Cliente
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-
-    const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"], .btn-approve-chat');
-    if (approveBtn) {
-      approveBtn.disabled = true;
-      approveBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div> Despachando para ${category.toUpperCase()}...`;
+    if (copySalesMatch && copySalesMatch[0].trim().length > 30) {
+      segments.push({
+        category: 'copywriting',
+        title: 'Diretriz de Copywriting & Quebra de Objeção',
+        content: copySalesMatch[0].trim()
+      });
+      segments.push({
+        category: 'comercial',
+        title: 'Script Comercial & Ancoragem de R$ 38k',
+        content: copySalesMatch[0].trim()
+      });
     }
 
-    const taskPayload = {
-      client_id: String(clientId),
-      title: `Estratégia Chat [${category.toUpperCase()}]: ${rawText.slice(0, 40).replace(/\n/g, ' ')}...`,
-      content: rawText,
-      category: category,
-      status: 'todo',
-      priority: 'high',
-      created_at: new Date().toISOString()
-    };
+    // Fallback caso não encontre divisões claras: despacha o conteúdo integral
+    if (segments.length === 0) {
+      let cat = 'copywriting';
+      const lower = rawText.toLowerCase();
+      if (lower.includes('gancho') || lower.includes('vídeo') || lower.includes('roteiro')) cat = 'video';
+      else if (lower.includes('objeção') || lower.includes('38.000') || lower.includes('vendas')) cat = 'comercial';
+      
+      segments.push({
+        category: cat,
+        title: `Estratégia Chat [${cat.toUpperCase()}]`,
+        content: rawText
+      });
+    }
 
-    // 3. Salvar no Supabase e no Cache Operacional
-    try {
-      const supabase = window.supabaseClient || window.supabase;
-      if (supabase) {
-        await supabase.from('war_room_tasks').insert([taskPayload]);
+    // 2. Gravação de cada segmento no Supabase e LocalStorage
+    const supabase = window.supabaseClient || window.supabase;
+
+    for (const seg of segments) {
+      const payload = {
+        client_id: String(clientId),
+        title: seg.title,
+        content: seg.content,
+        category: seg.category,
+        status: 'todo',
+        priority: 'high',
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        if (supabase) {
+          await supabase.from('war_room_tasks').insert([payload]);
+        }
+      } catch (err) {
+        console.warn('[WarRoom Task Multi-Insert Catch]:', err);
       }
-    } catch (err) {
-      console.warn('[WarRoom Supabase Catch]:', err);
+
+      const warRoomStorageKey = `war_room_${clientId}_${seg.category}`;
+      const localList = JSON.parse(localStorage.getItem(warRoomStorageKey) || '[]');
+      localList.unshift(payload);
+      localStorage.setItem(warRoomStorageKey, JSON.stringify(localList));
+
+      // 4. Injeção direta no Container Visual da Sala de Operação correspondente
+      if (typeof injetarDemandaNaAbaSalaOperacao === 'function') {
+        injetarDemandaNaAbaSalaOperacao(seg.category, seg.content);
+      }
     }
 
-    // Gravação no Storage Local para Renderização Imediata
-    const warRoomStorageKey = `war_room_${clientId}_${category}`;
-    const existingItems = JSON.parse(localStorage.getItem(warRoomStorageKey) || '[]');
-    existingItems.unshift(taskPayload);
-    localStorage.setItem(warRoomStorageKey, JSON.stringify(existingItems));
-
-    // 4. Injeção direta no Container Visual da Sala de Operação correspondente
-    injetarDemandaNaAbaSalaOperacao(category, rawText);
-
+    // 3. Atualização de UI
     if (approveBtn) {
       approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
-      approveBtn.innerHTML = `✓ Despachado para ${category === 'video' ? 'Vídeo & Gravação' : category === 'copywriting' ? 'Copywriting' : category === 'comercial' ? 'Comercial & Vendas' : category.toUpperCase()}`;
+      const catsSummary = [...new Set(segments.map(s => s.category.toUpperCase()))].join(' & ');
+      approveBtn.innerHTML = `✓ Despachado para [${catsSummary}]`;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(`Estratégia distribuída para ${segments.length} áreas da Sala de Operação!`, 'success');
     }
   };
 
