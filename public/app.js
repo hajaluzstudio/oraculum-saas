@@ -1294,6 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Remove anterior se houver
     document.getElementById('chat-loading-spinner')?.remove();
+  };
 
   window.handleSendChatMessage = handleSendChatMessage;
 
