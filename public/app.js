@@ -1207,6 +1207,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeClient = window.activeClient || window.currentClient || {};
     const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
+    // 1. Garante que os widgets de vídeo (Teleprompter, Áudio) existam
+    if (typeof initWarRoomTools === 'function') {
+      try { initWarRoomTools(); } catch (e) { console.warn('[WarRoom Tools]:', e); }
+    }
+
+    // 2. Busca tarefas no Supabase e LocalStorage
     let tasks = [];
     try {
       const supabase = window.supabaseClient || window.supabase;
@@ -1219,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!error && Array.isArray(data)) tasks = data;
       }
     } catch (e) {
-      console.warn('[WarRoom Query Catch]:', e);
+      console.warn('[WarRoom Supabase Catch]:', e);
     }
 
     ['video', 'copywriting', 'comercial', 'trafego', 'design'].forEach(cat => {
@@ -1236,106 +1242,109 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    // Limpa tarefas antigas inválidas com texto duplicado se houver
+    // 3. Atualiza o conteúdo de vídeo se houver tarefa de vídeo
     const videoTask = tasks.find(t => t.category === 'video');
     if (videoTask) {
-      // Injeta apenas na aba de vídeo no local de teleprompter e áudio
       const teleprompterBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
       if (teleprompterBox) {
         teleprompterBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
       }
     }
 
-    // Cria ou localiza containers dedicados para as sub-abas sem destruir os cards de ferramentas
-    let nonVideoFeed = warRoom.querySelector('#war-room-nonvideo-feed');
-    if (!nonVideoFeed) {
-      nonVideoFeed = document.createElement('div');
-      nonVideoFeed.id = 'war-room-nonvideo-feed';
-      nonVideoFeed.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 my-4';
-      warRoom.appendChild(nonVideoFeed);
+    // 4. Cria container de feed exclusivo para as outras sub-abas
+    let otherFeed = warRoom.querySelector('#war-room-other-categories-feed');
+    if (!otherFeed) {
+      otherFeed = document.createElement('div');
+      otherFeed.id = 'war-room-other-categories-feed';
+      otherFeed.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 my-4';
+      warRoom.appendChild(otherFeed);
     }
 
-    // Renderiza os cards das outras categorias
-    nonVideoFeed.innerHTML = tasks.map(task => `
-      <div data-category="${task.category}" class="war-room-dep-card p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
-          <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
-            ${task.category.toUpperCase()}
-          </span>
-          <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
-        </div>
-        <h4 class="text-sm font-semibold text-emerald-300">${task.title}</h4>
-        <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${task.content}</div>
-      </div>
-    `).join('');
-
-    // Ativa e executa a filtragem visual estrita
-    aplicarFiltroSubAbas();
+    window.warRoomTasksCache = tasks;
+    configurarNavegacaoSubAbasWarRoom();
   }
 
-  function aplicarFiltroSubAbas() {
+  function configurarNavegacaoSubAbasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
-    const buttons = warRoom.querySelectorAll('button, .tab-button');
-    const videoTools = Array.from(warRoom.children).filter(el => el.id !== 'war-room-nonvideo-feed' && !el.classList.contains('flex-wrap'));
+    // Localiza os botões do topo da Sala de Operação
+    const navContainer = Array.from(warRoom.querySelectorAll('div')).find(div => 
+      div.textContent.includes('Vídeo & Gravação') && div.textContent.includes('Copywriting')
+    );
 
-    buttons.forEach(btn => {
-      const text = (btn.textContent || '').toLowerCase();
-      if (!text.match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) return;
+    const buttons = navContainer ? navContainer.querySelectorAll('button') : warRoom.querySelectorAll('button');
+    const otherFeed = document.getElementById('war-room-other-categories-feed');
 
-      btn.onclick = function (e) {
-        e.preventDefault();
-        let selectedCat = 'video';
-        if (text.includes('design')) selectedCat = 'design';
-        else if (text.includes('tráfego') || text.includes('trafego')) selectedCat = 'trafego';
-        else if (text.includes('copywriting') || text.includes('copy')) selectedCat = 'copywriting';
-        else if (text.includes('comercial') || text.includes('vendas')) selectedCat = 'comercial';
-        else if (text.includes('vídeo') || text.includes('video')) selectedCat = 'video';
+    // Identifica todos os blocos de conteúdo da aba de vídeo (exceto a barra de navegação e o feed das outras abas)
+    const videoContentBlocks = Array.from(warRoom.children).filter(child => 
+      child !== navContainer && 
+      child !== otherFeed && 
+      !child.contains(navContainer)
+    );
 
-        // Atualiza estilo do botão ativo
-        buttons.forEach(b => {
-          if ((b.textContent || '').toLowerCase().match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) {
-            b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]';
-          }
-        });
-        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black';
+    function selecionarSubAba(categoria, botaoAtivo) {
+      // Atualiza o estilo visual dos botões
+      buttons.forEach(b => {
+        b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors cursor-pointer';
+      });
+      if (botaoAtivo) {
+        botaoAtivo.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors cursor-pointer';
+      }
 
-        // Alterna exibição das ferramentas de vídeo vs cards de outras áreas
-        const nonVideoFeed = document.getElementById('war-room-nonvideo-feed');
-        if (selectedCat === 'video') {
-          videoTools.forEach(el => el.style.display = '');
-          if (nonVideoFeed) nonVideoFeed.style.display = 'none';
-        } else {
-          videoTools.forEach(el => el.style.display = 'none');
-          if (nonVideoFeed) {
-            nonVideoFeed.style.display = 'grid';
-            const cards = nonVideoFeed.querySelectorAll('.war-room-dep-card');
-            let countVisible = 0;
-            cards.forEach(card => {
-              if (card.dataset.category === selectedCat) {
-                card.style.display = 'block';
-                countVisible++;
-              } else {
-                card.style.display = 'none';
-              }
-            });
+      if (categoria === 'video') {
+        // Exibe todas as ferramentas de vídeo (Criador, Teleprompter, Visão Computacional)
+        videoContentBlocks.forEach(el => el.style.display = '');
+        if (otherFeed) otherFeed.style.display = 'none';
+      } else {
+        // Oculta ferramentas de vídeo e abre o feed da categoria selecionada
+        videoContentBlocks.forEach(el => el.style.display = 'none');
+        if (otherFeed) {
+          otherFeed.style.display = 'grid';
+          const tasks = (window.warRoomTasksCache || []).filter(t => t.category === categoria);
 
-            if (countVisible === 0) {
-              nonVideoFeed.innerHTML = `
-                <div class="col-span-2 p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
-                  Nenhuma diretriz despachada para a equipe de <strong>${selectedCat.toUpperCase()}</strong> até o momento.
+          if (tasks.length === 0) {
+            otherFeed.innerHTML = `
+              <div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
+                Nenhuma diretriz despachada para a equipe de <strong class="text-emerald-400">${categoria.toUpperCase()}</strong> até o momento.
+              </div>
+            `;
+          } else {
+            otherFeed.innerHTML = tasks.map(task => `
+              <div class="p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
+                  <span class="px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
+                    ${task.category.toUpperCase()}
+                  </span>
+                  <span class="text-[11px] text-slate-400">${new Date(task.created_at || Date.now()).toLocaleTimeString()}</span>
                 </div>
-              `;
-            }
+                <h4 class="text-sm font-semibold text-emerald-300">${task.title}</h4>
+                <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${task.content}</div>
+              </div>
+            `).join('');
           }
         }
+      }
+    }
+
+    buttons.forEach(btn => {
+      const text = btn.textContent.toLowerCase();
+      let cat = 'video';
+      if (text.includes('design')) cat = 'design';
+      else if (text.includes('tráfego') || text.includes('trafego')) cat = 'trafego';
+      else if (text.includes('copywriting') || text.includes('copy')) cat = 'copywriting';
+      else if (text.includes('comercial') || text.includes('vendas')) cat = 'comercial';
+      else if (text.includes('vídeo') || text.includes('video')) cat = 'video';
+
+      btn.onclick = (e) => {
+        e.preventDefault();
+        selecionarSubAba(cat, btn);
       };
     });
 
-    // Ativa Vídeo por padrão se nenhuma estiver ativa
-    const activeBtn = warRoom.querySelector('button.bg-\\[\\#10B981\\]') || buttons[0];
-    if (activeBtn) activeBtn.click();
+    // Ativa Vídeo & Gravação por padrão
+    const videoBtn = Array.from(buttons).find(b => b.textContent.toLowerCase().includes('vídeo')) || buttons[0];
+    if (videoBtn) selecionarSubAba('video', videoBtn);
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
