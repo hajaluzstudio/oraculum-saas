@@ -1228,119 +1228,107 @@ document.addEventListener('DOMContentLoaded', () => {
       tasks = [...tasks, ...local];
     });
 
-    // 1. Alimenta o Teleprompter e o Roteiro com o conteúdo de vídeo
+    window.__WAR_ROOM_TASKS__ = tasks;
+
+    // Hidratação Segura por Aba
+    // 1. VÍDEO
     const videoTask = tasks.find(t => t.category === 'video');
     if (videoTask) {
-      const teleBox = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display');
-      if (teleBox) teleBox.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+      // Topbox de Estratégia de Vídeo
+      const videoBox = document.getElementById('wr-video-content');
+      if (videoBox) {
+        videoBox.innerHTML = `<div class="text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+      }
+      
+      // Teleprompter / Roteiro Gerado Automático (Injetar no #script-content-body se existir, caso não seja gerado local)
+      const scriptDisplay = document.querySelector('#script-content-body, #war-room-teleprompter-content, .teleprompter-text');
+      if (scriptDisplay) {
+        // Se a tarefa contiver marcações de "Roteiro" ou for a única, injeta para não ficar vazio.
+        if (!scriptDisplay.innerHTML.includes('Gerar Roteiro Preditivo')) {
+           scriptDisplay.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTask.content}</div>`;
+        }
+      }
     }
 
-    // 2. Garante o container dos feeds das outras abas
-    let feedBox = document.getElementById('war-room-unified-feed');
-    if (!feedBox) {
-      feedBox = document.createElement('div');
-      feedBox.id = 'war-room-unified-feed';
-      feedBox.className = 'my-4 space-y-4';
-      warRoom.appendChild(feedBox);
-    }
-
-    // Preenchimento dos containers mestres superiores por categoria
-    const categoryTopContainers = {
-      video: warRoom.querySelector('.video-strategy-card, [data-section="video-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Estratégia de Vídeo do Oraculum')),
-      copywriting: warRoom.querySelector('.copy-strategy-card, [data-section="copy-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Headlines, Hooks e Textos')),
-      comercial: warRoom.querySelector('.sales-strategy-card, [data-section="sales-strategy"]') || Array.from(warRoom.querySelectorAll('div')).find(d => d.textContent.includes('Playbook de Vendas'))
+    // 2. DESIGN, TRAFEGO, COPY, SALES (Injetamos um card de Estratégia no topo de cada painel sem quebrar as ferramentas)
+    const categoryToPanel = {
+      'design': 'wr-design',
+      'trafego': 'wr-traffic',
+      'copywriting': 'wr-copy',
+      'comercial': 'wr-sales'
     };
 
-    Object.entries(categoryTopContainers).forEach(([cat, box]) => {
-      if (!box) return;
+    Object.entries(categoryToPanel).forEach(([cat, panelId]) => {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      
       const latestTask = tasks.find(t => t.category === cat);
+      let strategyCard = panel.querySelector('.injected-strategy-card');
+      
       if (latestTask) {
-        // Oculta/remove o aviso cinza
-        box.querySelectorAll('p, span, div').forEach(el => {
-          if (el.textContent.includes('Nenhum script gerado para este cliente')) {
-            el.style.display = 'none';
+        if (!strategyCard) {
+          // Criar o card e injetar no topo do conteúdo do painel
+          strategyCard = document.createElement('div');
+          strategyCard.className = 'card-glass injected-strategy-card mb-4';
+          strategyCard.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+          
+          const contentBox = document.getElementById(`${panelId}-content`);
+          if (contentBox && contentBox.parentElement) {
+            contentBox.parentElement.insertBefore(strategyCard, contentBox);
           }
-        });
-
-        let displayEl = box.querySelector('.top-strategy-dynamic-content');
-        if (!displayEl) {
-          displayEl = document.createElement('div');
-          displayEl.className = 'top-strategy-dynamic-content text-xs text-slate-300 leading-relaxed whitespace-pre-wrap mt-3 pt-3 border-t border-[#1B3B36]';
-          box.appendChild(displayEl);
         }
-        displayEl.innerHTML = latestTask.content;
+        
+        strategyCard.innerHTML = `
+          <div class="card-header">
+            <h3><i class="fa-solid fa-bolt text-emerald-400"></i> Diretrizes Oraculum (${cat.toUpperCase()})</h3>
+          </div>
+          <div class="p-4 text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap">${latestTask.content}</div>
+        `;
       }
     });
 
-    // Hidratação do bloco do Roteiro de Gravação / Teleprompter
-    const videoTaskUpdated = tasks.find(t => t.category === 'video');
-    if (videoTaskUpdated) {
-      const scriptDisplay = warRoom.querySelector('#war-room-teleprompter-content, .teleprompter-text, #script-content-display, [data-section="script-display"]');
-      if (scriptDisplay) {
-        scriptDisplay.innerHTML = `<div class="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">${videoTaskUpdated.content}</div>`;
-      }
-    }
-
-    window.__WAR_ROOM_TASKS__ = tasks;
-    ativarAbasNativasWarRoom();
+    vincularAbasEstaticasWarRoom();
   }
 
-  function ativarAbasNativasWarRoom() {
+  function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
     if (!warRoom) return;
 
-    const buttons = warRoom.querySelectorAll('.war-room-subnav button, [data-subtab], button');
-    const feedBox = document.getElementById('war-room-unified-feed');
-    const videoElements = warRoom.querySelectorAll('.video-tool-wrapper, .video-module, #video-tools-grid');
+    const navButtons = warRoom.querySelectorAll('.war-room-nav .wr-tab-btn');
+    const panels = warRoom.querySelectorAll('.war-room-content .wr-panel');
 
-    buttons.forEach(btn => {
-      const label = (btn.textContent || '').toLowerCase();
-      if (!label.match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) return;
-      let cat = 'video';
-      if (label.includes('design')) cat = 'design';
-      else if (label.includes('tráfego') || label.includes('trafego')) cat = 'trafego';
-      else if (label.includes('copywriting') || label.includes('copy')) cat = 'copywriting';
-      else if (label.includes('comercial') || label.includes('vendas')) cat = 'comercial';
-      else if (label.includes('vídeo') || label.includes('video')) cat = 'video';
-
+    navButtons.forEach(btn => {
       btn.onclick = (e) => {
         if (e) e.preventDefault();
-        buttons.forEach(b => {
-           if ((b.textContent || '').toLowerCase().match(/(vídeo|video|design|tráfego|trafego|copywriting|comercial)/)) {
-              b.classList.remove('bg-[#10B981]', 'text-black', 'active');
-              b.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors cursor-pointer';
-           }
+        
+        // Remove class active de todos os botões
+        navButtons.forEach(b => {
+          b.classList.remove('active');
+          b.style.backgroundColor = 'transparent';
+          b.style.color = '#94A3B8';
         });
-        btn.classList.add('bg-[#10B981]', 'text-black', 'active');
-        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors cursor-pointer active';
+        
+        // Adiciona active no clicado
+        btn.classList.add('active');
+        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10B981';
 
-        if (cat === 'video') {
-          videoElements.forEach(el => el.style.display = '');
-          if (feedBox) feedBox.style.display = 'none';
-        } else {
-          videoElements.forEach(el => el.style.display = 'none');
-          if (feedBox) {
-            feedBox.style.display = 'block';
-            const filtered = (window.__WAR_ROOM_TASKS__ || []).filter(t => t.category === cat);
-            if (filtered.length === 0) {
-              feedBox.innerHTML = `<div class="p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">Nenhuma diretriz despachada para <strong class="text-emerald-400">${cat.toUpperCase()}</strong> ainda.</div>`;
-            } else {
-              feedBox.innerHTML = filtered.map(t => `
-                <div class="p-5 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-xl space-y-2">
-                  <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 rounded">${t.category.toUpperCase()}</span>
-                  <h4 class="text-sm font-semibold text-emerald-300">${t.title}</h4>
-                  <div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-300">${t.content}</div>
-                </div>
-              `).join('');
-            }
+        const targetId = btn.getAttribute('data-wr-target');
+        
+        // Oculta todos os painéis e mostra só o alvo
+        panels.forEach(panel => {
+          if (panel.id === targetId) {
+            panel.style.display = 'block';
+          } else {
+            panel.style.display = 'none';
           }
-        }
+        });
       };
     });
-    
-    // Ativa Vídeo & Gravação por padrão
-    const videoBtn = Array.from(buttons).find(b => (b.textContent || '').toLowerCase().includes('vídeo')) || buttons[0];
-    if (videoBtn) videoBtn.click();
+
+    // Ativa Vídeo & Gravação por padrão se nenhum estiver ativo
+    const activeBtn = Array.from(navButtons).find(b => b.classList.contains('active')) || navButtons[0];
+    if (activeBtn) activeBtn.click();
   }
 
   // Listener de navegação 100% compatível com a Web API nativa (sem seletores inválidos)
