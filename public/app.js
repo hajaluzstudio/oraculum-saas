@@ -872,17 +872,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }]);
       }
 
+      const activeClient = (window.clientes || []).find(c => c.id === activeClientId) || window.clienteAtivoAtual || window.selectedClientData || {};
+      let rawDossier = activeClient?.dossie_estrategico || activeClient?.briefing_data || activeClient?.dossier || '';
+      let cleanDossier = typeof rawDossier === 'object' ? JSON.stringify(rawDossier) : String(rawDossier);
+
+      // Garante que o payload não envie undefined ou objetos circulares
+      const payload = {
+        message: text,
+        clientName: activeClient?.name || activeClientName || 'Dr. Lucas',
+        clientNiche: activeClient?.niche || 'Medicina Estética',
+        dossierContext: cleanDossier.slice(0, 4000), // Truncagem de segurança para manter o prompt ágil  
+        clientId: activeClientId || 'client_mock_123',
+        history: chatHistory
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-organization-id': activeTenantId
         },
-        body: JSON.stringify({
-          clientId: activeClientId || 'client_mock_123',
-          message: text,
-          history: chatHistory
-        })
+        body: JSON.stringify(payload)
       });
 
       const resData = await response.json();

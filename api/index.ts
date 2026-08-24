@@ -741,7 +741,7 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 // POST /api/chat - Chat Estratégico & Live Advisor
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext } = req.body;
+    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext, clientName, clientNiche, dossierContext } = req.body || {};
     const userMessage = message || prompt || '';
     const clientId = reqClientId || client_id;
 
@@ -790,13 +790,13 @@ DIRETRIZES:
 - Se os dados estiverem zerados, use os benchmarks de alta performance do nicho como base analítica.
 - Seja direto, conciso e tático.`;
     } else {
-      // Pega o dossiê real do banco
-      const { data: dossierData } = await supabase.from('niche_knowledge_base').select('dossier_data').eq('client_id', clientId).maybeSingle();
-      const dossier = dossierData ? dossierData.dossier_data : {};
-      promptInstrucao = systemPrompt || `Você é o Oraculum, diretor de criação e estrategista de marketing ROI-First. 
-Dossiê do Cliente Ativo: ${JSON.stringify(dossier || {})}.
-Instrução do usuário: "${userMessage}".
-Responda diretamente à solicitação com a estratégia estruturada, sem introduções genéricas repetitivas. Formate com clareza em Markdown destacando Headlines, Hooks de 3s e Scripts.`;
+      promptInstrucao = systemPrompt || `Você é o Copiloto de Estratégia do Oraculum.
+Cliente Ativo: ${clientName || 'Cliente'} (Nicho: ${clientNiche || 'Geral'}).
+
+DOSSIÊ ESTRATÉGICO DO CLIENTE:
+${dossierContext || 'Atue como estrategista sênior.'}
+
+Responda à dúvida do usuário aplicando as diretrizes, público-alvo, técnicas e metas contidas no Dossiê acima.`;
     }
 
     // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
