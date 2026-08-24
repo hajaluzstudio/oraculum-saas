@@ -1271,20 +1271,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Envia prompt para a API do backend
   async function handleSendChatMessage(userText) {
+    const inputEl = document.getElementById('strategic-chat-input') || 
+                    document.querySelector('textarea[placeholder*="instrução tática"]') ||
+                    document.querySelector('input[placeholder*="instrução tática"]');
+    
     if (typeof userText !== 'string' || !userText.trim()) {
-      const inputEl = document.getElementById('strategic-chat-input') || 
-                      document.querySelector('textarea[placeholder*="instrução tática"]') ||
-                      document.querySelector('input[placeholder*="instrução tática"]');
       userText = inputEl ? inputEl.value.trim() : '';
-      if (inputEl) inputEl.value = '';
     }
 
     if (!userText || !userText.trim()) return;
     const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
 
+    if (inputEl) inputEl.value = '';
+
     if (typeof appendChatMessage === 'function') {
       appendChatMessage('user', userText, null, false);
     }
+
+    const sendBtn = document.getElementById('send-strategic-chat-btn') || document.querySelector('.chat-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
 
     // Mantém o loading
     const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
@@ -1297,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(loadingDiv);
       container.scrollTop = container.scrollHeight;
     }
+    if (loadingDiv) loadingDiv.classList.remove('hidden');
 
     try {
       const res = await fetch('/api/chat', {
@@ -1304,16 +1310,30 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userText, client_id: clientId })
       });
+      
+      if (!res.ok) {
+        throw new Error(`Erro na API do Chat: status ${res.status}`);
+      }
+      
       const data = await res.json();
       
-      if (loadingDiv) loadingDiv.remove();
-
       if (typeof appendChatMessage === 'function') {
         appendChatMessage('model', data.display_text || data.replyText || data.reply, data.tasks, true);
       }
     } catch (e) {
-      if (loadingDiv) loadingDiv.remove();
-      alert('Erro ao comunicar com o servidor: ' + e.message);
+      console.error('[Chat Estratégico] Falha na comunicação com a IA:', e);
+      if (typeof showToast === 'function') {
+        showToast('Erro ao obter resposta da IA. Tente novamente.', 'error');
+      } else {
+        alert('Erro ao comunicar com o servidor: ' + e.message);
+      }
+    } finally {
+      if (loadingDiv) {
+        loadingDiv.classList.add('hidden');
+        loadingDiv.remove();
+      }
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) inputEl.value = '';
     }
   }
 
