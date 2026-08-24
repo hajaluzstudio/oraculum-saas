@@ -4340,17 +4340,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Salva na tabela bi_analytics_data do Supabase
+    // Salva localmente com chave isolada por client_id
+    const dadosLancamento = { revenue, ad_spend: spend, faturamento: revenue, gasto_trafego: spend, leads, sales, vendas: sales, reference_date: new Date().toISOString().split('T')[0] };
+    localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(dadosLancamento));
+
+    // Salva na tabela bi_analytics_data do Supabase se disponível
     if (window.supabaseClient) {
-      await window.supabaseClient.from('bi_analytics_data').upsert([{
-        client_id: clientId,
-        organization_id: tenantId,
-        revenue: revenue,
-        ad_spend: spend,
-        leads: leads,
-        sales: sales,
-        reference_date: new Date().toISOString().split('T')[0]
-      }], { onConflict: 'client_id,reference_date' });
+      try {
+        await window.supabaseClient.from('bi_analytics_data').upsert([{
+          client_id: clientId,
+          organization_id: tenantId,
+          revenue: revenue,
+          ad_spend: spend,
+          leads: leads,
+          sales: sales,
+          reference_date: new Date().toISOString().split('T')[0]
+        }], { onConflict: 'client_id,reference_date' });
+      } catch(e) {
+        console.warn('[BI] Erro ao salvar via Supabase, mantido em cache local isolado:', e);
+      }
     }
 
     window.fecharModalBI();
@@ -4362,7 +4370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (typeof window.carregarMetricasBI === 'function') {
-      window.carregarMetricasBI(clientId);
+      window.carregarMetricasBI(clientId, window.periodoBIAtivo || '30d');
     }
   };
 
@@ -4386,12 +4394,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentBiSubscription = null;
 
-  window.carregarMetricasBI = async function(clientId) {
-    const targetClientId = clientId || window.currentClientId || window.activeClientId;
-    
-    const titleEl = document.getElementById('bi-active-client-title');
-    const resolvedName = window.currentClientName || window.activeClientName || 'Cliente Ativo';
-    if (titleEl) titleEl.textContent = resolvedName;
+  window.carregarMetricasBI = async function(clientId, periodo = '30d') {
+    let targetClientId = clientId || window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client');
+    if (!targetClientId && window.clienteAtivoAtual) {
+      targetClientId = window.clienteAtivoAtual.id;
+    }
+
+    console.log(`[BI] Carregando métricas individuais para o cliente: ${targetClientId} (${periodo})`);
+
+    // 1. Atualizar Título e Nome do Cliente no Banner do BI
+    const clientObj = (window.currentClientsList || window.clientesCarteira || []).find(c => String(c.id) === String(targetClientId)) 
+                   || (window.clienteAtivoAtual && String(window.clienteAtivoAtual.id) === String(targetClientId) ? window.clienteAtivoAtual : null);
+                   
+    const titleEl = document.getElementById('bi-active-client-title') || document.getElementById('bi-client-name') || document.querySelector('[data-bi-client-name]');
+    if (titleEl) {
+      if (clientObj) {
+        titleEl.textContent = `${clientObj.name || clientObj.nome || 'Cliente Ativo'} ${clientObj.niche || clientObj.especialidade ? `(${clientObj.niche || clientObj.especialidade})` : ''}`;
+      } else {
+        titleEl.textContent = window.currentClientName || window.activeClientName || 'Cliente Ativo';
+      }
+    }
 
     if (!targetClientId) {
       window.renderBIDataReal({ hasData: false });
@@ -4401,7 +4423,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configura Realtime Subscription apenas se o client mudou
     if (window.supabaseClient) {
       if (currentBiSubscription) {
-        window.supabaseClient.removeChannel(currentBiSubscription);
+        try { window.supabaseClient.removeChannel(currentBiSubscription); } catch(e) {}
       }
       currentBiSubscription = window.supabaseClient.channel('bi-realtime-' + targetClientId)
         .on('postgres_changes', { 
@@ -4411,26 +4433,42 @@ document.addEventListener('DOMContentLoaded', () => {
           filter: `client_id=eq.${targetClientId}` 
         }, (payload) => {
           console.log('[BI Realtime] Alteração detectada no banco:', payload);
-          window.carregarMetricasBI(targetClientId); // Refresh recursivo seguro via trigger de evento
+          window.carregarMetricasBI(targetClientId, periodo);
         }).subscribe();
     }
 
     try {
-      const { data, error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .select('*')
-        .eq('client_id', targetClientId)
-        .order('reference_date', { ascending: false });
+      let data = null;
+      if (window.supabaseClient) {
+        const { data: dbData, error } = await window.supabaseClient
+          .from('bi_analytics_data')
+          .select('*')
+          .eq('client_id', targetClientId)
+          .order('reference_date', { ascending: false });
 
-      if (error) throw error;
+        if (!error && dbData && dbData.length > 0) {
+          data = dbData;
+        }
+      }
+
+      // Fallback para armazenamento isolado local por client_id caso offline/sem tabela
+      if (!data) {
+        const rawStorage = localStorage.getItem(`oraculum_bi_metrics_${targetClientId}`);
+        if (rawStorage) {
+          try {
+            const parsed = JSON.parse(rawStorage);
+            data = Array.isArray(parsed) ? parsed : [parsed];
+          } catch(e) {}
+        }
+      }
 
       if (data && data.length > 0) {
         let revenue = 0, ad_spend = 0, leads = 0, sales = 0;
         data.forEach(row => {
-          revenue += parseFloat(row.revenue) || 0;
-          ad_spend += parseFloat(row.ad_spend) || 0;
+          revenue += parseFloat(row.revenue || row.faturamento) || 0;
+          ad_spend += parseFloat(row.ad_spend || row.gasto_trafego) || 0;
           leads += parseInt(row.leads) || 0;
-          sales += parseInt(row.sales) || 0;
+          sales += parseInt(row.sales || row.vendas) || 0;
         });
 
         const profit = revenue - ad_spend;
@@ -4451,13 +4489,14 @@ document.addEventListener('DOMContentLoaded', () => {
           renderBiInteractiveDashboard(data);
         }
       } else {
+        // Se o cliente não tem dados lançados, zera completamente o painel para esse client_id
         window.renderBIDataReal({ hasData: false });
         if (typeof renderBiInteractiveDashboard === 'function') {
           renderBiInteractiveDashboard([]);
         }
       }
     } catch(err) {
-      console.error('Erro ao buscar bi_analytics_data:', err);
+      console.error('Erro ao buscar dados de BI do cliente:', err);
       window.renderBIDataReal({ hasData: false });
       if (typeof renderBiInteractiveDashboard === 'function') {
         renderBiInteractiveDashboard([]);
