@@ -2039,6 +2039,58 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    window.carregarNoTeleprompterDirectById = function(itemId) {
+      try {
+        const textoSeguro = window.oraculumTaskContents && window.oraculumTaskContents[itemId] ? window.oraculumTaskContents[itemId] : '';
+        
+        window.teleprompterState.text = textoSeguro;
+
+        // Atualiza o container de prévia da ferramenta na tela
+        const previewArea = document.getElementById('video-script-preview-area');
+        if (previewArea) {
+          previewArea.textContent = textoSeguro;
+        }
+
+        // Atualiza o texto interno do modal do teleprompter
+        const tpDisplay = document.getElementById('tp-text-display');
+        if (tpDisplay) {
+          tpDisplay.textContent = textoSeguro;
+        }
+
+        // Abre o acordeão do Estúdio se estiver recolhido
+        const studioContainer = document.getElementById('container-video-studio');
+        const studioIcon = document.getElementById('icon-toggle-video-studio');
+        if (studioContainer && studioContainer.classList.contains('hidden')) {
+          studioContainer.classList.remove('hidden');
+          if (studioIcon) studioIcon.textContent = '▲ Recolher Ferramenta';
+        }
+
+        // Scroll suave até a ferramenta do estúdio
+        if (studioContainer) {
+          studioContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        if (typeof window.showToast === 'function') {
+          window.showToast('Roteiro carregado no Estúdio e Teleprompter!', 'success');
+        }
+      } catch (err) {
+        console.error('[TELEPROMPTER] Erro seguro ao carregar roteiro:', err);
+      }
+    };
+
+    window.copiarTextoEntregavelById = function(itemId) {
+      try {
+        const textoSeguro = window.oraculumTaskContents && window.oraculumTaskContents[itemId] ? window.oraculumTaskContents[itemId] : '';
+        navigator.clipboard.writeText(textoSeguro).then(() => {
+          const toast = document.createElement('div');
+          toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg shadow-xl';
+          toast.textContent = '✓ Copiado para a área de transferência!';
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        });
+      } catch(e) { console.error('[Copiar]', e); }
+    };
+
     window.copiarTextoEntregavel = function(encodedText) {
       try {
         const texto = decodeURIComponent(encodedText);
@@ -2113,18 +2165,21 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         grupo.items.forEach((item, itemIdx) => {
-          const safe = encodeURIComponent(item.content || '');
+          const uniqueItemId = `item-${Math.random().toString(36).substr(2, 9)}`;
+          window.oraculumTaskContents = window.oraculumTaskContents || {};
+          window.oraculumTaskContents[uniqueItemId] = item.content || '';
+
           html += `
             <div class="p-4 rounded-lg border border-slate-800 bg-slate-900/80 hover:border-slate-700 transition-all">
               <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wide">${item.title || 'Entregável #' + (itemIdx + 1)}</h4>
                 <div class="flex items-center gap-2 flex-wrap">
                   ${categoriaAlvo === 'video' ? `
-                    <button onclick="window.carregarNoTeleprompterDirect('${safe}')" class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1">
+                    <button type="button" onclick="window.carregarNoTeleprompterDirectById('${uniqueItemId}')" class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1">
                       ▶ Carregar no Teleprompter
                     </button>
                   ` : ''}
-                  <button onclick="window.copiarTextoEntregavel('${safe}')" class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1">
+                  <button type="button" onclick="window.copiarTextoEntregavelById('${uniqueItemId}')" class="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1">
                     📋 ${copyLabel}
                   </button>
                 </div>

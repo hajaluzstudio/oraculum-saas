@@ -1791,7 +1791,7 @@
                           <button type="button" id="btn-ouvir-audio-guia" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1.5">
                             🔊 Ouvir Áudio-Guia
                           </button>
-                          <button type="button" id="btn-abrir-teleprompter-modal" onclick="document.getElementById('btn-open-teleprompter') && document.getElementById('btn-open-teleprompter').click()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5">
+                          <button type="button" id="btn-abrir-teleprompter-modal" onclick="window.abrirModalTeleprompter()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5">
                             ▶ Modo Teleprompter
                           </button>
                         </div>
@@ -3614,7 +3614,7 @@
     });
   }
 </script>
-<script src="/app.js?v=9999.32.0"></script>
+<script src="/app.js?v=9999.33.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
