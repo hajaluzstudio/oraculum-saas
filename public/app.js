@@ -1953,103 +1953,114 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
+    window.isAudioGuiaSpeaking = false;
+
     window.ouvirAudioGuia = function() {
       const btnAudio = document.getElementById('btn-ouvir-audio-guia');
       
-      // Se já estiver tocando, cancela e reseta imediatamente
-      if (window.audioGuiaPlaying || (window.speechSynthesis && window.speechSynthesis.speaking)) {
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-        window.audioGuiaPlaying = false;
+      // 1. Se o navegador estiver falando ou o estado for true -> PARA TUDO IMEDIATAMENTE
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending || window.isAudioGuiaSpeaking) {
+        window.speechSynthesis.cancel();
+        window.isAudioGuiaSpeaking = false;
         if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+        if (typeof window.showToast === 'function') window.showToast('Áudio interrompido.', 'info');
         return;
       }
 
-      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
-      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
-        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro antes de ouvir o áudio-guia.', 'warning');
+      // 2. Resgata o texto
+      const previewEl = document.getElementById('video-script-preview-area');
+      const texto = window.teleprompterState?.text || (previewEl ? previewEl.textContent : '');
+
+      if (!texto || !texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Erro no Áudio: Nenhum roteiro selecionado no estúdio.', 'warning');
+        }
         return;
       }
 
-      if (!('speechSynthesis' in window)) {
-        if (typeof window.showToast === 'function') window.showToast('Síntese de voz não suportada neste navegador.', 'error');
-        return;
-      }
-
-      window.speechSynthesis.cancel(); // Limpa filas pendentes
+      // 3. Inicia a fala garantindo limpeza de buffers antigos
+      window.speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'pt-BR';
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
       utterance.onstart = () => {
-        window.audioGuiaPlaying = true;
+        window.isAudioGuiaSpeaking = true;
         if (btnAudio) btnAudio.innerHTML = '⏹ Parar Áudio-Guia';
       };
 
       utterance.onend = () => {
-        window.audioGuiaPlaying = false;
+        window.isAudioGuiaSpeaking = false;
         if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
       };
 
-      utterance.onerror = () => {
-        window.audioGuiaPlaying = false;
+      utterance.onerror = (e) => {
+        window.isAudioGuiaSpeaking = false;
         if (btnAudio) btnAudio.innerHTML = '🔊 Ouvir Áudio-Guia';
+        console.error('[AUDIO-GUIA] Erro na síntese de voz:', e);
       };
 
+      window.isAudioGuiaSpeaking = true;
+      if (btnAudio) btnAudio.innerHTML = '⏹ Parar Áudio-Guia';
       window.speechSynthesis.speak(utterance);
     };
 
     window.abrirModalTeleprompter = function() {
+      console.log('[TELEPROMPTER DIAG] Iniciando abertura do Teleprompter...');
+      
+      // 1. Diagnóstico do Texto
+      const previewEl = document.getElementById('video-script-preview-area');
+      const texto = window.teleprompterState?.text || (previewEl ? previewEl.textContent : '');
+
+      if (!texto || !texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
+        const msg = 'Diagnóstico: Nenhum roteiro carregado. Clique em "▶ Carregar no Teleprompter" no card acima primeiro.';
+        console.warn('[TELEPROMPTER DIAG]', msg);
+        if (typeof window.showToast === 'function') {
+          window.showToast(msg, 'warning');
+        } else {
+          alert(msg);
+        }
+        return;
+      }
+
+      // 2. Garante que o Modal exista diretamente no document.body
       let modal = document.getElementById('modal-teleprompter');
       if (!modal) {
+        console.log('[TELEPROMPTER DIAG] Modal não existia no DOM. Injetando no final do body...');
         if (typeof garantirModalTeleprompterNoDOM === 'function') {
           garantirModalTeleprompterNoDOM();
           modal = document.getElementById('modal-teleprompter');
         }
       }
-      if (!modal) return;
 
-      const texto = window.teleprompterState?.text || document.getElementById('video-script-preview-area')?.textContent || '';
-      if (!texto.trim() || texto.includes('Selecione um roteiro na gaveta')) {
-        if (typeof window.showToast === 'function') window.showToast('Carregue um roteiro na gaveta acima primeiro.', 'warning');
+      if (!modal) {
+        const err = 'Erro Crítico: Não foi possível instanciar o elemento #modal-teleprompter no DOM.';
+        console.error('[TELEPROMPTER DIAG]', err);
+        alert(err);
         return;
       }
 
+      // 3. Atualiza o texto do display
       const tpDisplay = document.getElementById('tp-text-display');
       if (tpDisplay) {
         tpDisplay.textContent = texto;
         tpDisplay.style.fontSize = (window.teleprompterState?.fontSize || 42) + 'px';
       }
 
-      // Remove a classe hidden e força display flex inline com prioridade máxima
-      modal.classList.remove('hidden');
-      modal.style.setProperty('display', 'flex', 'important');
-      modal.style.setProperty('z-index', '999999', 'important');
+      // 4. Força exibição via Style Direto (Imune a qualquer Tailwind / CSS externo)
+      modal.className = ''; // Remove qualquer classe conflitante como hidden
+      modal.setAttribute('style', 'position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background-color: rgba(2, 6, 23, 0.98) !important; backdrop-filter: blur(12px) !important; z-index: 2147483647 !important; display: flex !important; flex-direction: column !important; margin: 0 !important; padding: 0 !important;');
+      
       document.body.style.overflow = 'hidden';
 
       const scrollContainer = document.getElementById('tp-scroll-container');
       if (scrollContainer) scrollContainer.scrollTop = 0;
 
-      // Bind dos sliders após injeção
-      const speedSlider = document.getElementById('tp-speed-slider');
-      const speedVal = document.getElementById('tp-speed-val');
-      if (speedSlider) {
-        speedSlider.oninput = (e) => {
-          window.teleprompterState = window.teleprompterState || {};
-          window.teleprompterState.speed = Number(e.target.value);
-          if (speedVal) speedVal.textContent = e.target.value + 'x';
-        };
-      }
-
-      const fontSlider = document.getElementById('tp-font-slider');
-      const fontVal = document.getElementById('tp-font-val');
-      if (fontSlider) {
-        fontSlider.oninput = (e) => {
-          window.teleprompterState = window.teleprompterState || {};
-          window.teleprompterState.fontSize = Number(e.target.value);
-          if (tpDisplay) tpDisplay.style.fontSize = e.target.value + 'px';
-          if (fontVal) fontVal.textContent = e.target.value + 'px';
-        };
+      console.log('[TELEPROMPTER DIAG] Teleprompter aberto com sucesso.');
+      if (typeof window.showToast === 'function') {
+        window.showToast('Teleprompter ativado! Pressione ESPAÇO para rolar e ESC para sair.', 'success');
       }
     };
 
@@ -2302,6 +2313,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof vincularAbasEstaticasWarRoom === 'function') {
       vincularAbasEstaticasWarRoom();
+    }
+
+    const btnTp = document.getElementById('btn-abrir-teleprompter-modal');
+    if (btnTp) {
+      btnTp.onclick = (e) => {
+        e.preventDefault();
+        window.abrirModalTeleprompter();
+      };
+    }
+
+    const btnAud = document.getElementById('btn-ouvir-audio-guia');
+    if (btnAud) {
+      btnAud.onclick = (e) => {
+        e.preventDefault();
+        window.ouvirAudioGuia();
+      };
     }
   }
 
