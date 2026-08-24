@@ -30,13 +30,12 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-2.5-flash",       // 1ª Opção: Alta velocidade
-  "gemini-1.5-flash",       // 2ª Opção: Baixa latência
-  "gemini-3.5-flash-lite",  // 2ª Opção: Alta disponibilidade (500 requisições/dia)
-  "gemini-3.6-flash",       // 3ª Opção: Retoma após reset diário
-  "gemma-4-26b",            // 4ª Opção: Contingência massiva (14.400 requisições/dia)
-  "gemma-4-31b",            // 5ª Opção: Contingência avançada (14.400 requisições/dia)
-  "gemini-2.5-flash-tts"    // 6ª Opção: Fallback
+  "gemini-3.7-flash",      // 1ª Opção: Principal (Mais veloz e estratégico do painel)
+  "gemini-3.6-flash",      // 2ª Opção: Fallback direto de alta fidelidade
+  "gemini-3.5-flash",      // 3ª Opção: Resposta rápida
+  "gemini-3.5-flash-lite", // 4ª Opção: Alta disponibilidade (15 RPM)
+  "gemma-4-26b",           // 5ª Opção: Contingência massiva (30 RPM)
+  "gemma-4-31b"            // 6ª Opção: Contingência avançada (30 RPM)
 ];
 
 /**
