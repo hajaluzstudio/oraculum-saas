@@ -1320,9 +1320,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      let replyText = data.reply || data.response || data.message || '';
-      if (typeof replyText === 'object') {
-        replyText = replyText.replyText || JSON.stringify(replyText);
+      let cleanReplyText = '';
+      let tasksArray = [];
+
+      try {
+        let parsed = typeof data === 'object' ? data : JSON.parse(data);
+        if (parsed.reply && typeof parsed.reply === 'string' && parsed.reply.trim().startsWith('{')) {
+          parsed = JSON.parse(parsed.reply);
+        } else if (parsed.reply && typeof parsed.reply === 'object') {
+          parsed = parsed.reply;
+        }
+        
+        cleanReplyText = parsed.replyText || parsed.message || (typeof data === 'string' ? data : JSON.stringify(data));
+        tasksArray = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      } catch (e) {
+        cleanReplyText = typeof data === 'string' ? data : (data.reply || JSON.stringify(data));
+        tasksArray = [];
+      }
+
+      // Se o texto ainda contiver JSON residual, limpa com regex/fallback
+      if (cleanReplyText.trim().startsWith('{') && cleanReplyText.includes('replyText')) {
+        try {
+          const fallback = JSON.parse(cleanReplyText);
+          cleanReplyText = fallback.replyText || cleanReplyText;
+          if (!tasksArray.length && Array.isArray(fallback.tasks)) tasksArray = fallback.tasks;
+        } catch(err) {}
       }
 
       // 4. Renderiza a resposta da IA com o card de aprovação
@@ -1334,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span>👁️ Oraculum Copiloto</span>
           </div>
           <div class="chat-ai-content whitespace-pre-wrap mb-4 text-slate-300">
-            ${replyText}
+            ${cleanReplyText}
           </div>
           <div class="flex items-center gap-3 pt-3 border-t border-slate-800">
             <button type="button" class="btn-aprovar-despacho px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-950">
@@ -1353,9 +1375,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAprovar.addEventListener('click', async () => {
           btnAprovar.disabled = true;
           btnAprovar.innerText = '⏳ Despachando...';
+
           if (typeof window.dispatchBriefingToWarRoom === 'function') {
-            await window.dispatchBriefingToWarRoom('all', replyText);
+            // Se houver array de tasks estruturado, despacha o array; caso contrário, passa o texto limpo
+            const payloadToSend = tasksArray.length > 0 ? tasksArray : cleanReplyText;
+            await window.dispatchBriefingToWarRoom('all', payloadToSend);
           }
+
           btnAprovar.innerText = '✓ Despachado com Sucesso!';
           btnAprovar.className = 'px-4 py-2 bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-xs font-semibold rounded-lg cursor-default';
         });
@@ -1366,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Salva no histórico em memória
       if (!window.currentChatHistory) window.currentChatHistory = [];
       window.currentChatHistory.push({ role: 'user', content: message });
-      window.currentChatHistory.push({ role: 'assistant', content: replyText });
+      window.currentChatHistory.push({ role: 'assistant', content: cleanReplyText });
 
     } catch (err) {
       console.error('[Chat Error]:', err);
