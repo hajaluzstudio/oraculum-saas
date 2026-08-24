@@ -1045,68 +1045,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentEl = container.querySelector('.chat-content') || container;
     const rawText = (contentEl.innerText || contentEl.textContent || '').trim();
 
-    // Resolução do Client ID
+    // 1. Identificar automaticamente o pilar/categoria com base no conteúdo
+    let category = 'copywriting'; // padrão
+    const lowerText = rawText.toLowerCase();
+
+    if (lowerText.includes('gancho') || lowerText.includes('vídeo') || lowerText.includes('roteiro') || lowerText.includes('teleprompter') || lowerText.includes('cena')) {
+      category = 'video';
+    } else if (lowerText.includes('objeção') || lowerText.includes('38.000') || lowerText.includes('comercial') || lowerText.includes('fechamento') || lowerText.includes('whatsapp')) {
+      category = 'comercial';
+    } else if (lowerText.includes('público') || lowerText.includes('tráfego') || lowerText.includes('cpa') || lowerText.includes('campanha') || lowerText.includes('orçamento')) {
+      category = 'trafego';
+    } else if (lowerText.includes('design') || lowerText.includes('banner') || lowerText.includes('landing page') || lowerText.includes('layout')) {
+      category = 'design';
+    }
+
+    // 2. Resolução de Cliente
     const activeClient = window.activeClient || window.currentClient || {};
-    let clientId = activeClient.id || 
-                   activeClient.client_id || 
-                   localStorage.getItem('active_client_id') || 
-                   localStorage.getItem('current_client_id') || 
-                   localStorage.getItem('activeClientId') || 
-                   'client_1707406730';
+    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
 
     const approveBtn = container.querySelector('button[onclick*="dispatchBriefingToWarRoom"], button[onclick*="aprovarParaSalaOperacao"], .btn-approve-chat');
     if (approveBtn) {
       approveBtn.disabled = true;
-      approveBtn.innerHTML = `
-        <div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div>
-        Salvando no Supabase...
-      `;
+      approveBtn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-emerald-950 border-t-transparent rounded-full animate-spin"></div> Despachando para ${category.toUpperCase()}...`;
     }
 
     const taskPayload = {
       client_id: String(clientId),
-      title: `Diretriz: ${rawText.slice(0, 40).replace(/\n/g, ' ')}...`,
+      title: `Estratégia Chat [${category.toUpperCase()}]: ${rawText.slice(0, 40).replace(/\n/g, ' ')}...`,
       content: rawText,
-      category: 'chat_strategy',
+      category: category,
       status: 'todo',
       priority: 'high',
       created_at: new Date().toISOString()
     };
 
+    // 3. Salvar no Supabase e no Cache Operacional
     try {
       const supabase = window.supabaseClient || window.supabase;
-      if (!supabase) throw new Error('Supabase client não encontrado');
-
-      const { data, error } = await supabase
-        .from('war_room_tasks')
-        .insert([taskPayload])
-        .select();
-
-      if (error) throw error;
-
-      if (approveBtn) {
-        approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
-        approveBtn.innerHTML = `✓ Salvo na Sala de Operação`;
+      if (supabase) {
+        await supabase.from('war_room_tasks').insert([taskPayload]);
       }
-
-      if (typeof showToast === 'function') {
-        showToast('Estratégia salva na Sala de Operação com sucesso!', 'success');
-      }
-
     } catch (err) {
-      console.warn('[War Room Fallback LocalStorage]:', err);
-      
-      // Armazenamento local de segurança se a requisição falhar
-      const localTasks = JSON.parse(localStorage.getItem('war_room_tasks_local') || '[]');
-      localTasks.unshift(taskPayload);
-      localStorage.setItem('war_room_tasks_local', JSON.stringify(localTasks));
+      console.warn('[WarRoom Supabase Catch]:', err);
+    }
 
-      if (approveBtn) {
-        approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
-        approveBtn.innerHTML = `✓ Salvo na Sala de Operação`;
-      }
+    // Gravação no Storage Local para Renderização Imediata
+    const warRoomStorageKey = `war_room_${clientId}_${category}`;
+    const existingItems = JSON.parse(localStorage.getItem(warRoomStorageKey) || '[]');
+    existingItems.unshift(taskPayload);
+    localStorage.setItem(warRoomStorageKey, JSON.stringify(existingItems));
+
+    // 4. Injeção direta no Container Visual da Sala de Operação correspondente
+    injetarDemandaNaAbaSalaOperacao(category, rawText);
+
+    if (approveBtn) {
+      approveBtn.className = 'px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-md pointer-events-none';
+      approveBtn.innerHTML = `✓ Despachado para ${category === 'video' ? 'Vídeo & Gravação' : category === 'copywriting' ? 'Copywriting' : category === 'comercial' ? 'Comercial & Vendas' : category.toUpperCase()}`;
     }
   };
+
+  function injetarDemandaNaAbaSalaOperacao(category, content) {
+    // Mapeia os seletores das seções da Sala de Operação
+    const targets = {
+      video: document.querySelector('#tab-war-room #war-room-video-container, #tab-war-room .video-content, #tab-war-room [data-war-room="video"]'),
+      copywriting: document.querySelector('#tab-war-room #war-room-copy-container, #tab-war-room .copy-content, #tab-war-room [data-war-room="copywriting"]'),
+      comercial: document.querySelector('#tab-war-room #war-room-sales-container, #tab-war-room .sales-content, #tab-war-room [data-war-room="comercial"]'),
+      trafego: document.querySelector('#tab-war-room #war-room-traffic-container, #tab-war-room .traffic-content, #tab-war-room [data-war-room="trafego"]'),
+      design: document.querySelector('#tab-war-room #war-room-design-container, #tab-war-room .design-content, #tab-war-room [data-war-room="design"]')
+    };
+
+    const targetBox = targets[category] || document.querySelector('#tab-war-room .active-tab-content');
+    if (targetBox) {
+      const cardHtml = `
+        <div class="p-5 bg-[#0B1514] border border-[#10B981]/40 rounded-xl my-4 text-slate-200 shadow-xl animate-fadeIn">
+          <div class="flex items-center justify-between border-b border-[#1B3B36] pb-3 mb-3">
+            <span class="px-2.5 py-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase tracking-wider">Demanda Autônoma Oraculum</span>
+            <span class="text-xs text-slate-400">${new Date().toLocaleTimeString()}</span>
+          </div>
+          <div class="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">${content}</div>
+        </div>
+      `;
+      targetBox.insertAdjacentHTML('afterbegin', cardHtml);
+    }
+  }
 
   function renderChatReply(reply) {
     let html = `<p style="line-height: 1.5;">${reply.replyText}</p>`;
