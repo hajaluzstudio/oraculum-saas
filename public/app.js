@@ -1,3 +1,17 @@
+// PURGA TOTAL DE SERVICE WORKER E CACHESTORAGE (FORÇA CÓDIGO NOVO EM 100% DOS ACESSOS)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const reg of registrations) {
+      reg.unregister();
+    }
+  });
+}
+if ('caches' in window) {
+  caches.keys().then(keys => {
+    keys.forEach(key => caches.delete(key));
+  });
+}
+
 // [ANTI-CRASH GLOBAL]: Declaração antecipada para evitar TypeErrors durante o parsing
 window.carregarUltimoBIDoCliente = function(clientId) {
   if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId);
@@ -8469,11 +8483,11 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// SISTEMA DEFINITIVO DE BI & FEEDBACK LOOP (PORTAL NO BODY + CAPTURE LISTENER)
+// MOTOR DE BI & MODAL NATIVO AUTÔNOMO (NÍVEL ROOT / ANTI-INTERCEPÇÃO)
 // ============================================================================
 
-// 1. DADOS DE BASELINE PADRÃO (DR. LUCAS)
-const BI_BASELINE_DR_LUCAS = {
+// 1. BASELINE DO DR. LUCAS
+const BI_BASELINE = {
   faturamento_total: 28900.00,
   gasto_trafego: 4500.00,
   vendas_fechadas: 14,
@@ -8481,50 +8495,138 @@ const BI_BASELINE_DR_LUCAS = {
   cliques: 1420
 };
 
-// 2. FUNÇÃO UNIVERSAL DE RENDERIZAÇÃO DO BI (OTIMISTA + ASSÍNCRONA)
-window.carregarMetricasBI = async function(forcedClientId) {
-  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  let id = forcedClientId || window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-  let name = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
-
-  // Normalização do Dr. Lucas
-  const isLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas') || id === 'client_dr_lucas';
-  if (isLucas && (!name || name.includes('Cliente Selecionado') || name === 'Cliente Ativo')) {
-    name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
-    id = 'client_1787406730';
+// 2. FUNÇÃO DIRETA PARA ABRIR O MODAL
+window.abrirModalLancarBI = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
   }
 
-  // Atualiza Banner Imediatamente
-  const bannerEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
-  if (bannerEl) bannerEl.innerText = name;
+  // Remove modal prévio se existir
+  const modalExistente = document.getElementById('bi-modal-root-container');
+  if (modalExistente) modalExistente.remove();
 
-  // Estado Inicial Otimista: Se for Lucas, usa baseline; se for outro, zera
-  let biData = isLucas ? { ...BI_BASELINE_DR_LUCAS } : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 };
+  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  // Renderiza instantaneamente na tela
-  window.renderizarPainelBINAInterface(biData);
+  // Criação do elemento diretamente no documentElement (acima de qualquer HTML/Tailwind)
+  const modalDiv = document.createElement('div');
+  modalDiv.id = 'bi-modal-root-container';
+  modalDiv.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.85) !important; z-index: 999999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; box-sizing: border-box !important; backdrop-filter: blur(6px) !important;';
 
-  // Consulta assíncrona ao Supabase em background para atualizar se houver dados mais recentes gravados
-  if (window.supabaseClient) {
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .select('*')
-        .eq('client_id', String(id))
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  modalDiv.innerHTML = `
+    <div style="background: #0f172a !important; border: 1px solid #334155 !important; width: 100% !important; max-width: 480px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9) !important; font-family: system-ui, -apple-system, sans-serif !important;">
+      <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #1e293b !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
+        <div>
+          <h3 style="margin: 0 !important; font-size: 15px !important; font-weight: 700 !important; color: #f8fafc !important;">💰 Lançar Métricas de BI</h3>
+          <p style="margin: 3px 0 0 0 !important; font-size: 12px !important; color: #10b981 !important; font-weight: 600 !important;">${clientName}</p>
+        </div>
+        <button type="button" id="btn-close-bi-root" style="background: transparent !important; border: none !important; color: #94a3b8 !important; font-size: 20px !important; cursor: pointer !important; padding: 4px 8px !important;">✕</button>
+      </div>
 
-      if (!error && data) {
-        window.renderizarPainelBINAInterface(data);
-      }
-    } catch (e) {
-      console.warn('[BI] Consulta Supabase em background:', e);
+      <form id="form-bi-root" style="display: flex !important; flex-direction: column !important; gap: 14px !important;">
+        <input type="hidden" id="input-root-client-id" value="${clientId}">
+
+        <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important;">
+          <div>
+            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Faturamento (R$)</label>
+            <input type="number" step="0.01" id="input-root-faturamento" required placeholder="Ex: 28900.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+          </div>
+          <div>
+            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Gasto em Tráfego (R$)</label>
+            <input type="number" step="0.01" id="input-root-gasto" required placeholder="Ex: 4500.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+          </div>
+        </div>
+
+        <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important;">
+          <div>
+            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Vendas</label>
+            <input type="number" id="input-root-vendas" required placeholder="Ex: 14" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+          </div>
+          <div>
+            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Leads</label>
+            <input type="number" id="input-root-leads" required placeholder="Ex: 184" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+          </div>
+          <div>
+            <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Cliques</label>
+            <input type="number" id="input-root-cliques" placeholder="Ex: 1420" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important; outline: none !important;" />
+          </div>
+        </div>
+
+        <div style="display: flex !important; justify-content: flex-end !important; gap: 10px !important; padding-top: 14px !important; border-top: 1px solid #1e293b !important;">
+          <button type="button" id="btn-cancel-bi-root" style="padding: 8px 16px !important; background: #1e293b !important; border: none !important; color: #cbd5e1 !important; font-size: 12px !important; font-weight: 600 !important; border-radius: 8px !important; cursor: pointer !important;">Cancelar</button>
+          <button type="submit" id="btn-save-bi-root" style="padding: 8px 20px !important; background: #059669 !important; border: none !important; color: #ffffff !important; font-size: 12px !important; font-weight: 700 !important; border-radius: 8px !important; cursor: pointer !important;">💾 Gravar no Supabase</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.documentElement.appendChild(modalDiv);
+
+  // Handlers dos botões internos do modal
+  document.getElementById('btn-close-bi-root').onclick = () => modalDiv.remove();
+  document.getElementById('btn-cancel-bi-root').onclick = () => modalDiv.remove();
+  document.getElementById('form-bi-root').onsubmit = window.salvarLancamentoBIRoot;
+};
+
+// Fechamento e Aliases
+window.fecharModalLancarBI = function() {
+  const m = document.getElementById('bi-modal-root-container');
+  if (m) m.remove();
+};
+window.abrirModalBI = window.abrirModalLancarBI;
+window.fecharModalBI = window.fecharModalLancarBI;
+
+// 3. GRAVAÇÃO NO SUPABASE E RENDERIZAÇÃO
+window.salvarLancamentoBIRoot = async function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  const clientId = document.getElementById('input-root-client-id')?.value || 'client_1787406730';
+  const faturamento = parseFloat(document.getElementById('input-root-faturamento')?.value) || 0;
+  const gasto = parseFloat(document.getElementById('input-root-gasto')?.value) || 0;
+  const vendas = parseInt(document.getElementById('input-root-vendas')?.value) || 0;
+  const leads = parseInt(document.getElementById('input-root-leads')?.value) || 0;
+  const cliques = parseInt(document.getElementById('input-root-cliques')?.value) || (leads * 8);
+  const lucro = faturamento - gasto;
+
+  const btnSave = document.getElementById('btn-save-bi-root');
+  if (btnSave) {
+    btnSave.disabled = true;
+    btnSave.innerText = '⏳ Gravando...';
+  }
+
+  const payload = {
+    client_id: String(clientId),
+    reference_date: new Date().toISOString().split('T')[0],
+    gasto_trafego: gasto,
+    faturamento_total: faturamento,
+    lucro_liquido: lucro,
+    cliques: cliques,
+    leads_gerados: leads,
+    vendas_fechadas: vendas,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    if (window.supabaseClient) {
+      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
     }
+  } catch(err) {
+    console.warn('[BI Supabase]:', err);
+  } finally {
+    window.fecharModalLancarBI();
+    window.renderizarPainelBINAInterface(payload);
   }
 };
 
-// 3. ATUALIZAÇÃO FÍSICA DOS ELEMENTOS E GRÁFICOS DO PAINEL
+window.salvarLancamentoBI = window.salvarLancamentoBIRoot;
+
+// 4. ATUALIZAÇÃO VISUAL NA TELA
 window.renderizarPainelBINAInterface = function(data) {
   const faturamento = Number(data.faturamento_total || data.faturamento || 0);
   const gasto = Number(data.gasto_trafego || 0);
@@ -8557,17 +8659,14 @@ window.renderizarPainelBINAInterface = function(data) {
     elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
   }
 
-  // Funil
   setTxt('bi-funil-impressoes', Number(impressoes).toLocaleString('pt-BR'));
   setTxt('bi-funil-cliques', Number(cliques).toLocaleString('pt-BR'));
   setTxt('bi-funil-leads', Number(leads).toLocaleString('pt-BR'));
   setTxt('bi-funil-agendamentos', Number(agendamentos).toLocaleString('pt-BR'));
   setTxt('bi-funil-vendas', `${Number(vendas).toLocaleString('pt-BR')} Vendas Fechadas`);
 
-  // Gráficos Chart.js
   if (typeof Chart !== 'undefined') {
     const semDados = faturamento === 0 && gasto === 0;
-
     const renderChart = (canvasId, config) => {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
@@ -8618,157 +8717,61 @@ window.renderizarPainelBINAInterface = function(data) {
   }
 };
 
-// 4. ABERTURA DEFINITIVA DO MODAL VIA PORTAL DIRETO NO BODY
-window.abrirModalLancarBI = function(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  // Remove qualquer modal pré-existente
-  const antigo = document.getElementById('modal-bi-portal-master');
-  if (antigo) antigo.remove();
-
+// 5. CARREGAMENTO UNIVERSAL
+window.carregarMetricasBI = async function(forcedClientId) {
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  const clientId = window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-  const clientName = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
+  let id = forcedClientId || window.currentClientId || window.activeClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+  let name = window.currentClientName || (selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)');
 
-  // Injeção física direta no body com estilização inline absoluta anti-bloqueio
-  const modalHTML = `
-    <div id="modal-bi-portal-master" style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(2, 6, 23, 0.88) !important; backdrop-filter: blur(8px) !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; box-sizing: border-box !important;">
-      <div style="background: #0f172a !important; border: 1px solid #334155 !important; width: 100% !important; max-width: 500px !important; border-radius: 16px !important; padding: 24px !important; color: #ffffff !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9) !important; font-family: sans-serif !important;">
-        
-        <div style="display: flex !important; align-items: center !important; justify-content: space-between !important; border-bottom: 1px solid #1e293b !important; padding-bottom: 12px !important; margin-bottom: 16px !important;">
-          <div>
-            <h3 style="margin: 0 !important; font-size: 15px !important; font-weight: 700 !important; color: #f8fafc !important;">💰 Lançar Métricas no Banco de Dados</h3>
-            <p style="margin: 3px 0 0 0 !important; font-size: 12px !important; color: #10b981 !important; font-weight: 600 !important;">Cliente: ${clientName}</p>
-          </div>
-          <button type="button" onclick="window.fecharModalLancarBI()" style="background: transparent !important; border: none !important; color: #94a3b8 !important; font-size: 22px !important; cursor: pointer !important; padding: 4px !important;">✕</button>
-        </div>
-
-        <form id="form-bi-portal-submit" onsubmit="window.salvarLancamentoBIPortal(event)" style="display: flex !important; flex-direction: column !important; gap: 14px !important;">
-          <input type="hidden" id="bi-input-client-id-portal" value="${clientId}">
-
-          <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px !important;">
-            <div>
-              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Faturamento Total (R$)</label>
-              <input type="number" step="0.01" id="bi-input-fat-portal" required placeholder="Ex: 28900.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important;" />
-            </div>
-            <div>
-              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Gasto em Tráfego (R$)</label>
-              <input type="number" step="0.01" id="bi-input-gas-portal" required placeholder="Ex: 4500.00" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important;" />
-            </div>
-          </div>
-
-          <div style="display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 10px !important;">
-            <div>
-              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Vendas (Qtd)</label>
-              <input type="number" id="bi-input-ven-portal" required placeholder="Ex: 14" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important;" />
-            </div>
-            <div>
-              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Leads</label>
-              <input type="number" id="bi-input-lea-portal" required placeholder="Ex: 184" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important;" />
-            </div>
-            <div>
-              <label style="display: block !important; font-size: 11px !important; font-weight: 700 !important; color: #94a3b8 !important; margin-bottom: 4px !important; text-transform: uppercase !important;">Cliques</label>
-              <input type="number" id="bi-input-cli-portal" placeholder="Ex: 1420" style="width: 100% !important; box-sizing: border-box !important; background: #020617 !important; border: 1px solid #334155 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #fff !important; font-size: 13px !important;" />
-            </div>
-          </div>
-
-          <div style="display: flex !important; justify-content: flex-end !important; gap: 10px !important; padding-top: 14px !important; border-top: 1px solid #1e293b !important; margin-top: 6px !important;">
-            <button type="button" onclick="window.fecharModalLancarBI()" style="padding: 8px 16px !important; background: #1e293b !important; border: none !important; color: #cbd5e1 !important; font-size: 12px !important; border-radius: 8px !important; cursor: pointer !important;">Cancelar</button>
-            <button type="submit" id="btn-portal-submit-bi" style="padding: 8px 20px !important; background: #059669 !important; border: none !important; color: #ffffff !important; font-size: 12px !important; font-weight: 700 !important; border-radius: 8px !important; cursor: pointer !important;">💾 Gravar no Banco de Dados</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
-};
-
-window.fecharModalLancarBI = function() {
-  const modal = document.getElementById('modal-bi-portal-master') || document.getElementById('modal-bi-lancar');
-  if (modal) modal.remove();
-};
-
-window.abrirModalBI = window.abrirModalLancarBI;
-window.fecharModalBI = window.fecharModalLancarBI;
-
-// 5. GRAVAÇÃO PERSISTIDA NO SUPABASE
-window.salvarLancamentoBIPortal = async function(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  const isLucas = String(id).includes('1787406730') || String(name).toLowerCase().includes('lucas');
+  if (isLucas) {
+    name = 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)';
+    id = 'client_1787406730';
   }
 
-  const clientId = document.getElementById('bi-input-client-id-portal')?.value || 'client_1787406730';
-  const faturamento = parseFloat(document.getElementById('bi-input-fat-portal')?.value) || 0;
-  const gasto = parseFloat(document.getElementById('bi-input-gas-portal')?.value) || 0;
-  const vendas = parseInt(document.getElementById('bi-input-ven-portal')?.value) || 0;
-  const leads = parseInt(document.getElementById('bi-input-lea-portal')?.value) || 0;
-  const cliques = parseInt(document.getElementById('bi-input-cli-portal')?.value) || (leads * 8);
-  const lucro = faturamento - gasto;
+  const bannerEl = document.getElementById('bi-client-banner-name') || document.getElementById('bi-active-client-title');
+  if (bannerEl) bannerEl.innerText = name;
 
-  const btn = document.getElementById('btn-portal-submit-bi');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerText = '⏳ Gravando no Banco...';
-  }
+  // Renderização otimista imediata
+  let biData = isLucas ? { ...BI_BASELINE } : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 };
+  window.renderizarPainelBINAInterface(biData);
 
-  const payload = {
-    client_id: String(clientId),
-    reference_date: new Date().toISOString().split('T')[0],
-    gasto_trafego: gasto,
-    faturamento_total: faturamento,
-    lucro_liquido: lucro,
-    cliques: cliques,
-    leads_gerados: leads,
-    vendas_fechadas: vendas,
-    updated_at: new Date().toISOString()
-  };
+  // Consulta assíncrona ao Supabase em paralelo
+  if (window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('bi_analytics_data')
+        .select('*')
+        .eq('client_id', String(id))
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-  try {
-    if (window.supabaseClient) {
-      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
-    }
-  } catch (err) {
-    console.warn('[BI] Falha no insert do Supabase:', err);
-  } finally {
-    window.fecharModalLancarBI();
-    window.renderizarPainelBINAInterface(payload);
+      if (!error && data) window.renderizarPainelBINAInterface(data);
+    } catch(e) {}
   }
 };
 
-// Aliases globais anti-crash
-window.salvarLancamentoBI = window.salvarLancamentoBIPortal;
 window.carregarUltimoBIDoCliente = window.carregarMetricasBI;
 window.loadClientBiMetrics = window.carregarMetricasBI;
 
-// 6. DELEGAÇÃO DE EVENTOS NA FASE DE CAPTURA GLOBAL (ANTI-HIJACKING)
-// Intercepta qualquer clique em qualquer botão com id, classe ou texto de "Lançar BI" ANTES que qualquer outro script bloqueie
-document.addEventListener('click', function(event) {
-  const target = event.target;
-  const btn = target.closest('#btn-lancar-bi, #btn-lancar-bi-topo, [data-action="lancar-bi"], button');
-
-  if (btn && (btn.id === 'btn-lancar-bi' || btn.id === 'btn-lancar-bi-topo' || btn.innerText.includes('Lançar BI') || btn.textContent.includes('Lançar BI'))) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    window.abrirModalLancarBI(event);
-  }
-}, true); // true = Capture Phase Global
-
-// Disparo ao trocar de aba ou carregar
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => { window.carregarMetricasBI(); }, 100);
-});
-
-document.querySelectorAll('[data-tab="tab-bi"]').forEach(tab => {
-  tab.addEventListener('click', () => {
-    setTimeout(() => { window.carregarMetricasBI(); }, 50);
+// 6. VÍNCULO FÍSICO PERMANENTE VIA POLLING (GARANTE QUE OS BOTÕES NUNCA PERCAM O LISTENER)
+setInterval(() => {
+  const botoes = document.querySelectorAll('#btn-lancar-bi, #btn-lancar-bi-topo, [data-action="lancar-bi"]');
+  botoes.forEach(btn => {
+    if (!btn.__biBound) {
+      btn.__biBound = true;
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.abrirModalLancarBI(e);
+      };
+    }
   });
-});
+}, 300);
+
+// Execução inicial
+setTimeout(() => { window.carregarMetricasBI(); }, 50);
 
 // Restaura o diagnóstico gravado no Supabase para o cliente ativo
 window.carregarFeedbackLoopDoBanco = async function(clientId) {
