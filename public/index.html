@@ -1418,37 +1418,39 @@
 
         <!-- ABA 5: BI & DASHBOARD INTERATIVO DE RESULTADOS -->
         <section id="tab-bi" class="tab-panel">
-          <!-- Banner de Identificação do Cliente Ativo no BI -->
-          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 mb-6">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <span class="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold">
-                  DASHBOARD DO CLIENTE ATIVO
-                </span>
-                <span class="text-xs text-slate-400 ml-2">Relatório de Performance Comercial & ROI:</span>
-                <h2 id="bi-active-client-title" class="text-base font-bold text-slate-100">
-                  Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)
-                </h2>
+          <!-- BANNER DO CLIENTE ATIVO & AÇÕES -->
+          <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 p-4 rounded-xl shadow-lg mb-6">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded">Dashboard do Cliente Ativo</span>
+                <span class="text-xs text-slate-400">Relatório de Performance Comercial & ROI</span>
+              </div>
+              <h2 id="bi-active-client-title" class="text-lg font-bold text-white mt-1">Carregando...</h2>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Filtros de Período -->
+              <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 gap-1 text-xs font-semibold text-slate-400">
+                <button type="button" onclick="window.filtrarPeriodoBI('7d')" id="btn-periodo-7d" class="px-2.5 py-1 rounded-lg hover:text-white transition">7D</button>
+                <button type="button" onclick="window.filtrarPeriodoBI('30d')" id="btn-periodo-30d" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold transition shadow">30D</button>
+                <button type="button" onclick="window.filtrarPeriodoBI('trimestre')" id="btn-periodo-trimestre" class="px-2.5 py-1 rounded-lg hover:text-white transition">Trimestre</button>
+                <button type="button" onclick="window.filtrarPeriodoBI('ano')" id="btn-periodo-ano" class="px-2.5 py-1 rounded-lg hover:text-white transition">Ano</button>
               </div>
 
-              <!-- Controles do Topo -->
-              <div class="flex items-center gap-2 flex-wrap">
-                <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                  <button id="btn-periodo-7d" onclick="window.selecionarPeriodoBI('7d')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">7D</button>
-                  <button id="btn-periodo-30d" onclick="window.selecionarPeriodoBI('30d')" class="px-2.5 py-1 rounded-lg text-emerald-400 bg-emerald-600/30 border border-emerald-500/40 font-bold">30D</button>
-                  <button id="btn-periodo-trimestre" onclick="window.selecionarPeriodoBI('trimestre')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Trimestre</button>
-                  <button id="btn-periodo-ano" onclick="window.selecionarPeriodoBI('ano')" class="px-2.5 py-1 rounded-lg text-slate-400 font-medium hover:text-slate-200">Ano</button>
-                </div>
-                <button type="button" id="btn-lancar-bi-topo" onclick="window.abrirModalLancarBI(event)" class="px-3 py-1.5 text-xs font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl border border-amber-500/40 flex items-center gap-1.5 cursor-pointer shadow">
-                  💰 Lançar BI
-                </button>
-                <button id="btn-modo-apresentacao" onclick="window.alternarModoApresentacao()" class="px-3 py-1.5 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 flex items-center gap-1.5">
-                  📺 Modo Apresentação
-                </button>
-                <button id="btn-export-bi-pdf" onclick="window.exportarRelatorioPDF()" class="px-3 py-1.5 text-xs font-bold text-slate-950 bg-emerald-500 hover:bg-emerald-400 rounded-xl flex items-center gap-1.5 shadow">
-                  📄 Exportar PDF
-                </button>
-              </div>
+              <!-- Botão Único Lançar BI -->
+              <button type="button" id="btn-lancar-bi-topo" onclick="window.abrirModalLancarBI(event)" class="px-3.5 py-1.5 text-xs font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl border border-amber-500/40 flex items-center gap-1.5 cursor-pointer transition shadow">
+                💰 Lançar BI
+              </button>
+
+              <!-- Modo Apresentação -->
+              <button type="button" onclick="window.alternarModoApresentacao()" id="btn-modo-apresentacao" class="px-3.5 py-1.5 text-xs font-bold text-cyan-300 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-xl border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer transition shadow">
+                📺 Modo Apresentação
+              </button>
+
+              <!-- Exportar PDF -->
+              <button type="button" onclick="window.exportarRelatorioPDF()" class="px-3.5 py-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-xl border border-emerald-500/40 flex items-center gap-1.5 cursor-pointer transition shadow">
+                📄 Exportar PDF
+              </button>
             </div>
           </div>
 
@@ -1465,9 +1467,6 @@
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl relative">
               <div class="flex items-center justify-between mb-1">
                 <span class="text-[11px] text-slate-400">Gasto em Tráfego</span>
-                <button type="button" id="btn-lancar-bi" onclick="window.abrirModalLancarBI(event)" class="text-[10px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded cursor-pointer transition-colors shadow">
-                  💰 Lançar BI
-                </button>
               </div>
               <h3 id="bi-val-gasto" class="text-lg font-bold text-slate-100 font-mono">R$ 4.500,00</h3>
               <span class="text-[10px] text-slate-500 block mt-1">Meta & Google Ads</span>
@@ -3862,7 +3861,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.78.0"></script>
+<script src="/app.js?v=9999.79.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
@@ -3960,48 +3959,49 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
 </div>
 
 <script src="/oraculo-live.js?t=99999999"></script>
-<div id="modal-bi-estatico" class="fixed inset-0 z-[999999] hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
-  <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 text-white shadow-2xl">
+<!-- MODAL FÍSICO ESTÁTICO DE LANÇAMENTO DE BI -->
+<div id="modal-bi-estatico" style="display: none;" class="fixed inset-0 z-[999999] items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+  <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 text-white shadow-2xl">
     <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
       <div>
         <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">💰 Lançar Métricas de BI</h3>
         <p id="bi-modal-client-label" class="text-xs text-emerald-400 font-semibold mt-0.5"></p>
       </div>
-      <button type="button" onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-white text-xl p-1 leading-none">✕</button>
+      <button type="button" onclick="window.fecharModalLancarBI()" class="text-slate-400 hover:text-white text-xl p-1 leading-none cursor-pointer">✕</button>
     </div>
 
-    <form id="form-lancar-bi-estatico" class="flex flex-col gap-3.5">
+    <form id="form-lancar-bi-estatico" onsubmit="window.salvarMetricasBISupabase(event)" class="flex flex-col gap-3">
       <input type="hidden" id="modal-bi-client-id">
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Faturamento Total (R$)</label>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Faturamento Total (R$)</label>
           <input type="number" step="0.01" id="modal-bi-fat" required placeholder="Ex: 28900.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none" />
         </div>
         <div>
-          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Gasto em Tráfego (R$)</label>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gasto em Tráfego (R$)</label>
           <input type="number" step="0.01" id="modal-bi-gas" required placeholder="Ex: 4500.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none" />
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-2.5">
+      <div class="grid grid-cols-3 gap-2">
         <div>
-          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Vendas</label>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Vendas</label>
           <input type="number" id="modal-bi-ven" required placeholder="Ex: 14" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none" />
         </div>
         <div>
-          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Leads</label>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Leads</label>
           <input type="number" id="modal-bi-lea" required placeholder="Ex: 184" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none" />
         </div>
         <div>
-          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Cliques</label>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cliques</label>
           <input type="number" id="modal-bi-cli" placeholder="Ex: 1420" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 outline-none" />
         </div>
       </div>
 
-      <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800 mt-2">
-        <button type="button" onclick="window.fecharModalLancarBI()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg">Cancelar</button>
-        <button type="submit" id="btn-submit-modal-bi" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-900/30">💾 Gravar no Supabase</button>
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-800 mt-2">
+        <button type="button" onclick="window.fecharModalLancarBI()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg cursor-pointer">Cancelar</button>
+        <button type="submit" id="btn-submit-modal-bi" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg cursor-pointer">💾 Gravar no Supabase</button>
       </div>
     </form>
   </div>
