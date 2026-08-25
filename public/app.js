@@ -8485,10 +8485,11 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// MOTOR DE BI DEFINITIVO CONECTADO AO SUPABASE & STATE MANAGER
+// MOTOR DE BI CONECTADO AO BACKEND EXPRESS REST (/api/bi/metrics)
 // ============================================================================
 
-const BI_BASELINE_LUCAS = {
+let biPeriodoAtivo = '30d';
+let biDadosCacheAtual = {
   faturamento_total: 28900.00,
   gasto_trafego: 4500.00,
   vendas_fechadas: 14,
@@ -8496,10 +8497,7 @@ const BI_BASELINE_LUCAS = {
   cliques: 1420
 };
 
-let biPeriodoAtivo = '30d';
-let biDadosCacheAtual = { ...BI_BASELINE_LUCAS };
-
-// 1. Renderização dos 3 Gráficos Chart.js
+// 1. Renderização dos Gráficos Chart.js
 window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
   if (typeof Chart === 'undefined') return;
   const semDados = faturamento === 0 && gasto === 0;
@@ -8557,7 +8555,7 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
   });
 };
 
-// 2. Renderização dos Cards e Funil com Multiplicador de Período
+// 2. Renderização de Cards e Funil
 window.renderizarPainelBINAInterface = function(data) {
   if (!data) return;
   biDadosCacheAtual = data;
@@ -8609,7 +8607,7 @@ window.renderizarPainelBINAInterface = function(data) {
   }, 50);
 };
 
-// 3. Carregamento e Isolamento Multi-Cliente com Consulta Supabase
+// 3. Carregamento de Métricas via Backend REST
 window.carregarMetricasBI = async function(forcedClientId) {
   const selectEl = document.getElementById('active-client-select') || 
                    document.getElementById('select-active-client') || 
@@ -8629,23 +8627,22 @@ window.carregarMetricasBI = async function(forcedClientId) {
   const titleEls = document.querySelectorAll('#bi-active-client-title, #bi-client-banner-name, [data-bi-client-name]');
   titleEls.forEach(el => { el.innerText = name; });
 
-  const isLucas = String(id).includes('1787406730') || name.toLowerCase().includes('lucas');
-
-  let biData = isLucas 
-    ? { ...BI_BASELINE_LUCAS } 
-    : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 };
-
-  window.renderizarPainelBINAInterface(biData);
-
   try {
     const res = await fetch(`/api/bi/metrics/${id}`);
-    const result = await res.json();
-    if (result.success && result.data) {
-      window.renderizarPainelBINAInterface(result.data);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        window.renderizarPainelBINAInterface(json.data);
+        return;
+      }
     }
   } catch (err) {
-    console.warn('[BI Fetch GET]', err);
+    console.warn('[BI Fetch /api/bi/metrics Warning]:', err);
   }
+
+  // Fallback defensivo local
+  const isLucas = String(id).includes('1787406730');
+  window.renderizarPainelBINAInterface(isLucas ? biDadosCacheAtual : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 });
 };
 
 window.carregarUltimoBIDoCliente = window.carregarMetricasBI;
@@ -8666,7 +8663,7 @@ window.filtrarPeriodoBI = function(periodo) {
   window.renderizarPainelBINAInterface(biDadosCacheAtual);
 };
 
-// 5. Modo Apresentação & Exportar PDF
+// 5. Modo Apresentação & PDF
 window.alternarModoApresentacao = function() {
   const el = document.documentElement;
   const btn = document.getElementById('btn-modo-apresentacao');
@@ -8683,7 +8680,7 @@ window.exportarRelatorioPDF = function() {
   window.print();
 };
 
-// 6. Funções de Abertura/Fechamento do Modal
+// 6. Modal Físico
 window.abrirModalLancarBI = function(e) {
   if (e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8714,7 +8711,7 @@ window.fecharModalLancarBI = function() {
 window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
-// 7. Gravação Direta no Supabase
+// 7. Gravação via Backend POST /api/bi/metrics/:clientId
 window.salvarMetricasBISupabase = async function(e) {
   if (e) e.preventDefault();
 
@@ -8732,15 +8729,11 @@ window.salvarMetricasBISupabase = async function(e) {
   }
 
   const payload = {
-    client_id: String(clientId),
-    reference_date: new Date().toISOString().split('T')[0],
-    gasto_trafego: gas,
     faturamento_total: fat,
-    lucro_liquido: fat - gas,
-    cliques: cli,
-    leads_gerados: lea,
+    gasto_trafego: gas,
     vendas_fechadas: ven,
-    updated_at: new Date().toISOString()
+    leads_gerados: lea,
+    cliques: cli
   };
 
   try {
