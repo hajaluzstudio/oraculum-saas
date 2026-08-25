@@ -8485,7 +8485,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// MOTOR DE BI RECONECTADO AO STATE MANAGER E NATIVO DO ORACULUM
+// MOTOR DE BI DEFINITIVO CONECTADO AO SUPABASE & STATE MANAGER
 // ============================================================================
 
 const BI_BASELINE_LUCAS = {
@@ -8496,35 +8496,39 @@ const BI_BASELINE_LUCAS = {
   cliques: 1420
 };
 
-// 1. Renderização dos Gráficos com Verificação de Visibilidade
+let biPeriodoAtivo = '30d';
+let biDadosCacheAtual = { ...BI_BASELINE_LUCAS };
+
+// 1. Renderização dos 3 Gráficos Chart.js
 window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
   if (typeof Chart === 'undefined') return;
-
   const semDados = faturamento === 0 && gasto === 0;
 
-  const instanciarGrafico = (canvasId, config) => {
-    const canvas = document.getElementById(canvasId);
+  const instanciar = (id, config) => {
+    const canvas = document.getElementById(id);
     if (!canvas) return;
-    const chartExistente = Chart.getChart(canvas);
-    if (chartExistente) chartExistente.destroy();
-    new Chart(canvas, config);
+    const old = Chart.getChart(canvas);
+    if (old) old.destroy();
+    try {
+      new Chart(canvas, config);
+    } catch(e) {
+      console.warn('[BI Chart Error]', id, e);
+    }
   };
 
-  // Gráfico de Evolução
-  instanciarGrafico('chart-bi-evolucao', {
+  instanciar('chart-bi-evolucao', {
     type: 'line',
     data: {
       labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
       datasets: [
-        { label: 'Faturamento (R$)', data: semDados ? [0,0,0,0] : [faturamento * 0.15, faturamento * 0.40, faturamento * 0.70, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
-        { label: 'Investimento (R$)', data: semDados ? [0,0,0,0] : [gasto * 0.20, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
+        { label: 'Faturamento (R$)', data: semDados ? [0,0,0,0] : [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
+        { label: 'Investimento (R$)', data: semDados ? [0,0,0,0] : [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
   });
 
-  // Gráfico de Alocação
-  instanciarGrafico('chart-bi-alocacao', {
+  instanciar('chart-bi-alocacao', {
     type: 'doughnut',
     data: {
       labels: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'Outros'],
@@ -8537,9 +8541,8 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
     options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
   });
 
-  // Gráfico de CAC por Criativo
   const cacBase = vendas > 0 ? (gasto / vendas) : 0;
-  instanciarGrafico('chart-bi-cac', {
+  instanciar('chart-bi-cac', {
     type: 'bar',
     data: {
       labels: ['VSL Hook 3s', 'Reels Bastidores', 'Carrossel Dor', 'Estático Feed'],
@@ -8550,17 +8553,25 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
         borderRadius: 6
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
   });
 };
 
-// 2. Renderização dos Cards e Funil
+// 2. Renderização dos Cards e Funil com Multiplicador de Período
 window.renderizarPainelBINAInterface = function(data) {
-  const faturamento = Number(data.faturamento_total || data.faturamento || 0);
-  const gasto = Number(data.gasto_trafego || 0);
-  const vendas = Number(data.vendas_fechadas || data.vendas || 0);
-  const leads = Number(data.leads_gerados || data.leads || 0);
-  const cliques = Number(data.cliques || (leads * 8) || 0);
+  if (!data) return;
+  biDadosCacheAtual = data;
+
+  let mult = 1;
+  if (biPeriodoAtivo === '7d') mult = 0.25;
+  if (biPeriodoAtivo === 'trimestre') mult = 3;
+  if (biPeriodoAtivo === 'ano') mult = 12;
+
+  const faturamento = Number(data.faturamento_total || data.faturamento || 0) * mult;
+  const gasto = Number(data.gasto_trafego || 0) * mult;
+  const vendas = Math.round(Number(data.vendas_fechadas || data.vendas || 0) * mult);
+  const leads = Math.round(Number(data.leads_gerados || data.leads || 0) * mult);
+  const cliques = Math.round(Number(data.cliques || (leads * 8) || 0) * mult);
   const impressoes = cliques * 25;
   const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
   const lucro = faturamento - gasto;
@@ -8593,13 +8604,12 @@ window.renderizarPainelBINAInterface = function(data) {
   setTxt('bi-funil-agendamentos', Number(agendamentos).toLocaleString('pt-BR'));
   setTxt('bi-funil-vendas', `${Number(vendas).toLocaleString('pt-BR')} Vendas Fechadas`);
 
-  // Renderiza os gráficos após o layout ser calculado
   setTimeout(() => {
     window.renderizarGraficosBI(faturamento, gasto, vendas);
-  }, 100);
+  }, 50);
 };
 
-// 3. Carregamento por Cliente Conectado ao State Manager
+// 3. Carregamento e Isolamento Multi-Cliente com Consulta Supabase
 window.carregarMetricasBI = async function(forcedClientId) {
   const selectEl = document.getElementById('active-client-select') || 
                    document.getElementById('select-active-client') || 
@@ -8616,9 +8626,8 @@ window.carregarMetricasBI = async function(forcedClientId) {
     name = String(id).includes('1787406730') ? 'Dr. Lucas - Rinoplastia e Estética Facial (Medicina Estética)' : 'Cliente Selecionado';
   }
 
-  // Atualiza os títulos na aba BI
-  const titleEl = document.getElementById('bi-active-client-title') || document.getElementById('bi-client-banner-name');
-  if (titleEl) titleEl.innerText = name;
+  const titleEls = document.querySelectorAll('#bi-active-client-title, #bi-client-banner-name, [data-bi-client-name]');
+  titleEls.forEach(el => { el.innerText = name; });
 
   const isLucas = String(id).includes('1787406730') || name.toLowerCase().includes('lucas');
 
@@ -8628,7 +8637,6 @@ window.carregarMetricasBI = async function(forcedClientId) {
 
   window.renderizarPainelBINAInterface(biData);
 
-  // Consulta assíncrona ao Supabase
   if (window.supabaseClient) {
     try {
       const { data, error } = await window.supabaseClient
@@ -8643,7 +8651,7 @@ window.carregarMetricasBI = async function(forcedClientId) {
         window.renderizarPainelBINAInterface(data);
       }
     } catch(err) {
-      console.warn('[BI Supabase]:', err);
+      console.warn('[BI Supabase]', err);
     }
   }
 };
@@ -8651,11 +8659,43 @@ window.carregarMetricasBI = async function(forcedClientId) {
 window.carregarUltimoBIDoCliente = window.carregarMetricasBI;
 window.loadClientBiMetrics = window.carregarMetricasBI;
 
-// 4. Funções de Controle do Modal Físico
+// 4. Filtros de Período
+window.filtrarPeriodoBI = function(periodo) {
+  biPeriodoAtivo = periodo;
+  ['7d', '30d', 'trimestre', 'ano'].forEach(p => {
+    const btn = document.getElementById(`btn-periodo-${p}`);
+    if (!btn) return;
+    if (p === periodo) {
+      btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold transition shadow';
+    } else {
+      btn.className = 'px-2.5 py-1 rounded-lg hover:text-white transition';
+    }
+  });
+  window.renderizarPainelBINAInterface(biDadosCacheAtual);
+};
+
+// 5. Modo Apresentação & Exportar PDF
+window.alternarModoApresentacao = function() {
+  const el = document.documentElement;
+  const btn = document.getElementById('btn-modo-apresentacao');
+  if (!document.fullscreenElement) {
+    if (el.requestFullscreen) el.requestFullscreen();
+    if (btn) btn.innerHTML = '📺 Sair da Apresentação';
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    if (btn) btn.innerHTML = '📺 Modo Apresentação';
+  }
+};
+
+window.exportarRelatorioPDF = function() {
+  window.print();
+};
+
+// 6. Funções de Abertura/Fechamento do Modal
 window.abrirModalLancarBI = function(e) {
   if (e) {
-    e.preventDefault();
-    e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
   }
 
   const modal = document.getElementById('modal-bi-estatico');
@@ -8663,104 +8703,106 @@ window.abrirModalLancarBI = function(e) {
 
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   const clientId = window.activeClientId || window.currentClientId || (selectEl ? selectEl.value : 'client_1787406730');
-  let clientName = selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent.trim() : (window.currentClientName || 'Dr. Lucas - Rinoplastia');
+  let clientName = selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent.trim() : (window.currentClientName || 'Dr. Lucas');
 
-  document.getElementById('modal-bi-client-id').value = clientId;
+  const inputId = document.getElementById('modal-bi-client-id');
+  if (inputId) inputId.value = clientId;
+
   const labelEl = document.getElementById('bi-modal-client-label');
   if (labelEl) labelEl.innerText = clientName;
 
-  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 };
 
 window.fecharModalLancarBI = function() {
   const modal = document.getElementById('modal-bi-estatico');
-  if (modal) modal.classList.add('hidden');
+  if (modal) modal.style.display = 'none';
 };
 
 window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
-// 5. Gravação no Supabase via Modal Físico
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('form-lancar-bi-estatico');
-  if (form) {
-    form.onsubmit = async function(e) {
-      e.preventDefault();
-      const clientId = document.getElementById('modal-bi-client-id').value;
-      const fat = parseFloat(document.getElementById('modal-bi-fat').value) || 0;
-      const gas = parseFloat(document.getElementById('modal-bi-gas').value) || 0;
-      const ven = parseInt(document.getElementById('modal-bi-ven').value) || 0;
-      const lea = parseInt(document.getElementById('modal-bi-lea').value) || 0;
-      const cli = parseInt(document.getElementById('modal-bi-cli').value) || (lea * 8);
+// 7. Gravação Direta no Supabase
+window.salvarMetricasBISupabase = async function(e) {
+  if (e) e.preventDefault();
 
-      const btn = document.getElementById('btn-submit-modal-bi');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerText = '⏳ Gravando...';
-      }
+  const clientId = document.getElementById('modal-bi-client-id')?.value || window.activeClientId || 'client_1787406730';
+  const fat = parseFloat(document.getElementById('modal-bi-fat')?.value) || 0;
+  const gas = parseFloat(document.getElementById('modal-bi-gas')?.value) || 0;
+  const ven = parseInt(document.getElementById('modal-bi-ven')?.value) || 0;
+  const lea = parseInt(document.getElementById('modal-bi-lea')?.value) || 0;
+  const cli = parseInt(document.getElementById('modal-bi-cli')?.value) || (lea * 8);
 
-      const payload = {
-        client_id: String(clientId),
-        reference_date: new Date().toISOString().split('T')[0],
-        gasto_trafego: gas,
-        faturamento_total: fat,
-        lucro_liquido: fat - gas,
-        cliques: cli,
-        leads_gerados: lea,
-        vendas_fechadas: ven,
-        updated_at: new Date().toISOString()
-      };
-
-      try {
-        if (window.supabaseClient) {
-          await window.supabaseClient.from('bi_analytics_data').insert([payload]);
-        }
-      } catch(err) {
-        console.warn('[BI Supabase]:', err);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = '💾 Gravar no Supabase';
-        }
-        form.reset();
-        window.fecharModalLancarBI();
-        window.renderizarPainelBINAInterface(payload);
-      }
-    };
+  const btn = document.getElementById('btn-submit-modal-bi');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Gravando...';
   }
-});
 
-// 6. Integração com o Roteador de Navegação e State Manager
-// Se a plataforma possui função global de troca de abas (ex: switchTab / navegarParaSecao)
-const originalNavegar = window.navegarParaSecao || window.switchTab;
-if (typeof originalNavegar === 'function') {
-  window.navegarParaSecao = function(tabId) {
-    originalNavegar(tabId);
-    if (tabId === 'tab-bi') {
-      setTimeout(window.carregarMetricasBI, 100);
-    }
+  const payload = {
+    client_id: String(clientId),
+    reference_date: new Date().toISOString().split('T')[0],
+    gasto_trafego: gas,
+    faturamento_total: fat,
+    lucro_liquido: fat - gas,
+    cliques: cli,
+    leads_gerados: lea,
+    vendas_fechadas: ven,
+    updated_at: new Date().toISOString()
   };
-}
 
-// Escuta cliques no menu lateral para a aba BI
-document.addEventListener('click', (e) => {
+  try {
+    if (window.supabaseClient) {
+      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+    }
+  } catch(err) {
+    console.warn('[BI Supabase Gravacao]:', err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '💾 Gravar no Supabase';
+    }
+    const form = document.getElementById('form-lancar-bi-estatico');
+    if (form) form.reset();
+    window.fecharModalLancarBI();
+    window.renderizarPainelBINAInterface(payload);
+  }
+};
+
+// 8. Event Listeners Globais
+document.addEventListener('click', function(e) {
   const target = e.target;
   if (!target) return;
+
+  const btnLancar = target.closest('#btn-lancar-bi, #btn-lancar-bi-topo');
+  if (btnLancar || (target.innerText && target.innerText.trim() === '💰 Lançar BI')) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.abrirModalLancarBI(e);
+    return;
+  }
+
   if (target.closest('[data-tab="tab-bi"]') || target.closest('#menu-item-bi') || (target.innerText && target.innerText.includes('BI & Feedback Loop'))) {
-    setTimeout(window.carregarMetricasBI, 100);
+    setTimeout(() => { window.carregarMetricasBI(); }, 80);
   }
 });
 
-// Escuta a troca de cliente ativo no dropdown
-const selects = document.querySelectorAll('#active-client-select, #select-active-client, select[name="active-client"]');
-selects.forEach(sel => {
-  sel.addEventListener('change', (e) => {
-    window.activeClientId = e.target.value;
-    window.currentClientId = e.target.value;
-    window.currentClientName = e.target.selectedOptions[0]?.textContent?.trim();
-    setTimeout(window.carregarMetricasBI, 50);
-  });
+document.addEventListener('change', function(e) {
+  const target = e.target;
+  if (target && (target.id === 'active-client-select' || target.id === 'select-active-client' || target.name === 'active-client')) {
+    const novoId = target.value;
+    const novoNome = target.selectedOptions && target.selectedOptions[0] ? target.selectedOptions[0].textContent.trim() : '';
+    window.activeClientId = novoId;
+    window.currentClientId = novoId;
+    if (novoNome) window.currentClientName = novoNome;
+    window.carregarMetricasBI(novoId);
+  }
 });
+
+// Execução Automática Inicial
+setTimeout(() => {
+  window.carregarMetricasBI();
+}, 100);
 
 
 // ============================================================================
