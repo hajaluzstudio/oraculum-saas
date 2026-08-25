@@ -8637,22 +8637,14 @@ window.carregarMetricasBI = async function(forcedClientId) {
 
   window.renderizarPainelBINAInterface(biData);
 
-  if (window.supabaseClient) {
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('bi_analytics_data')
-        .select('*')
-        .eq('client_id', String(id))
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data) {
-        window.renderizarPainelBINAInterface(data);
-      }
-    } catch(err) {
-      console.warn('[BI Supabase]', err);
+  try {
+    const res = await fetch(`/api/bi/metrics/${id}`);
+    const result = await res.json();
+    if (result.success && result.data) {
+      window.renderizarPainelBINAInterface(result.data);
     }
+  } catch (err) {
+    console.warn('[BI Fetch GET]', err);
   }
 };
 
@@ -8752,11 +8744,17 @@ window.salvarMetricasBISupabase = async function(e) {
   };
 
   try {
-    if (window.supabaseClient) {
-      await window.supabaseClient.from('bi_analytics_data').insert([payload]);
+    const res = await fetch(`/api/bi/metrics/${clientId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (!result.success) {
+      console.warn('[BI Fetch POST Error]:', result.error);
     }
   } catch(err) {
-    console.warn('[BI Supabase Gravacao]:', err);
+    console.warn('[BI Fetch POST Exception]:', err);
   } finally {
     if (btn) {
       btn.disabled = false;
