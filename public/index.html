@@ -3762,10 +3762,12 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
           console.warn("Seção de destino não encontrada:", secaoId);
         }
 
-        // Atualiza estado visual do menu (botão ativo)
-        document.querySelectorAll('aside button, aside a, nav button, nav a').forEach(btn => {
-          btn.classList.remove('bg-emerald-500/20', 'text-emerald-400', 'border-emerald-500', 'active');
-        });
+        if (secaoId === 'tab-bi' || secaoId === 'bi') {
+          const cId = window.obterClienteAtivoBI ? window.obterClienteAtivoBI() : 'client_1787406730';
+          if (typeof window.carregarMetricasBI === 'function') {
+            window.carregarMetricasBI(cId);
+          }
+        }
       };
 
       // 3. Listener universal de cliques em itens do menu lateral (Apenas navegação real)
@@ -3861,7 +3863,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.96.0"></script>
+<script src="/app.js?v=9999.99.9"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
