@@ -1139,26 +1139,37 @@ app.get('/api/bi/metrics/:clientId', async (req, res) => {
     const { clientId } = req.params;
     
     // Se for o cliente demo do Dr. Lucas e não tiver dados, retorna o baseline estruturado
-    const isLucas = clientId.includes('1787406730');
+    const isLucas = String(clientId).includes('1787406730');
     const defaultBaseline = isLucas ? {
       faturamento_total: 28900.00,
       gasto_trafego: 4500.00,
       vendas_fechadas: 14,
       leads_gerados: 184,
-      cliques: 1420
+      cliques: 1420,
+      revenue: 28900.00,
+      ad_spend: 4500.00,
+      sales: 14,
+      leads: 184,
+      clicks: 1420
     } : {
       faturamento_total: 0,
       gasto_trafego: 0,
       vendas_fechadas: 0,
       leads_gerados: 0,
-      cliques: 0
+      cliques: 0,
+      revenue: 0,
+      ad_spend: 0,
+      sales: 0,
+      leads: 0,
+      clicks: 0
     };
 
     if (!supabase) {
       return res.json({ success: true, data: defaultBaseline });
     }
 
-    const { data, error } = await supabase
+    // Tenta primeiro bi_analytics_data, depois bi_metrics
+    let { data, error } = await supabase
       .from('bi_analytics_data')
       .select('*')
       .eq('client_id', String(clientId))
@@ -1167,6 +1178,20 @@ app.get('/api/bi/metrics/:clientId', async (req, res) => {
       .maybeSingle();
 
     if (error || !data) {
+      const { data: dataAlt, error: errAlt } = await supabase
+        .from('bi_metrics')
+        .select('*')
+        .eq('client_id', String(clientId))
+        .order('reference_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!errAlt && dataAlt) {
+        data = dataAlt;
+      }
+    }
+
+    if (!data) {
       return res.json({ success: true, data: defaultBaseline });
     }
 
@@ -1181,35 +1206,70 @@ app.get('/api/bi/metrics/:clientId', async (req, res) => {
 app.post('/api/bi/metrics/:clientId', async (req, res) => {
   try {
     const { clientId } = req.params;
-    const { faturamento_total, gasto_trafego, vendas_fechadas, leads_gerados, cliques } = req.body;
+    const body = req.body || {};
 
-    const fat = Number(faturamento_total) || 0;
-    const gas = Number(gasto_trafego) || 0;
-    const ven = Number(vendas_fechadas) || 0;
-    const lea = Number(leads_gerados) || 0;
-    const cli = Number(cliques) || (lea * 8);
+    const fat = Number(body.faturamento_total ?? body.revenue ?? 0);
+    const gas = Number(body.gasto_trafego ?? body.ad_spend ?? 0);
+    const ven = Number(body.vendas_fechadas ?? body.sales ?? 0);
+    const lea = Number(body.leads_gerados ?? body.leads ?? 0);
+    const cli = Number(body.cliques ?? body.clicks ?? (lea * 8));
+    const refDate = body.reference_date || new Date().toISOString().split('T')[0];
 
     const payload = {
       client_id: String(clientId),
-      reference_date: new Date().toISOString().split('T')[0],
+      reference_date: refDate,
       faturamento_total: fat,
       gasto_trafego: gas,
       lucro_liquido: fat - gas,
       vendas_fechadas: ven,
       leads_gerados: lea,
       cliques: cli,
+      revenue: fat,
+      ad_spend: gas,
+      sales: ven,
+      leads: lea,
+      clicks: cli,
       updated_at: new Date().toISOString()
     };
 
     if (supabase) {
-      const { data, error } = await supabase
-        .from('bi_analytics_data')
-        .insert([payload])
-        .select()
-        .single();
+      try {
+        await supabase
+          .from('bi_analytics_data')
+          .insert([{
+            client_id: payload.client_id,
+            reference_date: payload.reference_date,
+            faturamento_total: payload.faturamento_total,
+            gasto_trafego: payload.gasto_trafego,
+            lucro_liquido: payload.lucro_liquido,
+            vendas_fechadas: payload.vendas_fechadas,
+            leads_gerados: payload.leads_gerados,
+            cliques: payload.cliques,
+            updated_at: payload.updated_at
+          }]);
+      } catch (sbErr: any) {
+        console.warn('[API BI Insert bi_analytics_data Warning]:', sbErr.message);
+      }
 
-      if (error) {
-        console.warn('[API BI Insert Warning]:', error.message);
+      try {
+        await supabase
+          .from('bi_metrics')
+          .upsert([{
+            client_id: payload.client_id,
+            reference_date: payload.reference_date,
+            faturamento_total: payload.faturamento_total,
+            gasto_trafego: payload.gasto_trafego,
+            lucro_liquido: payload.lucro_liquido,
+            vendas_fechadas: payload.vendas_fechadas,
+            leads_gerados: payload.leads_gerados,
+            cliques: payload.cliques,
+            revenue: payload.revenue,
+            ad_spend: payload.ad_spend,
+            sales: payload.sales,
+            leads: payload.leads
+          }], { onConflict: 'client_id,reference_date' });
+      } catch (sbErr: any) {
+        console.warn('[API BI Upsert bi_metrics Warning]:', sbErr.message);
       }
     }
 
