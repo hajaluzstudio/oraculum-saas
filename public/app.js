@@ -8485,11 +8485,10 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 };
 
 // ============================================================================
-// MOTOR DE BI CONECTADO AO BACKEND EXPRESS REST (/api/bi/metrics)
+// MOTOR DE BI UNIFICADO E DEFINITIVO — ORACULUM PLATFORM
 // ============================================================================
 
-let biPeriodoAtivo = '30d';
-let biDadosCacheAtual = {
+const BI_BASELINE_LUCAS = {
   faturamento_total: 28900.00,
   gasto_trafego: 4500.00,
   vendas_fechadas: 14,
@@ -8497,24 +8496,28 @@ let biDadosCacheAtual = {
   cliques: 1420
 };
 
-// 1. Renderização dos Gráficos Chart.js
+let biPeriodoAtivo = '30d';
+let biDadosCacheAtual = { ...BI_BASELINE_LUCAS };
+
+// 1. Renderização dos 3 Gráficos Chart.js
 window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
   if (typeof Chart === 'undefined') return;
-  const semDados = faturamento === 0 && gasto === 0;
+  const semDados = (faturamento === 0 && gasto === 0);
 
-  const instanciar = (id, config) => {
-    const canvas = document.getElementById(id);
+  const instanciar = (idPrimario, idSecundario, config) => {
+    const canvas = document.getElementById(idPrimario) || document.getElementById(idSecundario);
     if (!canvas) return;
     const old = Chart.getChart(canvas);
     if (old) old.destroy();
     try {
       new Chart(canvas, config);
     } catch(e) {
-      console.warn('[BI Chart Error]', id, e);
+      console.warn('[BI Chart Error]', idPrimario, e);
     }
   };
 
-  instanciar('chart-bi-evolucao', {
+  // 1. Evolução Semanal (Linhas)
+  instanciar('chart-evolucao', 'chart-bi-evolucao', {
     type: 'line',
     data: {
       labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
@@ -8526,7 +8529,8 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
   });
 
-  instanciar('chart-bi-alocacao', {
+  // 2. Alocação por Canal (Rosca)
+  instanciar('chart-alocacao', 'chart-bi-alocacao', {
     type: 'doughnut',
     data: {
       labels: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'Outros'],
@@ -8539,8 +8543,9 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
     options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
   });
 
+  // 3. CAC por Criativo (Barras)
   const cacBase = vendas > 0 ? (gasto / vendas) : 0;
-  instanciar('chart-bi-cac', {
+  instanciar('chart-cac', 'chart-bi-cac', {
     type: 'bar',
     data: {
       labels: ['VSL Hook 3s', 'Reels Bastidores', 'Carrossel Dor', 'Estático Feed'],
@@ -8555,7 +8560,7 @@ window.renderizarGraficosBI = function(faturamento, gasto, vendas) {
   });
 };
 
-// 2. Renderização de Cards e Funil
+// 2. Distribuição Matemática nos Cards e Funil
 window.renderizarPainelBINAInterface = function(data) {
   if (!data) return;
   biDadosCacheAtual = data;
@@ -8604,10 +8609,10 @@ window.renderizarPainelBINAInterface = function(data) {
 
   setTimeout(() => {
     window.renderizarGraficosBI(faturamento, gasto, vendas);
-  }, 50);
+  }, 60);
 };
 
-// 3. Carregamento de Métricas via Backend REST
+// 3. Sincronização do Cliente e Consulta REST Backend
 window.carregarMetricasBI = async function(forcedClientId) {
   const selectEl = document.getElementById('active-client-select') || 
                    document.getElementById('select-active-client') || 
@@ -8627,28 +8632,30 @@ window.carregarMetricasBI = async function(forcedClientId) {
   const titleEls = document.querySelectorAll('#bi-active-client-title, #bi-client-banner-name, [data-bi-client-name]');
   titleEls.forEach(el => { el.innerText = name; });
 
+  const isLucas = String(id).includes('1787406730');
+  let biData = isLucas 
+    ? { ...BI_BASELINE_LUCAS } 
+    : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 };
+
+  window.renderizarPainelBINAInterface(biData);
+
   try {
     const res = await fetch(`/api/bi/metrics/${id}`);
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
         window.renderizarPainelBINAInterface(json.data);
-        return;
       }
     }
   } catch (err) {
-    console.warn('[BI Fetch /api/bi/metrics Warning]:', err);
+    console.warn('[BI Fetch Warning]:', err);
   }
-
-  // Fallback defensivo local
-  const isLucas = String(id).includes('1787406730');
-  window.renderizarPainelBINAInterface(isLucas ? biDadosCacheAtual : { faturamento_total: 0, gasto_trafego: 0, vendas_fechadas: 0, leads_gerados: 0, cliques: 0 });
 };
 
 window.carregarUltimoBIDoCliente = window.carregarMetricasBI;
 window.loadClientBiMetrics = window.carregarMetricasBI;
 
-// 4. Filtros de Período
+// 4. Filtros de Período (7D, 30D, Trimestre, Ano)
 window.filtrarPeriodoBI = function(periodo) {
   biPeriodoAtivo = periodo;
   ['7d', '30d', 'trimestre', 'ano'].forEach(p => {
@@ -8657,13 +8664,13 @@ window.filtrarPeriodoBI = function(periodo) {
     if (p === periodo) {
       btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold transition shadow';
     } else {
-      btn.className = 'px-2.5 py-1 rounded-lg hover:text-white transition';
+      btn.className = 'px-2.5 py-1 rounded-lg hover:text-white transition text-slate-400';
     }
   });
   window.renderizarPainelBINAInterface(biDadosCacheAtual);
 };
 
-// 5. Modo Apresentação & PDF
+// 5. Apresentação em Fullscreen & Impressão PDF
 window.alternarModoApresentacao = function() {
   const el = document.documentElement;
   const btn = document.getElementById('btn-modo-apresentacao');
@@ -8680,7 +8687,7 @@ window.exportarRelatorioPDF = function() {
   window.print();
 };
 
-// 6. Modal Físico
+// 6. Controle do Modal Físico (Abertura e Fechamento Blindados)
 window.abrirModalLancarBI = function(e) {
   if (e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8689,6 +8696,10 @@ window.abrirModalLancarBI = function(e) {
 
   const modal = document.getElementById('modal-bi-estatico');
   if (!modal) return;
+
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
 
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   const clientId = window.activeClientId || window.currentClientId || (selectEl ? selectEl.value : 'client_1787406730');
@@ -8703,7 +8714,11 @@ window.abrirModalLancarBI = function(e) {
   modal.style.display = 'flex';
 };
 
-window.fecharModalLancarBI = function() {
+window.fecharModalLancarBI = function(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
   const modal = document.getElementById('modal-bi-estatico');
   if (modal) modal.style.display = 'none';
 };
@@ -8711,7 +8726,7 @@ window.fecharModalLancarBI = function() {
 window.abrirModalBI = window.abrirModalLancarBI;
 window.fecharModalBI = window.fecharModalLancarBI;
 
-// 7. Gravação via Backend POST /api/bi/metrics/:clientId
+// 7. Gravação de Dados no Supabase via Backend REST
 window.salvarMetricasBISupabase = async function(e) {
   if (e) e.preventDefault();
 
@@ -8742,12 +8757,15 @@ window.salvarMetricasBISupabase = async function(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const result = await res.json();
-    if (!result.success) {
-      console.warn('[BI Fetch POST Error]:', result.error);
+    const json = await res.json();
+    if (json.success && json.data) {
+      window.renderizarPainelBINAInterface(json.data);
+    } else {
+      window.renderizarPainelBINAInterface({ ...payload, client_id: clientId, lucro_liquido: fat - gas });
     }
-  } catch(err) {
-    console.warn('[BI Fetch POST Exception]:', err);
+  } catch (err) {
+    console.error('[BI Gravacao Error]:', err);
+    window.renderizarPainelBINAInterface({ ...payload, client_id: clientId, lucro_liquido: fat - gas });
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -8756,16 +8774,15 @@ window.salvarMetricasBISupabase = async function(e) {
     const form = document.getElementById('form-lancar-bi-estatico');
     if (form) form.reset();
     window.fecharModalLancarBI();
-    window.renderizarPainelBINAInterface(payload);
   }
 };
 
-// 8. Event Listeners Globais
+// 8. Event Listeners Globais, Delegação de Cliques e Sincronização
 document.addEventListener('click', function(e) {
   const target = e.target;
   if (!target) return;
 
-  const btnLancar = target.closest('#btn-lancar-bi, #btn-lancar-bi-topo');
+  const btnLancar = target.closest('#btn-lancar-bi-topo, #btn-lancar-bi');
   if (btnLancar || (target.innerText && target.innerText.trim() === '💰 Lançar BI')) {
     e.preventDefault();
     e.stopPropagation();
@@ -8778,6 +8795,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// Atualização automática ao trocar cliente no seletor
 document.addEventListener('change', function(e) {
   const target = e.target;
   if (target && (target.id === 'active-client-select' || target.id === 'select-active-client' || target.name === 'active-client')) {
@@ -8790,7 +8808,18 @@ document.addEventListener('change', function(e) {
   }
 });
 
-// Execução Automática Inicial
+// Hook automático para o roteador de abas (navegarParaSecao)
+if (window.navegarParaSecao) {
+  const navOriginal = window.navegarParaSecao;
+  window.navegarParaSecao = function(tabId) {
+    navOriginal(tabId);
+    if (tabId === 'tab-bi') {
+      setTimeout(() => { window.carregarMetricasBI(); }, 80);
+    }
+  };
+}
+
+// Inicialização automática imediata
 setTimeout(() => {
   window.carregarMetricasBI();
 }, 100);
