@@ -3441,15 +3441,18 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     window.salvarPerfilUsuario = async function(e) {
     if (e) e.preventDefault();
     
-    const name = document.getElementById('profile-input-name').value.trim();
-    const agencyName = document.getElementById('profile-input-agency').value.trim();
+    const nameInput = document.getElementById('profile-input-name');
+    const agencyInput = document.getElementById('profile-input-agency');
+    
+    const name = nameInput ? nameInput.value.trim() : '';
+    const agencyName = agencyInput ? agencyInput.value.trim() : '';
     
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     let session = sessionStr ? JSON.parse(sessionStr) : {};
     
     let avatarUrlFinal = session.fotoUrl || '';
 
-    // --- 1. UPLOAD DA FOTO PARA O STORAGE ---
+    // --- 1. UPLOAD DA FOTO DO PC PARA O STORAGE ---
     const fileInput = document.getElementById('avatar-upload');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -3480,7 +3483,6 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     // --- 2. SALVAR NO BANCO DE DADOS (TABELA PROFILES) ---
     try {
         if (window.supabaseClient && session.id) {
-            // Montamos o objeto dinâmico baseado nas colunas reais da tabela profiles
             const dadosAtualizados = { 
                 full_name: name, 
                 foto_url: avatarUrlFinal 
@@ -3506,7 +3508,9 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     localStorage.setItem('oraculum_session', JSON.stringify(session));
 
     // Fecha o modal e atualiza a tela
-    document.getElementById('modal-user-profile').style.display = 'none';
+    const modal = document.getElementById('modal-user-profile');
+    if (modal) modal.style.display = 'none';
+    
     if (window.atualizarCardUsuarioLogado) {
         window.atualizarCardUsuarioLogado(session);
     }
