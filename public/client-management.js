@@ -385,20 +385,27 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   }
 };
 
-// 6. ATUALIZAR SELETOR DE CLIENTES NO ONBOARDING E HEADER (Blindado por Agência)
+// 6. ATUALIZAR SELETOR DE CLIENTES NO ONBOARDING E HEADER (Blindado e Isolado)
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
   const todosClientes = window.clientesMock || [];
 
-  // Identifica a sessão e o perfil do usuário logado
   const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
   const session = sessionStr ? JSON.parse(sessionStr) : {};
   const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
-  const currentAgencyId = session.agency_id || session.agencyId || session.id;
+  
+  // Pega o ID da agência considerando todas as variações possíveis na sessão
+  const currentAgencyId = session.agency_id || session.agencyId || session.id || session.agencyUuid;
 
-  // Filtra rigorosamente: Master vê tudo, Agência vê apenas os seus
-  const list = isMaster ? todosClientes : todosClientes.filter(c => String(c.agency_id) === String(currentAgencyId));
+  console.log("[ClientDebug] Seletor - É master?", isMaster, "| ID Agência:", currentAgencyId, "| Total Clientes Brutos:", todosClientes.length);
+
+  // Filtra rigorosamente
+  const list = isMaster 
+    ? todosClientes 
+    : todosClientes.filter(c => c.agency_id && String(c.agency_id) === String(currentAgencyId));
+
+  console.log("[ClientDebug] Clientes filtrados para esta agência:", list.length);
 
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
@@ -432,120 +439,51 @@ window.atualizarSeletorClientesOnboarding = function() {
   }
 };
 
-// 7. RENDERIZAR TABELA DE CLIENTES DA CARTEIRA
-window.renderizarListaClientes = function() {
-  const container = document.getElementById('clients-table-body');
-  if (!container) return;
-
-  const list = window.clientesMock || [];
-
-  // Atualiza métricas da carteira
-  const elTotal = document.getElementById('client-metric-total');
-  const elNiches = document.getElementById('client-metric-niches');
-  const elRevenue = document.getElementById('client-metric-revenue');
-
-  const uniqueNiches = new Set(list.map(c => c.niche).filter(Boolean));
-  const totalRevSum = list.reduce((sum, c) => {
-    const rev = parseFloat(String(c.target_revenue || 0).replace('.', '').replace(',', '.'));
-    return sum + (isNaN(rev) ? 0 : rev);
-  }, 0);
-
-  if (elTotal) elTotal.textContent = String(list.length);
-  if (elNiches) elNiches.textContent = String(uniqueNiches.size);
-  if (elRevenue) elRevenue.textContent = `R$ ${totalRevSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  if (list.length === 0) {
-    container.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado na carteira. Clique em "+ Novo Cliente" para começar.</td></tr>`;
-    return;
-  }
-
-  container.innerHTML = list.map(c => `
-    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
-      <td class="py-3 px-4 font-semibold text-white">
-        <div>${c.name}</div>
-        <div class="text-xs text-slate-400 font-normal">${c.contact_name ? 'Resp: ' + c.contact_name : 'Sem responsável'}</div>
-      </td>
-      <td class="py-3 px-4 text-emerald-400">
-        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs">${c.niche || 'Geral'}</span>
-      </td>
-      <td class="py-3 px-4 text-slate-400 font-sans">
-        <div>${c.phone || '-'}</div>
-        <div class="text-xs text-slate-500">${c.contact_name || '-'}</div>
-      </td>
-      <td class="py-3 px-4 text-slate-300 text-xs font-semibold">
-        <div>${c.avg_ticket ? 'Ticket: R$ ' + c.avg_ticket : 'Ticket: -'}</div>
-        <div class="text-xs text-emerald-400">${c.target_revenue ? 'Meta: R$ ' + c.target_revenue : ''}</div>
-      </td>
-      <td class="py-3 px-4 text-xs text-slate-400">
-        <div>${c.website ? `<a href="${c.website}" target="_blank" class="text-emerald-400 hover:underline"><i class="fa-solid fa-globe"></i> ${c.website.replace('https://','')}</a>` : '-'}</div>
-        <div class="text-xs text-slate-500">${c.instagram ? `<i class="fa-brands fa-instagram"></i> ${c.instagram}` : ''}</div>
-      </td>
-      <td class="py-3 px-4 text-right space-x-2">
-        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors cursor-pointer">Editar</button>
-        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
-      </td>
-    </tr>
-  `).join('');
-};
-
-// Extrai texto limpo de notes (suporte a legado com JSON bruto)
-function sanitizeNotes(raw) {
-  if (!raw) return '';
-  const str = String(raw).trim();
-  if (str.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(str);
-      return parsed.actual_notes || parsed.notes || parsed.text || str;
-    } catch (_) {}
-  }
-  return str;
-}
-
-// 8. BUSCAR CLIENTES DO SUPABASE / BACKEND (Com Isolamento Estrito por Agência)
+// 8. BUSCAR CLIENTES DO SUPABASE / BACKEND (Com Diagnóstico de Sessão)
 window.carregarClientesDoSupabase = async function() {
   const supaClient = getSupabaseClient();
   let loaded = false;
 
-  // Identifica a sessão atual do usuário logado
   const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
   const session = sessionStr ? JSON.parse(sessionStr) : {};
-  const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
   
-  // Pega o ID da agência logada com segurança
-  const currentAgencyId = session.agency_id || session.agencyId || session.id || (typeof window.getTenantAgencyId === 'function' ? window.getTenantAgencyId() : null);
+  console.log("[ClientDebug] Sessão completa carregada:", session);
 
-  // FONTE PRIMÁRIA: Supabase direto
+  const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
+  const currentAgencyId = session.agency_id || session.agencyId || session.id || session.agencyUuid;
+
   if (supaClient) {
     try {
       let query = supaClient.from('clients').select('*');
 
-      // SE NÃO FOR MASTER, FILTRA ESTRITAMENTE PELOS CLIENTES DAQUELA AGÊNCIA
       if (!isMaster) {
         if (!currentAgencyId) {
-          // Se for agência mas não tiver ID na sessão, força zerar a lista por segurança
+          console.warn("⚠️ ATENÇÃO: Usuário logado não é master, mas a sessão NÃO possui ID de agência válido!");
           window.clientesMock = [];
           window.clientsList = [];
           window.renderizarListaClientes();
           window.atualizarSeletorClientesOnboarding();
           return;
         }
+        // Filtra estritamente no banco de dados
         query = query.eq('agency_id', currentAgencyId);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (!error && Array.isArray(data)) {
-        // Sanitiza notes legadas em todos os registros
         window.clientesMock = data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
         window.clientsList = window.clientesMock;
         loaded = true;
+      } else if (error) {
+        console.error("❌ Erro na query do Supabase:", error);
       }
     } catch (e) {
-      console.warn('[ClientManagement] Supabase direto falhou, tentando API...', e);
+      console.warn('[ClientManagement] Supabase direto falhou:', e);
     }
   }
 
-  // FALLBACK: API REST
+  // Fallback API REST
   if (!loaded) {
     try {
       const activeTenantId = currentAgencyId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
@@ -554,10 +492,9 @@ window.carregarClientesDoSupabase = async function() {
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        // Se a API retornar tudo, filtramos no front caso não seja master
         let fetchedData = data.data;
         if (!isMaster && currentAgencyId) {
-          fetchedData = fetchedData.filter(c => c.agency_id === currentAgencyId);
+          fetchedData = fetchedData.filter(c => String(c.agency_id) === String(currentAgencyId));
         } else if (!isMaster) {
           fetchedData = [];
         }
@@ -565,7 +502,7 @@ window.carregarClientesDoSupabase = async function() {
         window.clientsList = window.clientesMock;
       }
     } catch(e) {
-      console.warn('[ClientManagement] Usando cache local para lista de clientes.');
+      console.warn('[ClientManagement] Falha no fallback da API.');
     }
   }
 
