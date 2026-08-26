@@ -8373,38 +8373,25 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- TRAVA DE SEGURANÇA BLINDADA V2 ---
+// --- TRAVA DE SEGURANÇA BLINDADA V3 (ANTI-PISCAR) ---
 setInterval(() => {
     try {
         const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
         
-        // Busca cirúrgica apenas por botões ou links (a que funcionou no 1º teste)
-        const elementos = document.querySelectorAll('button, a, .btn, [id*="oraculo"]');
-        let botaoLive = null;
-        
-        for (let el of elementos) {
-            if (el.innerText && el.innerText.includes('Oraculum Live')) {
-                botaoLive = el;
-                break; // Achou o botão exato, para a busca
-            }
-        }
-
-        if (botaoLive) {
-            if (!usuarioLogado) {
-                // TELA DE LOGIN: Esmaga o botão com força máxima (!important)
-                botaoLive.style.setProperty('display', 'none', 'important');
-                botaoLive.style.setProperty('opacity', '0', 'important');
-                botaoLive.style.setProperty('pointer-events', 'none', 'important');
-                botaoLive.style.setProperty('visibility', 'hidden', 'important');
-            } else {
-                // DENTRO DO SISTEMA: Remove as nossas travas para ele funcionar normal
-                if (botaoLive.style.getPropertyValue('opacity') === '0') {
-                    botaoLive.style.removeProperty('display');
-                    botaoLive.style.removeProperty('opacity');
-                    botaoLive.style.removeProperty('pointer-events');
-                    botaoLive.style.removeProperty('visibility');
+        if (usuarioLogado) {
+            // Se o usuário logou, adiciona a classe que libera o botão no CSS
+            document.body.classList.add('sistema-liberado');
+        } else {
+            // Se não está logado, remove a classe e mantém o CSS trancado
+            document.body.classList.remove('sistema-liberado');
+            
+            // Varredura de backup por força bruta (caso o botão seja gerado sem ID)
+            const elementos = document.querySelectorAll('button, a, .btn');
+            elementos.forEach(el => {
+                if (el.innerText && el.innerText.includes('Oraculum Live')) {
+                    el.style.setProperty('display', 'none', 'important');
                 }
-            }
+            });
         }
     } catch (e) {} 
-}, 50); // Rodando a cada 50ms para engolir qualquer evento de clique do sistema
+}, 50);
