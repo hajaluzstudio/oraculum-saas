@@ -680,4 +680,28 @@ document.addEventListener('click', (e) => {
 });
 
 
+// --- FUNÇÃO PARA ALTERAR A SENHA DA AGÊNCIA DIRETO PELO PAINEL MASTER ---
+window.abrirModalEditarSenhaAgencia = async function(agencyId, agencyEmail) {
+    const novaSenha = prompt(`Digite a nova senha de acesso para a agência (${agencyEmail}):`);
+    if (!novaSenha) return;
 
+    if (novaSenha.length < 6) {
+        alert('❌ A senha precisa ter pelo menos 6 caracteres.');
+        return;
+    }
+
+    try {
+        const { error } = await window.supabaseClient.auth.admin.updateUserById(agencyId, {
+            password: novaSenha
+        });
+
+        if (error) {
+            alert('Erro ao atualizar senha: ' + error.message);
+        } else {
+            alert('✓ Senha da agência atualizada com sucesso!');
+        }
+    } catch (err) {
+        console.error('Erro ao atualizar senha:', err);
+        alert('❌ Erro ao processar alteração de senha.');
+    }
+};
