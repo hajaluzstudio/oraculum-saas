@@ -8409,3 +8409,76 @@ document.addEventListener('keydown', (e) => {
     }, true); // O 'true' garante prioridade máxima de execução sobre o sistema original
 })();
 // --- FIM DA TRAVA V4 ---
+
+
+// =======================================================
+// SISTEMA DE CATRACA (BLOQUEIO DE INADIMPLENTES)
+// =======================================================
+
+window.verificarBloqueioInadimplencia = async function() {
+    // Busca o cliente do Supabase
+    let supaClient = null;
+    if (typeof supabase !== 'undefined' && supabase.from) supaClient = supabase;
+    else if (window.supabaseClient && window.supabaseClient.from) supaClient = window.supabaseClient;
+    else if (window.supabase && window.supabase.from) supaClient = window.supabase;
+    
+    if (!supaClient) return;
+
+    try {
+        // 1. Descobre quem está logado
+        let authUser = null;
+        if (typeof supaClient.auth.getUser === 'function') {
+            const { data } = await supaClient.auth.getUser();
+            authUser = data?.user;
+        } else if (typeof supaClient.auth.user === 'function') {
+            authUser = supaClient.auth.user();
+        }
+        
+        if (!authUser || !authUser.email) return; // Ninguém logado ainda
+        
+        const email = String(authUser.email).toLowerCase();
+        
+        // 2. O Master Supremo NUNCA é bloqueado
+        if (email === 'hajaluzstudio@gmail.com') return;
+
+        // 3. Vai no banco e pergunta se essa agência está bloqueada
+        const { data: agData } = await supaClient
+            .from('agencies')
+            .select('status')
+            .eq('email_billing', email)
+            .single();
+
+        // 4. SE ESTIVER BLOQUEADA: Apaga a plataforma e sobe o cadeado
+        if (agData && agData.status === 'blocked') {
+            console.warn("🚫 AGÊNCIA BLOQUEADA! Suspendendo acesso à interface...");
+            
+            // Destrói o HTML da página e injeta a tela de bloqueio (Impossível de fechar)
+            document.body.innerHTML = `
+                <div style="position: fixed; inset: 0; background: #030712; z-index: 999999999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: ui-sans-serif, system-ui, sans-serif; padding: 20px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: rgba(244, 63, 94, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; border: 1px solid rgba(244, 63, 94, 0.2);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 12px; color: #f8fafc;">Acesso Suspenso</h1>
+                    <p style="color: #94a3b8; max-width: 420px; line-height: 1.6; margin-bottom: 32px; font-size: 0.95rem;">
+                        Sua conta de agência encontra-se temporariamente inativa devido a pendências financeiras. <br><br>
+                        Por favor, regularize sua assinatura para retomar o acesso imediato à plataforma e aos dados dos seus clientes.
+                    </p>
+                    <button onclick="window.location.reload()" style="padding: 12px 32px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                        Atualizar Status
+                    </button>
+                    <div style="margin-top: 48px; font-size: 0.75rem; color: #475569; letter-spacing: 0.5px; text-transform: uppercase;">
+                        Entre em contato com o suporte para dúvidas.
+                    </div>
+                </div>
+            `;
+        }
+    } catch(err) {
+        console.error("Erro na verificação da catraca:", err);
+    }
+};
+
+// Executa o leão de chácara sempre que a página terminar de carregar
+document.addEventListener('DOMContentLoaded', () => {
+    // Dá um tempo curto (800ms) para garantir que o login do usuário foi processado pelo navegador
+    setTimeout(window.verificarBloqueioInadimplencia, 800);
+});
