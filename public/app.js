@@ -8373,40 +8373,38 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- TRAVA DE SEGURANÇA BLINDADA: BLOQUEIO DO ORACULUM LIVE NA TELA DE LOGIN ---
+// --- TRAVA DE SEGURANÇA BLINDADA V2 ---
 setInterval(() => {
     try {
         const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
         
-        // Mapeia o botão e também a janela do chat para bloquear ambos
-        const botaoLive = document.getElementById('oraculo-live-btn') || document.querySelector('.oraculum-live-btn');
-        const janelaChat = document.getElementById('oraculum-live-container') || document.querySelector('.oraculum-live-window');
-
-        // Busca extra de segurança caso o botão não tenha ID fixo
-        const botaoPorTexto = Array.from(document.querySelectorAll('button, a, div, span')).find(b => b.innerText && b.innerText.includes('Oraculum Live'));
-
-        const elementoAlvo = botaoLive || botaoPorTexto;
-
-        if (!usuarioLogado) {
-            // FORÇA BRUTA: Se NÃO estiver logado, tranca com prioridade máxima (!important)
-            if (elementoAlvo) {
-                elementoAlvo.style.setProperty('display', 'none', 'important');
-                elementoAlvo.style.setProperty('visibility', 'hidden', 'important');
-                elementoAlvo.style.setProperty('opacity', '0', 'important');
-                elementoAlvo.style.setProperty('pointer-events', 'none', 'important');
-            }
-            if (janelaChat) {
-                janelaChat.style.setProperty('display', 'none', 'important');
-                janelaChat.style.setProperty('visibility', 'hidden', 'important');
-            }
-        } else {
-            // Se estiver logado, remove as travas para o botão funcionar normal
-            if (elementoAlvo && elementoAlvo.style.display === 'none') {
-                elementoAlvo.style.removeProperty('display');
-                elementoAlvo.style.removeProperty('visibility');
-                elementoAlvo.style.removeProperty('opacity');
-                elementoAlvo.style.removeProperty('pointer-events');
+        // Busca cirúrgica apenas por botões ou links (a que funcionou no 1º teste)
+        const elementos = document.querySelectorAll('button, a, .btn, [id*="oraculo"]');
+        let botaoLive = null;
+        
+        for (let el of elementos) {
+            if (el.innerText && el.innerText.includes('Oraculum Live')) {
+                botaoLive = el;
+                break; // Achou o botão exato, para a busca
             }
         }
-    } catch (e) {} // Impede que qualquer conflito no sistema pare a verificação
-}, 100); // Motor super-rápido (100 milissegundos): é humanamente impossível o botão vazar
+
+        if (botaoLive) {
+            if (!usuarioLogado) {
+                // TELA DE LOGIN: Esmaga o botão com força máxima (!important)
+                botaoLive.style.setProperty('display', 'none', 'important');
+                botaoLive.style.setProperty('opacity', '0', 'important');
+                botaoLive.style.setProperty('pointer-events', 'none', 'important');
+                botaoLive.style.setProperty('visibility', 'hidden', 'important');
+            } else {
+                // DENTRO DO SISTEMA: Remove as nossas travas para ele funcionar normal
+                if (botaoLive.style.getPropertyValue('opacity') === '0') {
+                    botaoLive.style.removeProperty('display');
+                    botaoLive.style.removeProperty('opacity');
+                    botaoLive.style.removeProperty('pointer-events');
+                    botaoLive.style.removeProperty('visibility');
+                }
+            }
+        }
+    } catch (e) {} 
+}, 50); // Rodando a cada 50ms para engolir qualquer evento de clique do sistema
