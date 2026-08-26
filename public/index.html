@@ -3452,7 +3452,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     
     let avatarUrlFinal = session.fotoUrl || '';
 
-    // --- 1. UPLOAD DA FOTO DO PC PARA O STORAGE ---
+    // --- 1. UPLOAD DA FOTO PARA O STORAGE DO SUPABASE ---
     const fileInput = document.getElementById('avatar-upload');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -3480,10 +3480,9 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR NO BANCO DE DADOS (SEM CAUSAR ERRO 406) ---
+    // --- 2. SALVAR NO BANCO DE DADOS (TABELA PROFILES) ---
     try {
         if (window.supabaseClient && session.id) {
-            // Executa o update direto na tabela profiles sem pedir .select() de volta
             const { error: dbError } = await window.supabaseClient
                 .from('profiles')
                 .update({ 
@@ -3493,20 +3492,20 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
                 .eq('id', session.id);
 
             if (dbError) {
-                console.error('Erro do Supabase ao atualizar:', dbError.message);
+                console.error('Erro ao atualizar no banco:', dbError.message);
                 alert('Erro ao salvar no banco: ' + dbError.message);
                 return;
             }
         }
     } catch (err) {
-        console.error('Erro geral ao salvar no banco:', err);
+        console.error('Erro geral ao salvar:', err);
     }
 
     // Salva na sessão do navegador
     sessionStorage.setItem('oraculum_session', JSON.stringify(session));
     localStorage.setItem('oraculum_session', JSON.stringify(session));
 
-    // Fecha o modal e atualiza a tela
+    // Fecha o modal e atualiza a interface
     const modal = document.getElementById('modal-user-profile');
     if (modal) modal.style.display = 'none';
     
@@ -3514,7 +3513,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
         window.atualizarCardUsuarioLogado(session);
     }
     
-    alert('✓ Perfil e foto salvos no banco com sucesso!');
+    alert('✓ Perfil e foto salvos com sucesso!');
 };
 
     window.isUserMasterAdmin = function() {
