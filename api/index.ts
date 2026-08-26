@@ -256,7 +256,9 @@ app.put('/api/admin/agencies', async (req, res) => {
                 throw listError;
             }
 
-            const user = listUsers.users.find(u => u.email === agencyData.email_billing);
+            // Conversão explícita para evitar o erro do TypeScript
+            const usersList = (listUsers as any).users || [];
+            const user = usersList.find((u: any) => u.email === agencyData.email_billing);
 
             if (!user) {
                 return res.status(404).json({ success: false, message: 'Usuário de autenticação não encontrado para este e-mail.' });
