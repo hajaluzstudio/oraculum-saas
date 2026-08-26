@@ -3561,102 +3561,78 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       window.executarLogout(e);
     };
 
-    // 3. FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
-    window.atualizarCardUsuarioLogado = function(providedSession = null) {
-      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-      let session = providedSession;
-      if (!session) {
-        try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
-      }
+   // 3. FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
+window.atualizarCardUsuarioLogado = async function(providedSession = null) {
+    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+    let session = providedSession;
+    if (!session) {
+        try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e) {}
+    }
 
-      const nomeEl = document.getElementById('user-display-name');
-      const roleEl = document.getElementById('user-display-role');
-      const badgeEl = document.getElementById('user-display-badge');
-      const avatarContainer = document.getElementById('user-avatar-container');
-      const headerEmailEl = document.getElementById('header-user-email');
-      const dropdownFullName = document.getElementById('dropdown-full-name');
-      const dropdownEmail = document.getElementById('dropdown-email');
-      const btnTabSettings = document.getElementById('btn-tab-settings');
-      const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
+    if (session && session.id && window.supabaseClient) {
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', session.id)
+                .maybeSingle();
+                
+            if (data) {
+                session.fullName = data.full_name || session.fullName;
+                session.fotoUrl = data.foto_url || session.fotoUrl;
+            }
+        } catch (e) {
+            console.error('Erro ao buscar perfil atualizado:', e);
+        }
+    }
 
-      if (!session || !session.email) {
+    const nomeEl = document.getElementById('user-display-name');
+    const roleEl = document.getElementById('user-display-role');
+    const badgeEl = document.getElementById('user-display-badge');
+    const avatarContainer = document.getElementById('user-avatar-container');
+    const headerEmailEl = document.getElementById('header-user-email');
+    const dropdownFullName = document.getElementById('dropdown-full-name');
+    const dropdownEmail = document.getElementById('dropdown-email');
+    const btnTabSettings = document.getElementById('btn-tab-settings');
+    const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
+
+    if (!session || !session.email) {
         if (nomeEl) nomeEl.textContent = 'Visitante';
         if (roleEl) roleEl.textContent = 'Não Autenticado';
         if (badgeEl) badgeEl.textContent = 'Desconectado';
-        if (avatarContainer) avatarContainer.innerHTML = '<span id="user-avatar-initials">??</span>';
+        if (avatarContainer) avatarContainer.innerHTML = '<span id="user-avatar-initials">?</span>';
         if (headerEmailEl) headerEmailEl.textContent = 'Desconectado';
         if (dropdownFullName) dropdownFullName.textContent = 'Visitante';
         if (dropdownEmail) dropdownEmail.textContent = 'não autenticado';
         if (btnTabSettings) btnTabSettings.style.display = 'none';
         if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'none';
         return;
-      }
+    }
 
-      const email = session.email || 'usuario@oraculum.com';
-      const isMaster = window.isUserMasterAdmin();
+    // Atualiza nome e dados visuais
+    const nomeExibicao = session.fullName || session.email.split('@')[0];
+    if (nomeEl) nomeEl.textContent = nomeExibicao;
+    if (dropdownFullName) dropdownFullName.textContent = nomeExibicao;
+    if (headerEmailEl) headerEmailEl.textContent = session.email;
+    if (dropdownEmail) dropdownEmail.textContent = session.email;
 
-      // CONTROLE DE VISIBILIDADE NA SIDEBAR (APENAS MASTER ADMIN)
-      if (btnTabSettings) btnTabSettings.style.display = isMaster ? 'flex' : 'none';
-      if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = isMaster ? 'flex' : 'none';
+    // Se houver foto de perfil salva, renderiza a imagem no avatar
+    if (avatarContainer && session.fotoUrl) {
+        avatarContainer.innerHTML = `<img src="${session.fotoUrl}" alt="Avatar" class="w-full h-full object-cover rounded-full user-avatar-img">`;
+    }
 
-      if (headerEmailEl) headerEmailEl.textContent = email;
-      if (dropdownEmail) dropdownEmail.textContent = email;
-
-      let displayName = '';
-      let displayRole = '';
-      let displayBadge = '';
-      let initials = 'AM';
-
-      if (isMaster) {
-        displayName = session.fullName || session.name || "Administrador Master";
-        displayRole = "Painel Master / Plataforma";
-        displayBadge = "Master / Super Admin";
-        initials = 'AM';
-
-        if (badgeEl) {
-          badgeEl.textContent = displayBadge;
-          badgeEl.style.background = 'rgba(253, 224, 71, 0.15)';
-          badgeEl.style.color = '#FDE047';
-          badgeEl.style.borderColor = 'rgba(253, 224, 71, 0.4)';
-        }
-      } else {
-        const rawName = session.fullName || session.nomeResponsavel || session.agencyName || email.split('@')[0];
-        displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        const agencyTitle = session.agencyName || (email.split('@')[0] ? 'Agência ' + email.split('@')[0].toUpperCase() : 'Agência Parceira');
-        displayRole = agencyTitle;
-        displayBadge = session.plan || session.plan_tier || "Plano Enterprise Pro";
-
-        const words = displayName.trim().split(' ');
-        if (words.length >= 2) {
-          initials = (words[0][0] + words[1][0]).toUpperCase();
-        } else if (words.length === 1 && words[0].length >= 2) {
-          initials = words[0].substring(0, 2).toUpperCase();
-        } else {
-          initials = 'AP';
-        }
-
-        if (badgeEl) {
-          badgeEl.textContent = displayBadge;
-          badgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
-          badgeEl.style.color = '#34D399';
-          badgeEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-        }
-      }
-
-      if (nomeEl) nomeEl.textContent = displayName;
-      if (roleEl) roleEl.textContent = displayRole;
-      if (dropdownFullName) dropdownFullName.textContent = displayName;
-
-      if (avatarContainer) {
-        if (session.fotoUrl) {
-          avatarContainer.innerHTML = `<img src="${session.fotoUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-        } else {
-          avatarContainer.innerHTML = `<span id="user-avatar-initials">${initials}</span>`;
-        }
-      }
-
-      console.log(`[UserCard] Card de perfil e dropdown atualizados: ${displayName} (Master: ${isMaster})`);
-    };
+    if (window.isUserMasterAdmin && window.isUserMasterAdmin()) {
+        if (roleEl) roleEl.textContent = 'Painel Master / Admin';
+        if (badgeEl) badgeEl.textContent = 'Master';
+        if (btnTabSettings) btnTabSettings.style.display = 'flex';
+        if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'flex';
+    } else {
+        if (roleEl) roleEl.textContent = 'Agência Parceira';
+        if (badgeEl) badgeEl.textContent = 'Parceiro';
+        if (btnTabSettings) btnTabSettings.style.display = 'none';
+        if (btnTabSuperAdmin) btnTabSuperAdmin.style.display = 'none';
+    }
+};
 
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
     (function verificarSessaoInicial() {
