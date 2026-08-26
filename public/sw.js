@@ -1,32 +1,18 @@
-// ==============================================================================
-// SERVICE WORKER - ORACULUM SAAS (PWA & OFFLINE TELEPROMPTER)
-// ==============================================================================
-
-const CACHE_NAME = 'oraculum-cache-v3';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.json'
-];
-
+// PROTOCOLO DE AUTODESTRUIÇÃO DO CACHE ANTIGO
 self.addEventListener('install', (e) => {
-  self.skipWaiting();
+  // Força o novo Service Worker a se instalar imediatamente
+  self.skipWaiting(); 
 });
 
 self.addEventListener('activate', (e) => {
+  // Varre e deleta TODOS os caches antigos gravados no computador do usuário
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter(key => key !== CACHE_NAME).map((k) => caches.delete(k))
-    ))
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => caches.delete(key)));
+    })
   );
-  return self.clients.claim();
+  // Toma o controle da página imediatamente
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  // Não intercepta scripts e html para evitar travar versão
-  if (e.request.url.includes('.js') || e.request.url.includes('.html')) {
-    e.respondWith(fetch(e.request));
-  }
-});
+// A ausência proposital do 'fetch' garante que o navegador sempre busque da internet, e não do cache.
