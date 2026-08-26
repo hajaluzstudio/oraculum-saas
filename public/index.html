@@ -3444,13 +3444,12 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     const name = document.getElementById('profile-input-name').value.trim();
     const agencyName = document.getElementById('profile-input-agency').value.trim();
     
-    // Pega a sessão atual para saber quem é o usuário logado
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     let session = sessionStr ? JSON.parse(sessionStr) : {};
     
     let avatarUrlFinal = session.fotoUrl || '';
 
-    // --- 1. MOTOR DE UPLOAD DA FOTO DO PC PARA O SUPABASE ---
+    // --- 1. UPLOAD DA FOTO PARA O STORAGE ---
     const fileInput = document.getElementById('avatar-upload');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -3473,32 +3472,40 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
         }
     }
 
-    // Atualiza os dados locais na sessão
+    // Atualiza os dados locais
     session.fullName = name;
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR AS ALTERAÇÕES DIRETAMENTE NO BANCO DE DADOS (SUPABASE) ---
+    // --- 2. SALVAR NO BANCO DE DADOS (TABELA PROFILES) ---
     try {
         if (window.supabaseClient && session.id) {
-            await window.supabaseClient
-                .from('usuarios') // Ajuste o nome da sua tabela de usuários se for diferente (ex: 'profiles' ou 'users')
-                .update({ 
-                    full_name: name, 
-                    agency_name: agencyName, 
-                    foto_url: avatarUrlFinal 
-                })
+            // Montamos o objeto dinâmico baseado nas colunas reais da tabela profiles
+            const dadosAtualizados = { 
+                full_name: name, 
+                foto_url: avatarUrlFinal 
+            };
+
+            const { error: dbError } = await window.supabaseClient
+                .from('profiles')
+                .update(dadosAtualizados)
                 .eq('id', session.id);
+
+            if (dbError) {
+                console.error('Erro do Supabase ao atualizar:', dbError.message);
+                alert('Erro ao salvar no banco: ' + dbError.message);
+                return;
+            }
         }
     } catch (err) {
-        console.error('Erro ao salvar no banco de dados:', err);
+        console.error('Erro geral ao salvar no banco:', err);
     }
 
-    // Salva de volta no navegador
+    // Salva na sessão do navegador
     sessionStorage.setItem('oraculum_session', JSON.stringify(session));
     localStorage.setItem('oraculum_session', JSON.stringify(session));
 
-    // Fecha o modal e atualiza a interface visual
+    // Fecha o modal e atualiza a tela
     document.getElementById('modal-user-profile').style.display = 'none';
     if (window.atualizarCardUsuarioLogado) {
         window.atualizarCardUsuarioLogado(session);
