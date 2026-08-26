@@ -3438,28 +3438,57 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       modal.style.display = 'flex';
     };
 
-    window.salvarPerfilUsuario = function(e) {
-      if (e) e.preventDefault();
-      const name = document.getElementById('profile-input-name').value.trim();
-      const agencyName = document.getElementById('profile-input-agency').value.trim();
-      const fotoUrl = document.getElementById('profile-input-avatar').value.trim();
+    window.salvarPerfilUsuario = async function(e) {
+    if (e) e.preventDefault();
+    
+    const name = document.getElementById('profile-input-name').value.trim();
+    const agencyName = document.getElementById('profile-input-agency').value.trim();
+    
+    // Pega a sessão atual
+    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+    let session = sessionStr ? JSON.parse(sessionStr) : {};
+    
+    // --- MOTOR DE UPLOAD DA FOTO DO PC PARA O SUPABASE ---
+    const fileInput = document.getElementById('avatar-upload');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `avatar_${Date.now()}.${fileExt}`;
+        
+        // Faz o upload direto para o bucket 'avatars'
+        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+            .from('avatars')
+            .upload(fileName, file);
 
-      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-      let session = null;
-      try { session = sessionStr ? JSON.parse(sessionStr) : {}; } catch(e){ session = {}; }
+        if (!uploadError) {
+            // Pega o link público da imagem gerada no Supabase
+            const { data: publicURLData } = window.supabaseClient.storage
+                .from('avatars')
+                .getPublicUrl(fileName);
+                
+            session.fotoUrl = publicURLData.publicUrl;
+        } else {
+            alert('Erro ao fazer upload da imagem: ' + uploadError.message);
+            return;
+        }
+    }
 
-      session.fullName = name;
-      if (agencyName) session.agencyName = agencyName;
-      if (fotoUrl) session.fotoUrl = fotoUrl;
-      else delete session.fotoUrl;
+    // Atualiza os dados na sessão
+    session.fullName = name;
+    if (agencyName) session.agencyName = agencyName;
 
-      sessionStorage.setItem('oraculum_session', JSON.stringify(session));
-      localStorage.setItem('oraculum_session', JSON.stringify(session));
+    // Salva de volta no navegador
+    sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+    localStorage.setItem('oraculum_session', JSON.stringify(session));
 
-      document.getElementById('modal-user-profile').style.display = 'none';
-      window.atualizarCardUsuarioLogado(session);
-      alert('✅ Perfil atualizado com sucesso!');
-    };
+    // Fecha o modal e atualiza a interface
+    document.getElementById('modal-user-profile').style.display = 'none';
+    if (window.atualizarCardUsuarioLogado) {
+        window.atualizarCardUsuarioLogado(session);
+    }
+    
+    alert('✓ Perfil e foto atualizados com sucesso!');
+};
 
     window.isUserMasterAdmin = function() {
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
