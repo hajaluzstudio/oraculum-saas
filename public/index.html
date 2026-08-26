@@ -3388,55 +3388,57 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       }
     });
 
-    // 2. AÇÕES DO MENU DROPDOWN
-    window.abrirModalPerfil = function() {
-      const menu = document.getElementById('user-dropdown-menu');
-      if (menu) menu.classList.remove('active');
-      
-      let modal = document.getElementById('modal-user-profile');
-      if (!modal) {
+    // 2. AÇÕES DO MENU DROPDOWN E ABERTURA DO PERFIL
+window.abrirModalPerfil = function() {
+    const menu = document.getElementById('user-dropdown-menu');
+    if (menu) menu.classList.remove('active');
+
+    let modal = document.getElementById('modal-user-profile');
+    if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-user-profile';
-        modal.style.cssText = 'position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+        modal.style.cssText = 'position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
         modal.innerHTML = `
-          <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
-            <div class="flex justify-between items-center border-b border-[var(--border-subtle)] pb-3">
-              <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-gear text-emerald-400"></i> Editar Perfil & Foto</h3>
-              <button onclick="document.getElementById('modal-user-profile').style.display='none'" class="text-[var(--text-muted)] hover:text-white text-xl cursor-pointer">&times;</button>
+            <div class="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
+                <div class="flex justify-between items-center border-b border-[var(--border-subtle)] pb-3">
+                    <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-gear text-emerald-400"></i> Editar Perfil & Foto</h3>
+                    <button onclick="document.getElementById('modal-user-profile').style.display='none'" class="text-[var(--text-muted)] hover:text-white cursor-pointer">&times;</button>
+                </div>
+                <form onsubmit="window.salvarPerfilUsuario(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome de Exibição / Responsável</label>
+                        <input type="text" id="profile-input-name" required class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome da Agência / Fantasia</label>
+                        <input type="text" id="profile-input-agency" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Enviar Nova Foto (Opcional)</label>
+                        <input type="file" id="avatar-upload" accept="image/*" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; cursor: pointer;">
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--border-subtle)]">
+                        <button type="button" onclick="document.getElementById('modal-user-profile').style.display='none'" class="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl text-xs font-semibold rounded-xl text-xs font-semibold text-white cursor-pointer">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-[#020705] rounded-xl font-extrabold text-xs cursor-pointer shadow-none">Salvar Alterações</button>
+                    </div>
+                </form>
             </div>
-            <form onsubmit="window.salvarPerfilUsuario(event)" class="space-y-3">
-              <div>
-                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome de Exibição / Responsável</label>
-                <input type="text" id="profile-input-name" required class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">Nome da Agência / Fantasia</label>
-                <input type="text" id="profile-input-agency" class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-[var(--text-muted)] uppercase mb-1">URL da Foto do Avatar (Opcional)</label>
-                <input type="file" id="avatar-upload" accept="image/*" style="width: 100%; background: var(--bg-app); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #FFF; font-size: 13px; outline: none; cursor: pointer;">
-              </div>
-              <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--border-subtle)]">
-                <button type="button" onclick="document.getElementById('modal-user-profile').style.display='none'" class="px-4 py-2 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface)] rounded-xl text-[var(--text-primary)] text-xs cursor-pointer">Cancelar</button>
-                <button type="submit" class="px-4 py-2 bg-[#10B981] hover:bg-[#059669] text-[#020705] rounded-xl font-extrabold text-xs cursor-pointer shadow-none">Salvar Alterações</button>
-              </div>
-            </form>
-          </div>
         `;
         document.body.appendChild(modal);
-      }
-      
-      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-      let session = null;
-      try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
-      if (session) {
-        document.getElementById('profile-input-name').value = session.fullName || session.nome || '';
-        document.getElementById('profile-input-agency').value = session.agencyName || '';
-        document.getElementById('profile-input-avatar').value = session.fotoUrl || '';
-      }
-      modal.style.display = 'flex';
-    };
+    }
+
+    // Pega os dados atuais da sessão com segurança e preenche os inputs
+    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+    let session = sessionStr ? JSON.parse(sessionStr) : {};
+
+    const inputName = document.getElementById('profile-input-name');
+    const inputAgency = document.getElementById('profile-input-agency');
+
+    if (inputName) inputName.value = session.fullName || session.name || '';
+    if (inputAgency) inputAgency.value = session.agencyName || '';
+
+    modal.style.display = 'flex';
+};
 
     window.salvarPerfilUsuario = async function(e) {
     if (e) e.preventDefault();
