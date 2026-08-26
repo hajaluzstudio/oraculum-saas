@@ -1,5 +1,5 @@
 // =======================================================
-// GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (SIMPLIFICADO E BLINDADO)
+// GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (BLINDADO COM ANTI-SOBREPOSIÇÃO)
 // =======================================================
 
 window.clientesMock = window.clientesMock || [];
@@ -198,33 +198,58 @@ window.atualizarSeletorClientesOnboarding = function() {
   }
 };
 
-// 7. RENDERIZAR TABELA
+// 7. RENDERIZAR TABELA (AGORA BLINDADA)
 window.renderizarListaClientes = function() {
   const container = document.getElementById('clients-table-body');
-  if (!container) return;
+  
+  // Impede o código de quebrar caso a tabela não esteja montada no HTML ainda
+  if (!container) {
+      console.warn("⚠️ Tabela de clientes não encontrada no DOM.");
+      return;
+  }
 
-  const list = window.clientesMock || [];
+  // Garante que estamos pegando a lista global correta
+  const list = window.clientesMock || window.clientsList || [];
 
+  console.log(`🖌️ Desenhando tabela com ${list.length} clientes...`);
+
+  // Atualiza também os contadores da dashboard, se eles existirem na tela
+  const elTotal = document.getElementById('client-metric-total');
+  const elNiches = document.getElementById('client-metric-niches');
+  const elRevenue = document.getElementById('client-metric-revenue');
+
+  const uniqueNiches = new Set(list.map(c => c.niche).filter(Boolean));
+  const totalRevSum = list.reduce((sum, c) => {
+    const rev = parseFloat(String(c.target_revenue || 0).replace('.', '').replace(',', '.'));
+    return sum + (isNaN(rev) ? 0 : rev);
+  }, 0);
+
+  if (elTotal) elTotal.textContent = String(list.length);
+  if (elNiches) elNiches.textContent = String(uniqueNiches.size);
+  if (elRevenue) elRevenue.textContent = `R$ ${totalRevSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Tabela Vazia
   if (list.length === 0) {
     container.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
 
+  // Preenche Tabela
   container.innerHTML = list.map(c => `
-    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30">
+    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
       <td class="py-3 px-4 text-white font-semibold">${c.name} <div class="text-xs text-slate-400">${c.contact_name || ''}</div></td>
       <td class="py-3 px-4 text-emerald-400"><span class="px-2 py-1 bg-emerald-500/10 rounded-full text-xs">${c.niche || 'Geral'}</span></td>
       <td class="py-3 px-4 text-slate-400">${c.phone || '-'}</td>
       <td class="py-3 px-4 text-slate-300 text-xs">Ticket: R$ ${c.avg_ticket || 0}</td>
       <td class="py-3 px-4 text-right space-x-2">
-        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs">Editar</button>
-        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-xs">Excluir</button>
+        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs transition-colors cursor-pointer">Editar</button>
+        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
       </td>
     </tr>
   `).join('');
 };
 
-// 8. BUSCAR CLIENTES (A RAÍZ DO PROBLEMA RESOLVIDA AQUI)
+// 8. BUSCAR CLIENTES (COM ATRASO ESTRATÉGICO)
 window.carregarClientesDoSupabase = async function() {
   console.log("🚀 Iniciando busca de clientes no Supabase...");
   const supaClient = getSupabaseClient();
@@ -241,7 +266,6 @@ window.carregarClientesDoSupabase = async function() {
   let currentAgencyId = session.agency_id || session.agencyId || session.id;
 
   try {
-    // Traz TODOS os clientes sem ordenar para evitar crash de coluna inexistente
     const { data, error } = await supaClient.from('clients').select('*');
     
     if (error) {
@@ -251,14 +275,12 @@ window.carregarClientesDoSupabase = async function() {
     
     console.log(`✅ Banco retornou ${data.length} clientes no total.`);
 
-    // A MÁGICA DO ISOLAMENTO OCORRE AQUI NO FRONT-END:
     let clientesFiltrados = [];
 
     if (isMaster) {
-      clientesFiltrados = data; // Admin Master vê tudo
+      clientesFiltrados = data; 
       console.log("👑 Usuário é Master. Exibindo todos os clientes.");
     } else {
-      // Se for agência e não tiver o ID na sessão, busca o ID pelo e-mail
       if (!currentAgencyId && userEmail) {
         const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', userEmail).single();
         if (agData) currentAgencyId = agData.id;
@@ -271,12 +293,16 @@ window.carregarClientesDoSupabase = async function() {
       console.log(`🏢 Usuário é Agência. Encontrados ${clientesFiltrados.length} clientes para esta conta.`);
     }
 
-    // Salva globalmente e renderiza
+    // Salva globalmente
     window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
     window.clientsList = window.clientesMock;
 
-    window.renderizarListaClientes();
-    window.atualizarSeletorClientesOnboarding();
+    // A MÁGICA: Atraso de 300ms para atropelar qualquer script que esteja apagando a tela
+    setTimeout(() => {
+        console.log("🛡️ Forçando renderização final blindada...");
+        window.renderizarListaClientes();
+        window.atualizarSeletorClientesOnboarding();
+    }, 300);
 
   } catch (err) {
     console.error("❌ Erro fatal na função de busca:", err);
