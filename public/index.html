@@ -3295,11 +3295,23 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     </div>
   </div>
 
-  <script>
+ <script>
     // 1. FUNÇÃO GLOBAL DE LOGOUT COMPLETO DA CONTA
     window.executarLogout = async function(e) {
       if (e) e.preventDefault();
       
+      // --- INÍCIO DA CORREÇÃO DO BOTÃO DE LOGIN ---
+      const botoes = document.querySelectorAll('button, .btn');
+      botoes.forEach(btn => {
+        if (btn.innerText.includes('AUTENTICANDO') || btn.innerText.includes('Autenticando')) {
+          btn.innerText = 'ENTRAR NA PLATAFORMA';
+          btn.disabled = false;
+          btn.style.pointerEvents = 'auto';
+          btn.style.opacity = '1';
+        }
+      });
+      // --- FIM DA CORREÇÃO ---
+
       // 1. Limpa apenas as sessões e tokens
       sessionStorage.removeItem('oraculum_session');
       sessionStorage.clear();
