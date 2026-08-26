@@ -493,19 +493,39 @@ function sanitizeNotes(raw) {
   return str;
 }
 
-// 8. BUSCAR CLIENTES DO SUPABASE / BACKEND
+// 8. BUSCAR CLIENTES DO SUPABASE / BACKEND (Com Isolamento Estrito por Agência)
 window.carregarClientesDoSupabase = async function() {
-  const activeTenantId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
   const supaClient = getSupabaseClient();
   let loaded = false;
+
+  // Identifica a sessão atual do usuário logado
+  const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+  const session = sessionStr ? JSON.parse(sessionStr) : {};
+  const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
+  
+  // Pega o ID da agência logada com segurança
+  const currentAgencyId = session.agency_id || session.agencyId || session.id || (typeof window.getTenantAgencyId === 'function' ? window.getTenantAgencyId() : null);
 
   // FONTE PRIMÁRIA: Supabase direto
   if (supaClient) {
     try {
-      const { data, error } = await supaClient
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supaClient.from('clients').select('*');
+
+      // SE NÃO FOR MASTER, FILTRA ESTRITAMENTE PELOS CLIENTES DAQUELA AGÊNCIA
+      if (!isMaster) {
+        if (!currentAgencyId) {
+          // Se for agência mas não tiver ID na sessão, força zerar a lista por segurança
+          window.clientesMock = [];
+          window.clientsList = [];
+          window.renderizarListaClientes();
+          window.atualizarSeletorClientesOnboarding();
+          return;
+        }
+        query = query.eq('agency_id', currentAgencyId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
       if (!error && Array.isArray(data)) {
         // Sanitiza notes legadas em todos os registros
         window.clientesMock = data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
@@ -520,12 +540,20 @@ window.carregarClientesDoSupabase = async function() {
   // FALLBACK: API REST
   if (!loaded) {
     try {
+      const activeTenantId = currentAgencyId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
       const res = await fetch(`${window.location.origin}/api/clients`, {
         headers: { 'x-organization-id': activeTenantId }
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        window.clientesMock = data.data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
+        // Se a API retornar tudo, filtramos no front caso não seja master
+        let fetchedData = data.data;
+        if (!isMaster && currentAgencyId) {
+          fetchedData = fetchedData.filter(c => c.agency_id === currentAgencyId);
+        } else if (!isMaster) {
+          fetchedData = [];
+        }
+        window.clientesMock = fetchedData.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
         window.clientsList = window.clientesMock;
       }
     } catch(e) {
@@ -536,9 +564,4 @@ window.carregarClientesDoSupabase = async function() {
   window.renderizarListaClientes();
   window.atualizarSeletorClientesOnboarding();
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-  window.carregarClientesDoSupabase();
-});
-
 
