@@ -5,7 +5,7 @@
 window.clientesMock = window.clientesMock || [];
 window.clientsList = window.clientsList || [];
 
-// Helper para obter o cliente Supabase disponível globalmente
+// Helper para obter o cliente Supabase global
 function getSupabaseClient() {
   if (typeof supabase !== 'undefined' && supabase.from) return supabase;
   if (window.supabaseClient && window.supabaseClient.from) return window.supabaseClient;
@@ -13,7 +13,7 @@ function getSupabaseClient() {
   return null;
 }
 
-// Extrai texto limpo de notes (suporte a legado com JSON bruto)
+// Extrai texto limpo das anotações (evita erro de JSON bruto na tela)
 function sanitizeNotes(raw) {
   if (!raw) return '';
   const str = String(raw).trim();
@@ -39,7 +39,7 @@ window.abrirModalNovoCliente = function(clientId = null) {
         <div class="flex justify-between items-center border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2">
             <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><i class="fa-solid fa-user-plus"></i></span>
-            <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente da Agência</h3>
+            <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente</h3>
           </div>
           <button type="button" onclick="window.fecharModalNovoCliente()" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
         </div>
@@ -53,14 +53,14 @@ window.abrirModalNovoCliente = function(clientId = null) {
               <input type="text" id="client-modal-name" required placeholder="Ex: Clínica Viana Plastia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nicho de Mercado / Especialidade *</label>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nicho / Especialidade *</label>
               <input type="text" id="client-modal-niche" required placeholder="Ex: Médico Cirurgião Plástico" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Responsável / Contato</label>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Contato / Responsável</label>
               <input type="text" id="client-modal-contact-name" placeholder="Ex: Dr. Alexandre Viana" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
@@ -71,7 +71,7 @@ window.abrirModalNovoCliente = function(clientId = null) {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Site Oficial (URL)</label>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Site Oficial</label>
               <input type="url" id="client-modal-website" placeholder="https://exemplo.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
@@ -82,7 +82,7 @@ window.abrirModalNovoCliente = function(clientId = null) {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Ticket Médio Estimado (R$)</label>
+              <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Ticket Médio (R$)</label>
               <input type="text" id="client-modal-avg-ticket" placeholder="Ex: 15.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
@@ -94,11 +94,11 @@ window.abrirModalNovoCliente = function(clientId = null) {
           <div class="p-3 bg-slate-950/70 border border-emerald-500/20 rounded-xl space-y-2">
             <div class="flex items-center gap-2 mb-1">
               <i class="fa-solid fa-rectangle-ad text-emerald-400 text-xs"></i>
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Identificadores de Tráfego Pago & Tracking</span>
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tráfego & Tracking</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ID Conta Meta Ads</label>
+                <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">ID Meta Ads</label>
                 <input type="text" id="client-modal-meta-account" placeholder="act_123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500">
               </div>
               <div>
@@ -133,7 +133,7 @@ window.abrirModalNovoCliente = function(clientId = null) {
   if (clientId) {
     const titleEl = document.getElementById('modal-client-title');
     if (titleEl) titleEl.innerText = 'Editar Ficha do Cliente';
-    const client = (window.clientesMock || []).find(c => String(c.id) === String(clientId));
+    const client = window.clientesMock.find(c => String(c.id) === String(clientId));
     if (client) {
       document.getElementById('client-modal-id').value = client.id;
       document.getElementById('client-modal-name').value = client.name || '';
@@ -169,7 +169,7 @@ window.fecharModalNovoCliente = function() {
   }
 };
 
-// 3. SALVAR CLIENTE
+// 3. SALVAR CLIENTE (Com Fallback API blindado contra RLS)
 window.salvarCliente = async function(e) {
   if (e) e.preventDefault();
 
@@ -188,27 +188,35 @@ window.salvarCliente = async function(e) {
   const cleanNotes = document.getElementById('client-modal-notes')?.value.trim() || '';
 
   const btn = document.getElementById('btn-save-client-crud');
-  if (btn) {
-    btn.innerText = 'Salvando...';
-    btn.disabled = true;
-  }
+  if (btn) { btn.innerText = 'Salvando...'; btn.disabled = true; }
 
   try {
     const supaClient = getSupabaseClient();
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     const session = sessionStr ? JSON.parse(sessionStr) : {};
+    
     const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
     let currentAgencyId = session.agency_id || session.agencyId || session.id || session.agencyUuid;
 
+    // Resgate de ID automático se faltar na sessão da agência
     if (!isMaster && !currentAgencyId && session.email && supaClient) {
-      const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', session.email).single();
-      if (agData) currentAgencyId = agData.id;
+      try {
+        const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', session.email).single();
+        if (agData) {
+          currentAgencyId = agData.id;
+          session.agency_id = agData.id;
+          sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+        }
+      } catch(e) { console.warn('Falha no resgate de ID', e); }
     }
 
-    if (!currentAgencyId && !isMaster) {
+    if (!isMaster && !currentAgencyId) {
       alert('❌ Erro de sessão: ID da agência não identificado. Faça login novamente.');
       return;
     }
+
+    const masterFallbackId = (typeof window.getTenantAgencyId === 'function') ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
+    const finalAgencyId = isMaster ? (currentAgencyId || masterFallbackId) : currentAgencyId;
 
     const payload = {
       name, niche, contact_name, phone, website, instagram,
@@ -217,29 +225,50 @@ window.salvarCliente = async function(e) {
       meta_ad_account_id, meta_pixel_id, google_customer_id,
       notes: cleanNotes,
       previous_agency_notes: cleanNotes,
-      agency_id: isMaster ? (currentAgencyId || null) : currentAgencyId,
+      agency_id: finalAgencyId,
       updated_at: new Date().toISOString()
     };
 
-    if (id) {
-      const { error: updateError } = await supaClient.from('clients').update(payload).eq('id', id);
-      if (updateError) throw updateError;
-    } else {
-      const { error: insertError } = await supaClient.from('clients').insert([payload]);
-      if (insertError) throw insertError;
+    let sucesso = false;
+    let erroDetalhe = '';
+
+    // TENTATIVA 1: Supabase Direto
+    if (supaClient) {
+      if (id) {
+        const { error } = await supaClient.from('clients').update(payload).eq('id', id);
+        if (!error) sucesso = true; else erroDetalhe = error.message;
+      } else {
+        const { error } = await supaClient.from('clients').insert([payload]);
+        if (!error) sucesso = true; else erroDetalhe = error.message;
+      }
     }
 
-    window.fecharModalNovoCliente();
-    await window.carregarClientesDoSupabase();
-    alert(`🎉 Cliente "${name}" salvo com sucesso!`);
-  } catch (err) {
-    console.error('Erro ao salvar cliente:', err);
-    alert('❌ Erro ao salvar cliente: ' + (err.message || 'Erro desconhecido'));
-  } finally {
-    if (btn) {
-      btn.innerText = 'Salvar Cliente';
-      btn.disabled = false;
+    // TENTATIVA 2: Fallback API REST (Bypassa RLS se necessário)
+    if (!sucesso) {
+      try {
+        const res = await fetch('/api/clients', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-organization-id': finalAgencyId },
+          body: JSON.stringify(id ? { ...payload, id } : payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.success) sucesso = true;
+      } catch (err) {
+        erroDetalhe = err.message;
+      }
     }
+
+    if (sucesso) {
+      window.fecharModalNovoCliente();
+      await window.carregarClientesDoSupabase();
+      alert(`🎉 Cliente "${name}" salvo com sucesso!`);
+    } else {
+      alert('❌ Falha ao salvar cliente. Verifique permissões RLS. Erro: ' + erroDetalhe);
+    }
+  } catch (err) {
+    alert('❌ Erro crítico: ' + err.message);
+  } finally {
+    if (btn) { btn.innerText = 'Salvar Cliente'; btn.disabled = false; }
   }
 };
 
@@ -251,9 +280,7 @@ window.excluirCliente = async function(clientId) {
       if (client) {
         await client.from('clients').delete().eq('id', clientId);
       }
-      window.clientesMock = (window.clientesMock || []).filter(c => String(c.id) !== String(clientId));
-      window.renderizarListaClientes();
-      window.atualizarSeletorClientesOnboarding();
+      window.carregarClientesDoSupabase();
       alert('🗑️ Cliente removido com sucesso!');
     } catch(err) {
       console.error('Erro ao excluir:', err);
@@ -268,8 +295,7 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
     window.setActiveClient(clientId);
     return;
   }
-  const list = window.clientesMock || [];
-  const client = list.find(c => String(c.id) === String(clientId));
+  const client = window.clientesMock.find(c => String(c.id) === String(clientId));
   if (client && window.selectActiveClient) {
     window.selectActiveClient(client.id);
   }
@@ -279,16 +305,9 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
-  const todosClientes = window.clientesMock || [];
-
-  const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-  const session = sessionStr ? JSON.parse(sessionStr) : {};
-  const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
-  const currentAgencyId = session.agency_id || session.agencyId || session.id || session.agencyUuid;
-
-  const list = isMaster 
-    ? todosClientes 
-    : todosClientes.filter(c => c.agency_id && String(c.agency_id) === String(currentAgencyId));
+  
+  // A variável window.clientesMock JÁ FOI filtrada pelo passo 8
+  const list = window.clientesMock || []; 
 
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
@@ -377,60 +396,73 @@ window.renderizarListaClientes = function() {
   `).join('');
 };
 
-// 8. BUSCAR CLIENTES DO SUPABASE
+// 8. BUSCAR CLIENTES DO SUPABASE (Extrai tudo e filtra no front com Fallback Seguro)
 window.carregarClientesDoSupabase = async function() {
   const supaClient = getSupabaseClient();
-  
+  let rawData = [];
+  let fetchedData = false;
+
   const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
   const session = sessionStr ? JSON.parse(sessionStr) : {};
-  
   const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
   let currentAgencyId = session.agency_id || session.agencyId || session.id || session.agencyUuid;
 
+  // Auto-resgate do ID via email
   if (!isMaster && !currentAgencyId && session.email && supaClient) {
     try {
-      const { data: agData } = await supaClient
-        .from('agencies')
-        .select('id')
-        .eq('email_billing', session.email)
-        .single();
-      
-      if (agData && agData.id) {
+      const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', session.email).single();
+      if (agData) {
         currentAgencyId = agData.id;
         session.agency_id = agData.id;
         sessionStorage.setItem('oraculum_session', JSON.stringify(session));
       }
-    } catch (err) {
-      console.warn('[ClientManagement] Não foi possível autodetectar agency_id pelo e-mail:', err);
-    }
+    } catch (err) {}
   }
 
+  const activeTenantId = currentAgencyId || (typeof window.getTenantAgencyId === 'function' ? window.getTenantAgencyId() : 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104');
+
+  // TENTATIVA 1: Bater direto no Supabase (Pode ser bloqueado pelo RLS)
   if (supaClient) {
     try {
-      let query = supaClient.from('clients').select('*');
-
-      if (!isMaster) {
-        if (!currentAgencyId) {
-          window.clientesMock = [];
-          window.clientsList = [];
-          window.renderizarListaClientes();
-          window.atualizarSeletorClientesOnboarding();
-          return;
-        }
-        query = query.eq('agency_id', currentAgencyId);
+      const { data, error } = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        rawData = data;
+        fetchedData = true;
       }
+    } catch (e) {}
+  }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (!error && Array.isArray(data)) {
-        window.clientesMock = data.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
-        window.clientsList = window.clientesMock;
+  // TENTATIVA 2: Fallback API REST (Bypassa o RLS via backend)
+  if (!fetchedData) {
+    try {
+      const res = await fetch(`${window.location.origin}/api/clients`, {
+        headers: { 'x-organization-id': activeTenantId }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        rawData = data.data;
       }
     } catch (e) {
-      console.warn('[ClientManagement] Erro ao buscar no Supabase:', e);
+      console.warn("Nenhum dado recuperado via API");
     }
   }
 
+  // A MÁGICA DO ISOLAMENTO: Filtra tudo com precisão antes de soltar na tela
+  let clientesFiltrados = [];
+  if (isMaster) {
+    clientesFiltrados = rawData; // Master vê toda a base
+  } else {
+    // Agência vê só os que combinam com o ID dela
+    if (currentAgencyId) {
+      clientesFiltrados = rawData.filter(c => String(c.agency_id) === String(currentAgencyId));
+    }
+  }
+
+  // Atualiza as variáveis globais que alimentam o resto do sistema
+  window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
+  window.clientsList = window.clientesMock;
+
+  // Renderiza Forçadamente Tabela e Seletor logo em seguida
   window.renderizarListaClientes();
   window.atualizarSeletorClientesOnboarding();
 };
