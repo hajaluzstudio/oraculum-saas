@@ -8373,25 +8373,39 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- TRAVA DE SEGURANÇA BLINDADA V3 (ANTI-PISCAR) ---
-setInterval(() => {
-    try {
-        const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
-        
-        if (usuarioLogado) {
-            // Se o usuário logou, adiciona a classe que libera o botão no CSS
-            document.body.classList.add('sistema-liberado');
-        } else {
-            // Se não está logado, remove a classe e mantém o CSS trancado
-            document.body.classList.remove('sistema-liberado');
-            
-            // Varredura de backup por força bruta (caso o botão seja gerado sem ID)
-            const elementos = document.querySelectorAll('button, a, .btn');
-            elementos.forEach(el => {
-                if (el.innerText && el.innerText.includes('Oraculum Live')) {
-                    el.style.setProperty('display', 'none', 'important');
-                }
-            });
-        }
-    } catch (e) {} 
-}, 50);
+// --- TRAVA DE SEGURANÇA BLINDADA V4 (OBSERVER - ZERO PISCAR) ---
+(function() {
+    const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
+    
+    if (usuarioLogado) {
+        // Se logou, libera o sistema e aborta a trava
+        document.body.classList.add('sistema-liberado');
+        return; 
+    }
+    
+    // Função cirúrgica para neutralizar qualquer tentativa de mostrar o chat
+    const neutralizarOraculumLive = () => {
+        const elementos = document.querySelectorAll('button, a, .btn, [id*="oraculo"], [class*="live"]');
+        elementos.forEach(el => {
+            if (el.innerText && el.innerText.includes('Oraculum Live')) {
+                el.style.setProperty('display', 'none', 'important');
+                el.style.setProperty('visibility', 'hidden', 'important');
+                el.style.setProperty('opacity', '0', 'important');
+            }
+        });
+    };
+
+    neutralizarOraculumLive(); // Roda imediatamente na abertura da página
+
+    // 1. O Observer: Pausa a renderização visual e esmaga o botão milissegundos antes dele ser desenhado
+    const observer = new MutationObserver(() => {
+        neutralizarOraculumLive();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    // 2. Escudo Anti-Clique: Intercepta o clique no fundo da tela e bloqueia a ação do sistema original
+    document.addEventListener('click', (e) => {
+        neutralizarOraculumLive();
+    }, true); // O 'true' garante prioridade máxima de execução sobre o sistema original
+})();
+// --- FIM DA TRAVA V4 ---
