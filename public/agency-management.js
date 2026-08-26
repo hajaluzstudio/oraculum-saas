@@ -544,7 +544,7 @@ window.atualizarKPIsMaster = function() {
   if (elMrr) elMrr.textContent = `R$ ${totalMrrSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-// 6. RENDERIZAR TABELA DO SUPER ADMIN (COM BOTÃO DE USUÁRIOS)
+// 6. RENDERIZAR TABELA DO SUPER ADMIN (COM O BOTÃO DE BLOQUEIO RESTAURADO)
 window.renderizarListaAgencias = function() {
   const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body');
   if (!container) return;
@@ -582,12 +582,52 @@ window.renderizarListaAgencias = function() {
         <button onclick="window.abrirModalUsuarios('${ag.id}', '${ag.name.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer">👥 Usuários</button>
         <button onclick="window.abrirModalAgencia('${ag.id}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer">Editar</button>
         <button onclick="window.abrirModalEditarSenhaAgencia('${ag.id}', '${ag.email_billing || ag.email || ag.admin_email || 'E-mail não cadastrado'}')" class="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs cursor-pointer" title="Alterar Senha">🔑 Senha</button>
+        <button onclick="window.alternarStatusAgencia('${ag.id}', ${ag.active})" class="px-3 py-1 ${ag.active ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400'} rounded-lg text-xs transition-colors cursor-pointer" title="${ag.active ? 'Bloquear Agência' : 'Desbloquear Agência'}">${ag.active ? '🚫 Bloquear' : '✅ Ativar'}</button>
         <button onclick="window.excluirAgencia('${ag.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
     </td>
     </tr>
   `).join('');
 
   if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
+};
+
+// --- FUNÇÃO ADICIONADA: BLOQUEAR / DESBLOQUEAR AGÊNCIA ---
+window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
+  const acao = isAtivo ? 'bloquear' : 'desbloquear';
+  const novoStatus = !isAtivo;
+  const statusText = novoStatus ? 'active' : 'blocked';
+
+  if (confirm(`Tem certeza que deseja ${acao} esta agência?\n${isAtivo ? 'Ela perderá o acesso ao sistema temporariamente.' : 'O acesso dela será restaurado.'}`)) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        // Atualiza no banco de dados (Supabase)
+        const { error } = await client.from('agencies').update({
+          active: novoStatus,
+          status: statusText,
+          updated_at: new Date().toISOString()
+        }).eq('id', agenciaId);
+
+        if (error) throw error;
+
+        // Atualiza na memória local para refletir na tela imediatamente
+        const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
+        if (index !== -1) {
+          window.agenciasMock[index].active = novoStatus;
+          window.agenciasMock[index].status = statusText;
+        }
+        
+        // Renderiza a tabela e atualiza os números (Painéis lá em cima)
+        window.renderizarListaAgencias();
+        alert(`✅ Agência ${acao}da com sucesso!`);
+      } else {
+        alert('❌ Erro: Não foi possível conectar ao banco de dados.');
+      }
+    } catch (err) {
+      console.error(`Erro ao ${acao} agência:`, err);
+      alert(`❌ Erro ao ${acao} agência. Tente novamente.`);
+    }
+  }
 };
 
 // 7. LEITURA INICIAL E PERSISTÊNCIA REAL DO SUPABASE
@@ -635,7 +675,7 @@ window.carregarAgenciasDoSupabase = async function() {
       plan: ag.plan || 'Starter',
       monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : '997.00',
       users_count: ag.users_count || 1,
-      active: ag.status === 'active',
+      active: ag.status === 'active' || ag.active === true,
       created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
     }));
   }
