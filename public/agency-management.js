@@ -581,7 +581,7 @@ window.renderizarListaAgencias = function() {
       <td class="py-3 px-4 text-right space-x-2">
         <button onclick="window.abrirModalUsuarios('${ag.id}', '${ag.name.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer">👥 Usuários</button>
         <button onclick="window.abrirModalAgencia('${ag.id}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer">Editar</button>
-        <button onclick="window.abrirModalEditarSenhaAgencia('${ag.id}', '${ag.email_billing}')" class="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs cursor-pointer" title="Alterar Senha">🔑 Senha</button>
+        <button onclick="window.abrirModalEditarSenhaAgencia('${ag.id}', '${ag.email_billing || ag.email || ag.admin_email || 'E-mail não cadastrado'}')" class="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs cursor-pointer" title="Alterar Senha">🔑 Senha</button>
         <button onclick="window.excluirAgencia('${ag.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
     </td>
     </tr>
