@@ -3462,16 +3462,24 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     };
 
     window.isUserMasterAdmin = function() {
-      const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-      if (!sessionStr) return false;
-      try {
+    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+    if (!sessionStr) return false;
+    
+    try {
         const session = JSON.parse(sessionStr);
+        
+        // --- CHAVE MESTRA: SE FOR O SEU E-MAIL, LIBERA ACESSO TOTAL ---
+        if (session.email && session.email.toLowerCase() === 'hajaluzstudio@gmail.com') {
+            return true;
+        }
+        
+        // Regra normal para os outros usuários
         const role = (session.role || '').toLowerCase();
         return role === 'master_admin' || role === 'owner' || session.isMasterAdmin === true;
-      } catch(e) {
+    } catch(e) {
         return false;
-      }
-    };
+    }
+};
 
     window.abrirModalSenha = function() {
       const menu = document.getElementById('user-dropdown-menu');
