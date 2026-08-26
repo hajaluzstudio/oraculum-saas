@@ -4065,9 +4065,44 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
     </form>
   </div>
 </div>
+</div>
+</div>
+
+<script>
+(async function carregarPerfilDoBancoDefinitivo() {
+    try {
+        const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+        if (!sessionStr) return;
+        
+        let session = JSON.parse(sessionStr);
+        if (!session.email || !window.supabaseClient) return;
+
+        const { data, error } = await window.supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('email', session.email)
+            .maybeSingle();
+
+        if (data) {
+            session.fullName = data.full_name || session.fullName;
+            session.fotoUrl = data.foto_url || session.fotoUrl;
+            
+            sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+            localStorage.setItem('oraculum_session', JSON.stringify(session));
+
+            if (window.atualizarCardUsuarioLogado) {
+                window.atualizarCardUsuarioLogado(session);
+            }
+        }
+    } catch (err) {
+        console.error('Erro ao sincronizar perfil do banco:', err);
+    }
+})();
+</script>
 
 </body>
 </html>
+
 
 
 
