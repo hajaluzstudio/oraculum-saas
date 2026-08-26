@@ -3480,7 +3480,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR NO BANCO DE DADOS USANDO O E-MAIL (INFALÍVEL) ---
+   // --- 2. SALVAR NO BANCO DE DADOS USANDO O E-MAIL (INFALÍVEL) ---
     try {
         if (window.supabaseClient && session.email) {
             console.log("Atualizando perfil no Supabase para o e-mail:", session.email);
@@ -3490,6 +3490,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
                 .from('profiles')
                 .update({ 
                     full_name: name, 
+                    agency_name: agencyName, 
                     foto_url: avatarUrlFinal 
                 })
                 .eq('email', session.email)
@@ -4085,6 +4086,7 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
 
         if (data) {
             session.fullName = data.full_name || session.fullName;
+            session.agencyName = data.agency_name || session.agencyName;
             session.fotoUrl = data.foto_url || session.fotoUrl;
             
             sessionStorage.setItem('oraculum_session', JSON.stringify(session));
