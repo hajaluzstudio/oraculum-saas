@@ -378,11 +378,19 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   }
 };
 
-// 6. ATUALIZAR SELETOR DE CLIENTES NO ONBOARDING E HEADER
+// 6. ATUALIZAR SELETOR DE CLIENTES NO ONBOARDING E HEADER (Com Filtro de Agência)
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
-  const list = window.clientesMock || [];
+  const todosClientes = window.clientesMock || [];
+
+  // Identifica a sessão e o perfil do usuário logado
+  const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+  const session = sessionStr ? JSON.parse(sessionStr) : {};
+  const isMaster = session.role === 'master' || session.email === 'hajaluzstudio@gmail.com';
+
+  // Filtra os clientes: Se for master vê tudo, se for agência vê apenas os clientes dela
+  const list = isMaster ? todosClientes : todosClientes.filter(c => c.agency_id === (session.agencyId || session.agency_id));
 
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
@@ -399,7 +407,7 @@ window.atualizarSeletorClientesOnboarding = function() {
     if (list.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = 'Nenhum cliente ativo';
+      opt.textContent = 'Nenhum cliente cadastrado';
       opt.style.background = '#0d121d';
       opt.style.color = '#94A3B8';
       selectHeader.appendChild(opt);
