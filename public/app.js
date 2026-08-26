@@ -8373,25 +8373,40 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// --- TRAVA DE SEGURANÇA: BLOQUEIO DO ORACULUM LIVE NA TELA DE LOGIN ---
+// --- TRAVA DE SEGURANÇA BLINDADA: BLOQUEIO DO ORACULUM LIVE NA TELA DE LOGIN ---
 setInterval(() => {
-    // Verifica se o usuário possui um token de sessão válido (se está logado)
-    const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
-    
-    // Procura o botão do Oraculum Live na interface
-    const botaoLive = document.getElementById('oraculo-live-btn') || 
-                      document.querySelector('.oraculum-live-btn') ||
-                      Array.from(document.querySelectorAll('button, a, .btn')).find(b => b.innerText && b.innerText.includes('Oraculum Live'));
+    try {
+        const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
+        
+        // Mapeia o botão e também a janela do chat para bloquear ambos
+        const botaoLive = document.getElementById('oraculo-live-btn') || document.querySelector('.oraculum-live-btn');
+        const janelaChat = document.getElementById('oraculum-live-container') || document.querySelector('.oraculum-live-window');
 
-    if (botaoLive) {
+        // Busca extra de segurança caso o botão não tenha ID fixo
+        const botaoPorTexto = Array.from(document.querySelectorAll('button, a, div, span')).find(b => b.innerText && b.innerText.includes('Oraculum Live'));
+
+        const elementoAlvo = botaoLive || botaoPorTexto;
+
         if (!usuarioLogado) {
-            // Se NÃO estiver logado (Tela de Login), arranca o botão da tela
-            botaoLive.style.display = 'none';
+            // FORÇA BRUTA: Se NÃO estiver logado, tranca com prioridade máxima (!important)
+            if (elementoAlvo) {
+                elementoAlvo.style.setProperty('display', 'none', 'important');
+                elementoAlvo.style.setProperty('visibility', 'hidden', 'important');
+                elementoAlvo.style.setProperty('opacity', '0', 'important');
+                elementoAlvo.style.setProperty('pointer-events', 'none', 'important');
+            }
+            if (janelaChat) {
+                janelaChat.style.setProperty('display', 'none', 'important');
+                janelaChat.style.setProperty('visibility', 'hidden', 'important');
+            }
         } else {
-            // Se estiver logado (Dentro do Sistema), devolve o botão
-            if (botaoLive.style.display === 'none') {
-                botaoLive.style.display = ''; 
+            // Se estiver logado, remove as travas para o botão funcionar normal
+            if (elementoAlvo && elementoAlvo.style.display === 'none') {
+                elementoAlvo.style.removeProperty('display');
+                elementoAlvo.style.removeProperty('visibility');
+                elementoAlvo.style.removeProperty('opacity');
+                elementoAlvo.style.removeProperty('pointer-events');
             }
         }
-    }
-}, 800); // Checa a cada menos de 1 segundo para garantir que não vaze
+    } catch (e) {} // Impede que qualquer conflito no sistema pare a verificação
+}, 100); // Motor super-rápido (100 milissegundos): é humanamente impossível o botão vazar
