@@ -3452,7 +3452,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     
     let avatarUrlFinal = session.fotoUrl || '';
 
-    // --- 1. UPLOAD DA FOTO PARA O STORAGE DO SUPABASE ---
+    // --- 1. UPLOAD DA FOTO PARA O STORAGE ---
     const fileInput = document.getElementById('avatar-upload');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
@@ -3475,12 +3475,12 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
         }
     }
 
-    // Atualiza os dados locais
+    // Atualiza os dados locais na sessão
     session.fullName = name;
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR NO BANCO DE DADOS (TABELA PROFILES) ---
+    // --- 2. SALVAR NO BANCO DE DADOS (SUPABASE) ---
     try {
         if (window.supabaseClient && session.id) {
             const { error: dbError } = await window.supabaseClient
@@ -3513,7 +3513,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
         window.atualizarCardUsuarioLogado(session);
     }
     
-    alert('✓ Perfil e foto salvos com sucesso!');
+    alert('✓ Perfil e foto salvos no banco com sucesso!');
 };
 
     window.isUserMasterAdmin = function() {
