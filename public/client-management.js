@@ -1,5 +1,5 @@
 // =======================================================
-// GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (BLINDADO COM ANTI-SOBREPOSIÇÃO)
+// GESTÃO CADASTRAL DE CLIENTES DA AGÊNCIA (BLINDADO E DEFINITIVO)
 // =======================================================
 
 window.clientesMock = window.clientesMock || [];
@@ -23,6 +23,59 @@ function sanitizeNotes(raw) {
   }
   return str;
 }
+
+// --- SISTEMA DE IDENTIDADE SUPREMA (Fim do problema de sumiço) ---
+window.obterIdentidadeSegura = async function() {
+  let email = '';
+  let isMaster = false;
+  let agencyId = '';
+
+  const supaClient = getSupabaseClient();
+
+  // 1. A FONTE DA VERDADE: Pergunta diretamente ao Supabase Auth
+  if (supaClient) {
+      try {
+          let authUser = null;
+          // Suporte para versões novas e antigas do Supabase
+          if (typeof supaClient.auth.getUser === 'function') {
+              const { data } = await supaClient.auth.getUser();
+              authUser = data?.user;
+          } else if (typeof supaClient.auth.user === 'function') {
+              authUser = supaClient.auth.user();
+          }
+          
+          if (authUser && authUser.email) {
+              email = String(authUser.email).toLowerCase();
+          }
+      } catch (err) { console.warn("Aviso: Falha ao ler Supabase Auth."); }
+  }
+
+  // 2. FALLBACK: Lê a memória do navegador caso o Auth demore
+  const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+  const session = sessionStr ? JSON.parse(sessionStr) : {};
+
+  if (!email) email = String(session.email || '').toLowerCase();
+  agencyId = session.agency_id || session.agencyId || session.id || '';
+
+  // 3. AUTO-RESGATE DE ID DE AGÊNCIA
+  if (email && email !== 'hajaluzstudio@gmail.com' && !agencyId && supaClient) {
+      try {
+          const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', email).single();
+          if (agData) {
+              agencyId = agData.id;
+              session.agency_id = agData.id;
+              sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+          }
+      } catch (err) {}
+  }
+
+  // 4. SENTENÇA FINAL: É Master ou não?
+  if (session.role === 'master' || email === 'hajaluzstudio@gmail.com') {
+      isMaster = true;
+  }
+
+  return { email, isMaster, agencyId };
+};
 
 // 1. ABRIR MODAL
 window.abrirModalNovoCliente = function(clientId = null) {
@@ -105,18 +158,10 @@ window.salvarCliente = async function(e) {
     const supaClient = getSupabaseClient();
     if (!supaClient) throw new Error("Supabase não conectado no front-end.");
 
-    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-    const session = sessionStr ? JSON.parse(sessionStr) : {};
-    const userEmail = String(session.email || '').toLowerCase();
-    const isMaster = session.role === 'master' || userEmail === 'hajaluzstudio@gmail.com';
-    let currentAgencyId = session.agency_id || session.agencyId || session.id;
+    // Usa o sistema blindado para garantir que a agência assine o cliente corretamente
+    const identidade = await window.obterIdentidadeSegura();
 
-    if (!isMaster && !currentAgencyId && userEmail) {
-      const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', userEmail).single();
-      if (agData) currentAgencyId = agData.id;
-    }
-
-    if (!isMaster && !currentAgencyId) {
+    if (!identidade.isMaster && !identidade.agencyId) {
       alert('❌ Erro: ID da agência não encontrado. Faça login novamente.');
       return;
     }
@@ -129,7 +174,7 @@ window.salvarCliente = async function(e) {
       avg_ticket: parseFloat(document.getElementById('client-modal-avg-ticket').value) || 0,
       target_revenue: parseFloat(document.getElementById('client-modal-target-revenue').value) || 0,
       notes: document.getElementById('client-modal-notes').value,
-      agency_id: isMaster ? (currentAgencyId || null) : currentAgencyId,
+      agency_id: identidade.isMaster ? (identidade.agencyId || null) : identidade.agencyId,
     };
 
     const id = document.getElementById('client-modal-id').value;
@@ -171,11 +216,22 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES
+// 6. ATUALIZAR SELETORES E MATAR "FANTASMAS"
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
   const list = window.clientesMock || []; 
+
+  // --- LIMPADOR DE FANTASMAS (Evita o erro do Dr. Lucas) ---
+  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  if (activeClientId && list.length > 0) {
+      const clienteValido = list.some(c => String(c.id) === String(activeClientId));
+      if (!clienteValido) {
+          console.warn("🧹 Limpando cliente fantasma do cache do navegador.");
+          localStorage.removeItem('oraculum_active_client');
+          sessionStorage.removeItem('oraculum_active_client');
+      }
+  }
 
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
@@ -198,114 +254,90 @@ window.atualizarSeletorClientesOnboarding = function() {
   }
 };
 
-// 7. RENDERIZAR TABELA (AGORA BLINDADA)
+// 7. RENDERIZAR TABELA
 window.renderizarListaClientes = function() {
   const container = document.getElementById('clients-table-body');
-  
-  // Impede o código de quebrar caso a tabela não esteja montada no HTML ainda
-  if (!container) {
-      console.warn("⚠️ Tabela de clientes não encontrada no DOM.");
-      return;
-  }
+  if (!container) return;
 
-  // Garante que estamos pegando a lista global correta
-  const list = window.clientesMock || window.clientsList || [];
+  const list = window.clientesMock || [];
 
-  console.log(`🖌️ Desenhando tabela com ${list.length} clientes...`);
-
-  // Atualiza também os contadores da dashboard, se eles existirem na tela
   const elTotal = document.getElementById('client-metric-total');
   const elNiches = document.getElementById('client-metric-niches');
   const elRevenue = document.getElementById('client-metric-revenue');
 
   const uniqueNiches = new Set(list.map(c => c.niche).filter(Boolean));
-  const totalRevSum = list.reduce((sum, c) => {
-    const rev = parseFloat(String(c.target_revenue || 0).replace('.', '').replace(',', '.'));
-    return sum + (isNaN(rev) ? 0 : rev);
-  }, 0);
+  const totalRevSum = list.reduce((sum, c) => sum + (parseFloat(c.target_revenue) || 0), 0);
 
   if (elTotal) elTotal.textContent = String(list.length);
   if (elNiches) elNiches.textContent = String(uniqueNiches.size);
   if (elRevenue) elRevenue.textContent = `R$ ${totalRevSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  // Tabela Vazia
   if (list.length === 0) {
     container.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
 
-  // Preenche Tabela
   container.innerHTML = list.map(c => `
-    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
+    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30">
       <td class="py-3 px-4 text-white font-semibold">${c.name} <div class="text-xs text-slate-400">${c.contact_name || ''}</div></td>
       <td class="py-3 px-4 text-emerald-400"><span class="px-2 py-1 bg-emerald-500/10 rounded-full text-xs">${c.niche || 'Geral'}</span></td>
       <td class="py-3 px-4 text-slate-400">${c.phone || '-'}</td>
       <td class="py-3 px-4 text-slate-300 text-xs">Ticket: R$ ${c.avg_ticket || 0}</td>
       <td class="py-3 px-4 text-right space-x-2">
-        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs transition-colors cursor-pointer">Editar</button>
-        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
+        <button onclick="window.abrirModalNovoCliente('${c.id}')" class="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-xs">Editar</button>
+        <button onclick="window.excluirCliente('${c.id}')" class="px-3 py-1 bg-rose-500/10 text-rose-400 rounded-lg text-xs">Excluir</button>
       </td>
     </tr>
   `).join('');
 };
 
-// 8. BUSCAR CLIENTES (COM ATRASO ESTRATÉGICO)
+// 8. O MOTOR PRINCIPAL (Busca e Filtra com Precisão)
 window.carregarClientesDoSupabase = async function() {
   console.log("🚀 Iniciando busca de clientes no Supabase...");
   const supaClient = getSupabaseClient();
   
   if (!supaClient) {
-      console.error("❌ O cliente do Supabase não foi encontrado no navegador.");
+      console.error("❌ Cliente Supabase ausente.");
       return;
   }
 
-  const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
-  const session = sessionStr ? JSON.parse(sessionStr) : {};
-  const userEmail = String(session.email || '').toLowerCase();
-  const isMaster = session.role === 'master' || userEmail === 'hajaluzstudio@gmail.com';
-  let currentAgencyId = session.agency_id || session.agencyId || session.id;
-
   try {
-    const { data, error } = await supaClient.from('clients').select('*');
-    
-    if (error) {
-        console.error("❌ Erro ao buscar no banco:", error.message);
-        return;
-    }
-    
-    console.log(`✅ Banco retornou ${data.length} clientes no total.`);
+    // 1. DESCUBRE QUEM É O USUÁRIO DE VERDADE (Sem depender da memória lenta)
+    const identidade = await window.obterIdentidadeSegura();
 
+    // 2. BUSCA TODOS OS DADOS
+    const { data, error } = await supaClient.from('clients').select('*');
+    if (error) { console.error("❌ Erro na base:", error.message); return; }
+    
+    console.log(`✅ Banco retornou ${data.length} clientes.`);
+
+    // 3. A MÁGICA DO ISOLAMENTO OCORRE AQUI
     let clientesFiltrados = [];
 
-    if (isMaster) {
+    if (identidade.isMaster) {
       clientesFiltrados = data; 
-      console.log("👑 Usuário é Master. Exibindo todos os clientes.");
+      console.log(`👑 Usuário confirmado como MASTER (${identidade.email}). Exibindo tudo.`);
     } else {
-      if (!currentAgencyId && userEmail) {
-        const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', userEmail).single();
-        if (agData) currentAgencyId = agData.id;
-      }
-
-      if (currentAgencyId) {
-        const safeId = String(currentAgencyId).toLowerCase();
+      if (identidade.agencyId) {
+        const safeId = String(identidade.agencyId).toLowerCase();
         clientesFiltrados = data.filter(c => c.agency_id && String(c.agency_id).toLowerCase() === safeId);
       }
-      console.log(`🏢 Usuário é Agência. Encontrados ${clientesFiltrados.length} clientes para esta conta.`);
+      console.log(`🏢 Usuário confirmado como AGÊNCIA (${identidade.email}). Encontrados ${clientesFiltrados.length} clientes isolados.`);
     }
 
-    // Salva globalmente
+    // 4. SALVA E PREPARA A TELA
     window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
     window.clientsList = window.clientesMock;
 
-    // A MÁGICA: Atraso de 300ms para atropelar qualquer script que esteja apagando a tela
+    // 5. ATRASO ESTRATÉGICO PARA ATROPELAR QUALQUER CONFLITO VISUAL
     setTimeout(() => {
-        console.log("🛡️ Forçando renderização final blindada...");
+        console.log("🛡️ Forçando renderização da tela...");
         window.renderizarListaClientes();
         window.atualizarSeletorClientesOnboarding();
-    }, 300);
+    }, 400);
 
   } catch (err) {
-    console.error("❌ Erro fatal na função de busca:", err);
+    console.error("❌ Erro fatal:", err);
   }
 };
 
