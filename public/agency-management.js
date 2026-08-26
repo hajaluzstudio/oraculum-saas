@@ -1,5 +1,5 @@
 // =======================================================
-// GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC & EQUIPE)
+// GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC, EQUIPE E BLOQUEIO)
 // =======================================================
 
 window.agenciasMock = window.agenciasMock || [];
@@ -591,7 +591,7 @@ window.renderizarListaAgencias = function() {
   if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
 };
 
-// --- FUNÇÃO ADICIONADA: BLOQUEAR / DESBLOQUEAR AGÊNCIA ---
+// --- FUNÇÃO CORRIGIDA: BLOQUEAR / DESBLOQUEAR AGÊNCIA ---
 window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
   const acao = isAtivo ? 'bloquear' : 'desbloquear';
   const novoStatus = !isAtivo;
@@ -601,9 +601,8 @@ window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        // Atualiza no banco de dados (Supabase)
+        // Atualiza no banco de dados (Apenas o status, pois a coluna active não existe)
         const { error } = await client.from('agencies').update({
-          active: novoStatus,
           status: statusText,
           updated_at: new Date().toISOString()
         }).eq('id', agenciaId);
@@ -613,7 +612,7 @@ window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
         // Atualiza na memória local para refletir na tela imediatamente
         const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
         if (index !== -1) {
-          window.agenciasMock[index].active = novoStatus;
+          window.agenciasMock[index].active = novoStatus; // Mantemos ativo no JS para pintar o botão correto
           window.agenciasMock[index].status = statusText;
         }
         
