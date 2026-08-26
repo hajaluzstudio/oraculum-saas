@@ -224,6 +224,62 @@ app.get('/agency-management.js', (req: Request, res: Response) => {
   }
 });
 
+// --- ROTA DE ADMIN: ATUALIZAR SENHA DA AGÊNCIA ---
+app.put('/api/admin/agencies', async (req, res) => {
+    try {
+        const { action, agencyId, password } = req.body;
+
+        if (action === 'update_password') {
+            if (!agencyId || !password) {
+                return res.status(400).json({ success: false, message: 'ID da agência e senha são obrigatórios.' });
+            }
+
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabaseAdmin = createClient(
+                process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
+                process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+            );
+
+            const { data: agencyData, error: agencyError } = await supabaseAdmin
+                .from('agencies')
+                .select('email_billing')
+                .eq('id', agencyId)
+                .single();
+
+            if (agencyError || !agencyData) {
+                return res.status(404).json({ success: false, message: 'Agência não encontrada.' });
+            }
+
+            const { data: listUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+            
+            if (listError) {
+                throw listError;
+            }
+
+            const user = listUsers.users.find(u => u.email === agencyData.email_billing);
+
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Usuário de autenticação não encontrado para este e-mail.' });
+            }
+
+            const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+                password: password
+            });
+
+            if (updateError) {
+                return res.status(400).json({ success: false, message: updateError.message });
+            }
+
+            return res.json({ success: true, message: 'Senha atualizada com sucesso!' });
+        }
+
+        return res.status(400).json({ success: false, message: 'Ação inválida.' });
+    } catch (err: any) {
+        console.error('Erro na API de agências:', err);
+        return res.status(500).json({ success: false, message: err.message || 'Erro interno no servidor.' });
+    }
+});
+
 // SERVIR CLIENT-MANAGEMENT.JS
 app.get('/client-management.js', (req: Request, res: Response) => {
   try {
