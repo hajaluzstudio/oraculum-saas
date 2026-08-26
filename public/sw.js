@@ -2,7 +2,7 @@
 // SERVICE WORKER - ORACULUM SAAS (PWA & OFFLINE TELEPROMPTER)
 // ==============================================================================
 
-const CACHE_NAME = 'oraculum-cache-v2';
+const CACHE_NAME = 'oraculum-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -17,7 +17,9 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+    caches.keys().then((keys) => Promise.all(
+      keys.filter(key => key !== CACHE_NAME).map((k) => caches.delete(k))
+    ))
   );
   return self.clients.claim();
 });

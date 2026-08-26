@@ -226,11 +226,11 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
-  <link rel="stylesheet" href="styles.css?v=12.0.0">
+  <link rel="stylesheet" href="styles.css?v=13.0.0">
   
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0B0F19">
@@ -3300,7 +3300,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     window.executarLogout = async function(e) {
       if (e) e.preventDefault();
       
-      // 1. Limpa todas as sessões e tokens salvos
+      // 1. Limpa apenas as sessões e tokens
       sessionStorage.removeItem('oraculum_session');
       sessionStorage.clear();
       localStorage.removeItem('oraculum_session');
@@ -3325,13 +3325,10 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       if (authGate) {
         authGate.style.setProperty('display', 'flex', 'important');
         authGate.style.pointerEvents = 'auto';
+        authGate.style.zIndex = '50';
       }
 
-      // 4. Limpa campos de senha
-      const passInput = document.getElementById('login-password');
-      if (passInput) passInput.value = '';
-
-      window.location.href = window.location.origin + window.location.pathname + '?logout=' + Date.now();
+      // 4. Parar na tela de login (sem reload para evitar loops)
     };
 
     window.executeLogout = window.executarLogout;
@@ -3573,50 +3570,25 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
 
     // 0. VERIFICAÇÃO RIGOROSA DA SESSÃO AO CARREGAR A PÁGINA
     (function verificarSessaoInicial() {
-      if (window.location.search.includes('logout')) {
-        sessionStorage.clear();
-      }
-
-      const sessionStr = sessionStorage.getItem('oraculum_session');
-      let sessionObj = null;
-      try { sessionObj = sessionStr ? JSON.parse(sessionStr) : null; } catch(e){}
-
-      if (window.location.pathname.includes('/configuracoes-api') || window.location.search.includes('api_settings') || window.location.search.includes('tab-settings') || window.location.hash.includes('settings')) {
-         if (sessionObj) {
-            const role = (sessionObj.role || '').toLowerCase();
-            const isMaster = role === 'master_admin' || role === 'owner' || sessionObj.isMasterAdmin === true;
-            if (!isMaster) {
-               window.history.replaceState({}, document.title, '/');
-               setTimeout(() => alert('🔒 Acesso Restrito: A seção de Configurações & APIs é exclusiva para Administradores Master.'), 500);
-            }
-         }
-      }
-
+      // 1. O sistema nunca deve logar automaticamente.
+      // Limpa qualquer sessão temporária em memória para forçar tela de login no carregamento inicial
+      sessionStorage.removeItem('oraculum_session');
+      sessionStorage.clear();
+      
       const authGate = document.getElementById('auth-gate-container');
       const mainDash = document.getElementById('main-dashboard-container');
       const appContainer = document.querySelector('.app-container');
 
-      if (!sessionObj || !sessionObj.token || !sessionObj.email) {
-        sessionObj = {
-          token: 'demo-session-token',
-          email: 'hajaluzstudio@gmail.com',
-          role: 'owner',
-          agencyName: 'Agência Parceira',
-          loggedAt: new Date().toISOString()
-        };
-        sessionStorage.setItem('oraculum_session', JSON.stringify(sessionObj));
-      }
-
-      // EXIBE O DASHBOARD
-      document.documentElement.classList.add('is-authenticated');
+      // EXIBE A TELA DE LOGIN OBRIGATORIAMENTE
+      document.documentElement.classList.remove('is-authenticated');
+      if (mainDash) mainDash.style.setProperty('display', 'none', 'important');
+      if (appContainer) appContainer.style.setProperty('display', 'none', 'important');
+      
       if (authGate) {
-        authGate.style.setProperty('display', 'none', 'important');
-        authGate.style.setProperty('pointer-events', 'none', 'important');
-        authGate.style.setProperty('z-index', '-1', 'important');
+        authGate.style.setProperty('display', 'flex', 'important');
+        authGate.style.pointerEvents = 'auto';
+        authGate.style.zIndex = '50';
       }
-      if (mainDash) mainDash.style.setProperty('display', 'block', 'important');
-      if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
-      window.atualizarCardUsuarioLogado(sessionObj);
     })();
 
     // 1. Função de Visualizar Senha
@@ -3627,12 +3599,16 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       }
     };
 
-    // 2. Preencher e-mail salvo
+    // 2. Preencher credenciais salvas no formulário
     try {
-      const saved = localStorage.getItem('oraculum_saved_email');
-      if (saved) {
-        document.getElementById('login-email').value = saved;
+      const savedEmail = localStorage.getItem('oraculum_saved_email');
+      const savedPassword = localStorage.getItem('oraculum_saved_password');
+      if (savedEmail) {
+        document.getElementById('login-email').value = savedEmail;
         document.getElementById('remember-me').checked = true;
+      }
+      if (savedPassword) {
+        document.getElementById('login-password').value = savedPassword;
       }
     } catch(e) {}
 
@@ -3648,8 +3624,13 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
       btn.disabled = true;
 
       try {
-        if (rememberMe) localStorage.setItem('oraculum_saved_email', email);
-        else localStorage.removeItem('oraculum_saved_email');
+        if (rememberMe) {
+          localStorage.setItem('oraculum_saved_email', email);
+          localStorage.setItem('oraculum_saved_password', password);
+        } else {
+          localStorage.removeItem('oraculum_saved_email');
+          localStorage.removeItem('oraculum_saved_password');
+        }
 
         const supaClient = window.supabaseClient;
         if (!supaClient || !supaClient.auth) {
@@ -3797,15 +3778,15 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
   <script src="/api-keys-manager.js?v=65.0.0"></script>
 
   <script src="/agency-management.js?v=65.0.0"></script>
-  <script src="/client-management.js?v=65.0.0"></script>
-  <script src="/radar-concorrentes.js?v=65.0.0"></script>
-  <script src="/war-room-tools.js?v=65.0.0"></script>
-  <script src="/traffic-manager.js?v=65.0.0"></script>
+  <script src="/client-management.js?v=66.0.0"></script>
+  <script src="/radar-concorrentes.js?v=66.0.0"></script>
+  <script src="/war-room-tools.js?v=66.0.0"></script>
+  <script src="/traffic-manager.js?v=66.0.0"></script>
 
 
 
   <!-- Script JS -->
-  <script src="/oraculo-live.js?v=85.0.0"></script>
+  <script src="/oraculo-live.js?v=86.0.0"></script>
 
   <!-- Modal Fixo de Lançamento de BI no Banco de Dados -->
 <div id="modal-bi-lancar" class="hidden fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -3865,7 +3846,7 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     });
   }
 </script>
-<script src="/app.js?v=9999.100.0"></script>
+<script src="/app.js?v=10000.0.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

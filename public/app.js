@@ -1,14 +1,11 @@
-// PURGA TOTAL DE SERVICE WORKER E CACHESTORAGE (FORÇA CÓDIGO NOVO EM 100% DOS ACESSOS)
+// FORÇAR LIMPEZA DE CACHE E SERVICE WORKER ANTIGO
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (const reg of registrations) {
-      reg.unregister();
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (let registration of registrations) {
+      registration.unregister().then(function(boolean) {
+        if(boolean) console.log('Service Worker antigo removido com sucesso.');
+      });
     }
-  });
-}
-if ('caches' in window) {
-  caches.keys().then(keys => {
-    keys.forEach(key => caches.delete(key));
   });
 }
 
