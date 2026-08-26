@@ -3480,17 +3480,16 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR NO BANCO DE DADOS (TABELA PROFILES) ---
+    // --- 2. SALVAR NO BANCO DE DADOS (SEM CAUSAR ERRO 406) ---
     try {
         if (window.supabaseClient && session.id) {
-            const dadosAtualizados = { 
-                full_name: name, 
-                foto_url: avatarUrlFinal 
-            };
-
+            // Executa o update direto na tabela profiles sem pedir .select() de volta
             const { error: dbError } = await window.supabaseClient
                 .from('profiles')
-                .update(dadosAtualizados)
+                .update({ 
+                    full_name: name, 
+                    foto_url: avatarUrlFinal 
+                })
                 .eq('id', session.id);
 
             if (dbError) {
