@@ -8373,3 +8373,25 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// --- TRAVA DE SEGURANÇA: BLOQUEIO DO ORACULUM LIVE NA TELA DE LOGIN ---
+setInterval(() => {
+    // Verifica se o usuário possui um token de sessão válido (se está logado)
+    const usuarioLogado = localStorage.getItem('oraculum_session') || sessionStorage.getItem('oraculum_session');
+    
+    // Procura o botão do Oraculum Live na interface
+    const botaoLive = document.getElementById('oraculo-live-btn') || 
+                      document.querySelector('.oraculum-live-btn') ||
+                      Array.from(document.querySelectorAll('button, a, .btn')).find(b => b.innerText && b.innerText.includes('Oraculum Live'));
+
+    if (botaoLive) {
+        if (!usuarioLogado) {
+            // Se NÃO estiver logado (Tela de Login), arranca o botão da tela
+            botaoLive.style.display = 'none';
+        } else {
+            // Se estiver logado (Dentro do Sistema), devolve o botão
+            if (botaoLive.style.display === 'none') {
+                botaoLive.style.display = ''; 
+            }
+        }
+    }
+}, 800); // Checa a cada menos de 1 segundo para garantir que não vaze
