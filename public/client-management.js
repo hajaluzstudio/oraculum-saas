@@ -235,7 +235,14 @@ window.salvarCliente = async function(e) {
      // INSERT DIRETO NO SUPABASE (fonte primária, sem API intermediária)
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     const session = sessionStr ? JSON.parse(sessionStr) : {};
-    const currentAgencyId = session.agencyId || session.id || (typeof window.getTenantAgencyId === 'function' ? window.getTenantAgencyId() : null);
+    
+    // Captura com segurança o ID da agência logada
+    const currentAgencyId = session.agency_id || session.agencyId || session.id;
+
+    if (!currentAgencyId && !isMaster) {
+        alert('❌ Erro de sessão: ID da agência não encontrado. Faça login novamente.');
+        return;
+    }
 
     const insertPayload = {
         name, niche, contact_name, phone, website, instagram,
@@ -244,7 +251,7 @@ window.salvarCliente = async function(e) {
         meta_ad_account_id, meta_pixel_id, google_customer_id,
         notes: cleanNotes,
         previous_agency_notes: cleanNotes,
-        agency_id: currentAgencyId, // <-- Vincula obrigatoriamente à agência logada
+        agency_id: currentAgencyId || null, // Garante que vai vinculado à agência certa
         updated_at: new Date().toISOString()
     };
 
