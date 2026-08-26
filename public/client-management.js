@@ -232,16 +232,21 @@ window.salvarCliente = async function(e) {
         return;
       }
     } else {
-      // INSERT DIRETO NO SUPABASE (fonte primária, sem API intermediária)
-      const insertPayload = {
+     // INSERT DIRETO NO SUPABASE (fonte primária, sem API intermediária)
+    const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
+    const session = sessionStr ? JSON.parse(sessionStr) : {};
+    const currentAgencyId = session.agencyId || session.id || (typeof window.getTenantAgencyId === 'function' ? window.getTenantAgencyId() : null);
+
+    const insertPayload = {
         name, niche, contact_name, phone, website, instagram,
         avg_ticket: parseFloat(String(avg_ticket).replace(',', '.')) || 0,
         target_revenue: parseFloat(String(target_revenue).replace(',', '.')) || 0,
         meta_ad_account_id, meta_pixel_id, google_customer_id,
         notes: cleanNotes,
         previous_agency_notes: cleanNotes,
+        agency_id: currentAgencyId, // <-- Vincula obrigatoriamente à agência logada
         updated_at: new Date().toISOString()
-      };
+    };
 
       if (supaClient) {
         const { error: insertError } = await supaClient
