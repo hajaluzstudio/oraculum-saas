@@ -3480,25 +3480,34 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
 
-    // --- 2. SALVAR NO BANCO DE DADOS (SUPABASE) ---
+    // --- 2. SALVAR NO BANCO DE DADOS USANDO O E-MAIL (INFALÍVEL) ---
     try {
-        if (window.supabaseClient && session.id) {
-            const { error: dbError } = await window.supabaseClient
+        if (window.supabaseClient && session.email) {
+            console.log("Atualizando perfil no Supabase para o e-mail:", session.email);
+            
+            // Atualiza buscando pelo e-mail e pede o retorno dos dados (.select())
+            const { data: updateData, error: dbError } = await window.supabaseClient
                 .from('profiles')
                 .update({ 
                     full_name: name, 
                     foto_url: avatarUrlFinal 
                 })
-                .eq('id', session.id);
+                .eq('email', session.email)
+                .select();
+
+            console.log("Resposta do Supabase:", { updateData, dbError });
 
             if (dbError) {
-                console.error('Erro ao atualizar no banco:', dbError.message);
                 alert('Erro ao salvar no banco: ' + dbError.message);
                 return;
             }
+
+            if (!updateData || updateData.length === 0) {
+                console.warn("Aviso: Nenhuma linha foi atualizada. Verifique se o e-mail na tabela profiles é exatamente igual.");
+            }
         }
     } catch (err) {
-        console.error('Erro geral ao salvar:', err);
+        console.error('Erro geral ao salvar no banco:', err);
     }
 
     // Salva na sessão do navegador
