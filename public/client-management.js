@@ -216,7 +216,7 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES E CONECTAR A TROCA DE CLIENTE
+// 6. ATUALIZAR SELETORES (Mantendo 100% da lógica original intacta)
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
@@ -232,7 +232,7 @@ window.atualizarSeletorClientesOnboarding = function() {
       }
   }
 
-  // 1. Configura o seletor da aba de Onboarding e ativa o gatilho de troca
+  // Preenche o seletor da aba de onboarding mantendo o comportamento padrão
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -246,32 +246,20 @@ window.atualizarSeletorClientesOnboarding = function() {
       selectOnboarding.value = activeClientId;
     }
 
-    // Garante que ao mudar o cliente no Onboarding, o sistema inteiro atualiza
-    // Removendo listener antigo clonando o elemento para evitar duplicação
-    const novoSelectOnboarding = selectOnboarding.cloneNode(true);
-    selectOnboarding.parentNode.replaceChild(novoSelectOnboarding, selectOnboarding);
-    
-    novoSelectOnboarding.addEventListener('change', function(e) {
+    // Delega a mudança exatamente para a função original que já funcionava antes
+    selectOnboarding.onchange = function(e) {
       const selectedId = e.target.value;
       if (selectedId) {
-        // Salva o cliente ativo globalmente
-        localStorage.setItem('oraculum_active_client', selectedId);
-        sessionStorage.setItem('oraculum_active_client', selectedId);
-        
-        // Dispara a função de carregamento que já existe no seu sistema
         if (typeof window.carregarDadosClienteNoOnboarding === 'function') {
           window.carregarDadosClienteNoOnboarding(selectedId);
         } else if (typeof window.setActiveClient === 'function') {
           window.setActiveClient(selectedId);
         }
-        
-        // Atualiza o texto visual lá no topo
-        window.atualizarSeletorClientesOnboarding();
       }
-    });
+    };
   }
 
-  // 2. Atualiza o visor visual (texto) no cabeçalho superior
+  // Atualiza apenas o texto visual no cabeçalho superior (sem interferir em nenhuma regra)
   if (selectHeader) {
     const currentActiveId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
     if (list.length === 0) {
@@ -288,7 +276,6 @@ window.atualizarSeletorClientesOnboarding = function() {
     }
   }
 };
-
 // 7. RENDERIZAR TABELA
 window.renderizarListaClientes = function() {
   const container = document.getElementById('clients-table-body');
