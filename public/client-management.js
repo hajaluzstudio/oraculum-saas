@@ -36,7 +36,6 @@ window.obterIdentidadeSegura = async function() {
   if (supaClient) {
       try {
           let authUser = null;
-          // Suporte para versões novas e antigas do Supabase
           if (typeof supaClient.auth.getUser === 'function') {
               const { data } = await supaClient.auth.getUser();
               authUser = data?.user;
@@ -158,7 +157,6 @@ window.salvarCliente = async function(e) {
     const supaClient = getSupabaseClient();
     if (!supaClient) throw new Error("Supabase não conectado no front-end.");
 
-    // Usa o sistema blindado para garantir que a agência assine o cliente corretamente
     const identidade = await window.obterIdentidadeSegura();
 
     if (!identidade.isMaster && !identidade.agencyId) {
@@ -216,10 +214,10 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO
+// 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO (BLINDADO E SINCRONIZADO)
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
-  const selectHeader = document.getElementById('active-client-select'); // O "dublê" invisível para o app.js não quebrar
+  const selectHeader = document.getElementById('active-client-select'); // O "dublê" invisível para o app.js
   const selectHeaderDisplay = document.getElementById('active-client-display'); // O visor visual limpo no cabeçalho
   const list = window.clientesMock || []; 
 
@@ -233,7 +231,7 @@ window.atualizarSeletorClientesOnboarding = function() {
       }
   }
 
-  // Preenche o seletor da aba de onboarding mantendo o comportamento original
+  // Preenche o seletor da aba de onboarding
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -247,19 +245,26 @@ window.atualizarSeletorClientesOnboarding = function() {
       selectOnboarding.value = activeClientId;
     }
 
+    // Evento seguro ao trocar o cliente no Onboarding
     selectOnboarding.onchange = function(e) {
       const selectedId = e.target.value;
       if (selectedId) {
-        if (typeof window.carregarDadosClienteNoOnboarding === 'function') {
-          window.carregarDadosClienteNoOnboarding(selectedId);
+        // Dispara o motor global do sistema para atualizar todas as abas e o dossiê
+        if (typeof window.selectActiveClient === 'function') {
+          window.selectActiveClient(selectedId);
         } else if (typeof window.setActiveClient === 'function') {
           window.setActiveClient(selectedId);
+        } else if (typeof window.carregarDadosClienteNoOnboarding === 'function') {
+          window.carregarDadosClienteNoOnboarding(selectedId);
         }
+        
+        // Atualiza o visor visual instantaneamente
+        window.atualizarSeletorClientesOnboarding();
       }
     };
   }
 
-  // Sincroniza o "dublê" invisível para a lógica antiga do app.js achar e não dar erro
+  // Sincroniza o "dublê" invisível para a lógica interna do app.js achar e não dar erro
   if (selectHeader) {
     selectHeader.innerHTML = list.length === 0 ? '<option value="">Nenhum cliente cadastrado</option>' : '';
     list.forEach(c => {
@@ -339,16 +344,13 @@ window.carregarClientesDoSupabase = async function() {
   }
 
   try {
-    // 1. DESCUBRE QUEM É O USUÁRIO DE VERDADE (Sem depender da memória lenta)
     const identidade = await window.obterIdentidadeSegura();
 
-    // 2. BUSCA TODOS OS DADOS
     const { data, error } = await supaClient.from('clients').select('*');
     if (error) { console.error("❌ Erro na base:", error.message); return; }
     
     console.log(`✅ Banco retornou ${data.length} clientes.`);
 
-    // 3. A MÁGICA DO ISOLAMENTO OCORRE AQUI
     let clientesFiltrados = [];
 
     if (identidade.isMaster) {
@@ -362,11 +364,9 @@ window.carregarClientesDoSupabase = async function() {
       console.log(`🏢 Usuário confirmado como AGÊNCIA (${identidade.email}). Encontrados ${clientesFiltrados.length} clientes isolados.`);
     }
 
-    // 4. SALVA E PREPARA A TELA
     window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
     window.clientsList = window.clientesMock;
 
-    // 5. ATRASO ESTRATÉGICO PARA ATROPELAR QUALQUER CONFLITO VISUAL
     setTimeout(() => {
         console.log("🛡️ Forçando renderização da tela...");
         window.renderizarListaClientes();
@@ -378,6 +378,43 @@ window.carregarClientesDoSupabase = async function() {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// ==========================================
+// PARTE 2: Sincronizador Automático do Topo
+// ==========================================
+function sincronizarVisorClienteAtivo() {
+  const selectHeader = document.getElementById('active-client-select');
+  const selectHeaderDisplay = document.getElementById('active-client-display');
+  
+  if (selectHeader && selectHeaderDisplay) {
+    if (selectHeader.selectedIndex >= 0 && selectHeader.options[selectHeader.selectedIndex]) {
+      selectHeaderDisplay.innerText = selectHeader.options[selectHeader.selectedIndex].text;
+    } else {
+      selectHeaderDisplay.innerText = "Nenhum cliente selecionado";
+    }
+  }
+}
+
+if (typeof window.setActiveClient === 'function' && !window._setActiveClientWrapped) {
+  const originalSetActiveClient = window.setActiveClient;
+  window.setActiveClient = async function(clientId) {
+    const resultado = await originalSetActiveClient(clientId);
+    setTimeout(sincronizarVisorClienteAtivo, 100);
+    return resultado;
+  };
+  window._setActiveClientWrapped = true;
+}
+
+if (typeof window.selectActiveClient === 'function' && !window._selectActiveClientWrapped) {
+  const originalSelectActiveClient = window.selectActiveClient;
+  window.selectActiveClient = async function(clientId) {
+    const resultado = await originalSelectActiveClient(clientId);
+    setTimeout(sincronizarVisorClienteAtivo, 100);
+    return resultado;
+  };
+  window._selectActiveClientWrapped = true;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
   window.carregarClientesDoSupabase();
+  setTimeout(sincronizarVisorClienteAtivo, 300);
 });
