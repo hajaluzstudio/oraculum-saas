@@ -233,6 +233,7 @@ window.atualizarSeletorClientesOnboarding = function() {
       }
   }
 
+  // Preenche o select da aba de onboarding normalmente
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -241,16 +242,26 @@ window.atualizarSeletorClientesOnboarding = function() {
       opt.textContent = `${c.name} (${c.niche})`;
       selectOnboarding.appendChild(opt);
     });
+    // Se houver um cliente ativo salvo, mantém selecionado no dropdown do onboard
+    if (activeClientId) {
+      selectOnboarding.value = activeClientId;
+    }
   }
 
+  // Atualiza o visor no topo (Header) com o nome do cliente ativo atual
   if (selectHeader) {
-    selectHeader.innerHTML = list.length === 0 ? '<option value="">Nenhum cliente cadastrado</option>' : '';
-    list.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.name} (${c.niche})`;
-      selectHeader.appendChild(opt);
-    });
+    if (list.length === 0) {
+      selectHeader.innerText = "Nenhum cliente cadastrado";
+    } else if (activeClientId) {
+      const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
+      if (clienteAtivoObj) {
+        selectHeader.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
+      } else {
+        selectHeader.innerText = "Nenhum cliente selecionado";
+      }
+    } else {
+      selectHeader.innerText = "Nenhum cliente selecionado";
+    }
   }
 };
 
