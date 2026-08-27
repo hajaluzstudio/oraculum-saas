@@ -1418,6 +1418,83 @@
           </div>
         </section>
 
+        <!-- ABA NOVA: PORTAL DE INTELIGÊNCIA -->
+        <section id="tab-intelligence" class="tab-panel" style="display: none;">
+          <div class="p-6 space-y-6 text-white">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
+              <div>
+                <h2 class="text-2xl font-bold tracking-tight text-emerald-400 flex items-center gap-2">
+                  <i class="fa-solid fa-satellite-dish animate-pulse"></i> Portal de Inteligência & Feed de Mercado
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">
+                  Monitoramento autônomo em tempo real via Google Search Grounding dos principais players, tendências e compliance do nicho ativo.
+                </p>
+              </div>
+              <button onclick="window.dispararScraperInteligencia()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-rotate"></i> Atualizar Inteligência Agora
+              </button>
+            </div>
+
+            <!-- Cards de Resumo Executivo -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                  <span class="text-xs font-semibold uppercase tracking-wider">Nicho em Monitoramento</span>
+                  <i class="fa-solid fa-bullseye text-emerald-400"></i>
+                </div>
+                <div id="intel-niche-name" class="text-lg font-bold text-white">Carregando nicho...</div>
+              </div>
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                  <span class="text-xs font-semibold uppercase tracking-wider">Última Varredura Web</span>
+                  <i class="fa-solid fa-clock text-emerald-400"></i>
+                </div>
+                <div id="intel-last-scraped" class="text-lg font-bold text-white">Sincronizando...</div>
+              </div>
+              <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                  <span class="text-xs font-semibold uppercase tracking-wider">Status do Agente IA</span>
+                  <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                </div>
+                <div class="text-lg font-bold text-emerald-400">Ativo & Com Rotação de Modelos</div>
+              </div>
+            </div>
+
+            <!-- Feed Principal Dividido em Colunas -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Tendências Globais -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <i class="fa-solid fa-chart-line text-emerald-400"></i> Tendências Globais da Semana
+                </h3>
+                <ul id="intel-trends-list" class="space-y-3 text-sm text-slate-300">
+                  <li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Carregando tendências de mercado...</li>
+                </ul>
+              </div>
+
+              <!-- Regras de Compliance e Regulamentadores -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Alertas de Compliance & Regras
+                </h3>
+                <div id="intel-compliance-box" class="space-y-3 text-sm text-slate-300">
+                  <p class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Carregando diretrizes de conformidade...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Maiores Players Mapeados -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                <i class="fa-solid fa-crown text-amber-400"></i> Análise Estratégica dos Maiores Players
+              </h3>
+              <div id="intel-players-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando dados dos líderes de mercado...</div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
         <!-- ABA 5: BI & DASHBOARD INTERATIVO DE RESULTADOS -->
         <section id="tab-bi" class="tab-panel">
           <!-- BANNER DO CLIENTE ATIVO & AÇÕES -->
