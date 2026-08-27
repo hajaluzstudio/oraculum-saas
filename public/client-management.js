@@ -216,10 +216,11 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES (Mantendo 100% da lógica original intacta)
+// 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
-  const selectHeader = document.getElementById('active-client-select');
+  const selectHeader = document.getElementById('active-client-select'); // O "dublê" invisível para o app.js não quebrar
+  const selectHeaderDisplay = document.getElementById('active-client-display'); // O visor visual limpo no cabeçalho
   const list = window.clientesMock || []; 
 
   // --- LIMPADOR DE FANTASMAS ---
@@ -232,7 +233,7 @@ window.atualizarSeletorClientesOnboarding = function() {
       }
   }
 
-  // Preenche o seletor da aba de onboarding mantendo o comportamento padrão
+  // Preenche o seletor da aba de onboarding mantendo o comportamento original
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -246,7 +247,6 @@ window.atualizarSeletorClientesOnboarding = function() {
       selectOnboarding.value = activeClientId;
     }
 
-    // Delega a mudança exatamente para a função original que já funcionava antes
     selectOnboarding.onchange = function(e) {
       const selectedId = e.target.value;
       if (selectedId) {
@@ -259,23 +259,38 @@ window.atualizarSeletorClientesOnboarding = function() {
     };
   }
 
-  // Atualiza apenas o texto visual no cabeçalho superior (sem interferir em nenhuma regra)
+  // Sincroniza o "dublê" invisível para a lógica antiga do app.js achar e não dar erro
   if (selectHeader) {
+    selectHeader.innerHTML = list.length === 0 ? '<option value="">Nenhum cliente cadastrado</option>' : '';
+    list.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.name} (${c.niche})`;
+      selectHeader.appendChild(opt);
+    });
+    if (activeClientId) {
+      selectHeader.value = activeClientId;
+    }
+  }
+
+  // Atualiza o visor visual limpo no cabeçalho superior
+  if (selectHeaderDisplay) {
     const currentActiveId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
     if (list.length === 0) {
-      selectHeader.innerText = "Nenhum cliente cadastrado";
+      selectHeaderDisplay.innerText = "Nenhum cliente cadastrado";
     } else if (currentActiveId) {
       const clienteAtivoObj = list.find(c => String(c.id) === String(currentActiveId));
       if (clienteAtivoObj) {
-        selectHeader.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
+        selectHeaderDisplay.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
       } else {
-        selectHeader.innerText = "Nenhum cliente selecionado";
+        selectHeaderDisplay.innerText = "Nenhum cliente selecionado";
       }
     } else {
-      selectHeader.innerText = "Nenhum cliente selecionado";
+      selectHeaderDisplay.innerText = "Nenhum cliente selecionado";
     }
   }
 };
+
 // 7. RENDERIZAR TABELA
 window.renderizarListaClientes = function() {
   const container = document.getElementById('clients-table-body');
