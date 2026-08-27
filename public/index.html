@@ -1105,11 +1105,15 @@
 
         <div class="header-actions" style="display: flex; flex-direction: row; gap: 12px; align-items: center;">
 
-          <div class="stat-pill highlight" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 6px;">
+          <!-- Visor visual limpo e seguro para você (sem seta, sem botão de excluir) -->
+<div class="stat-pill highlight" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 6px;">
     <i class="fa-solid fa-user-check" style="color: #10b981;"></i>
     <span style="color: #10b981; font-weight: 500;">Cliente Ativo:</span>
-    <span id="active-client-select" style="color: #FFF; font-weight: bold; margin-left: 4px;">Carregando...</span>
+    <span id="active-client-display" style="color: #FFF; font-weight: bold; margin-left: 4px;">Carregando...</span>
 </div>
+
+<!-- "Dublê" invisível: Apenas para a lógica original do app.js achar e não quebrar -->
+<select id="active-client-select" style="display: none !important;"></select>
 
           <div class="stat-pill">
             <i class="fa-solid fa-shield-halved"></i>
