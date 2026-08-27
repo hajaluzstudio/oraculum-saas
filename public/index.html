@@ -976,51 +976,56 @@
       </div>
 
       <nav class="nav-menu">
-        <button class="nav-item active" data-tab="tab-clientes" id="btn-tab-clientes" data-tooltip="Carteira de Clientes">
-          <i class="fa-solid fa-users"></i>
-          <span>Carteira de Clientes</span>
-        </button>
-        <button class="nav-item" data-tab="tab-super-admin" id="btn-tab-master" data-tooltip="Painel Master Admin" style="display: none; color: #F87171;">
-          <i class="fa-solid fa-crown"></i>
-          <span>Painel Master</span>
-        </button>
-        <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding" data-tooltip="Onboarding Autônomo">
-          <i class="fa-solid fa-user-plus"></i>
-          <span>Onboarding Autônomo</span>
-        </button>
-        <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat" data-tooltip="Chat Estratégico">
-          <i class="fa-solid fa-comments"></i>
-          <span>Chat Estratégico</span>
-        </button>
-        <button class="nav-item" data-tab="tab-bi" id="btn-tab-bi" data-tooltip="BI & Feedback Loop">
-          <i class="fa-solid fa-chart-line"></i>
-          <span>BI & Feedback Loop</span>
-        </button>
-        <button class="nav-item" data-tab="tab-spy" id="btn-tab-spy" data-tooltip="Radar de Concorrentes">
-          <i class="fa-solid fa-user-secret"></i>
-          <span>Radar de Concorrentes</span>
-        </button>
-        <button class="nav-item" data-tab="tab-war-room" id="btn-tab-war-room" data-tooltip="Sala de Operação" style="color: #34D399; font-weight: 700; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1);">
-          <i class="fa-solid fa-bolt" style="color: #10B981;"></i>
-          <span>Sala de Operação</span>
-        </button>
-        <button class="nav-item" data-tab="tab-lp" id="btn-tab-lp" data-tooltip="Landing Pages">
-          <i class="fa-solid fa-globe"></i>
-          <span>Landing Pages</span>
-        </button>
-        <button class="nav-item" data-tab="tab-drive" id="btn-tab-drive" data-tooltip="Trilha & Kanban">
-    <i class="fa-solid fa-columns"></i>
-    <span>Trilha de Equipe & Kanban</span>
-</button>
-        <button class="nav-item" data-tab="tab-settings" id="btn-tab-settings" data-tooltip="Configurações & APIs">
-          <i class="fa-solid fa-gear"></i>
-          <span>Configurações & APIs</span>
-        </button>
-        <button class="nav-item highlight-superadmin" data-tab="tab-super-admin" id="btn-tab-super-admin" data-tooltip="Gestão Master" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); margin-top: 6px;">
-          <i class="fa-solid fa-crown" style="color: #FDE047;"></i>
-          <span style="color: #E9D5FF; font-weight: 700;">Gestão Master Agências</span>
-        </button>
-      </nav>
+    <!-- 1. Fundação e Identificação -->
+    <button class="nav-item active" data-tab="tab-clientes" id="btn-tab-clientes" data-tooltip="Carteira de Clientes">
+        <i class="fa-solid fa-users"></i>
+        <span>Carteira de Clientes</span>
+    </button>
+    <button class="nav-item" data-tab="tab-onboarding" id="btn-tab-onboarding" data-tooltip="Onboarding Autônomo">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Onboarding Autônomo</span>
+    </button>
+
+    <!-- 2. Inteligência e Estratégia -->
+    <button class="nav-item" data-tab="tab-chat" id="btn-tab-chat" data-tooltip="Chat Estratégico">
+        <i class="fa-solid fa-comments"></i>
+        <span>Chat Estratégico</span>
+    </button>
+    <button class="nav-item" data-tab="tab-spy" id="btn-tab-spy" data-tooltip="Radar de Concorrentes">
+        <i class="fa-solid fa-user-secret"></i>
+        <span>Radar de Concorrentes</span>
+    </button>
+
+    <!-- 3. Execução Operacional -->
+    <button class="nav-item" data-tab="tab-war-room" id="btn-tab-war-room" data-tooltip="Sala de Operação" style="color: #34D399; font-weight: 700; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.1);">
+        <i class="fa-solid fa-bolt" style="color: #10B981;"></i>
+        <span>Sala de Operação</span>
+    </button>
+    <button class="nav-item" data-tab="tab-lp" id="btn-tab-lp" data-tooltip="Landing Pages">
+        <i class="fa-solid fa-globe"></i>
+        <span>Landing Pages</span>
+    </button>
+    <button class="nav-item" data-tab="tab-drive" id="btn-tab-drive" data-tooltip="Trilha & Kanban">
+        <i class="fa-solid fa-columns"></i>
+        <span>Trilha de Equipe & Kanban</span>
+    </button>
+
+    <!-- 4. Validação Executiva -->
+    <button class="nav-item" data-tab="tab-bi" id="btn-tab-bi" data-tooltip="BI & Feedback Loop">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>BI & Feedback Loop</span>
+    </button>
+
+    <!-- 5. Retaguarda e Master -->
+    <button class="nav-item" data-tab="tab-settings" id="btn-tab-settings" data-tooltip="Configurações & APIs">
+        <i class="fa-solid fa-gear"></i>
+        <span>Configurações & APIs</span>
+    </button>
+    <button class="nav-item highlight-superadmin" data-tab="tab-super-admin" id="btn-tab-super-admin" data-tooltip="Gestão Master" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); margin-top: 6px;">
+        <i class="fa-solid fa-crown" style="color: #FDE047;"></i>
+        <span style="color: #E9D5FF; font-weight: 700;">Gestão Master Agências</span>
+    </button>
+</nav>
 
       <div class="sidebar-footer">
         <!-- MENU DROPDOWN INTERATIVO DO RODAPÉ -->
