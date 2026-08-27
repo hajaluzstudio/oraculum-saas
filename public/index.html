@@ -4168,8 +4168,40 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
         console.error('Erro ao sincronizar perfil do banco:', err);
     }
 })();
-</script>
 
+  <script>
+window.dispararScraperInteligencia = async function() {
+  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  const list = window.clientesMock || [];
+  const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+
+  if (!clienteAtivo) {
+    alert("Selecione um cliente ativo primeiro.");
+    return;
+  }
+
+  alert(`🚀 Disparando varredura via Google Search Grounding para o nicho: ${clienteAtivo.niche}...`);
+  
+  try {
+    const response = await fetch('/api/autonomous-scraper/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ niche: clienteAtivo.niche, clientId: clienteAtivo.id })
+    });
+    
+    if (response.ok) {
+      alert("🎉 Inteligência de mercado atualizada com sucesso!");
+      if (typeof window.carregarPortalInteligencia === 'function') {
+        window.carregarPortalInteligencia();
+      }
+    } else {
+      alert("⚠️ Varredura concluída, mas verifique os logs do servidor.");
+    }
+  } catch (err) {
+    alert("Erro ao disparar varredura: " + err.message);
+  }
+};
+</script>
 </body>
 </html>
 
