@@ -24,7 +24,7 @@ function sanitizeNotes(raw) {
   return str;
 }
 
-// --- SISTEMA DE IDENTIDADE SUPREMA (Fim do problema de sumiço) ---
+// --- SISTEMA DE IDENTIDADE SUPREMA ---
 window.obterIdentidadeSegura = async function() {
   let email = '';
   let isMaster = false;
@@ -32,7 +32,6 @@ window.obterIdentidadeSegura = async function() {
 
   const supaClient = getSupabaseClient();
 
-  // 1. A FONTE DA VERDADE: Pergunta diretamente ao Supabase Auth
   if (supaClient) {
       try {
           let authUser = null;
@@ -42,21 +41,18 @@ window.obterIdentidadeSegura = async function() {
           } else if (typeof supaClient.auth.user === 'function') {
               authUser = supaClient.auth.user();
           }
-          
           if (authUser && authUser.email) {
               email = String(authUser.email).toLowerCase();
           }
       } catch (err) { console.warn("Aviso: Falha ao ler Supabase Auth."); }
   }
 
-  // 2. FALLBACK: Lê a memória do navegador caso o Auth demore
   const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
   const session = sessionStr ? JSON.parse(sessionStr) : {};
 
   if (!email) email = String(session.email || '').toLowerCase();
   agencyId = session.agency_id || session.agencyId || session.id || '';
 
-  // 3. AUTO-RESGATE DE ID DE AGÊNCIA
   if (email && email !== 'hajaluzstudio@gmail.com' && !agencyId && supaClient) {
       try {
           const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', email).single();
@@ -68,7 +64,6 @@ window.obterIdentidadeSegura = async function() {
       } catch (err) {}
   }
 
-  // 4. SENTENÇA FINAL: É Master ou não?
   if (session.role === 'master' || email === 'hajaluzstudio@gmail.com') {
       isMaster = true;
   }
@@ -158,7 +153,6 @@ window.salvarCliente = async function(e) {
     if (!supaClient) throw new Error("Supabase não conectado no front-end.");
 
     const identidade = await window.obterIdentidadeSegura();
-
     if (!identidade.isMaster && !identidade.agencyId) {
       alert('❌ Erro: ID da agência não encontrado. Faça login novamente.');
       return;
@@ -206,32 +200,29 @@ window.excluirCliente = async function(clientId) {
 // 5. CARREGAR DADOS NO ONBOARDING
 window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (!clientId) return;
-  if (typeof window.setActiveClient === 'function') {
+  // Aciona diretamente o seletor padrão do app.js se ele existir, garantindo a troca global
+  const selectHeader = document.getElementById('active-client-select');
+  if (selectHeader) {
+    selectHeader.value = clientId;
+    // Dispara o evento de mudança para o app.js capturar e atualizar o Dossiê/Chat
+    selectHeader.dispatchEvent(new Event('change'));
+  } else if (typeof window.selectActiveClient === 'function') {
+    window.selectActiveClient(clientId);
+  } else if (typeof window.setActiveClient === 'function') {
     window.setActiveClient(clientId);
-    return;
   }
-  const client = window.clientesMock.find(c => String(c.id) === String(clientId));
-  if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO (BLINDADO E SINCRONIZADO)
+// 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
-  const selectHeader = document.getElementById('active-client-select'); // O "dublê" invisível para o app.js
-  const selectHeaderDisplay = document.getElementById('active-client-display'); // O visor visual limpo no cabeçalho
+  const selectHeader = document.getElementById('active-client-select'); // O select original (pode estar oculto ou não)
+  const selectHeaderDisplay = document.getElementById('active-client-display'); // Nosso span visual limpo
   const list = window.clientesMock || []; 
 
-  // --- LIMPADOR DE FANTASMAS ---
   const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
-  if (activeClientId && list.length > 0) {
-      const clienteValido = list.some(c => String(c.id) === String(activeClientId));
-      if (!clienteValido) {
-          localStorage.removeItem('oraculum_active_client');
-          sessionStorage.removeItem('oraculum_active_client');
-      }
-  }
 
-  // Preenche o seletor da aba de onboarding
+  // Preenche o seletor da aba de Onboarding
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -245,26 +236,18 @@ window.atualizarSeletorClientesOnboarding = function() {
       selectOnboarding.value = activeClientId;
     }
 
-    // Evento seguro ao trocar o cliente no Onboarding
+    // Ao mudar no Onboarding, avisa o sistema inteiro
     selectOnboarding.onchange = function(e) {
       const selectedId = e.target.value;
       if (selectedId) {
-        // Dispara o motor global do sistema para atualizar todas as abas e o dossiê
-        if (typeof window.selectActiveClient === 'function') {
-          window.selectActiveClient(selectedId);
-        } else if (typeof window.setActiveClient === 'function') {
-          window.setActiveClient(selectedId);
-        } else if (typeof window.carregarDadosClienteNoOnboarding === 'function') {
-          window.carregarDadosClienteNoOnboarding(selectedId);
-        }
-        
-        // Atualiza o visor visual instantaneamente
-        window.atualizarSeletorClientesOnboarding();
+        localStorage.setItem('oraculum_active_client', selectedId);
+        sessionStorage.setItem('oraculum_active_client', selectedId);
+        window.carregarDadosClienteNoOnboarding(selectedId);
       }
     };
   }
 
-  // Sincroniza o "dublê" invisível para a lógica interna do app.js achar e não dar erro
+  // Preenche o select original do app.js para manter a compatibilidade interna intacta
   if (selectHeader) {
     selectHeader.innerHTML = list.length === 0 ? '<option value="">Nenhum cliente cadastrado</option>' : '';
     list.forEach(c => {
@@ -278,13 +261,12 @@ window.atualizarSeletorClientesOnboarding = function() {
     }
   }
 
-  // Atualiza o visor visual limpo no cabeçalho superior
+  // Atualiza o texto visual limpo no cabeçalho superior (#active-client-display)
   if (selectHeaderDisplay) {
-    const currentActiveId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
     if (list.length === 0) {
       selectHeaderDisplay.innerText = "Nenhum cliente cadastrado";
-    } else if (currentActiveId) {
-      const clienteAtivoObj = list.find(c => String(c.id) === String(currentActiveId));
+    } else if (activeClientId) {
+      const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
       if (clienteAtivoObj) {
         selectHeaderDisplay.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
       } else {
@@ -302,7 +284,6 @@ window.renderizarListaClientes = function() {
   if (!container) return;
 
   const list = window.clientesMock || [];
-
   const elTotal = document.getElementById('client-metric-total');
   const elNiches = document.getElementById('client-metric-niches');
   const elRevenue = document.getElementById('client-metric-revenue');
@@ -333,7 +314,7 @@ window.renderizarListaClientes = function() {
   `).join('');
 };
 
-// 8. O MOTOR PRINCIPAL (Busca e Filtra com Precisão)
+// 8. O MOTOR PRINCIPAL DE BUSCA
 window.carregarClientesDoSupabase = async function() {
   console.log("🚀 Iniciando busca de clientes no Supabase...");
   const supaClient = getSupabaseClient();
@@ -345,30 +326,25 @@ window.carregarClientesDoSupabase = async function() {
 
   try {
     const identidade = await window.obterIdentidadeSegura();
-
     const { data, error } = await supaClient.from('clients').select('*');
     if (error) { console.error("❌ Erro na base:", error.message); return; }
     
     console.log(`✅ Banco retornou ${data.length} clientes.`);
 
     let clientesFiltrados = [];
-
     if (identidade.isMaster) {
       clientesFiltrados = data; 
-      console.log(`👑 Usuário confirmado como MASTER (${identidade.email}). Exibindo tudo.`);
     } else {
       if (identidade.agencyId) {
         const safeId = String(identidade.agencyId).toLowerCase();
         clientesFiltrados = data.filter(c => c.agency_id && String(c.agency_id).toLowerCase() === safeId);
       }
-      console.log(`🏢 Usuário confirmado como AGÊNCIA (${identidade.email}). Encontrados ${clientesFiltrados.length} clientes isolados.`);
     }
 
     window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
     window.clientsList = window.clientesMock;
 
     setTimeout(() => {
-        console.log("🛡️ Forçando renderização da tela...");
         window.renderizarListaClientes();
         window.atualizarSeletorClientesOnboarding();
     }, 400);
@@ -378,43 +354,21 @@ window.carregarClientesDoSupabase = async function() {
   }
 };
 
-// ==========================================
-// PARTE 2: Sincronizador Automático do Topo
-// ==========================================
-function sincronizarVisorClienteAtivo() {
-  const selectHeader = document.getElementById('active-client-select');
+// Sincronizador contínuo do visor superior
+function sincronizarVisorTopo() {
   const selectHeaderDisplay = document.getElementById('active-client-display');
-  
-  if (selectHeader && selectHeaderDisplay) {
-    if (selectHeader.selectedIndex >= 0 && selectHeader.options[selectHeader.selectedIndex]) {
-      selectHeaderDisplay.innerText = selectHeader.options[selectHeader.selectedIndex].text;
-    } else {
-      selectHeaderDisplay.innerText = "Nenhum cliente selecionado";
+  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  const list = window.clientesMock || [];
+
+  if (selectHeaderDisplay && list.length > 0 && activeClientId) {
+    const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
+    if (clienteAtivoObj) {
+      selectHeaderDisplay.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
     }
   }
 }
 
-if (typeof window.setActiveClient === 'function' && !window._setActiveClientWrapped) {
-  const originalSetActiveClient = window.setActiveClient;
-  window.setActiveClient = async function(clientId) {
-    const resultado = await originalSetActiveClient(clientId);
-    setTimeout(sincronizarVisorClienteAtivo, 100);
-    return resultado;
-  };
-  window._setActiveClientWrapped = true;
-}
-
-if (typeof window.selectActiveClient === 'function' && !window._selectActiveClientWrapped) {
-  const originalSelectActiveClient = window.selectActiveClient;
-  window.selectActiveClient = async function(clientId) {
-    const resultado = await originalSelectActiveClient(clientId);
-    setTimeout(sincronizarVisorClienteAtivo, 100);
-    return resultado;
-  };
-  window._selectActiveClientWrapped = true;
-}
-
 window.addEventListener('DOMContentLoaded', () => {
   window.carregarClientesDoSupabase();
-  setTimeout(sincronizarVisorClienteAtivo, 300);
+  setInterval(sincronizarVisorTopo, 1000);
 });
