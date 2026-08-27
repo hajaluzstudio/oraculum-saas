@@ -216,24 +216,23 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (client && window.selectActiveClient) window.selectActiveClient(client.id);
 };
 
-// 6. ATUALIZAR SELETORES E MATAR "FANTASMAS"
+// 6. ATUALIZAR SELETORES E CONECTAR A TROCA DE CLIENTE
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
   const selectHeader = document.getElementById('active-client-select');
   const list = window.clientesMock || []; 
 
-  // --- LIMPADOR DE FANTASMAS (Evita o erro do Dr. Lucas) ---
+  // --- LIMPADOR DE FANTASMAS ---
   const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
   if (activeClientId && list.length > 0) {
       const clienteValido = list.some(c => String(c.id) === String(activeClientId));
       if (!clienteValido) {
-          console.warn("🧹 Limpando cliente fantasma do cache do navegador.");
           localStorage.removeItem('oraculum_active_client');
           sessionStorage.removeItem('oraculum_active_client');
       }
   }
 
-  // Preenche o select da aba de onboarding normalmente
+  // 1. Configura o seletor da aba de Onboarding e ativa o gatilho de troca
   if (selectOnboarding) {
     selectOnboarding.innerHTML = '<option value="">-- Selecione o Cliente --</option>';
     list.forEach(c => {
@@ -242,18 +241,43 @@ window.atualizarSeletorClientesOnboarding = function() {
       opt.textContent = `${c.name} (${c.niche})`;
       selectOnboarding.appendChild(opt);
     });
-    // Se houver um cliente ativo salvo, mantém selecionado no dropdown do onboard
+
     if (activeClientId) {
       selectOnboarding.value = activeClientId;
     }
+
+    // Garante que ao mudar o cliente no Onboarding, o sistema inteiro atualiza
+    // Removendo listener antigo clonando o elemento para evitar duplicação
+    const novoSelectOnboarding = selectOnboarding.cloneNode(true);
+    selectOnboarding.parentNode.replaceChild(novoSelectOnboarding, selectOnboarding);
+    
+    novoSelectOnboarding.addEventListener('change', function(e) {
+      const selectedId = e.target.value;
+      if (selectedId) {
+        // Salva o cliente ativo globalmente
+        localStorage.setItem('oraculum_active_client', selectedId);
+        sessionStorage.setItem('oraculum_active_client', selectedId);
+        
+        // Dispara a função de carregamento que já existe no seu sistema
+        if (typeof window.carregarDadosClienteNoOnboarding === 'function') {
+          window.carregarDadosClienteNoOnboarding(selectedId);
+        } else if (typeof window.setActiveClient === 'function') {
+          window.setActiveClient(selectedId);
+        }
+        
+        // Atualiza o texto visual lá no topo
+        window.atualizarSeletorClientesOnboarding();
+      }
+    });
   }
 
-  // Atualiza o visor no topo (Header) com o nome do cliente ativo atual
+  // 2. Atualiza o visor visual (texto) no cabeçalho superior
   if (selectHeader) {
+    const currentActiveId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
     if (list.length === 0) {
       selectHeader.innerText = "Nenhum cliente cadastrado";
-    } else if (activeClientId) {
-      const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
+    } else if (currentActiveId) {
+      const clienteAtivoObj = list.find(c => String(c.id) === String(currentActiveId));
       if (clienteAtivoObj) {
         selectHeader.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
       } else {
