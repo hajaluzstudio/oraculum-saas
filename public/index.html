@@ -3874,6 +3874,17 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
           sec.classList.remove('active');
         });
 
+      if (secaoId === 'tab-intelligence' || secaoId === 'intelligence') {
+        const pTitle = document.getElementById('page-title');
+        const pSub = document.getElementById('page-subtitle');
+        if (pTitle) pTitle.innerText = "Portal de Inteligência & Feed de Mercado";
+        if (pSub) pSub.innerText = "Monitoramento autônomo em tempo real via Google Search Grounding dos principais players, tendências e compliance.";
+        if (typeof window.carregarPortalInteligencia === 'function') {
+          window.carregarPortalInteligencia();
+        }
+      }
+
+        
         // Procura o elemento de destino por ID ou por atributo data
         const alvo = document.getElementById(secaoId) || 
                      document.getElementById(`view-${secaoId}`) || 
