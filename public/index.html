@@ -4215,7 +4215,7 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
 
 <script>
 window.dispararScraperInteligencia = async function() {
-  console.log("🟢 Botão clicado. Iniciando Scraper com a roleta de modelos avançados...");
+  console.log("🟢 Botão clicado. Solicitando inteligência ao servidor...");
   
   const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
   const list = window.clientesMock || [];
@@ -4226,80 +4226,25 @@ window.dispararScraperInteligencia = async function() {
     return;
   }
 
-  const geminiKey = localStorage.getItem('oraculum_gemini_key') || prompt("Insira sua chave de API do Google Gemini:");
-  if (!geminiKey) {
-    alert("⚠️ Chave de API não informada. Operação cancelada.");
-    return;
-  }
-  localStorage.setItem('oraculum_gemini_key', geminiKey);
-
-  alert(`🚀 Varredura Web iniciada para o nicho: "${clienteAtivo.niche}"...\n\nIsso pode levar alguns segundos, pois a IA está lendo a internet em tempo real.`);
+  alert(`🚀 Varredura Web iniciada para o nicho: "${clienteAtivo.niche}"...\n\nAguarde um instante enquanto o servidor processa.`);
 
   try {
-    const promptText = `Atue como um Agente de Inteligência de Mercado e analise o nicho: "${clienteAtivo.niche}". 
-    Gere um relatório estrito em JSON contendo:
-    1. "marketTrends": array com 3 tendências globais atuais.
-    2. "regulatoryCompliance": objeto com "forbiddenClaims" (array) e "mandatoryDisclaimers" (array).
-    3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
-    Retorne APENAS o JSON limpo sem formatação markdown ou blocos de código.`;
+    // Faz a requisição para a rota segura na Vercel
+    const apiRes = await fetch('/api/scraper-inteligencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nicho: clienteAtivo.niche })
+    });
 
-    // A sua roleta exata, respeitando os modelos e cotas da sua chave
-    const modelosParaTentar = [
-      'gemini-3.5-flash-lite',  // Ouro: 500 chamadas por dia
-      'gemini-3.1-flash-lite',  // Ouro: 500 chamadas por dia
-      'gemini-3.5-flash',       // 20 chamadas por dia
-      'gemini-3-flash',         // 20 chamadas por dia
-      'gemini-2.5-flash',       // 20 chamadas por dia
-      'gemini-2.5-flash-lite',  // 20 chamadas por dia
-      'gemini-3.7-flash',       // Deixado no final caso a cota resete
-      'gemini-3.6-flash'        // Deixado no final caso a cota resete
-    ];
+    const data = await apiRes.json();
 
-    let apiJson = null;
-    let modeloSucesso = "";
-
-    // Atraso de segurança de 3 segundos para não estourar o limite de RPM com o Search Grounding ativado
-    const atrasar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    for (const modelo of modelosParaTentar) {
-      console.log(`Tentando conectar ao modelo: ${modelo}...`);
-      
-      try {
-        const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            tools: [{ googleSearch: {} }] // A ferramenta que estava causando o bloqueio rápido
-          })
-        });
-
-        if (apiRes.ok) {
-          apiJson = await apiRes.json();
-          if (apiJson.candidates && apiJson.candidates[0].content) {
-            modeloSucesso = modelo;
-            console.log(`✅ Sucesso! Dados gerados pela pesquisa no modelo: ${modelo}`);
-            break; // Sai do loop assim que funciona
-          }
-        } else {
-          console.warn(`⚠️ Modelo ${modelo} falhou (Erro ${apiRes.status}). Pode ser limite estourado (429) ou incompatibilidade de Busca Web (404). Indo para o próximo em 3s...`);
-          await atrasar(3000); 
-        }
-      } catch (fetchError) {
-        console.warn(`⚠️ Falha de rede ao acessar ${modelo}. Aguardando 3s...`);
-        await atrasar(3000); 
-      }
+    if (!apiRes.ok) {
+      throw new Error(data.error || "Erro desconhecido no servidor.");
     }
 
-    if (!apiJson || !modeloSucesso) {
-      throw new Error("Todos os modelos bateram no limite de tráfego do Google (RPM). Aguarde um minuto e tente novamente.");
-    }
+    const dossierData = data.dossierData;
 
-    const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const dossierData = JSON.parse(cleanJsonStr);
-    dossierData.lastAutoScrapedAt = new Date().toISOString();
-
+    // Salva no Supabase direto pelo client do navegador (ou se preferir, pode salvar no backend também)
     const supaClient = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
     if (supaClient) {
       await supaClient.from('niche_knowledge_base').insert([{
@@ -4309,14 +4254,13 @@ window.dispararScraperInteligencia = async function() {
       }]);
     }
 
-    alert(`🎉 Inteligência atualizada e salva no banco!\n(Processado via: ${modeloSucesso})`);
+    alert("🎉 Inteligência de mercado atualizada e salva com sucesso!");
     
-    // Atualiza a interface do portal instantaneamente se a função existir
     if (typeof window.carregarPortalInteligencia === 'function') {
       window.carregarPortalInteligencia();
     }
   } catch (err) {
-    console.error("Erro no Portal de Inteligência:", err);
+    console.error("Erro ao executar varredura:", err);
     alert("⚠️ Erro: " + err.message);
   }
 };
