@@ -6131,7 +6131,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.getClienteAtivoReal = function() {
     // 1. Tenta ler o texto exibido no elemento visual da barra superior (Garante 100% de sincronia com o que você vê na tela)
-    const elementoBarraTopo = document.querySelector('.bg-emerald-950\\/40, [class*="Cliente Ativo"], span:has-text("Cliente Ativo")') || Array.from(document.querySelectorAll('span, div')).find(el => el.textContent.includes('Cliente Ativo:'));
+    const elementoBarraTopo = document.querySelector('.bg-emerald-950\\\\/40, [class*="Cliente Ativo"]') || Array.from(document.querySelectorAll('span, div')).find(el => el.textContent.includes('Cliente Ativo:'));
     
     if (elementoBarraTopo) {
       const textoTopo = elementoBarraTopo.innerText || elementoBarraTopo.textContent;
