@@ -4226,6 +4226,9 @@ window.dispararScraperInteligencia = async function() {
     return;
   }
 
+  // Remove a chave antiga salva se você quiser forçar a pedir uma nova:
+  // localStorage.removeItem('oraculum_gemini_key'); 
+  
   const geminiKey = localStorage.getItem('oraculum_gemini_key') || prompt("Insira sua chave de API do Google Gemini (AI Studio):");
   if (!geminiKey) {
     alert("⚠️ Chave de API não informada. O processo foi cancelado.");
@@ -4243,21 +4246,20 @@ window.dispararScraperInteligencia = async function() {
     3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
     Retorne APENAS o JSON limpo sem formatacao markdown.`;
 
-    // ROLETA DE MODELOS COMPLETA (Baseada no seu print)
+    // Apenas modelos compatíveis com Search Grounding
     const modelosParaTentar = [
-      'gemini-3.7-flash',       // Prioridade 1: Mais inteligente e recente
-      'gemini-3.6-flash',       // Prioridade 2
-      'gemini-3.5-flash',       // Prioridade 3
-      'gemini-3.5-flash-lite',  // Prioridade 4: Sua maior cota diária atual (500 RPD)
-      'gemma-4-31b',            // Prioridade 5: Modelo aberto pesado
-      'gemma-4-26b',            // Prioridade 6: Modelo aberto leve
-      'gemini-2.5-flash-tts'    // Prioridade 7: Modelo multimodal/voz (Fallback extremo)
+      'gemini-3.7-flash',       
+      'gemini-3.6-flash',       
+      'gemini-3.5-flash',       
+      'gemini-3.5-flash-lite'   
     ];
 
     let apiJson = null;
     let modeloSucesso = "";
 
-    // Tenta rodar a requisição em cada modelo da lista sequencialmente
+    // Função para criar uma pequena pausa e evitar limite de RPM
+    const atrasar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     for (const modelo of modelosParaTentar) {
       console.log(`Tentando conexão com o modelo: ${modelo}...`);
       
@@ -4273,24 +4275,25 @@ window.dispararScraperInteligencia = async function() {
 
         if (apiRes.ok) {
           apiJson = await apiRes.json();
-          
-          // Verifica se o modelo não retornou vazio (alguns modelos Gemma/TTS podem falhar na sintaxe de Search)
           if (apiJson.candidates && apiJson.candidates[0].content) {
             modeloSucesso = modelo;
             console.log(`✅ Sucesso! Dados gerados pelo modelo: ${modelo}`);
-            break; // Sai da roleta assim que um modelo funcionar e entregar o texto
+            break; 
           }
         } else {
-          console.warn(`⚠️ Modelo ${modelo} falhou (Cota estourada ou incompatível). Pulando para o próximo...`);
+          console.warn(`⚠️ Modelo ${modelo} falhou com status ${apiRes.status}. Aguardando 1.5s antes do próximo...`);
+          await atrasar(1500); // Pausa estratégica para não estourar limite RPM
         }
       } catch (fetchError) {
-        console.warn(`⚠️ Erro de rede ou endpoint não encontrado para o modelo ${modelo}. Pulando para o próximo...`);
+        console.warn(`⚠️ Erro de rede no modelo ${modelo}. Aguardando 1.5s...`);
+        await atrasar(1500); 
       }
     }
 
-    // Se a roleta girou inteira e nenhum funcionou
     if (!apiJson || !modeloSucesso) {
-      throw new Error("Todos os modelos da roleta falharam, excederam o limite de uso diário ou não suportam esta função no momento.");
+      // Se apagar a chave com erro, ele pede de novo no próximo clique
+      localStorage.removeItem('oraculum_gemini_key');
+      throw new Error("Cota esgotada para a chave atual. Gere uma nova chave no AI Studio ou tente novamente mais tarde.");
     }
 
     const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
@@ -4307,13 +4310,13 @@ window.dispararScraperInteligencia = async function() {
       }]);
     }
 
-    alert(`🎉 Inteligência de mercado atualizada com sucesso!\n(Gerado usando a inteligência do: ${modeloSucesso})`);
+    alert(`🎉 Inteligência atualizada com sucesso!\n(Via: ${modeloSucesso})`);
     if (typeof window.carregarPortalInteligencia === 'function') {
       window.carregarPortalInteligencia();
     }
   } catch (err) {
     console.error("Erro na varredura:", err);
-    alert("⚠️ Erro ao executar varredura: " + err.message);
+    alert("⚠️ Erro: " + err.message);
   }
 };
 </script>
