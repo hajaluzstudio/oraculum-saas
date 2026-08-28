@@ -1296,3 +1296,6 @@ body.speech-only-mode .tp-overlay-box,
 body.speech-only-mode .tp-section-header {
   display: none !important;
 }
+
+/* Garante que o botão do Oraculum Live apareça visualmente quando a aba BI estiver ativa */
+body:has(#tab-bi.active) #btn-toggle-oraculo-live { display: flex !important; visibility: visible !important; opacity: 1 !important; }
