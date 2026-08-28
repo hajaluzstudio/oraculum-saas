@@ -1431,7 +1431,7 @@
           Monitoramento autônomo em tempo real via Google Search Grounding dos principais players, tendências e compliance do nicho ativo.
         </p>
       </div>
-      <button type="button" id="btn-atualizar-inteligencia" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+      <button onclick="window.dispararScraperInteligencia()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
   <i class="fa-solid fa-rotate"></i> Atualizar Inteligência Agora
 </button>
     </div>
@@ -4181,73 +4181,70 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
 })();
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const btnAtualizar = document.getElementById('btn-atualizar-inteligencia');
-  if (btnAtualizar) {
-    btnAtualizar.addEventListener('click', async () => {
-      const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
-      const list = window.clientesMock || [];
-      const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+window.dispararScraperInteligencia = async function() {
+  console.log("🟢 O botão foi clicado com sucesso e a função iniciou!");
+  
+  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  const list = window.clientesMock || [];
+  const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
 
-      if (!clienteAtivo) {
-        alert("Selecione um cliente ativo primeiro.");
-        return;
-      }
-
-      const geminiKey = localStorage.getItem('oraculum_gemini_key') || prompt("Insira sua chave de API do Google Gemini (AI Studio):");
-      if (!geminiKey) {
-        alert("Chave de API não informada.");
-        return;
-      }
-      localStorage.setItem('oraculum_gemini_key', geminiKey);
-
-      alert(`🚀 Varredura iniciada para o nicho: "${clienteAtivo.niche}"...`);
-
-      try {
-        const promptText = `Atue como um Agente de Inteligência de Mercado e analise o nicho: "${clienteAtivo.niche}". 
-        Gere um relatório estrito em JSON contendo:
-        1. "marketTrends": array com 3 tendências globais.
-        2. "regulatoryCompliance": objeto com "forbiddenClaims" (array) e "mandatoryDisclaimers" (array).
-        3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
-        Retorne APENAS o JSON limpo.`;
-
-        const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            tools: [{ googleSearch: {} }]
-          })
-        });
-
-        if (!apiRes.ok) throw new Error("Erro na API do Gemini.");
-
-        const apiJson = await apiRes.json();
-        const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-        const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const dossierData = JSON.parse(cleanJsonStr);
-        dossierData.lastAutoScrapedAt = new Date().toISOString();
-
-        const supaClient = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
-        if (supaClient) {
-          await supaClient.from('niche_knowledge_base').insert([{
-            niche_name: clienteAtivo.niche,
-            version: 1,
-            dossier_data: dossierData
-          }]);
-        }
-
-        alert("🎉 Inteligência de mercado atualizada com sucesso!");
-        if (typeof window.carregarPortalInteligencia === 'function') {
-          window.carregarPortalInteligencia();
-        }
-      } catch (err) {
-        console.error("Erro:", err);
-        alert("⚠️ Erro ao executar varredura: " + err.message);
-      }
-    });
+  if (!clienteAtivo) {
+    alert("⚠️ Selecione um cliente ativo primeiro na carteira.");
+    return;
   }
-});
+
+  const geminiKey = localStorage.getItem('oraculum_gemini_key') || prompt("Insira sua chave de API do Google Gemini (AI Studio):");
+  if (!geminiKey) {
+    alert("⚠️ Chave de API não informada. O processo foi cancelado.");
+    return;
+  }
+  localStorage.setItem('oraculum_gemini_key', geminiKey);
+
+  alert(`🚀 Varredura iniciada via Gemini Search Grounding para o nicho: "${clienteAtivo.niche}"...\n\nPor favor, aguarde alguns segundos.`);
+
+  try {
+    const promptText = `Atue como um Agente de Inteligência de Mercado e analise o nicho: "${clienteAtivo.niche}". 
+    Gere um relatório estrito em JSON contendo:
+    1. "marketTrends": array com 3 tendências globais.
+    2. "regulatoryCompliance": objeto com "forbiddenClaims" (array) e "mandatoryDisclaimers" (array).
+    3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
+    Retorne APENAS o JSON limpo sem formatacao markdown.`;
+
+    const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }],
+        tools: [{ googleSearch: {} }]
+      })
+    });
+
+    if (!apiRes.ok) throw new Error("Erro na comunicação com a API do Gemini.");
+
+    const apiJson = await apiRes.json();
+    const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const dossierData = JSON.parse(cleanJsonStr);
+    dossierData.lastAutoScrapedAt = new Date().toISOString();
+
+    const supaClient = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+    if (supaClient) {
+      await supaClient.from('niche_knowledge_base').insert([{
+        niche_name: clienteAtivo.niche,
+        version: 1,
+        dossier_data: dossierData
+      }]);
+    }
+
+    alert("🎉 Inteligência de mercado atualizada e salva no banco com sucesso!");
+    if (typeof window.carregarPortalInteligencia === 'function') {
+      window.carregarPortalInteligencia();
+    }
+  } catch (err) {
+    console.error("Erro na varredura:", err);
+    alert("⚠️ Erro ao executar varredura: " + err.message);
+  }
+};
 </script>
 
 </body>
