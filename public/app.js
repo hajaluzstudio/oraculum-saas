@@ -6038,7 +6038,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const competitorName = document.getElementById('spy-competitor-name')?.value || 'Concorrente';
       const competitorAdUrlOrText = document.getElementById('spy-competitor-ad-url')?.value || '';
       
-      const clienteAtivo = window.getClienteAtivoReal ? window.getClienteAtivoReal() : null;
+      const clienteAtivo = window.getClienteAtivoAtualReal ? window.getClienteAtivoAtualReal() : null;
       const niche = clienteAtivo && clienteAtivo.nicho ? clienteAtivo.nicho : (clienteAtivo && clienteAtivo.niche ? clienteAtivo.niche : 'Geral');
 
       if (spyResultsBody) {
@@ -6129,67 +6129,54 @@ document.addEventListener('DOMContentLoaded', () => {
   // RADAR DE CONCORRENTES: ISOLAMENTO E BANCO DE DADOS
   // ==========================================
 
-  window.getClienteAtivoReal = function() {
-    const elementoBarraTopo = document.querySelector('[class*="Cliente Ativo"]') || Array.from(document.querySelectorAll('span, div, header, nav')).find(el => el.textContent.includes('Cliente Ativo:'));
-    
-    if (elementoBarraTopo) {
-      const textoTopo = elementoBarraTopo.innerText || elementoBarraTopo.textContent;
-      // Extrai o nome do cliente de dentro do texto da barra superior
-      const match = textoTopo.match(/Cliente Ativo:\s*([^-]+)(?:\s*-\s*(.+))?/i);
-      if (match && match[1]) {
-        const nomeCliente = match[1].trim();
-        const complemento = match[2] ? match[2].trim() : '';
-        return {
-          nome: nomeCliente,
-          nicho: complemento || 'Geral'
-        };
-      }
-    }
-
-    // 2. Fallback para o StateManager se disponível
+  // Função unificada para obter o cliente ativo real diretamente da UI ou do estado global gerenciado
+  window.getClienteAtivoAtualReal = function() {
+    // 1. Tenta pegar do StateManager oficial se existir
     if (window.stateManager && typeof window.stateManager.getClienteAtivo === 'function') {
       const cli = window.stateManager.getClienteAtivo();
-      if (cli) return cli;
+      if (cli && cli.id) return cli;
     }
 
-    // 3. Fallback final para variáveis globais comuns
-    return window.clienteAtivoAtual || { nome: "Cliente Padrão", nicho: "Geral" };
+    // 2. Se não houver stateManager, busca o cliente selecionado no seletor da página de Onboarding ou localStorage
+    const idSalvo = localStorage.getItem('oraculum_cliente_ativo_id');
+    const clientesLista = window.clientesMock || window.listaClientesCadastrados || [];
+    
+    if (idSalvo && clientesLista.length > 0) {
+      const encontrado = clientesLista.find(c => c.id === idSalvo);
+      if (encontrado) return encontrado;
+    }
+
+    // 3. Fallback seguro para o primeiro cliente da lista ou objeto genérico
+    return clientesLista[0] || { id: 'default', nome: 'Cliente Padrão', nicho: 'Geral' };
   };
 
-  // 1. Detectar troca de cliente ativo e limpar ou recarregar os dados do Radar
-  window.ouvirTrocaDeClienteRadar = function() {
-    const clienteAtivo = window.getClienteAtivoReal();
-    
-    if (!clienteAtivo) return;
+  // Atualiza a interface do Radar sempre que o usuário entra na aba ou muda o cliente
+  window.sincronizarRadarComClienteAtivo = function() {
+    const cliente = window.getClienteAtivoAtualReal();
+    if (!cliente) return;
 
-    console.log(`🔄 Cliente alterado para: ${clienteAtivo.nome || clienteAtivo.name || clienteAtivo.razao_social}. Isolando dados do Radar...`);
-    
-    // Limpa o input de concorrente e a tela de diagnóstico para não misturar com o cliente anterior
-    const inputConcorrente = document.getElementById('spy-competitor-name');
-    const inputOferta = document.getElementById('spy-competitor-ad-url');
-    const painelDiagnostico = document.getElementById('spy-results-body');
-    const spyVerdictBadge = document.getElementById('spy-verdict-badge');
+    console.log(`🔒 Sincronizando Radar estritamente para o cliente: ${cliente.nome || cliente.razao_social} (ID: ${cliente.id})`);
 
-    if (inputConcorrente) inputConcorrente.value = '';
-    if (inputOferta) inputOferta.value = '';
-    if (spyVerdictBadge) {
-      spyVerdictBadge.textContent = 'Aguardando Análise';
-      spyVerdictBadge.style.background = 'rgba(0, 245, 160, 0.15)';
-      spyVerdictBadge.style.color = '#00F5A0';
+    // Atualiza indicadores visuais na tela do Radar se houver elementos dedicados
+    const elNomeClienteRadar = document.getElementById('radar-cliente-ativo-nome');
+    if (elNomeClienteRadar) {
+      elNomeClienteRadar.innerText = cliente.nome || cliente.razao_social;
     }
 
-    if (painelDiagnostico) {
+    // Limpa o diagnóstico anterior para evitar contaminação visual entre clientes
+    const painelDiagnostico = document.getElementById('spy-results-body');
+    if (painelDiagnostico && !window.analiseAtualCarregadaDoBanco) {
       painelDiagnostico.innerHTML = `
         <div class="text-center text-gray-500 py-12" style="text-align: center; padding: 40px 20px;">
           <span class="text-3xl block mb-2" style="font-size: 32px; display: block;">🛡️</span>
-          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente: <strong>${clienteAtivo.nome || clienteAtivo.name || clienteAtivo.razao_social}</strong> (${clienteAtivo.nicho || clienteAtivo.niche || 'Geral'})</p>
-          <p class="text-xs mt-1 text-gray-400" style="color: #94A3B8; font-size: 12px; margin-top: 8px;">Insira um concorrente para gerar a análise exclusiva deste cliente.</p>
+          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente Ativo: <strong>${cliente.nome || cliente.razao_social}</strong></p>
+          <p class="text-xs mt-1 text-gray-400" style="color: #94A3B8; font-size: 12px; margin-top: 8px;">Nicho: ${cliente.niche || cliente.nicho || 'Geral'}. Insira os dados do concorrente abaixo.</p>
         </div>
       `;
     }
 
     // Tenta carregar dados salvos exclusivamente para este cliente no banco de dados
-    const finalId = clienteAtivo.id || (typeof activeClientId !== 'undefined' ? activeClientId : null);
+    const finalId = cliente.id || (typeof activeClientId !== 'undefined' ? activeClientId : null);
     if (finalId) carregarRadarDoClienteNoBanco(finalId);
   };
 
@@ -6255,7 +6242,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Chamar ao inicializar se já houver cliente
   setTimeout(() => {
-    if (activeClientId) window.ouvirTrocaDeClienteRadar();
+    if (typeof activeClientId !== 'undefined' && activeClientId) {
+      if (window.sincronizarRadarComClienteAtivo) window.sincronizarRadarComClienteAtivo();
+    }
   }, 1500);
 
   // ============================================================================
