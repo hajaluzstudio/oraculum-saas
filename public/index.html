@@ -4236,17 +4236,17 @@ window.carregarPortalInteligencia = async function() {
   if (!supaClient) return;
 
   const { data, error } = await supaClient
-    .from('niche_knowledge_base')
-    .select('dossier_data, version')
-    .eq('niche_name', clienteAtivo.niche)
-    .order('version', { ascending: false })
+    .from('market_intelligence_feed')
+    .select('scraper_data, created_at')
+    .eq('niche', clienteAtivo.niche)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (data && data.dossier_data) {
-    const output = data.dossier_data;
+  if (data && data.scraper_data) {
+    const output = data.scraper_data;
     if(elDate) {
-      const dataVarredura = output.lastAutoScrapedAt ? new Date(output.lastAutoScrapedAt) : new Date();
+      const dataVarredura = data.created_at ? new Date(data.created_at) : new Date();
       elDate.innerText = dataVarredura.toLocaleString('pt-BR');
     }
 

@@ -170,60 +170,28 @@ export async function saveScraperDataToKnowledgeBase(
   console.log(`[Agente Autônomo Scraper] 💾 Salvando inteligência de mercado na 'niche_knowledge_base' no Supabase...`);
 
   try {
-    const { data: existingData } = await supabase
-      .from('niche_knowledge_base')
-      .select('id, version, dossier_data, client_id')
-      .eq('organization_id', organizationId)
-      .eq('niche_name', niche)
-      .order('version', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const newVersion = (existingData?.version || 0) + 1;
-    const mergedDossier = existingData?.dossier_data || {};
-    
-    mergedDossier.topPlayersAnalysis = scraperData.topPlayers;
-    mergedDossier.marketTrends = scraperData.marketTrends;
-    mergedDossier.regulatoryCompliance = scraperData.regulatoryCompliance;
-    mergedDossier.strategicAdaptationDirectives = scraperData.strategicAdaptationDirectives;
-    mergedDossier.lastAutoScrapedAt = scraperData.searchedAt;
-
     const payload = {
       organization_id: organizationId,
-      client_id: clientId || existingData?.client_id || null,
-      niche_name: niche,
-      dossier_data: mergedDossier,
-      market_overview: {
-        topPlayers: scraperData.topPlayers,
-        trends: scraperData.marketTrends,
-      },
-      global_benchmarks: {
-        topPlayers: scraperData.topPlayers,
-        competitiveCopyInsights: scraperData.competitiveCopyInsights,
-      },
-      compliance_rules: scraperData.regulatoryCompliance,
-      predictive_plan: {
-        strategicAdaptationDirectives: scraperData.strategicAdaptationDirectives,
-      },
-      version: newVersion,
-      updated_at: new Date().toISOString(),
+      client_id: clientId || null,
+      niche: niche,
+      scraper_data: scraperData
     };
 
     const { data, error } = await supabase
-      .from('niche_knowledge_base')
-      .upsert([payload], { onConflict: 'organization_id,niche_name' })
+      .from('market_intelligence_feed')
+      .insert([payload])
       .select()
       .single();
 
     if (error) {
-      console.warn(`[Agente Autônomo Scraper] ⚠️ Supabase Upsert aviso: ${error.message}. Salvando em contingência local.`);
+      console.warn(`[Agente Autônomo Scraper] ⚠️ Supabase Insert aviso: ${error.message}. Salvando em contingência local.`);
     } else if (data) {
-      console.log(`[Agente Autônomo Scraper] ✅ Registro salvo no Supabase com ID: ${data.id} (Versão ${newVersion})`);
+      console.log(`[Agente Autônomo Scraper] ✅ Registro salvo no Supabase 'market_intelligence_feed' com ID: ${data.id}`);
     }
 
     if (clientId) {
       const currentDossiers = loadDossiersFromDisk();
-      currentDossiers[clientId] = mergedDossier;
+      currentDossiers[clientId] = { ...currentDossiers[clientId], latestScraperRun: scraperData };
       saveDossiersToDisk(currentDossiers);
     }
 
