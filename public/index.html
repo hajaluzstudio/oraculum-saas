@@ -4243,18 +4243,56 @@ window.dispararScraperInteligencia = async function() {
     3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
     Retorne APENAS o JSON limpo sem formatacao markdown.`;
 
-    const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }],
-        tools: [{ googleSearch: {} }]
-      })
-    });
+    // ROLETA DE MODELOS COMPLETA (Baseada no seu print)
+    const modelosParaTentar = [
+      'gemini-3.7-flash',       // Prioridade 1: Mais inteligente e recente
+      'gemini-3.6-flash',       // Prioridade 2
+      'gemini-3.5-flash',       // Prioridade 3
+      'gemini-3.5-flash-lite',  // Prioridade 4: Sua maior cota diária atual (500 RPD)
+      'gemma-4-31b',            // Prioridade 5: Modelo aberto pesado
+      'gemma-4-26b',            // Prioridade 6: Modelo aberto leve
+      'gemini-2.5-flash-tts'    // Prioridade 7: Modelo multimodal/voz (Fallback extremo)
+    ];
 
-    if (!apiRes.ok) throw new Error("Erro na comunicação com a API do Gemini.");
+    let apiJson = null;
+    let modeloSucesso = "";
 
-    const apiJson = await apiRes.json();
+    // Tenta rodar a requisição em cada modelo da lista sequencialmente
+    for (const modelo of modelosParaTentar) {
+      console.log(`Tentando conexão com o modelo: ${modelo}...`);
+      
+      try {
+        const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            tools: [{ googleSearch: {} }]
+          })
+        });
+
+        if (apiRes.ok) {
+          apiJson = await apiRes.json();
+          
+          // Verifica se o modelo não retornou vazio (alguns modelos Gemma/TTS podem falhar na sintaxe de Search)
+          if (apiJson.candidates && apiJson.candidates[0].content) {
+            modeloSucesso = modelo;
+            console.log(`✅ Sucesso! Dados gerados pelo modelo: ${modelo}`);
+            break; // Sai da roleta assim que um modelo funcionar e entregar o texto
+          }
+        } else {
+          console.warn(`⚠️ Modelo ${modelo} falhou (Cota estourada ou incompatível). Pulando para o próximo...`);
+        }
+      } catch (fetchError) {
+        console.warn(`⚠️ Erro de rede ou endpoint não encontrado para o modelo ${modelo}. Pulando para o próximo...`);
+      }
+    }
+
+    // Se a roleta girou inteira e nenhum funcionou
+    if (!apiJson || !modeloSucesso) {
+      throw new Error("Todos os modelos da roleta falharam, excederam o limite de uso diário ou não suportam esta função no momento.");
+    }
+
     const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     const dossierData = JSON.parse(cleanJsonStr);
@@ -4269,7 +4307,7 @@ window.dispararScraperInteligencia = async function() {
       }]);
     }
 
-    alert("🎉 Inteligência de mercado atualizada e salva no banco com sucesso!");
+    alert(`🎉 Inteligência de mercado atualizada com sucesso!\n(Gerado usando a inteligência do: ${modeloSucesso})`);
     if (typeof window.carregarPortalInteligencia === 'function') {
       window.carregarPortalInteligencia();
     }
