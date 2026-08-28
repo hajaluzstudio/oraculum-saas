@@ -1570,6 +1570,11 @@
               <button type="button" onclick="window.exportarRelatorioPDF()" class="px-3.5 py-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-xl border border-emerald-500/40 flex items-center gap-1.5 cursor-pointer transition shadow">
                 📄 Exportar PDF
               </button>
+
+              <!-- Oraculum Live -->
+              <button id="btn-open-oraculo-live" type="button" onclick="window.alternarOraculoLive()" class="px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-emerald-500 hover:bg-emerald-400 rounded-xl border border-emerald-400 items-center gap-1.5 cursor-pointer transition shadow" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
+                🤖 Oraculum Live
+              </button>
             </div>
           </div>
 
@@ -4447,12 +4452,6 @@ window.dispararScraperInteligencia = async function() {
 };
 </script>
   <!-- ================= ORACULUM LIVE ESTÁTICO ================= -->
-  <button id="btn-open-oraculo-live" type="button" onclick="window.alternarOraculoLive()" 
-    style="position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 999999 !important; display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px 22px !important; background: #10B981 !important; color: #020705 !important; border-radius: 50px !important; font-weight: 800 !important; font-size: 13px !important; cursor: pointer !important; border: 1px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 30px rgba(16,185,129,0.6) !important; backdrop-filter: blur(10px) !important;">
-    <span style="font-size: 16px;">🤖</span>
-    <span>Oraculum Live</span>
-  </button>
-
   <div id="oraculo-live-drawer" 
     style="position: fixed !important; top: 0 !important; bottom: 0 !important; right: 0 !important; z-index: 999999 !important; width: 100% !important; max-width: 420px !important; background: rgba(15, 23, 42, 0.98) !important; backdrop-filter: blur(25px) !important; border-left: 1px solid rgba(16,185,129,0.3) !important; box-shadow: -10px 0 40px rgba(0,0,0,0.8) !important; display: flex !important; flex-direction: column !important; transition: transform 0.3s ease !important; transform: translateX(100%) !important; color: #FFF !important; font-family: sans-serif !important;">
     
