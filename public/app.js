@@ -6138,17 +6138,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 2. Se não houver stateManager, busca o cliente selecionado no seletor da página de Onboarding ou localStorage
-    const idSalvo = localStorage.getItem('oraculum_cliente_ativo_id');
+    const idSalvo = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
     const clientesLista = window.clientesMock || window.listaClientesCadastrados || [];
     
     if (idSalvo && clientesLista.length > 0) {
-      const encontrado = clientesLista.find(c => c.id === idSalvo);
+      const encontrado = clientesLista.find(c => String(c.id) === String(idSalvo));
       if (encontrado) return encontrado;
     }
 
     // 3. Fallback seguro para o primeiro cliente da lista ou objeto genérico
     return clientesLista[0] || { id: 'default', nome: 'Cliente Padrão', nicho: 'Geral' };
   };
+
+  // Escuta o evento global de troca de cliente para sincronizar o Radar automaticamente
+  window.addEventListener('clientChanged', () => {
+    if (typeof window.sincronizarRadarComClienteAtivo === 'function') {
+      window.sincronizarRadarComClienteAtivo();
+    }
+  });
 
   // Atualiza a interface do Radar sempre que o usuário entra na aba ou muda o cliente
   window.sincronizarRadarComClienteAtivo = function() {
@@ -6163,9 +6170,11 @@ document.addEventListener('DOMContentLoaded', () => {
       elNomeClienteRadar.innerText = cliente.nome || cliente.razao_social;
     }
 
+    window.analiseAtualCarregadaDoBanco = false;
+
     // Limpa o diagnóstico anterior para evitar contaminação visual entre clientes
     const painelDiagnostico = document.getElementById('spy-results-body');
-    if (painelDiagnostico && !window.analiseAtualCarregadaDoBanco) {
+    if (painelDiagnostico) {
       painelDiagnostico.innerHTML = `
         <div class="text-center text-gray-500 py-12" style="text-align: center; padding: 40px 20px;">
           <span class="text-3xl block mb-2" style="font-size: 32px; display: block;">🛡️</span>
