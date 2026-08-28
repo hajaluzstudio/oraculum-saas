@@ -4214,6 +4214,82 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
 </script>
 
 <script>
+window.carregarPortalInteligencia = async function() {
+  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  const list = window.clientesMock || [];
+  const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+
+  const elNiche = document.getElementById('intel-niche-name');
+  const elDate = document.getElementById('intel-last-scraped');
+  const elTrends = document.getElementById('intel-trends-list');
+  const elCompliance = document.getElementById('intel-compliance-box');
+  const elPlayers = document.getElementById('intel-players-grid');
+
+  if (!clienteAtivo) {
+    if(elNiche) elNiche.innerText = "Nenhum cliente selecionado";
+    return;
+  }
+
+  if(elNiche) elNiche.innerText = clienteAtivo.niche;
+
+  const supaClient = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
+  if (!supaClient) return;
+
+  const { data, error } = await supaClient
+    .from('niche_knowledge_base')
+    .select('dossier_data, updated_at')
+    .eq('niche_name', clienteAtivo.niche)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (data && data.dossier_data) {
+    const output = data.dossier_data;
+    if(elDate) elDate.innerText = new Date(data.updated_at).toLocaleString('pt-BR');
+
+    // 1. Tendências
+    if(elTrends) {
+      if(output.marketTrends && output.marketTrends.length > 0) {
+        elTrends.innerHTML = output.marketTrends.map(t => `<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80"><i class="fa-solid fa-bolt text-emerald-400 mr-2"></i> ${t}</li>`).join('');
+      } else {
+        elTrends.innerHTML = '<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Sem tendências mapeadas.</li>';
+      }
+    }
+
+    // 2. Compliance
+    if(elCompliance && output.regulatoryCompliance) {
+      const comp = output.regulatoryCompliance;
+      elCompliance.innerHTML = `
+        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
+          <strong>Órgãos:</strong> ${comp.governingBodies?.join(', ') || 'Nenhum'}<br/><br/>
+          <strong class="text-amber-400">Restrições:</strong> ${comp.forbiddenClaims?.join(' | ') || 'Nenhuma'}
+        </div>
+      `;
+    }
+
+    // 3. Players
+    const players = output.topPlayersAnalysis || output.topPlayers;
+    if(elPlayers && players) {
+      elPlayers.innerHTML = players.map(p => `
+        <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 space-y-2 text-sm">
+          <strong class="text-emerald-400 block">${p.name}</strong>
+          <p class="text-slate-300 text-xs"><em>${p.marketPosition}</em></p>
+          <div class="text-slate-400 text-xs mt-2 border-t border-slate-800 pt-2">
+            <strong>Oferta:</strong> ${p.highTicketOfferStructure}
+          </div>
+        </div>
+      `).join('');
+    }
+  } else {
+    if(elDate) elDate.innerText = "Nenhuma varredura recente";
+    if(elTrends) elTrends.innerHTML = '<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</li>';
+    if(elCompliance) elCompliance.innerHTML = '<p class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</p>';
+    if(elPlayers) elPlayers.innerHTML = '<div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</div>';
+  }
+};
+</script>
+
+<script>
 window.dispararScraperInteligencia = async function() {
   console.log("🟢 Botão clicado. Solicitando inteligência ao servidor...");
   
