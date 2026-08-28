@@ -6037,7 +6037,10 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const competitorName = document.getElementById('spy-competitor-name')?.value || 'Concorrente';
       const competitorAdUrlOrText = document.getElementById('spy-competitor-ad-url')?.value || '';
-      const niche = activeClientName ? 'Nicho do Cliente Ativo' : 'Geral';
+      
+      const list = window.clientesMock || [];
+      const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+      const niche = clienteAtivo && clienteAtivo.niche ? clienteAtivo.niche : 'Geral';
 
       if (spyResultsBody) {
         spyResultsBody.innerHTML = `
@@ -6057,7 +6060,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           body: JSON.stringify({
             competitorName,
-            niche: 'Saúde, Estética e Alta Renda',
+            niche,
             competitorAdUrlOrText
           })
         });
