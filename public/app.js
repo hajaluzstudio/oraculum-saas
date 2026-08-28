@@ -6076,6 +6076,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderSpyResults(spy);
+        if (window.salvarRadarNoBanco) {
+          window.salvarRadarNoBanco(activeClientId, spy);
+        }
       } catch (err) {
         if (spyResultsBody) {
           spyResultsBody.innerHTML = `<p style="color: #FF4B4B;">Erro na análise: ${err.message}</p>`;
@@ -6122,6 +6125,112 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
   }
+
+  // ==========================================
+  // RADAR DE CONCORRENTES: ISOLAMENTO E BANCO DE DADOS
+  // ==========================================
+
+  // 1. Detectar troca de cliente ativo e limpar ou recarregar os dados do Radar
+  window.ouvirTrocaDeClienteRadar = function() {
+    const list = window.clientesMock || [];
+    const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+    
+    if (!clienteAtivo) return;
+
+    console.log(`🔄 Cliente alterado para: ${clienteAtivo.name || clienteAtivo.razao_social}. Isolando dados do Radar...`);
+    
+    // Limpa o input de concorrente e a tela de diagnóstico para não misturar com o cliente anterior
+    const inputConcorrente = document.getElementById('spy-competitor-name');
+    const inputOferta = document.getElementById('spy-competitor-ad-url');
+    const painelDiagnostico = document.getElementById('spy-results-body');
+    const spyVerdictBadge = document.getElementById('spy-verdict-badge');
+
+    if (inputConcorrente) inputConcorrente.value = '';
+    if (inputOferta) inputOferta.value = '';
+    if (spyVerdictBadge) {
+      spyVerdictBadge.textContent = 'Aguardando Análise';
+      spyVerdictBadge.style.background = 'rgba(0, 245, 160, 0.15)';
+      spyVerdictBadge.style.color = '#00F5A0';
+    }
+
+    if (painelDiagnostico) {
+      painelDiagnostico.innerHTML = `
+        <div class="text-center text-gray-500 py-12" style="text-align: center; padding: 40px 20px;">
+          <span class="text-3xl block mb-2" style="font-size: 32px; display: block;">🛡️</span>
+          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente: <strong>${clienteAtivo.name || clienteAtivo.razao_social}</strong> (${clienteAtivo.niche || 'Geral'})</p>
+          <p class="text-xs mt-1 text-gray-400" style="color: #94A3B8; font-size: 12px; margin-top: 8px;">Insira um concorrente para gerar a análise exclusiva deste cliente.</p>
+        </div>
+      `;
+    }
+
+    // Tenta carregar dados salvos exclusivamente para este cliente no banco de dados
+    carregarRadarDoClienteNoBanco(clienteAtivo.id);
+  };
+
+  // 2. Função para salvar a análise no Supabase garantindo exclusividade por cliente_id
+  window.salvarRadarNoBanco = async function(clienteId, dadosAnalise) {
+    if (!window.supabaseClient) {
+      console.warn("⚠️ Supabase não inicializado. Salvando apenas no escopo da sessão.");
+      return;
+    }
+
+    try {
+      const payload = {
+        cliente_id: String(clienteId),
+        nicho: dadosAnalise.analyzedNiche || 'Geral',
+        concorrente_nome: dadosAnalise.competitorName,
+        analise_json: dadosAnalise,
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { data, error } = await window.supabaseClient
+        .from('radar_concorrentes')
+        .upsert(payload, { onConflict: 'cliente_id' }); // Garante 1 registro ativo por cliente ou atualiza
+
+      if (error) throw error;
+      console.log("✅ Análise do Radar salva com sucesso no banco de dados para o cliente:", clienteId);
+    } catch (err) {
+      console.error("❌ Erro ao salvar radar no banco:", err.message);
+    }
+  };
+
+  // 3. Função para carregar a análise exclusiva do cliente do banco de dados
+  async function carregarRadarDoClienteNoBanco(clienteId) {
+    if (!window.supabaseClient) return;
+
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('radar_concorrentes')
+        .select('*')
+        .eq('cliente_id', String(clienteId))
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error; // Ignora erro de não encontrar (0 rows)
+
+      if (data && data.analise_json) {
+        console.log("📥 Dados do Radar recuperados do banco para o cliente:", clienteId);
+        
+        const spyVerdictBadge = document.getElementById('spy-verdict-badge');
+        if (spyVerdictBadge) {
+          spyVerdictBadge.textContent = 'Contra-Ataque Mapeado';
+          spyVerdictBadge.style.background = 'rgba(255, 75, 75, 0.2)';
+          spyVerdictBadge.style.color = '#FF4B4B';
+        }
+        renderSpyResults(data.analise_json);
+        
+        // Repopula os inputs
+        const inputConcorrente = document.getElementById('spy-competitor-name');
+        if (inputConcorrente) inputConcorrente.value = data.concorrente_nome || '';
+      }
+    } catch (err) {
+      console.error("❌ Erro ao buscar radar do cliente no banco:", err.message);
+    }
+  }
+
+  // Chamar ao inicializar se já houver cliente
+  setTimeout(() => {
+    if (activeClientId) window.ouvirTrocaDeClienteRadar();
+  }, 1500);
 
   // ============================================================================
   // ETAPA 7: 📲 CENTRAL DE NOTIFICAÇÕES WHATSAPP & ALERTAS
