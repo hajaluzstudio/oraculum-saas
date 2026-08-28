@@ -4226,9 +4226,6 @@ window.dispararScraperInteligencia = async function() {
     return;
   }
 
-  // Remove a chave antiga salva se você quiser forçar a pedir uma nova:
-  // localStorage.removeItem('oraculum_gemini_key'); 
-  
   const geminiKey = localStorage.getItem('oraculum_gemini_key') || prompt("Insira sua chave de API do Google Gemini (AI Studio):");
   if (!geminiKey) {
     alert("⚠️ Chave de API não informada. O processo foi cancelado.");
@@ -4246,18 +4243,22 @@ window.dispararScraperInteligencia = async function() {
     3. "topPlayersAnalysis": array com 3 objetos contendo "name", "marketPosition" e "copyPattern".
     Retorne APENAS o JSON limpo sem formatacao markdown.`;
 
-    // Apenas modelos compatíveis com Search Grounding
+    // ROLETA BLINDADA: Priorizando modelos compatíveis com Search e com cotas de 500 RPD a 20 RPD
     const modelosParaTentar = [
-      'gemini-3.7-flash',       
-      'gemini-3.6-flash',       
-      'gemini-3.5-flash',       
-      'gemini-3.5-flash-lite'   
+      'gemini-3.5-flash-lite',  // Ouro: 500 chamadas por dia
+      'gemini-3.1-flash-lite',  // Ouro: 500 chamadas por dia
+      'gemini-3.5-flash',       // 20 chamadas por dia
+      'gemini-3-flash',         // 20 chamadas por dia
+      'gemini-2.5-flash',       // 20 chamadas por dia
+      'gemini-2.5-flash-lite',  // 20 chamadas por dia
+      'gemini-3.7-flash',       // Deixado no final caso a cota resete
+      'gemini-3.6-flash'        // Deixado no final caso a cota resete
     ];
 
     let apiJson = null;
     let modeloSucesso = "";
 
-    // Função para criar uma pequena pausa e evitar limite de RPM
+    // Atraso estratégico para nunca estourar o limite de 5 a 15 RPM (Requisições por minuto)
     const atrasar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     for (const modelo of modelosParaTentar) {
@@ -4269,7 +4270,7 @@ window.dispararScraperInteligencia = async function() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: promptText }] }],
-            tools: [{ googleSearch: {} }]
+            tools: [{ googleSearch: {} }] // Força o Google a ler a internet em tempo real
           })
         });
 
@@ -4281,19 +4282,17 @@ window.dispararScraperInteligencia = async function() {
             break; 
           }
         } else {
-          console.warn(`⚠️ Modelo ${modelo} falhou com status ${apiRes.status}. Aguardando 1.5s antes do próximo...`);
-          await atrasar(1500); // Pausa estratégica para não estourar limite RPM
+          console.warn(`⚠️ Modelo ${modelo} falhou com status ${apiRes.status}. Aguardando 2 segundos para burlar o anti-spam...`);
+          await atrasar(2000); 
         }
       } catch (fetchError) {
-        console.warn(`⚠️ Erro de rede no modelo ${modelo}. Aguardando 1.5s...`);
-        await atrasar(1500); 
+        console.warn(`⚠️ Erro de rede no modelo ${modelo}. Aguardando 2 segundos...`);
+        await atrasar(2000); 
       }
     }
 
     if (!apiJson || !modeloSucesso) {
-      // Se apagar a chave com erro, ele pede de novo no próximo clique
-      localStorage.removeItem('oraculum_gemini_key');
-      throw new Error("Cota esgotada para a chave atual. Gere uma nova chave no AI Studio ou tente novamente mais tarde.");
+      throw new Error("Múltiplos bloqueios por limite de chamadas por minuto (RPM). Aguarde cerca de 60 segundos e tente novamente para o Google liberar o tráfego.");
     }
 
     const rawText = apiJson.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
@@ -4310,7 +4309,7 @@ window.dispararScraperInteligencia = async function() {
       }]);
     }
 
-    alert(`🎉 Inteligência atualizada com sucesso!\n(Via: ${modeloSucesso})`);
+    alert(`🎉 Inteligência atualizada com sucesso!\n(Processado via: ${modeloSucesso})`);
     if (typeof window.carregarPortalInteligencia === 'function') {
       window.carregarPortalInteligencia();
     }
