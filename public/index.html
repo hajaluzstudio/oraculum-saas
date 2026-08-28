@@ -4237,15 +4237,18 @@ window.carregarPortalInteligencia = async function() {
 
   const { data, error } = await supaClient
     .from('niche_knowledge_base')
-    .select('dossier_data, updated_at')
+    .select('dossier_data, version')
     .eq('niche_name', clienteAtivo.niche)
-    .order('updated_at', { ascending: false })
+    .order('version', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (data && data.dossier_data) {
     const output = data.dossier_data;
-    if(elDate) elDate.innerText = new Date(data.updated_at).toLocaleString('pt-BR');
+    if(elDate) {
+      const dataVarredura = output.lastAutoScrapedAt ? new Date(output.lastAutoScrapedAt) : new Date();
+      elDate.innerText = dataVarredura.toLocaleString('pt-BR');
+    }
 
     // 1. Tendências
     if(elTrends) {
