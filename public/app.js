@@ -6038,9 +6038,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const competitorName = document.getElementById('spy-competitor-name')?.value || 'Concorrente';
       const competitorAdUrlOrText = document.getElementById('spy-competitor-ad-url')?.value || '';
       
-      const list = window.clientesMock || [];
-      const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
-      const niche = clienteAtivo && clienteAtivo.niche ? clienteAtivo.niche : 'Geral';
+      const clienteAtivo = window.getClienteAtivoReal ? window.getClienteAtivoReal() : null;
+      const niche = clienteAtivo && clienteAtivo.nicho ? clienteAtivo.nicho : (clienteAtivo && clienteAtivo.niche ? clienteAtivo.niche : 'Geral');
 
       if (spyResultsBody) {
         spyResultsBody.innerHTML = `
@@ -6130,14 +6129,41 @@ document.addEventListener('DOMContentLoaded', () => {
   // RADAR DE CONCORRENTES: ISOLAMENTO E BANCO DE DADOS
   // ==========================================
 
+  window.getClienteAtivoReal = function() {
+    // 1. Tenta ler o texto exibido no elemento visual da barra superior (Garante 100% de sincronia com o que você vê na tela)
+    const elementoBarraTopo = document.querySelector('.bg-emerald-950\\/40, [class*="Cliente Ativo"], span:has-text("Cliente Ativo")') || Array.from(document.querySelectorAll('span, div')).find(el => el.textContent.includes('Cliente Ativo:'));
+    
+    if (elementoBarraTopo) {
+      const textoTopo = elementoBarraTopo.innerText || elementoBarraTopo.textContent;
+      // Extrai o nome do cliente de dentro do texto da barra superior
+      const match = textoTopo.match(/Cliente Ativo:\s*([^-]+)(?:\s*-\s*(.+))?/i);
+      if (match && match[1]) {
+        const nomeCliente = match[1].trim();
+        const complemento = match[2] ? match[2].trim() : '';
+        return {
+          nome: nomeCliente,
+          nicho: complemento || 'Geral'
+        };
+      }
+    }
+
+    // 2. Fallback para o StateManager se disponível
+    if (window.stateManager && typeof window.stateManager.getClienteAtivo === 'function') {
+      const cli = window.stateManager.getClienteAtivo();
+      if (cli) return cli;
+    }
+
+    // 3. Fallback final para variáveis globais comuns
+    return window.clienteAtivoAtual || { nome: "Cliente Padrão", nicho: "Geral" };
+  };
+
   // 1. Detectar troca de cliente ativo e limpar ou recarregar os dados do Radar
   window.ouvirTrocaDeClienteRadar = function() {
-    const list = window.clientesMock || [];
-    const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+    const clienteAtivo = window.getClienteAtivoReal();
     
     if (!clienteAtivo) return;
 
-    console.log(`🔄 Cliente alterado para: ${clienteAtivo.name || clienteAtivo.razao_social}. Isolando dados do Radar...`);
+    console.log(`🔄 Cliente alterado para: ${clienteAtivo.nome || clienteAtivo.name || clienteAtivo.razao_social}. Isolando dados do Radar...`);
     
     // Limpa o input de concorrente e a tela de diagnóstico para não misturar com o cliente anterior
     const inputConcorrente = document.getElementById('spy-competitor-name');
@@ -6157,14 +6183,15 @@ document.addEventListener('DOMContentLoaded', () => {
       painelDiagnostico.innerHTML = `
         <div class="text-center text-gray-500 py-12" style="text-align: center; padding: 40px 20px;">
           <span class="text-3xl block mb-2" style="font-size: 32px; display: block;">🛡️</span>
-          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente: <strong>${clienteAtivo.name || clienteAtivo.razao_social}</strong> (${clienteAtivo.niche || 'Geral'})</p>
+          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente: <strong>${clienteAtivo.nome || clienteAtivo.name || clienteAtivo.razao_social}</strong> (${clienteAtivo.nicho || clienteAtivo.niche || 'Geral'})</p>
           <p class="text-xs mt-1 text-gray-400" style="color: #94A3B8; font-size: 12px; margin-top: 8px;">Insira um concorrente para gerar a análise exclusiva deste cliente.</p>
         </div>
       `;
     }
 
     // Tenta carregar dados salvos exclusivamente para este cliente no banco de dados
-    carregarRadarDoClienteNoBanco(clienteAtivo.id);
+    const finalId = clienteAtivo.id || (typeof activeClientId !== 'undefined' ? activeClientId : null);
+    if (finalId) carregarRadarDoClienteNoBanco(finalId);
   };
 
   // 2. Função para salvar a análise no Supabase garantindo exclusividade por cliente_id
