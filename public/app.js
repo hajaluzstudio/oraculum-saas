@@ -6204,6 +6204,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const theme = document.getElementById('lp-theme-select')?.value || 'dark_vip';
       const offerGoal = document.getElementById('lp-offer-goal')?.value || '';
 
+      const list = window.clientesMock || [];
+      const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
+      const clientName = clienteAtivo ? clienteAtivo.name : '';
+      const niche = clienteAtivo ? clienteAtivo.niche : '';
+
       btnGenerateLp.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo Landing Page por IA...';
       btnGenerateLp.disabled = true;
 
@@ -6216,6 +6221,8 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           body: JSON.stringify({
             clientId: activeClientId,
+            clientName,
+            niche,
             theme,
             offerGoal
           })

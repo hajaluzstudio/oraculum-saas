@@ -29,7 +29,7 @@ export async function generateAutonomousLandingPage(input: {
   offerGoal?: string;
 }): Promise<GeneratedLandingPage> {
   const clients = loadClientsFromDisk();
-  const client = clients.find(c => c.id === input.clientId) || { name: 'Cliente Ativo', niche: 'Saúde & Estética Avançada' };
+  const client = clients.find(c => c.id === input.clientId) || { name: input.clientName || 'Cliente Ativo', niche: input.niche || 'Saúde & Estética Avançada' };
   
   const dossiers = loadDossiersFromDisk();
   const dossier = dossiers[input.clientId] || null;
