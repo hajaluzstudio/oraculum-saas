@@ -6162,12 +6162,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const cliente = window.getClienteAtivoAtualReal();
     if (!cliente) return;
 
-    console.log(`🔒 Sincronizando Radar estritamente para o cliente: ${cliente.nome || cliente.razao_social} (ID: ${cliente.id})`);
+    const nomeExibicao = cliente.nome || cliente.name || cliente.razao_social || 'Cliente Desconhecido';
+    console.log(`🔒 Sincronizando Radar estritamente para o cliente: ${nomeExibicao} (ID: ${cliente.id})`);
 
     // Atualiza indicadores visuais na tela do Radar se houver elementos dedicados
     const elNomeClienteRadar = document.getElementById('radar-cliente-ativo-nome');
     if (elNomeClienteRadar) {
-      elNomeClienteRadar.innerText = cliente.nome || cliente.razao_social;
+      elNomeClienteRadar.innerText = nomeExibicao;
     }
 
     window.analiseAtualCarregadaDoBanco = false;
@@ -6178,7 +6179,7 @@ document.addEventListener('DOMContentLoaded', () => {
       painelDiagnostico.innerHTML = `
         <div class="text-center text-gray-500 py-12" style="text-align: center; padding: 40px 20px;">
           <span class="text-3xl block mb-2" style="font-size: 32px; display: block;">🛡️</span>
-          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente Ativo: <strong>${cliente.nome || cliente.razao_social}</strong></p>
+          <p class="text-sm" style="color: #FFF; font-weight: 600;">Cliente Ativo: <strong>${nomeExibicao}</strong></p>
           <p class="text-xs mt-1 text-gray-400" style="color: #94A3B8; font-size: 12px; margin-top: 8px;">Nicho: ${cliente.niche || cliente.nicho || 'Geral'}. Insira os dados do concorrente abaixo.</p>
         </div>
       `;
