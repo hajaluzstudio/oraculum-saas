@@ -8165,9 +8165,10 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     if (!clientId) clientId = window.obterClienteAtivoBI();
 
     const titleEl = document.getElementById('bi-active-client-title');
-    const headerTitle = document.getElementById('dropdown-active-client-name') || document.querySelector('[data-active-client-name]');
     if (titleEl) {
-      titleEl.innerText = headerTitle?.innerText?.trim() || 'Cliente Selecionado';
+      const list = window.clientesMock || [];
+      const clienteAtivo = list.find(c => String(c.id) === String(clientId));
+      titleEl.innerText = clienteAtivo ? clienteAtivo.name : 'Cliente Selecionado';
     }
 
     try {
