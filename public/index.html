@@ -16,6 +16,21 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+
+    /* Estilização Moderna para Modais e Grids (Portal de Inteligência) */
+    #modal-leitura-inteligencia ::-webkit-scrollbar {
+      width: 6px;
+    }
+    #modal-leitura-inteligencia ::-webkit-scrollbar-track {
+      background: #030712;
+    }
+    #modal-leitura-inteligencia ::-webkit-scrollbar-thumb {
+      background: #1f2937;
+      border-radius: 3px;
+    }
+    #modal-leitura-inteligencia ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
   </style>
 
 <style>
@@ -1461,36 +1476,68 @@
       </div>
     </div>
 
-    <!-- Feed Principal Dividido em Colunas -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Tendências Globais -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-          <i class="fa-solid fa-chart-line text-emerald-400"></i> Tendências Globais da Semana
-        </h3>
-        <ul id="intel-trends-list" class="space-y-3 text-sm text-slate-300">
-          <li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Carregando tendências de mercado...</li>
-        </ul>
-      </div>
+    <!-- NOVA ESTRUTURA DO PORTAL DE INTELIGÊNCIA COM MODAL DE LEITURA E FEED -->
+    <div id="portal-inteligencia-container" class="space-y-6">
+      
+      <!-- Cards Principais Dinâmicos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tendências Globais Expansíveis -->
+        <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md">
+          <h3 class="text-emerald-400 font-semibold mb-4 flex items-center gap-2">
+            <span>📈</span> Tendências Globais da Semana (Clique para Ler)
+          </h3>
+          <div id="lista-tendencias-portal" class="space-y-3">
+            <!-- Preenchido dinamicamente via JS -->
+            <p class="text-gray-400 text-sm italic">Carregando tendências...</p>
+          </div>
+        </div>
 
-      <!-- Regras de Compliance e Regulamentadores -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-          <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Alertas de Compliance & Regras
-        </h3>
-        <div id="intel-compliance-box" class="space-y-3 text-sm text-slate-300">
-          <p class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Carregando diretrizes de conformidade...</p>
+        <!-- Alertas de Compliance -->
+        <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md">
+          <h3 class="text-amber-400 font-semibold mb-4 flex items-center gap-2">
+            <span>⚠️</span> Alertas de Compliance & Regras
+          </h3>
+          <div id="lista-compliance-portal" class="space-y-3">
+            <!-- Preenchido dinamicamente via JS -->
+            <p class="text-gray-400 text-sm italic">Carregando diretrizes...</p>
+          </div>
         </div>
       </div>
+
+      <!-- Análise dos Players & Feed de Matérias -->
+      <div class="bg-gray-900/80 border border-gray-800 rounded-xl p-6 shadow-xl backdrop-blur-md">
+        <h3 class="text-purple-400 font-semibold mb-4 flex items-center gap-2">
+          <span>👑</span> Análise Estratégica dos Maiores Players & Feed de Artigos
+        </h3>
+        <div id="lista-players-portal" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <!-- Cards dos Players -->
+        </div>
+
+        <!-- Novo Feed de Matérias / Artigos da Web Capturados -->
+        <div class="border-t border-gray-800 pt-5 mt-6">
+          <h4 class="text-gray-300 font-medium mb-3 text-sm uppercase tracking-wider">📰 Feed de Matérias e Fontes da Web</h4>
+          <div id="feed-materias-web" class="space-y-2">
+            <!-- Itens injetados via JS -->
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Maiores Players Mapeados -->
-    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-      <h3 class="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-        <i class="fa-solid fa-crown text-amber-400"></i> Análise Estratégica dos Maiores Players
-      </h3>
-      <div id="intel-players-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando dados dos líderes de mercado...</div>
+    <!-- MODAL / DRAWER DE LEITURA IMERSIVA -->
+    <div id="modal-leitura-inteligencia" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-gray-900 border border-emerald-500/40 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-950/50">
+          <h3 id="modal-titulo-leitura" class="text-lg font-bold text-emerald-400">Detalhes da Inteligência</h3>
+          <button onclick="fecharModalLeituraInteligencia()" class="text-gray-400 hover:text-white text-xl font-bold px-2">&times;</button>
+        </div>
+        <div id="modal-conteudo-leitura" class="p-6 overflow-y-auto space-y-4 text-gray-300 text-sm leading-relaxed">
+          <!-- Conteúdo completo injetado dinamicamente -->
+        </div>
+        <div class="px-6 py-4 border-t border-gray-800 bg-gray-950/50 flex justify-end gap-3">
+          <button onclick="copiarRelatorioModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold transition">Copiar Relatório</button>
+          <button onclick="fecharModalLeituraInteligencia()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition">Fechar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -4250,45 +4297,116 @@ window.carregarPortalInteligencia = async function() {
       elDate.innerText = dataVarredura.toLocaleString('pt-BR');
     }
 
-    // 1. Tendências
-    if(elTrends) {
-      if(output.marketTrends && output.marketTrends.length > 0) {
-        elTrends.innerHTML = output.marketTrends.map(t => `<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80"><i class="fa-solid fa-bolt text-emerald-400 mr-2"></i> ${t}</li>`).join('');
-      } else {
-        elTrends.innerHTML = '<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">Sem tendências mapeadas.</li>';
-      }
-    }
-
-    // 2. Compliance
-    if(elCompliance && output.regulatoryCompliance) {
-      const comp = output.regulatoryCompliance;
-      elCompliance.innerHTML = `
-        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
-          <strong>Órgãos:</strong> ${comp.governingBodies?.join(', ') || 'Nenhum'}<br/><br/>
-          <strong class="text-amber-400">Restrições:</strong> ${comp.forbiddenClaims?.join(' | ') || 'Nenhuma'}
-        </div>
-      `;
-    }
-
-    // 3. Players
-    const players = output.topPlayersAnalysis || output.topPlayers;
-    if(elPlayers && players) {
-      elPlayers.innerHTML = players.map(p => `
-        <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 space-y-2 text-sm">
-          <strong class="text-emerald-400 block">${p.name}</strong>
-          <p class="text-slate-300 text-xs"><em>${p.marketPosition}</em></p>
-          <div class="text-slate-400 text-xs mt-2 border-t border-slate-800 pt-2">
-            <strong>Oferta:</strong> ${p.highTicketOfferStructure}
-          </div>
-        </div>
-      `).join('');
-    }
+    window.renderizarPortalInteligenciaVisual(output);
   } else {
     if(elDate) elDate.innerText = "Nenhuma varredura recente";
-    if(elTrends) elTrends.innerHTML = '<li class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</li>';
-    if(elCompliance) elCompliance.innerHTML = '<p class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</p>';
-    if(elPlayers) elPlayers.innerHTML = '<div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 text-slate-400">Aguardando varredura...</div>';
+    if(elTrends) elTrends.innerHTML = '<li class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-400">Aguardando varredura...</li>';
+    if(elCompliance) elCompliance.innerHTML = '<p class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-400">Aguardando varredura...</p>';
+    if(elPlayers) elPlayers.innerHTML = '<div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 text-gray-400">Aguardando varredura...</div>';
   }
+};
+
+window.renderizarPortalInteligenciaVisual = function(dossierData) {
+  if (!dossierData) return;
+
+  // 1. Renderizar Tendências Globais (Com suporte a clique para abrir modal)
+  const containerTendencias = document.getElementById('lista-tendencias-portal');
+  if (containerTendencias) {
+    containerTendencias.innerHTML = (dossierData.marketTrends || []).map((tendencia, index) => `
+      <div onclick="abrirLeituraDetalhada('Tendência Global #${index + 1}', \`${tendencia}\`, 'Análise aprofundada gerada por IA baseada em monitoramento web em tempo real.')" 
+           class="p-3 bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-emerald-500/50 rounded-lg cursor-pointer transition flex items-center justify-between group">
+        <span class="text-sm text-gray-200 group-hover:text-emerald-300">⚡ ${tendencia}</span>
+        <span class="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition font-medium">Ler Artigo &rarr;</span>
+      </div>
+    `).join('');
+  }
+
+  // 2. Renderizar Compliance
+  const containerCompliance = document.getElementById('lista-compliance-portal');
+  if (containerCompliance) {
+    const forbidden = (dossierData.regulatoryCompliance?.forbiddenClaims || []).join(', ');
+    const mandatory = (dossierData.regulatoryCompliance?.mandatoryDisclaimers || []).join(', ');
+    containerCompliance.innerHTML = `
+      <div class="p-3 bg-gray-800/50 rounded-lg border border-red-500/20 mb-2">
+        <strong class="text-red-400 text-xs uppercase block mb-1">Alegações Proibidas (Forbidden Claims):</strong>
+        <p class="text-xs text-gray-300">${forbidden || 'Nenhuma restrição crítica listada.'}</p>
+      </div>
+      <div class="p-3 bg-gray-800/50 rounded-lg border border-emerald-500/20">
+        <strong class="text-emerald-400 text-xs uppercase block mb-1">Avisos Obrigatórios (Mandatory Disclaimers):</strong>
+        <p class="text-xs text-gray-300">${mandatory || 'Nenhum disclaimer obrigatório especificado.'}</p>
+      </div>
+    `;
+  }
+
+  // 3. Renderizar Players
+  const containerPlayers = document.getElementById('lista-players-portal');
+  const playersData = dossierData.topPlayersAnalysis || dossierData.topPlayers || [];
+  if (containerPlayers) {
+    containerPlayers.innerHTML = playersData.map((player, index) => `
+      <div onclick="abrirLeituraDetalhada('Raio-X do Player: ${player.name}', 'Posição de Mercado: ${player.marketPosition}\\n\\nPadrão de Copy Identificado: ${player.copyPattern}\\n\\nOferta Principal: ${player.highTicketOfferStructure}', 'Análise estratégica de posicionamento obtida via varredura de mercado.')"
+           class="p-4 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 rounded-xl cursor-pointer transition flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Player #${index + 1}</span>
+          <h4 class="text-white font-semibold text-sm mt-1">${player.name || 'Concorrente Principal'}</h4>
+          <p class="text-xs text-gray-400 mt-2 line-clamp-2">${player.marketPosition || ''}</p>
+        </div>
+        <div class="mt-4 pt-2 border-t border-gray-700/40 flex items-center justify-between text-xs text-purple-300">
+          <span>Ver Dossiê</span>
+          <span>&rarr;</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 4. Renderizar Feed de Matérias / Artigos Web Simulados ou Capturados
+  const containerFeed = document.getElementById('feed-materias-web');
+  if (containerFeed) {
+    containerFeed.innerHTML = `
+      <div class="p-3 bg-gray-950/60 rounded-lg border border-gray-800 flex items-center justify-between text-xs cursor-pointer hover:bg-gray-900 transition" onclick="alert('Funcionalidade de raspagem avançada de URLs sendo configurada!')">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded font-medium">Notícia Web</span>
+          <span class="text-gray-300 font-medium">Novas diretrizes de tráfego pago e conversão para o setor</span>
+        </div>
+        <span class="text-gray-500">Há 2 horas</span>
+      </div>
+      <div class="p-3 bg-gray-950/60 rounded-lg border border-gray-800 flex items-center justify-between text-xs cursor-pointer hover:bg-gray-900 transition" onclick="alert('Funcionalidade de raspagem avançada de URLs sendo configurada!')">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded font-medium">Tendência</span>
+          <span class="text-gray-300 font-medium">Relatório de comportamento do consumidor e retenção</span>
+        </div>
+        <span class="text-gray-500">Há 5 horas</span>
+      </div>
+    `;
+  }
+};
+
+// Funções de Controle do Modal de Leitura Imersiva
+window.abrirLeituraDetalhada = function(titulo, conteudoPrincipal, contextualizacao) {
+  const modal = document.getElementById('modal-leitura-inteligencia');
+  const elTitulo = document.getElementById('modal-titulo-leitura');
+  const elConteudo = document.getElementById('modal-conteudo-leitura');
+
+  if (elTitulo) elTitulo.innerText = titulo;
+  if (elConteudo) {
+    elConteudo.innerHTML = `
+      <div class="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-lg mb-3">
+        <p class="text-xs text-emerald-300 font-medium">Contexto da IA: ${contextualizacao}</p>
+      </div>
+      <p class="text-base text-gray-100 whitespace-pre-line leading-relaxed">${conteudoPrincipal}</p>
+    `;
+  }
+  if (modal) modal.classList.remove('hidden');
+};
+
+window.fecharModalLeituraInteligencia = function() {
+  const modal = document.getElementById('modal-leitura-inteligencia');
+  if (modal) modal.classList.add('hidden');
+};
+
+window.copiarRelatorioModal = function() {
+  const texto = document.getElementById('modal-conteudo-leitura').innerText;
+  navigator.clipboard.writeText(texto);
+  alert("📋 Relatório copiado para a área de transferência!");
 };
 </script>
 
