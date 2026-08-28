@@ -4230,29 +4230,20 @@ window.dispararScraperInteligencia = async function() {
 
   try {
     // Faz a requisição para a rota segura na Vercel
-    const apiRes = await fetch('/api/scraper-inteligencia', {
+    const apiRes = await fetch('/api/autonomous-scraper/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nicho: clienteAtivo.niche })
+      body: JSON.stringify({ niche: clienteAtivo.niche, clientId: clienteAtivo.id })
     });
 
     const data = await apiRes.json();
 
-    if (!apiRes.ok) {
-      throw new Error(data.error || "Erro desconhecido no servidor.");
+    if (!apiRes.ok || !data.success) {
+      throw new Error(data.error || "Erro desconhecido no servidor ao rodar o scraper.");
     }
 
-    const dossierData = data.dossierData;
-
-    // Salva no Supabase direto pelo client do navegador (ou se preferir, pode salvar no backend também)
-    const supaClient = typeof getSupabaseClient === 'function' ? getSupabaseClient() : window.supabaseClient;
-    if (supaClient) {
-      await supaClient.from('niche_knowledge_base').insert([{
-        niche_name: clienteAtivo.niche,
-        version: 1,
-        dossier_data: dossierData
-      }]);
-    }
+    // O backend já salva no Supabase através do saveScraperDataToKnowledgeBase
+    const scraperData = data.data.scraperOutput;
 
     alert("🎉 Inteligência de mercado atualizada e salva com sucesso!");
     
