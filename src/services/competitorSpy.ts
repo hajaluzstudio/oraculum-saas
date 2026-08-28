@@ -84,52 +84,49 @@ Sua missão é dissecar anúncios de concorrentes (Meta Ad Library / Google Ads)
 Retorne o diagnóstico completo em JSON seguindo o schema fornecido.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: spySchema,
-        temperature: 0.3,
-      },
-    });
+    const modelCandidates = [
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-pro-latest',
+      'gemini-2.5-flash'
+    ];
+    let lastError: any = null;
 
-    if (!response.text) throw new Error('Resposta vazia da IA.');
+    for (const modelName of modelCandidates) {
+      try {
+        console.log(`[Competitor Spy] Tentando gerar análise com o modelo: ${modelName}`);
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: spySchema,
+            temperature: 0.3,
+          },
+        });
 
-    const parsed = JSON.parse(response.text);
-    return {
-      ...parsed,
-      analyzedAt: new Date().toISOString()
-    };
-  } catch (e) {
-    console.warn('Fallback do módulo de espionagem ativado...');
-    return {
-      competitorName: input.competitorName,
-      analyzedNiche: input.niche,
-      detectedOfferAngle: 'Foco exclusivo em volume e preço promocional sem ancoragem de autoridade técnica.',
-      detectedVisualStrategy: 'Vídeos estáticos e carrosséis institucionais genéricos com baixa taxa de retenção nos primeiros 3s.',
-      positioningVulnerabilities: [
-        'Não responde às principais dores e medos de pós-atendimento do cliente.',
-        'Comunicação de commodity que força concorrência por preço baixo.',
-        'Ausência de provas sociais críveis e diferenciais tecnológicos claros.'
-      ],
-      counterAttackHooks: [
-        {
-          hookTitle: 'Contra-Ataque de Exclusividade',
-          targetFlaw: 'Foco em preço baixo e atendimento massificado',
-          recommendedScriptHook: 'Se você valoriza segurança e precisão, sabe que o mais barato quase sempre custa o dobro.',
-          neuromarketingAdvantage: 'Ancoragem de Alto Padrão e Aversão à Perda'
-        },
-        {
-          hookTitle: 'Contra-Ataque de Tecnologia & Transparência',
-          targetFlaw: 'Ausência de explicação do método',
-          recommendedScriptHook: 'Antes de tomar qualquer decisão, exija ver o planejamento 3D da sua evolução.',
-          neuromarketingAdvantage: 'Segurança Psicológica e Autoridade Incontestável'
-        }
-      ],
-      strategicAdvantageVerdict: `O concorrente está captando apenas o público sensível a preço. Nosso cliente pode capturar 100% dos clientes de Alta Renda do setor posicionando a metodologia proprietária com vídeos de Hook 3s validados.`,
-      analyzedAt: new Date().toISOString()
-    };
+        if (!response.text) throw new Error(`Modelo ${modelName} retornou resposta em branco.`);
+
+        const parsed = JSON.parse(response.text);
+        
+        const result: CompetitorAnalysisResult = {
+          ...parsed,
+          analyzedAt: new Date().toISOString(),
+        };
+
+        return result;
+      } catch (err: any) {
+        console.warn(`[Competitor Spy] Modelo ${modelName} falhou:`, err.message);
+        lastError = err;
+      }
+    }
+
+    throw new Error(`Todos os modelos de IA falharam. Último erro: ${lastError?.message}`);
+  } catch (error: any) {
+    console.error("[Competitor Spy] ❌ Erro na geração de inteligência competitiva:", error);
+    throw new Error(error.message || 'Falha ao analisar a concorrência.');
   }
 }
