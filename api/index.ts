@@ -426,6 +426,22 @@ app.get('/fundo.jpg', (req: Request, res: Response) => {
 });
 
 // Rotas genéricas por extensão (fallback)
+app.get('/*.js', (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.path);
+    const jsPath = getStaticFilePath(filename);
+    if (fs.existsSync(jsPath)) {
+      const data = fs.readFileSync(jsPath, 'utf-8');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      setNoCacheHeaders(res);
+      return res.status(200).send(data);
+    }
+    return res.status(404).send(`Arquivo JS não encontrado: ${filename}`);
+  } catch (e: any) {
+    return res.status(500).send('Erro ao carregar arquivo JS: ' + e.message);
+  }
+});
+
 app.get('/*.jpg', (req: Request, res: Response) => {
   try {
     const filename = path.basename(req.path);
