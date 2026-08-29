@@ -3966,7 +3966,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!kanbanGrid) return;
 
     // Limpeza imediata das colunas visuais
-    const colunasIds = ['backlog', 'producao', 'analise', 'ajustes', 'pronto'];
+    const colunasIds = ['backlog', 'producao', 'analise', 'ajustes', 'pronto', 'entregue'];
     const emptyMsg = '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhuma tarefa nesta etapa</div>';
     
     colunasIds.forEach(id => {
@@ -4002,7 +4002,8 @@ document.addEventListener('DOMContentLoaded', () => {
       producao: [],
       analise: [],
       ajustes: [],
-      pronto: []
+      pronto: [],
+      entregue: []
     };
 
     tasks.forEach(task => {
@@ -4037,7 +4038,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderKanbanCard(task) {
     const isNeedsAdj = task.status === 'ajustes';
     const isPub = task.status === 'pronto';
-    const borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
+    const isDelivered = task.status === 'entregue';
+    const borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isDelivered ? 'rgba(139,92,246,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
     const tag = (task.tags && task.tags[0]) || task.tag || 'Geral';
     
     return `
@@ -4050,15 +4052,115 @@ document.addEventListener('DOMContentLoaded', () => {
            <button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${(task.title || '').replace(/'/g, "\\'")}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 4px; flex-wrap: wrap;">
-            ${task.status !== 'producao' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="producao" style="font-size: 9px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Pro</button>` : ''}
-            ${task.status !== 'analise' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="analise" style="font-size: 9px; background: rgba(6,182,212,0.1); color: #06B6D4; border: 1px solid rgba(6,182,212,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Ana</button>` : ''}
-            ${task.status !== 'ajustes' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="ajustes" style="font-size: 9px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Aju</button>` : ''}
-            ${task.status !== 'pronto' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="pronto" style="font-size: 9px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Pro</button>` : ''}
+        <div style="display: flex; gap: 4px; margin-top: 4px;">
+          ${task.status !== 'backlog' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="backlog" style="font-size: 10px; background: rgba(255,255,255,0.05); color: #94A3B8; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Voltar para Backlog"><i class="fa-solid fa-arrow-left"></i> Bck</button>` : ''}
+          ${task.status !== 'producao' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="producao" style="font-size: 10px; background: rgba(59,130,246,0.1); color: #3B82F6; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Mover para Produção">[ Prod ]</button>` : ''}
+          ${task.status !== 'analise' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="analise" style="font-size: 10px; background: rgba(6,182,212,0.1); color: #06B6D4; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Mover para Análise">[ Ana ]</button>` : ''}
+          ${task.status !== 'ajustes' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="ajustes" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Mover para Ajustes">[ Aju ]</button>` : ''}
+          ${task.status !== 'pronto' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="pronto" style="font-size: 10px; background: rgba(16,185,129,0.1); color: #10B981; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1; font-weight: bold;" title="Mover para Pronto">[ Pro ]</button>` : ''}
+          ${isPub ? `<button type="button" onclick="window.openDeliveryModal('${task.id}', '${(task.title || '').replace(/'/g, "\\'")}')" style="font-size: 10px; background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1; font-weight: bold; box-shadow: 0 2px 8px rgba(139,92,246,0.4);" title="Entregar e Notificar Equipe"><i class="fa-solid fa-paper-plane"></i> Entregar</button>` : ''}
         </div>
       </div>
     `;
   }
+
+  // ===============================================
+  // HAND-OFF / MODAL DE ENTREGA
+  // ===============================================
+  window.openDeliveryModal = function(taskId, title) {
+    window.currentDeliveryTaskId = taskId;
+    const modal = document.getElementById('modal-delivery-kanban');
+    const titleEl = document.getElementById('delivery-task-title');
+    const linkInput = document.getElementById('delivery-link-input');
+    const msgInput = document.getElementById('delivery-msg-input');
+    
+    if (titleEl) titleEl.textContent = title || 'Sem Título';
+    if (linkInput) linkInput.value = '';
+    if (msgInput) msgInput.value = '';
+    
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+    }
+  };
+
+  window.closeDeliveryModal = function() {
+    window.currentDeliveryTaskId = null;
+    const modal = document.getElementById('modal-delivery-kanban');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+  };
+
+  // Bind the submit button manually (using global function to ensure it binds or just standard querySelector)
+  // Since we might call renderKanbanBoard multiple times, a document-level listener is safer
+  document.addEventListener('click', async (e) => {
+    const btnSubmitDelivery = e.target.closest('#btn-submit-delivery');
+    if (btnSubmitDelivery) {
+      const taskId = window.currentDeliveryTaskId;
+      const link = document.getElementById('delivery-link-input')?.value || '';
+      const team = document.getElementById('delivery-team-select')?.options[document.getElementById('delivery-team-select').selectedIndex]?.text || '';
+      const msg = document.getElementById('delivery-msg-input')?.value || '';
+      const title = document.getElementById('delivery-task-title')?.textContent || 'Tarefa';
+      
+      if (!taskId) return;
+      if (!link) {
+        alert("Cole o link do ativo (Drive, Dropbox, etc) para entregar a tarefa.");
+        return;
+      }
+      
+      try {
+        btnSubmitDelivery.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entregando...';
+        btnSubmitDelivery.disabled = true;
+
+        // 1. Pega descrição atual para preservar o Hook Score
+        const { data: currentTask } = await window.supabaseClient.from('kanban_tasks').select('description').eq('id', taskId).single();
+        let currentDesc = currentTask?.description || '';
+        
+        // Adiciona registro da entrega
+        const deliveryStamp = `\n\n[ ENTREGUE EM ${new Date().toLocaleDateString('pt-BR')} para ${team} ]\nLink do Ativo: ${link}\nMensagem: ${msg || 'Sem observações'}`;
+        const newDesc = currentDesc + deliveryStamp;
+
+        // 2. Atualiza status no Kanban para "entregue"
+        const { error } = await window.supabaseClient.from('kanban_tasks').update({ 
+          status: 'entregue',
+          description: newDesc
+        }).eq('id', taskId);
+        
+        if (error) throw error;
+
+        // 3. (Opcional) Notificar WhatsApp
+        const zapMsg = `🚀 *ENTREGA DE MATERIAL FINALIZADO*\n\n*Tarefa:* ${title}\n*Para:* ${team}\n*Link:* ${link}\n*Obs:* ${msg || 'Sem observações'}`;
+        try {
+           await fetch('/api/notifications/send-whatsapp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: zapMsg, type: 'DELIVERY_READY' })
+           });
+        } catch (err) { console.warn("WhatsApp API não disparou", err); }
+
+        window.closeDeliveryModal();
+        if (typeof window.showToast === 'function') {
+          window.showToast('Entregável despachado com sucesso!', 'success');
+        } else {
+          alert('Material Entregue e Notificado!');
+        }
+
+        const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id');
+        if (clientId && typeof window.loadClientKanbanCards === 'function') {
+           window.loadClientKanbanCards(clientId);
+        }
+
+      } catch (err) {
+        console.error("Erro na entrega", err);
+        alert("Falha ao entregar: " + err.message);
+      } finally {
+        btnSubmitDelivery.disabled = false;
+        btnSubmitDelivery.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Entregar e Notificar';
+      }
+    }
+  });
 
   async function updateKanbanCardStage(taskId, novoStatus) {
     if (!window.supabaseClient) return;

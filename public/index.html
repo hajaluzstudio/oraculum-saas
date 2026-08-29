@@ -1390,8 +1390,8 @@
               </div>
             </div>
 
-            <!-- QUADRO KANBAN DINÂMICO DE 5 COLUNAS -->
-            <div class="kanban-container" id="kanban-grid-container" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 20px;">
+            <!-- QUADRO KANBAN DINÂMICO DE 6 COLUNAS -->
+            <div class="kanban-container" id="kanban-grid-container" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 20px;">
               
               <!-- Coluna 1: Backlog -->
               <div class="kanban-column" style="background: rgba(13, 18, 29, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
@@ -1438,8 +1438,63 @@
                 <div id="kanban-col-pronto" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px;"></div>
               </div>
 
+              <!-- Coluna 6: Entregues / Arquivados -->
+              <div class="kanban-column" style="background: rgba(13, 18, 29, 0.4); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8B5CF6; padding-bottom: 8px; margin-bottom: 14px;">
+                  <span style="font-weight: 600; font-size: 13px; color: #A78BFA;">6. Entregues</span>
+                  <span id="count-entregue" style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px;">0</span>
+                </div>
+                <div id="kanban-col-entregue" class="kanban-cards" style="display: flex; flex-direction: column; gap: 10px; min-height: 100px; opacity: 0.8;"></div>
+              </div>
+
             </div>
           </div>
+
+          <!-- MODAL DE ENTREGA KANBAN -->
+          <div id="modal-delivery-kanban" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+              <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  <i class="fa-solid fa-paper-plane text-emerald-400"></i> Entregar Material Final
+                </h3>
+                <button type="button" onclick="window.closeDeliveryModal()" class="text-slate-400 hover:text-white transition-colors">
+                  <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+              </div>
+              <div class="p-6 space-y-4">
+                <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-700/50">
+                  <span class="text-xs text-slate-400 block mb-1">Tarefa Sendo Entregue:</span>
+                  <p id="delivery-task-title" class="text-sm font-semibold text-slate-200">Titulo da Tarefa</p>
+                </div>
+                
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-brands fa-google-drive text-blue-400"></i> Link do Ativo (Drive/Dropbox)</label>
+                  <input type="url" id="delivery-link-input" placeholder="https://drive.google.com/..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Equipe de Destino (Para quem enviar?)</label>
+                  <select id="delivery-team-select" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                    <option value="social_media">📱 Social Media (Para postagem)</option>
+                    <option value="trafego">🎯 Gestor de Tráfego (Para campanhas)</option>
+                    <option value="comercial">🤝 Time Comercial (Para Leads)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Mensagem / Observação (Opcional)</label>
+                  <textarea id="delivery-msg-input" placeholder="Ex: Vídeo finalizado com sucesso. Subir na campanha X." class="w-full h-20 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none resize-none"></textarea>
+                </div>
+              </div>
+              <div class="px-6 py-4 bg-slate-900/50 border-t border-slate-800 flex justify-end gap-3">
+                <button type="button" onclick="window.closeDeliveryModal()" class="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">Cancelar</button>
+                <button type="button" id="btn-submit-delivery" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-emerald-900/20">
+                  <i class="fa-brands fa-whatsapp"></i> Entregar e Notificar
+                </button>
+              </div>
+            </div>
+          </div>
+
         </section>
 
         <!-- ABA NOVA: PORTAL DE INTELIGÊNCIA -->
