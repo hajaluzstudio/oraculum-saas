@@ -3940,238 +3940,116 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   async function loadClientKanbanCards(clientId) {
     const targetClientId = clientId || window.currentClientId || activeClientId;
-    if (!targetClientId) return;
+    if (!targetClientId || !window.supabaseClient) return;
 
     const kanbanGrid = document.getElementById('kanban-grid-container');
     if (!kanbanGrid) return;
 
-    // ISOLAMENTO: limpa imediatamente todas as colunas para não exibir dados do cliente anterior
-    const emptyMsg = '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo nesta etapa</div>';
-    ['kanban-col-producing','kanban-col-analyzing','kanban-col-adjustments','kanban-col-published'].forEach(id => {
-      const col = document.getElementById(id);
+    // Limpeza imediata das colunas visuais
+    const colunasIds = ['backlog', 'producao', 'analise', 'ajustes', 'pronto'];
+    const emptyMsg = '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhuma tarefa nesta etapa</div>';
+    
+    colunasIds.forEach(id => {
+      const col = document.getElementById(`kanban-col-${id}`);
       if (col) col.innerHTML = emptyMsg;
+      
+      const countEl = document.getElementById(`count-${id}`);
+      if (countEl) countEl.textContent = '0';
     });
-    ['count-producing','count-analyzing','count-adjustments','count-published'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '0';
-    });
-
-    // Leitura do localStorage APENAS do cliente alvo
-    const saved = localStorage.getItem(`oraculum_kanban_${targetClientId}`);
-    if (saved) {
-      try { renderKanbanBoard(JSON.parse(saved)); } catch(e){}
-    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/kanban/${targetClientId}`, {
-        headers: { 'x-organization-id': activeTenantId }
-      });
-      const data = await res.json();
-      if (data.success && data.data && data.data.length > 0) {
-        // Normalize status to stage for frontend logic
-        const normalizedData = data.data.map(d => ({ ...d, stage: d.stage || d.status || 'producing' }));
-        localStorage.setItem(`oraculum_kanban_${targetClientId}`, JSON.stringify(normalizedData));
-        renderKanbanBoard(normalizedData);
-      } else if (!saved) {
-        // Não há dados locais nem remotos — garante colunas limpas
-        renderKanbanBoard([]);
+      const { data: kanbanTasks, error } = await window.supabaseClient
+        .from('kanban_tasks')
+        .select('*')
+        .eq('client_id', targetClientId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (kanbanTasks && kanbanTasks.length > 0) {
+        renderKanbanBoard(kanbanTasks);
       }
     } catch (e) {
-      console.warn('Erro ao carregar Kanban:', e);
+      console.error('❌ Erro ao carregar tarefas do Kanban no Supabase:', e);
     }
   }
 
-  function renderKanbanBoard(assets) {
-    let cards = assets;
-    if (!cards || !Array.isArray(cards)) {
-      const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
-      cards = saved ? JSON.parse(saved) : [];
-    }
+  function renderKanbanBoard(tasks) {
+    if (!tasks || !Array.isArray(tasks)) return;
 
-    const colProducing = cards.filter(a => a.stage === 'producing');
-    const colAnalyzing = cards.filter(a => a.stage === 'analyzing' || a.stage === 'ai_eval');
-    const colAdjustments = cards.filter(a => a.stage === 'adjustments' || a.stage === 'needs_adjustment');
-    const colPublished = cards.filter(a => a.stage === 'published');
+    const colunas = {
+      backlog: [],
+      producao: [],
+      analise: [],
+      ajustes: [],
+      pronto: []
+    };
 
-    const countProducing = document.getElementById('count-producing');
-    if(countProducing) countProducing.textContent = colProducing.length;
-    
-    const countAnalyzing = document.getElementById('count-analyzing');
-    if(countAnalyzing) countAnalyzing.textContent = colAnalyzing.length;
-    
-    const countAdjustments = document.getElementById('count-adjustments');
-    if(countAdjustments) countAdjustments.textContent = colAdjustments.length;
-    
-    const countPublished = document.getElementById('count-published');
-    if(countPublished) countPublished.textContent = colPublished.length;
+    tasks.forEach(task => {
+      const statusAlvo = (task.status || task.column || 'backlog').toLowerCase();
+      if (colunas[statusAlvo]) {
+         colunas[statusAlvo].push(task);
+      } else {
+         colunas['backlog'].push(task);
+      }
+    });
 
-    const containerProducing = document.getElementById('kanban-col-producing');
-    if (containerProducing) containerProducing.innerHTML = colProducing.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em produção</div>';
+    Object.keys(colunas).forEach(status => {
+      const countEl = document.getElementById(`count-${status}`);
+      if (countEl) countEl.textContent = colunas[status].length;
 
-    const containerAnalyzing = document.getElementById('kanban-col-analyzing');
-    if (containerAnalyzing) containerAnalyzing.innerHTML = colAnalyzing.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo em avaliação</div>';
-
-    const containerAdjustments = document.getElementById('kanban-col-adjustments');
-    if (containerAdjustments) containerAdjustments.innerHTML = colAdjustments.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo requer ajustes</div>';
-
-    const containerPublished = document.getElementById('kanban-col-published');
-    if (containerPublished) containerPublished.innerHTML = colPublished.map(renderKanbanCard).join('') || '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhum criativo publicado</div>';
+      const container = document.getElementById(`kanban-col-${status}`);
+      if (container) {
+        container.innerHTML = colunas[status].map(renderKanbanCard).join('') || 
+          '<div style="font-size: 11px; color: #64748B; text-align: center; padding: 12px;">Nenhuma tarefa</div>';
+      }
+    });
 
     document.querySelectorAll('.btn-kanban-stage').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const assetId = btn.getAttribute('data-asset-id');
+        const taskId = btn.getAttribute('data-task-id');
         const targetStage = btn.getAttribute('data-target-stage');
-        await updateKanbanCardStage(assetId, targetStage);
+        await updateKanbanCardStage(taskId, targetStage);
       });
     });
   }
 
-  function renderKanbanCard(card) {
-    const isNeedsAdj = card.stage === 'needs_adjustment';
-    const isPub = card.stage === 'published';
+  function renderKanbanCard(task) {
+    const isNeedsAdj = task.status === 'ajustes';
+    const isPub = task.status === 'pronto';
     const borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
-    const driveLink = card.filePath || card.file_path || '';
-    const tagMatch = card.title.match(/\[(.*?)\]/);
-    const tag = tagMatch ? tagMatch[1] : (card.asset_type?.toUpperCase() || 'VÍDEO');
-    const isStrictQA = tag.includes('VÍDEO') || tag.includes('DESIGN');
-
+    const tag = (task.tags && task.tags[0]) || task.tag || 'Geral';
+    
     return `
       <div class="kanban-card" style="background: #111726; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; color: #94A3B8;">${tag}</span>
-          ${card.hook_score ? `<span style="font-size: 11px; font-weight: bold; color: ${card.hook_score >= 80 ? '#10B981' : '#EF4444'};">Score: ${card.hook_score}/100</span>` : ''}
-        </div>
-        <h4 style="font-size: 13px; margin: 0; color: #F1F5F9; font-weight: 600; line-height: 1.4;">${card.title}</h4>
+        <div style="font-size: 12px; font-weight: 600; color: #F1F5F9;">${task.title || 'Tarefa sem Título'}</div>
+        ${task.description ? `<div style="font-size: 11px; color: #94A3B8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
+        ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
-        ${card.description ? `
-          <p style="font-size: 11px; color: #94A3B8; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${card.description}</p>
-        ` : ''}
-
-        ${driveLink ? `
-          <a href="${driveLink}" target="_blank" style="font-size: 11px; color: #3B82F6; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
-            <i class="fa-brands fa-google-drive"></i> Abrir Drive
-          </a>
-        ` : ''}
-
-        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px;">
-          ${card.stage === 'published' ? `
-            <button type="button" class="btn-kanban-stage btn-archive-traffic" data-asset-id="${card.id}" data-target-stage="archived_traffic" style="font-size: 10px; background: rgba(16,185,129,0.2); color: #10B981; border: 1px solid rgba(16,185,129,0.4); border-radius: 4px; padding: 4px 8px; font-weight: bold; cursor: pointer; width: 100%;">
-              🚀 Enviar para Tráfego & Arquivar
-            </button>
-          ` : (isStrictQA ? `
-            <button type="button" onclick="document.querySelector('#btn-tab-war-room').click(); window.scrollTo(0, 0);" style="font-size: 10px; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-weight: 600; width: 100%;">
-              🔍 Inspecionar Criativo (Score IA)
-            </button>
-          ` : `
-            ${card.stage !== 'producing' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="producing" style="font-size: 10px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 6px; cursor: pointer;">← Produzir</button>` : ''}
-            ${card.stage !== 'needs_adjustment' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="needs_adjustment" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Ajustar</button>` : ''}
-            ${card.stage !== 'published' ? `<button type="button" class="btn-kanban-stage" data-asset-id="${card.id}" data-target-stage="published" style="font-size: 10px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 6px; cursor: pointer;">Aprovar →</button>` : ''}
-          `)}
+        <div style="display: flex; justify-content: flex-end; gap: 4px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; flex-wrap: wrap;">
+            ${task.status !== 'producao' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="producao" style="font-size: 9px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Pro</button>` : ''}
+            ${task.status !== 'analise' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="analise" style="font-size: 9px; background: rgba(6,182,212,0.1); color: #06B6D4; border: 1px solid rgba(6,182,212,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Ana</button>` : ''}
+            ${task.status !== 'ajustes' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="ajustes" style="font-size: 9px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Aju</button>` : ''}
+            ${task.status !== 'pronto' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="pronto" style="font-size: 9px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Pro</button>` : ''}
         </div>
       </div>
     `;
   }
 
-  async function updateKanbanCardStage(assetId, stage) {
-    let cards = [];
-    const saved = localStorage.getItem(`oraculum_kanban_${activeClientId}`);
-    if (saved) cards = JSON.parse(saved);
-    
-    const cardIndex = cards.findIndex(c => String(c.id) === String(assetId));
-    if (cardIndex !== -1) {
-      if (stage === 'published' && cards[cardIndex].locked === true) {
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#EF4444;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
-        toast.innerHTML = '⛔ Bloqueado pelo Quality Gate: O criativo precisa de Hook Score ≥ 70 ou liberação do Gestor';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-        return;
-      }
-      
-      if (stage === 'archived_traffic') {
-        cards[cardIndex] = {
-          ...cards[cardIndex],
-          status: 'archived_traffic',
-          stage: 'archived_traffic',
-          client_id: window.currentClientId || cards[cardIndex].clientId || 'default',
-          client_name: window.currentClientName || cards[cardIndex].clientName || 'N/A',
-          headline: cards[cardIndex].title || cards[cardIndex].headline,
-          copy: cards[cardIndex].description || cards[cardIndex].copy,
-          type: cards[cardIndex].type || 'video',
-          updated_at: new Date().toISOString()
-        };
-      } else {
-        cards[cardIndex].stage = stage;
-      }
-      localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
-      renderKanbanBoard(cards);
-
-      if (stage === 'archived' || stage === 'archived_traffic') {
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.8);font-size:13px;';
-        toast.innerHTML = '🎯 Ativo despachado com sucesso para a gestão de tráfego pago!';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-        
-        if (stage === 'archived_traffic') {
-          window.dispatchEvent(new CustomEvent('cardSentToTraffic', { detail: cards[cardIndex] }));
-        }
-      }
-      
-      if (window.supabaseClient) {
-        if (stage === 'archived_traffic') {
-          let activeClientId = window.currentClientId;
-          if (!activeClientId) {
-            const { data: clients } = await window.supabaseClient.from('clients').select('id').limit(1);
-            if (clients && clients.length > 0) {
-              activeClientId = clients[0].id;
-            }
-          }
-          const cardPayload = {
-            id: cards[cardIndex].id || crypto.randomUUID(),
-            client_id: activeClientId || null,
-            title: cards[cardIndex].title || cards[cardIndex].headline || 'Criativo de Campanha',
-            description: cards[cardIndex].description || cards[cardIndex].copy || '',
-            status: 'archived_traffic',
-            type: cards[cardIndex].type || 'video'
-          };
-
-          try {
-            const { error } = await window.supabaseClient
-              .from('kanban_cards')
-              .upsert(cardPayload);
-            if (error) console.error("Erro ao salvar card no Supabase:", error);
-          } catch(e) {
-            console.warn('Erro ao realizar upsert no supabase kanban_cards:', e);
-          }
-        } else {
-          try {
-            await window.supabaseClient
-              .from('kanban_cards')
-              .update({ status: stage, updated_at: new Date().toISOString() })
-              .eq('id', assetId);
-          } catch(e) {
-            console.warn('Erro ao atualizar supabase kanban_cards:', e);
-          }
-        }
-      }
-    }
-
+  async function updateKanbanCardStage(taskId, novoStatus) {
+    if (!window.supabaseClient) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/kanban/${assetId}/stage`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-organization-id': activeTenantId
-        },
-        body: JSON.stringify({ stage })
-      });
-      const data = await res.json();
-      if (data.success) {
-        // Backend updated
-      }
+      const { error } = await window.supabaseClient
+        .from('kanban_tasks')
+        .update({ status: novoStatus, column: novoStatus }) // Atualiza as duas propriedades de segurança
+        .eq('id', taskId);
+
+      if (error) throw error;
+      
+      // Recarrega os cards visualmente
+      loadClientKanbanCards(window.currentClientId || activeClientId);
     } catch (e) {
-      console.warn('Erro ao atualizar estágio da carta:', e);
+      console.error('Erro ao mover tarefa:', e);
     }
   }
 

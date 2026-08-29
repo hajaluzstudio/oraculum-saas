@@ -681,4 +681,73 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  // =======================================================
+  // LÓGICA DE DESPACHO DA WAR ROOM PARA O KANBAN
+  // =======================================================
+  const btnDespachar = document.getElementById('btn-despachar-war-room');
+  if (btnDespachar) {
+    btnDespachar.addEventListener('click', async () => {
+      if (!window.supabaseClient) {
+        alert('Conexão com o banco de dados não inicializada.');
+        return;
+      }
+      
+      const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+      const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id');
+      
+      const savedState = localStorage.getItem(`oraculum_war_room_${clientId}`);
+      if (!savedState) {
+        alert('A Sala de Operações não possui estratégias geradas pelo Chat para despachar.');
+        return;
+      }
+      
+      try {
+        btnDespachar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Despachando...';
+        btnDespachar.disabled = true;
+        
+        const plan = JSON.parse(savedState);
+        const inserts = [];
+        
+        // Mapeamento dinâmico do JSON da War Room para Kanban Cards
+        if (plan.video && Array.isArray(plan.video.pautas)) {
+          plan.video.pautas.forEach(p => inserts.push({ title: p.split(':')[0] || 'Roteiro de Vídeo', description: p, status: 'backlog', tags: ['Vídeo'], client_id: clientId, tenant_id: tenantId }));
+        }
+        if (plan.copywriting && Array.isArray(plan.copywriting.entregaveis)) {
+          plan.copywriting.entregaveis.forEach(c => inserts.push({ title: c.tipo || 'Copy', description: c.detalhes || '', status: 'backlog', tags: ['Copywriting'], client_id: clientId, tenant_id: tenantId }));
+        }
+        if (plan.design && Array.isArray(plan.design.materiais)) {
+          plan.design.materiais.forEach(d => inserts.push({ title: d.peca || 'Design', description: d.especificacoes || '', status: 'backlog', tags: ['Design'], client_id: clientId, tenant_id: tenantId }));
+        }
+        
+        if (inserts.length === 0) {
+           // Fallback seguro caso as chaves não batam exatamente com o formato atual do prompt
+           inserts.push({ title: 'Estratégia Geral da War Room', description: 'Plano distribuído nas 5 equipes', status: 'backlog', tags: ['Geral'], client_id: clientId, tenant_id: tenantId });
+        }
+
+        const { error } = await window.supabaseClient.from('kanban_tasks').insert(inserts);
+        if (error) throw error;
+        
+        btnDespachar.innerHTML = '<i class="fa-solid fa-check"></i> Despachado com Sucesso!';
+        btnDespachar.style.background = 'linear-gradient(135deg, #3B82F6, #2563EB)';
+        
+        // Se a função estiver disponível no contexto global, atualiza a interface invisivelmente
+        if (typeof window.loadClientKanbanCards === 'function') {
+           window.loadClientKanbanCards(clientId);
+        }
+        
+        setTimeout(() => {
+          btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
+          btnDespachar.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+          btnDespachar.disabled = false;
+        }, 3000);
+        
+      } catch (e) {
+        console.error('Erro ao despachar Kanban:', e);
+        alert('Erro ao despachar as tarefas para o Kanban: ' + e.message);
+        btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
+        btnDespachar.disabled = false;
+      }
+    });
+  }
+
 });
