@@ -192,10 +192,11 @@ window.dispatchPredictiveToKanban = async function(alertId) {
     
     const newTask = {
       client_id: clientId,
+      tenant_id: window.activeTenantId || 'admin',
       title: taskTitle,
       description: taskDesc,
       status: 'backlog',
-      tag: 'urgente'
+      tags: ['Urgente']
     };
 
     const { error: insertErr } = await window.supabaseClient.from('kanban_tasks').insert([newTask]);
