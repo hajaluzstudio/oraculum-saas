@@ -4026,7 +4026,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ${task.description ? `<div style="font-size: 11px; color: #94A3B8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
         ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
-        <div style="display: flex; justify-content: flex-end; gap: 4px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
+           <button type="button" onclick="window.inspectTaskInWarRoom('${tag}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia</button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 4px; flex-wrap: wrap;">
             ${task.status !== 'producao' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="producao" style="font-size: 9px; background: rgba(255,255,255,0.05); color: #94A3B8; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Pro</button>` : ''}
             ${task.status !== 'analise' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="analise" style="font-size: 9px; background: rgba(6,182,212,0.1); color: #06B6D4; border: 1px solid rgba(6,182,212,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Ana</button>` : ''}
             ${task.status !== 'ajustes' ? `<button type="button" class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="ajustes" style="font-size: 9px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 2px 4px; cursor: pointer;">Aju</button>` : ''}
@@ -4057,6 +4061,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnRefreshKanban) {
     btnRefreshKanban.addEventListener('click', () => loadClientKanbanCards(activeClientId));
   }
+
+  window.inspectTaskInWarRoom = function(tag) {
+    // Clica na aba principal da Sala de Operações
+    const tabWarRoom = document.querySelector('#btn-tab-war-room');
+    if (tabWarRoom) tabWarRoom.click();
+    
+    // Rola para o topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Tenta encontrar a sub-aba correspondente à tag e clicar nela
+    setTimeout(() => {
+        let subTabId = 'video'; // padrão
+        const tagLower = tag.toLowerCase();
+        
+        if (tagLower.includes('design')) subTabId = 'design';
+        if (tagLower.includes('copy')) subTabId = 'copywriting';
+        
+        const subTabBtn = document.querySelector(`button[data-wr-tab="${subTabId}"]`);
+        if (subTabBtn) subTabBtn.click();
+    }, 300); // pequeno delay para a aba da War Room renderizar
+  };
 
   // ============================================================================
   // 6. BI TRACKER & DASHBOARD INTERATIVO DO CLIENTE (CHART.JS)
