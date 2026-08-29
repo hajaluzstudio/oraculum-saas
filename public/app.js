@@ -2979,6 +2979,26 @@ document.addEventListener('DOMContentLoaded', () => {
           console.warn('[Cache Local Report Error]:', e);
         }
 
+        // Salvar o Hook Score na Tarefa do Kanban (se a avaliação veio de lá)
+        if (window.activeInspectTaskId && window.supabaseClient) {
+            try {
+                const { data: t } = await window.supabaseClient.from('kanban_tasks').select('description').eq('id', window.activeInspectTaskId).single();
+                if (t) {
+                    let newDesc = t.description || '';
+                    newDesc = newDesc.replace(/\n\n\[Hook Score: \d+\]/g, ''); // limpa score antigo
+                    newDesc += `\n\n[Hook Score: ${data.hookScore}]`;
+                    await window.supabaseClient.from('kanban_tasks').update({ description: newDesc }).eq('id', window.activeInspectTaskId);
+                    
+                    // Recarrega o Kanban sutilmente para mostrar a atualização
+                    if (typeof loadClientKanbanCards === 'function') {
+                       loadClientKanbanCards(cId);
+                    }
+                }
+            } catch(e) {
+                console.error('Erro ao vincular Hook Score à tarefa do Kanban', e);
+            }
+        }
+
         window.renderizarRelatorioAuditUI(targetId, data);
       } else {
         throw new Error(resData.error || 'Falha na avaliação do criativo');
@@ -4027,7 +4047,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
         <div style="display: flex; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
-           <button type="button" onclick="window.inspectTaskInWarRoom('${tag}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia</button>
+           <button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${(task.title || '').replace(/'/g, "\\'")}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 4px; flex-wrap: wrap;">
@@ -4043,6 +4063,21 @@ document.addEventListener('DOMContentLoaded', () => {
   async function updateKanbanCardStage(taskId, novoStatus) {
     if (!window.supabaseClient) return;
     try {
+      if (novoStatus === 'pronto') {
+        const { data: currentTask } = await window.supabaseClient.from('kanban_tasks').select('*').eq('id', taskId).single();
+        if (currentTask) {
+          const isVisual = currentTask.tags && (currentTask.tags.includes('Vídeo') || currentTask.tags.includes('Design'));
+          if (isVisual) {
+            const match = currentTask.description ? currentTask.description.match(/\[Hook Score: (\d+)\]/) : null;
+            const score = match ? parseInt(match[1]) : 0;
+            if (score < 70) {
+              alert(`❌ ACESSO NEGADO PELO AI QUALITY GATE!\n\nEste criativo possui uma nota atual de ${score}.\nPara avançar para "Pronto", clique em "Ver Estratégia / Inspecionar" e certifique-se que o Score da IA é maior ou igual a 70.`);
+              return;
+            }
+          }
+        }
+      }
+
       const { error } = await window.supabaseClient
         .from('kanban_tasks')
         .update({ status: novoStatus }) // Atualiza apenas o status
@@ -4062,7 +4097,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRefreshKanban.addEventListener('click', () => loadClientKanbanCards(activeClientId));
   }
 
-  window.inspectTaskInWarRoom = function(tag) {
+  window.inspectTaskInWarRoom = function(tag, taskId, taskTitle) {
+    window.activeInspectTaskId = taskId || null;
+
     // Clica na aba principal da Sala de Operações
     const tabWarRoom = document.querySelector('#btn-tab-war-room');
     if (tabWarRoom) tabWarRoom.click();
@@ -4073,7 +4110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tenta encontrar a sub-aba correspondente à tag e clicar nela
     setTimeout(() => {
         let subTabId = 'video'; // padrão
-        const tagLower = tag.toLowerCase();
+        const tagLower = (tag || '').toLowerCase();
         
         if (tagLower.includes('design')) subTabId = 'design';
         if (tagLower.includes('copy')) subTabId = 'copywriting';
@@ -4082,6 +4119,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const subTabBtn = document.querySelector(`button[data-wr-tab="${subTabId}"]`);
         if (subTabBtn) subTabBtn.click();
+
+        // Preenche o campo de título da ferramenta de inspeção, se existir
+        const titleInput = document.getElementById(`inspect-title-wr-tab-${subTabId}`);
+        if (titleInput && taskTitle) {
+            titleInput.value = taskTitle;
+        }
     }, 300); // pequeno delay para a aba da War Room renderizar
   };
 
