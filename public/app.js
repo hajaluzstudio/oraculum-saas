@@ -4041,7 +4041,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const { error } = await window.supabaseClient
         .from('kanban_tasks')
-        .update({ status: novoStatus, column: novoStatus }) // Atualiza as duas propriedades de segurança
+        .update({ status: novoStatus }) // Atualiza apenas o status
         .eq('id', taskId);
 
       if (error) throw error;
