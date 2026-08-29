@@ -4039,17 +4039,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const isNeedsAdj = task.status === 'ajustes';
     const isPub = task.status === 'pronto';
     const isDelivered = task.status === 'entregue';
-    const borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isDelivered ? 'rgba(139,92,246,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
+    const isRiscoPreditivo = task.title && task.title.includes('[Risco Preditivo]');
+    
+    let borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isDelivered ? 'rgba(139,92,246,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
+    let bgColor = '#111726';
+    
+    if (isRiscoPreditivo) {
+      borderColor = 'rgba(239,68,68,0.6)';
+      bgColor = 'rgba(239,68,68,0.1)'; // Fundo levemente vermelho
+    }
+
     const tag = (task.tags && task.tags[0]) || task.tag || 'Geral';
     
+    // Escapar aspas para poder passar no onclick
+    const safeDesc = (task.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
+    const safeTitle = (task.title || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
     return `
-      <div class="kanban-card" style="background: #111726; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: #F1F5F9;">${task.title || 'Tarefa sem Título'}</div>
-        ${task.description ? `<div style="font-size: 11px; color: #94A3B8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
+      <div class="kanban-card" style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : '#F1F5F9'};">${task.title || 'Tarefa sem Título'}</div>
+        ${task.description ? `<div style="font-size: 11px; color: ${isRiscoPreditivo ? '#FCA5A5' : '#94A3B8'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
         ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
         <div style="display: flex; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
-           <button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${(task.title || '').replace(/'/g, "\\'")}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>
+           ${isRiscoPreditivo 
+              ? `<button type="button" onclick="window.showRiscoPreditivoDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Ver Detalhes do Risco</button>`
+              : `<button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${safeTitle}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>`
+           }
         </div>
 
         <div style="display: flex; gap: 4px; margin-top: 4px;">
@@ -4058,11 +4074,21 @@ document.addEventListener('DOMContentLoaded', () => {
           ${task.status !== 'analise' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="analise" style="font-size: 10px; background: rgba(6,182,212,0.1); color: #06B6D4; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Mover para Análise">[ Ana ]</button>` : ''}
           ${task.status !== 'ajustes' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="ajustes" style="font-size: 10px; background: rgba(239,68,68,0.1); color: #EF4444; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1;" title="Mover para Ajustes">[ Aju ]</button>` : ''}
           ${task.status !== 'pronto' && task.status !== 'entregue' ? `<button class="btn-kanban-stage" data-task-id="${task.id}" data-target-stage="pronto" style="font-size: 10px; background: rgba(16,185,129,0.1); color: #10B981; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1; font-weight: bold;" title="Mover para Pronto">[ Pro ]</button>` : ''}
-          ${isPub ? `<button type="button" onclick="window.openDeliveryModal('${task.id}', '${(task.title || '').replace(/'/g, "\\'")}')" style="font-size: 10px; background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1; font-weight: bold; box-shadow: 0 2px 8px rgba(139,92,246,0.4);" title="Entregar e Notificar Equipe"><i class="fa-solid fa-paper-plane"></i> Entregar</button>` : ''}
+          ${isPub ? `<button type="button" onclick="window.openDeliveryModal('${task.id}', '${safeTitle}')" style="font-size: 10px; background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; flex: 1; font-weight: bold; box-shadow: 0 2px 8px rgba(139,92,246,0.4);" title="Entregar e Notificar Equipe"><i class="fa-solid fa-paper-plane"></i> Entregar</button>` : ''}
         </div>
       </div>
     `;
   }
+
+
+  window.showRiscoPreditivoDetails = function(title, desc) {
+    if (typeof window.showToast === 'function') {
+        // Usa alert normal pois a descrição pode ser grande
+        alert(title + "\n\n" + desc);
+    } else {
+        alert(title + "\n\n" + desc);
+    }
+  };
 
   // ===============================================
   // HAND-OFF / MODAL DE ENTREGA
