@@ -1523,6 +1523,30 @@
             </div>
           </div>
 
+          <!-- MODAL DE DETALHES ORACULUM LIVE -->
+          <div id="modal-oraculum-live-details" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4">
+            <div class="bg-slate-900 border-2 border-indigo-500/50 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-lg overflow-hidden">
+              <div class="px-6 py-5 border-b border-indigo-500/20 flex justify-between items-center bg-indigo-950/30">
+                <h3 id="oraculum-live-details-title" class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                  <i class="fa-solid fa-robot"></i> Demanda do Oraculum Live
+                </h3>
+                <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.replace('flex', 'hidden')" class="text-slate-400 hover:text-white transition-colors">
+                  <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+              </div>
+              <div class="p-6">
+                <div class="bg-slate-950/80 rounded-xl p-5 border border-slate-800/80 text-slate-300 leading-relaxed text-sm whitespace-pre-wrap" id="oraculum-live-details-desc">
+                  <!-- Descrição da demanda do oraculum live -->
+                </div>
+              </div>
+              <div class="px-6 py-4 bg-slate-900/50 border-t border-slate-800 flex justify-end">
+                <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.replace('flex', 'hidden')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors border border-slate-700">
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+
         </section>
 
         <!-- ABA NOVA: PORTAL DE INTELIGÊNCIA -->

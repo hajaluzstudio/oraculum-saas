@@ -4040,6 +4040,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPub = task.status === 'pronto';
     const isDelivered = task.status === 'entregue';
     const isRiscoPreditivo = task.title && task.title.includes('[Risco Preditivo]');
+    const isOraculumLive = task.title && task.title.includes('[Oraculum Live]');
     
     let borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isDelivered ? 'rgba(139,92,246,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
     let bgColor = '#111726';
@@ -4047,6 +4048,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isRiscoPreditivo) {
       borderColor = 'rgba(239,68,68,0.6)';
       bgColor = 'rgba(239,68,68,0.1)'; // Fundo levemente vermelho
+    } else if (isOraculumLive) {
+      borderColor = 'rgba(99,102,241,0.6)';
+      bgColor = 'rgba(99,102,241,0.1)'; // Fundo levemente indigo/roxo
     }
 
     const tag = (task.tags && task.tags[0]) || task.tag || 'Geral';
@@ -4057,13 +4061,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return `
       <div class="kanban-card" style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : '#F1F5F9'};">${task.title || 'Tarefa sem Título'}</div>
-        ${task.description ? `<div style="font-size: 11px; color: ${isRiscoPreditivo ? '#FCA5A5' : '#94A3B8'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
+        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : isOraculumLive ? '#818CF8' : '#F1F5F9'};">${task.title || 'Tarefa sem Título'}</div>
+        ${task.description ? `<div style="font-size: 11px; color: ${isRiscoPreditivo ? '#FCA5A5' : isOraculumLive ? '#A5B4FC' : '#94A3B8'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
         ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
         <div style="display: flex; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
            ${isRiscoPreditivo 
               ? `<button type="button" onclick="window.showRiscoPreditivoDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Ver Detalhes do Risco</button>`
+              : isOraculumLive
+              ? `<button type="button" onclick="window.showOraculumLiveDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(99,102,241,0.15); color: #818CF8; border: 1px solid rgba(99,102,241,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-robot"></i> Ler Demanda da Reunião</button>`
               : `<button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${safeTitle}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>`
            }
         </div>

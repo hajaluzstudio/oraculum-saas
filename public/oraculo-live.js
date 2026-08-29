@@ -376,7 +376,7 @@
         const inserts = tarefas.map(t => ({
           client_id: clientId,
           tenant_id: tenantId,
-          title: t.title,
+          title: `[Oraculum Live] ${t.title}`,
           description: t.description,
           status: t.column || 'backlog',
           tags: [t.tag || 'Geral']
