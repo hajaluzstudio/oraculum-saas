@@ -4082,11 +4082,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   window.showRiscoPreditivoDetails = function(title, desc) {
-    if (typeof window.showToast === 'function') {
-        // Usa alert normal pois a descrição pode ser grande
-        alert(title + "\n\n" + desc);
+    const modal = document.getElementById('modal-predictive-risk');
+    const titleEl = document.getElementById('predictive-risk-title');
+    const descEl = document.getElementById('predictive-risk-desc');
+
+    if (modal) {
+        if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${title}`;
+        if (descEl) descEl.innerHTML = desc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     } else {
-        alert(title + "\n\n" + desc);
+        if (typeof window.showToast === 'function') {
+            alert(title + "\n\n" + desc);
+        } else {
+            alert(title + "\n\n" + desc);
+        }
     }
   };
 
