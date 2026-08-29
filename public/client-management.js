@@ -372,3 +372,45 @@ window.addEventListener('DOMContentLoaded', () => {
   window.carregarClientesDoSupabase();
   setInterval(sincronizarVisorTopo, 1000);
 });
+
+// ============================================================================
+// SINCRONIZAÇÃO AUTOMÁTICA DO TÍTULO DO CLIENTE NO DASHBOARD DE BI
+// ============================================================================
+(function sincronizarTituloClienteBI() {
+  function atualizarNomeClienteNoBI() {
+    const tituloBI = document.getElementById('bi-active-client-title');
+    const headerDisplay = document.getElementById('active-client-display');
+    const labelTopo = document.querySelector('.user-header-pill, #active-client-display');
+
+    if (!tituloBI) return;
+
+    // 1. Tenta pegar o nome direto do visor do topo (ex: "Dr. Lucas - Rinoplastia...")
+    let nomeCliente = headerDisplay ? headerDisplay.innerText.trim() : '';
+
+    // 2. Se não encontrou no visor, busca nos objetos e chaves de armazenamento local
+    if (!nomeCliente || nomeCliente === 'Carregando...' || nomeCliente === 'Cliente Selecionado') {
+      const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
+      if (window.clientesMock && Array.isArray(window.clientesMock) && activeClientId) {
+        const clienteObj = window.clientesMock.find(c => String(c.id) === String(activeClientId));
+        if (clienteObj) {
+          nomeCliente = clienteObj.name || clienteObj.nome || clienteObj.empresa;
+          if (clienteObj.niche || clienteObj.nicho) {
+            nomeCliente += ` (${clienteObj.niche || clienteObj.nicho})`;
+          }
+        }
+      }
+    }
+
+    // 3. Aplica o nome formatado no título da aba BI
+    if (nomeCliente && nomeCliente !== 'Carregando...' && nomeCliente !== 'Cliente Selecionado') {
+      if (tituloBI.innerText !== nomeCliente) {
+        tituloBI.innerText = nomeCliente;
+      }
+    }
+  }
+
+  // Executa imediatamente e monitora trocas de cliente / abas
+  atualizarNomeClienteNoBI();
+  setInterval(atualizarNomeClienteNoBI, 300);
+  document.addEventListener('click', () => setTimeout(atualizarNomeClienteNoBI, 100));
+})();
