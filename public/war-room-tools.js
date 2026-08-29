@@ -760,8 +760,13 @@ document.addEventListener('DOMContentLoaded', () => {
           btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
         }, 3000);
         
+        btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
       } catch (err) {
         console.error('[ERRO DESPACHO WAR ROOM]', err);
         alert('Erro ao despachar tarefas: ' + err.message);
         btnDespachar.disabled = false;
+        btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
+      }
+    });
+  }
 });
