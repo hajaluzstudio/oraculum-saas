@@ -2803,6 +2803,56 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
             </div>
           </div>
 
+          <!-- GESTÃO DE EQUIPE (WHATSAPP) -->
+          <div class="card-glass" style="margin-bottom: 20px;" id="team-management-section">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3><i class="fa-solid fa-users" style="color: #8B5CF6;"></i> Gestão de Equipe & WhatsApp (Hand-Off)</h3>
+                <p>Cadastre os membros da equipe que receberão notificações automáticas de Entrega do Kanban.</p>
+              </div>
+              <button type="button" class="btn-secondary sm" onclick="window.abrirModalAdicionarMembro()" style="background: rgba(139, 92, 246, 0.15); color: #8B5CF6; border: 1px solid rgba(139, 92, 246, 0.3); font-size: 11px;">
+                <i class="fa-solid fa-user-plus"></i> Adicionar Membro
+              </button>
+            </div>
+
+            <!-- Formulário Embutido Oculto -->
+            <div id="form-add-team-member" style="display: none; margin-top: 14px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(139, 92, 246, 0.4); padding: 14px; border-radius: 8px; flex-direction: column; gap: 10px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <div class="form-group mb-0">
+                  <label style="font-size: 10px;">Nome</label>
+                  <input type="text" id="member-name" placeholder="Ex: João Silva">
+                </div>
+                <div class="form-group mb-0">
+                  <label style="font-size: 10px;">Equipe / Cargo</label>
+                  <select id="member-role">
+                    <option value="Social Media">Social Media</option>
+                    <option value="Gestor de Tráfego">Gestor de Tráfego</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Videomaker">Videomaker</option>
+                    <option value="Designer">Designer</option>
+                    <option value="Líder / Admin">Líder / Admin</option>
+                  </select>
+                </div>
+                <div class="form-group mb-0">
+                  <label style="font-size: 10px;">WhatsApp (Formato: 5511999999999)</label>
+                  <input type="text" id="member-phone" placeholder="Ex: 5511999999999">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" onclick="window.cancelarAdicionarMembro()" style="background: transparent; color: #94A3B8; border: none; cursor: pointer; font-size: 12px; padding: 6px 12px;">Cancelar</button>
+                <button type="button" onclick="window.salvarMembroEquipe()" style="background: #8B5CF6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; padding: 6px 16px;">
+                  <i class="fa-solid fa-save"></i> Salvar Membro
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Membros -->
+            <div id="team-members-list" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+              <p style="color: #64748B; font-size: 12px; text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando equipe...</p>
+            </div>
+          </div>
+
+
           <!-- 1. CARD GOOGLE GEMINI AI API -->
           <div class="card-glass" style="margin-bottom: 20px;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">

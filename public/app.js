@@ -4130,14 +4130,38 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (error) throw error;
 
-        // 3. (Opcional) Notificar WhatsApp
+        // 3. Notificar WhatsApp para os membros cadastrados na equipe
         const zapMsg = `🚀 *ENTREGA DE MATERIAL FINALIZADO*\n\n*Tarefa:* ${title}\n*Para:* ${team}\n*Link:* ${link}\n*Obs:* ${msg || 'Sem observações'}`;
         try {
-           await fetch('/api/notifications/send-whatsapp', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ message: zapMsg, type: 'DELIVERY_READY' })
-           });
+          const { data: membros } = await window.supabaseClient.from('team_members').select('*');
+          if (membros && membros.length > 0) {
+             const membrosAlvo = membros.filter(m => team.includes(m.role) || m.role === 'Líder / Admin');
+             
+             if (membrosAlvo.length > 0) {
+               for (const m of membrosAlvo) {
+                 await fetch('/api/notifications/send-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: zapMsg, type: 'DELIVERY_READY', customPhone: m.whatsapp_number })
+                 });
+                 console.log(`Disparado WhatsApp para ${m.name} (${m.whatsapp_number})`);
+               }
+             } else {
+               // Fallback genérico se não achou ngm daquela equipe específica
+               await fetch('/api/notifications/send-whatsapp', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: zapMsg, type: 'DELIVERY_READY' })
+               });
+             }
+          } else {
+             // Fallback genérico (ninguém cadastrado no sistema)
+             await fetch('/api/notifications/send-whatsapp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: zapMsg, type: 'DELIVERY_READY' })
+             });
+          }
         } catch (err) { console.warn("WhatsApp API não disparou", err); }
 
         window.closeDeliveryModal();
@@ -6368,6 +6392,102 @@ document.addEventListener('DOMContentLoaded', () => {
       notificationHistoryList.insertAdjacentHTML('afterbegin', itemHtml);
     }
   }
+
+  // ============================================================================
+  // ETAPA 7.5: GESTÃO DE EQUIPE (HAND-OFF KANBAN)
+  // ============================================================================
+  window.abrirModalAdicionarMembro = function() {
+    document.getElementById('form-add-team-member').style.display = 'flex';
+    document.getElementById('member-name').value = '';
+    document.getElementById('member-phone').value = '';
+  };
+
+  window.cancelarAdicionarMembro = function() {
+    document.getElementById('form-add-team-member').style.display = 'none';
+  };
+
+  window.salvarMembroEquipe = async function() {
+    const nome = document.getElementById('member-name').value.trim();
+    const role = document.getElementById('member-role').value;
+    const fone = document.getElementById('member-phone').value.trim().replace(/\D/g, ''); // só números
+
+    if (!nome || !fone) {
+      alert("Preencha o nome e o WhatsApp do membro.");
+      return;
+    }
+    if (!window.supabaseClient) {
+      alert("Banco de dados desconectado.");
+      return;
+    }
+
+    try {
+      const { error } = await window.supabaseClient.from('team_members').insert([{
+        name: nome,
+        role: role,
+        whatsapp_number: fone
+      }]);
+      if (error) throw error;
+      
+      window.cancelarAdicionarMembro();
+      await window.carregarEquipe();
+      if (typeof window.showToast === 'function') window.showToast("Membro salvo com sucesso!", "success");
+    } catch (e) {
+      alert("Erro ao salvar membro: " + e.message);
+    }
+  };
+
+  window.removerMembroEquipe = async function(id) {
+    if (!confirm("Remover este membro da equipe?")) return;
+    if (!window.supabaseClient) return;
+
+    try {
+      const { error } = await window.supabaseClient.from('team_members').delete().eq('id', id);
+      if (error) throw error;
+      await window.carregarEquipe();
+      if (typeof window.showToast === 'function') window.showToast("Membro removido.", "info");
+    } catch (e) {
+      alert("Erro ao remover: " + e.message);
+    }
+  };
+
+  window.carregarEquipe = async function() {
+    const listEl = document.getElementById('team-members-list');
+    if (!listEl || !window.supabaseClient) return;
+
+    try {
+      const { data, error } = await window.supabaseClient.from('team_members').select('*').order('created_at', { ascending: false });
+      if (error && error.code !== '42P01') throw error; // Ignora se a tabela não existe ainda
+
+      if (!data || data.length === 0) {
+        listEl.innerHTML = '<p style="color: #64748B; font-size: 12px; text-align: center; padding: 20px;">Nenhum membro cadastrado.</p>';
+        return;
+      }
+
+      listEl.innerHTML = data.map(m => `
+        <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); padding: 10px 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="margin: 0; font-size: 13px; font-weight: 600; color: #E2E8F0;">${m.name}</p>
+            <p style="margin: 2px 0 0; font-size: 11px; color: #A78BFA;"><i class="fa-solid fa-briefcase"></i> ${m.role} <span style="margin: 0 6px; color: #475569;">|</span> <i class="fa-brands fa-whatsapp text-emerald-400"></i> ${m.whatsapp_number}</p>
+          </div>
+          <button onclick="window.removerMembroEquipe('${m.id}')" style="background: transparent; border: none; color: #EF4444; cursor: pointer; font-size: 14px; padding: 6px;" title="Remover">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      `).join('');
+
+    } catch (e) {
+      if (e.code === '42P01') {
+        listEl.innerHTML = '<p style="color: #EF4444; font-size: 12px; text-align: center; padding: 20px;">Execute o código SQL no Supabase para criar a tabela team_members.</p>';
+      } else {
+        listEl.innerHTML = '<p style="color: #EF4444; font-size: 12px;">Erro ao carregar: ' + e.message + '</p>';
+      }
+    }
+  };
+
+  // Carrega a equipe assim que o sistema inicializar
+  setTimeout(() => { if (typeof window.carregarEquipe === 'function') window.carregarEquipe(); }, 2500);
+
+
 
   // ============================================================================
   // ETAPA 8: 🌐 CONSTRUTOR AUTÔNOMO DE LANDING PAGES DE ALTA CONVERSÃO
