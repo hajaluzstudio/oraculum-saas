@@ -1030,6 +1030,10 @@
         <i class="fa-solid fa-chart-line"></i>
         <span>BI & Feedback Loop</span>
     </button>
+    <button class="nav-item" data-tab="tab-predictive" id="btn-tab-predictive" data-tooltip="Radar Preditivo de Risco">
+        <i class="fa-solid fa-satellite-dish"></i>
+        <span>Radar Preditivo</span>
+    </button>
 
         <button class="nav-item" data-tab="tab-intelligence" id="btn-tab-intelligence" data-tooltip="Portal de Inteligência">
     <i class="fa-solid fa-brain"></i>
@@ -2776,6 +2780,28 @@ Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horá
           </div>
         </section>
 
+        <!-- NOVA ABA: RADAR PREDITIVO (ESPIÃO DE RISCO) -->
+        <section id="tab-predictive" class="tab-panel" style="display: none;">
+          <div class="card-glass" style="margin-bottom: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="color: #F87171;"><i class="fa-solid fa-satellite-dish"></i> Radar Preditivo de Risco</h3>
+                <p>Motor analítico autônomo. Mapeia sinais de Fadiga Criativa, Alta Frequência e Queda de ROAS antes que o cliente perceba.</p>
+              </div>
+              <button class="btn-primary" id="btn-run-predictive-scan" style="background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%); font-size: 13px;">
+                <i class="fa-solid fa-bolt"></i> Rodar Scanner Preditivo
+              </button>
+            </div>
+          </div>
+
+          <div id="predictive-alerts-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px;">
+            <div style="text-align: center; grid-column: 1 / -1; padding: 40px; color: #94A3B8;">
+              <i class="fa-solid fa-satellite-dish fa-beat-fade" style="font-size: 32px; margin-bottom: 10px;"></i>
+              <p>Inicie o scanner para buscar anomalias ocultas nas campanhas.</p>
+            </div>
+          </div>
+        </section>
+
         <!-- ABA 6: CONFIGURAÇÕES, NOTIFICAÇÕES WHATSAPP & APIS -->
         <section id="tab-settings" class="tab-panel">
           <!-- CENTRAL DE NOTIFICAÇÕES WHATSAPP -->
@@ -4094,6 +4120,7 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
   <script src="/radar-concorrentes.js?v=66.0.0"></script>
   <script src="/war-room-tools.js?v=66.0.0"></script>
   <script src="/traffic-manager.js?v=66.0.0"></script>
+  <script src="/predictive-radar.js?v=1.0.0"></script>
 
 
 
