@@ -67,8 +67,55 @@ async function runPredictiveScanner() {
         status: 'active'
       };
 
-      await window.supabaseClient.from('predictive_alerts').insert([mockAlert1, mockAlert2]);
+      const { data: insertedAlerts, error: insertError } = await window.supabaseClient.from('predictive_alerts').insert([mockAlert1, mockAlert2]).select();
+      if (insertError) throw insertError;
+      
       if (typeof window.showToast === 'function') window.showToast("Anomalias detectadas pelo Scanner!", "error");
+
+      // ---------------------------------------------------------
+      // INTEGRAÇÃO WHATSAPP / WEBHOOK (Disparo Automático de Alta Severidade)
+      // ---------------------------------------------------------
+      if (insertedAlerts && insertedAlerts.length > 0) {
+        for (const alert of insertedAlerts) {
+          if (alert.severity === 'alta') {
+            const zapMsg = `🚨 *ALERTA PREDITIVO DE ALTO RISCO* 🚨\n\n*Ameaça:* ${alert.title}\n*Detalhes:* ${alert.description}\n\n_Vá ao painel Oraculum imediatamente para despachar a correção para a equipe._`;
+            
+            try {
+              // Buscar membros da agência (Líderes, Gestores de Tráfego, etc)
+              const { data: membros } = await window.supabaseClient.from('team_members').select('*');
+              let disparou = false;
+
+              if (membros && membros.length > 0) {
+                // Notifica gestores ou líderes
+                const membrosAlvo = membros.filter(m => m.role === 'Líder / Admin' || m.role.toLowerCase().includes('tráfego') || m.role.toLowerCase().includes('gestor'));
+                
+                for (const m of (membrosAlvo.length > 0 ? membrosAlvo : membros)) {
+                  await fetch('/api/notifications/send-whatsapp', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ message: zapMsg, type: 'CRITICAL_ALERT', customPhone: m.whatsapp_number })
+                  });
+                  disparou = true;
+                }
+              }
+
+              // Fallback se não encontrou time
+              if (!disparou) {
+                 await fetch('/api/notifications/send-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: zapMsg, type: 'CRITICAL_ALERT' })
+                 });
+              }
+              console.log(`WhatsApp disparado para alerta de alta severidade: ${alert.title}`);
+            } catch (zapErr) {
+              console.error("Erro ao disparar WhatsApp de risco:", zapErr);
+            }
+          }
+        }
+      }
+      // ---------------------------------------------------------
+
     } else {
       if (typeof window.showToast === 'function') window.showToast("Escaneamento concluído. Nenhuma anomalia nova encontrada.", "success");
     }
