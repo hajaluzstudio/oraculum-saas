@@ -219,7 +219,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 
-
+<style id="blindagem-oraculum-live">
+  /* TRAVA ANTI-PISCAR: Oculta o Oraculum Live antes mesmo da tela ser desenhada */
+  body:not(.sistema-liberado) #oraculo-live-btn,
+  body:not(.sistema-liberado) .oraculum-live-btn,
+  body:not(.sistema-liberado) .oraculum-live-window {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+  }
+</style>
 
 </head>
 <body>
@@ -1791,13 +1801,6 @@
             </div>
             <textarea id="meeting-notes-input" rows="4" placeholder="Anote aqui os principais insights, acordos de reunião, metas de ROAS e alinhamentos estratégicos com o cliente..." style="width: 100%; background: var(--bg-app); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 14px; color: #FFF; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; resize: vertical; line-height: 1.5;"></textarea>
           </div>
-          
-          <!-- Oraculum Live Flutuante (Exclusivo desta aba) -->
-          <button id="btn-open-oraculo-live" type="button" onclick="window.alternarOraculoLive()" 
-            style="position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 2147483647 !important; display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px 22px !important; background: #10B981 !important; color: #020705 !important; border-radius: 50px !important; font-weight: 800 !important; font-size: 13px !important; cursor: pointer !important; border: 1px solid rgba(255,255,255,0.4) !important; box-shadow: 0 10px 30px rgba(16,185,129,0.6) !important; backdrop-filter: blur(10px) !important; visibility: visible !important; opacity: 1 !important;">
-            <span style="font-size: 16px;">🤖</span>
-            <span>Oraculum Live</span>
-          </button>
         </section>
 
         <!-- ABA 5.5: 🕵️ RADAR DE CONCORRENTES & ESPIONAGEM DE ANÚNCIOS -->
@@ -4443,45 +4446,5 @@ window.dispararScraperInteligencia = async function() {
   }
 };
 </script>
-  <!-- ================= ORACULUM LIVE ESTÁTICO ================= -->
-  <div id="oraculo-live-drawer" 
-    style="position: fixed !important; top: 0 !important; bottom: 0 !important; right: 0 !important; z-index: 999999 !important; width: 100% !important; max-width: 420px !important; background: rgba(15, 23, 42, 0.98) !important; backdrop-filter: blur(25px) !important; border-left: 1px solid rgba(16,185,129,0.3) !important; box-shadow: -10px 0 40px rgba(0,0,0,0.8) !important; display: flex !important; flex-direction: column !important; transition: transform 0.3s ease !important; transform: translateX(100%) !important; color: #FFF !important; font-family: sans-serif !important;">
-    
-    <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(8, 11, 17, 0.8);">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 34px; height: 34px; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 16px;">🤖</div>
-        <div>
-          <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #FFF;">Oraculum Live</h3>
-          <span style="font-size: 11px; color: #10B981; display: flex; align-items: center; gap: 4px;">● Contexto de BI Ativo</span>
-        </div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button type="button" onclick="window.solicitarApresentacaoExecutiva()" style="padding: 5px 10px; background: rgba(16,185,129,0.2); color: #34D399; border: 1px solid rgba(16,185,129,0.4); border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600;">⚡ Resumo Geral</button>
-        <button type="button" onclick="window.alternarOraculoLive()" style="background: transparent; border: none; color: #94A3B8; font-size: 24px; cursor: pointer; padding: 0 6px;">&times;</button>
-      </div>
-    </div>
-
-    <div id="oraculo-chat-feed" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
-      <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; color: #CBD5E1; line-height: 1.5;">
-        👋 Olá! Sou o <strong>Oraculum</strong>. Estou acompanhando os dados de BI desta conta em tempo real. Faça perguntas por texto ou use o microfone para conversar ao vivo.
-      </div>
-    </div>
-
-    <div id="oraculo-voice-indicator" style="display: none; padding: 10px 16px; background: rgba(2, 44, 34, 0.4); border-top: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; color: #E9D5FF; justify-content: space-between; align-items: center;">
-      <span style="display: flex; align-items: center; gap: 8px;">
-        <span style="width: 8px; height: 8px; background: #34D399; border-radius: 50%;"></span>
-        <span id="voice-status-text">Ouvindo sua pergunta...</span>
-      </span>
-      <span style="font-size: 10px; background: rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 4px; color: #FFF;">Live Audio</span>
-    </div>
-
-    <div style="padding: 14px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(8, 11, 17, 0.9); display: flex; flex-direction: column; gap: 10px;">
-      <form id="form-oraculo-live" onsubmit="window.enviarMensagemOraculo(event)" style="display: flex; align-items: center; gap: 8px;">
-        <button type="button" id="btn-toggle-mic" onclick="window.alternarMicrofone()" style="padding: 10px 12px; background: #1E293B; color: #FFF; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; cursor: pointer; font-size: 14px;" title="Falar por voz">🎙️</button>
-        <input type="text" id="oraculo-input-text" placeholder="Pergunte sobre ROI, CAC, conversão, ROAS..." style="flex: 1; background: #0F172A; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; color: #FFF; font-size: 12px; outline: none;">
-        <button type="submit" id="btn-send-oraculo" style="padding: 10px 14px; background: #10B981; color: #0f172a; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">➤</button>
-      </form>
-    </div>
-  </div>
 </body>
 </html>
