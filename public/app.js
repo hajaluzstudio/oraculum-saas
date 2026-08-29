@@ -4077,6 +4077,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (tagLower.includes('design')) subTabId = 'design';
         if (tagLower.includes('copy')) subTabId = 'copywriting';
+        if (tagLower.includes('tráfego') || tagLower.includes('trafego')) subTabId = 'traffic';
+        if (tagLower.includes('comercial')) subTabId = 'comercial';
         
         const subTabBtn = document.querySelector(`button[data-wr-tab="${subTabId}"]`);
         if (subTabBtn) subTabBtn.click();

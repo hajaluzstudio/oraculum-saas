@@ -718,6 +718,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (plan.design && Array.isArray(plan.design.materiais)) {
           plan.design.materiais.forEach(d => inserts.push({ title: d.peca || 'Design', description: d.especificacoes || '', status: 'backlog', tags: ['Design'], client_id: clientId, tenant_id: tenantId }));
         }
+        if (plan.trafego && plan.trafego.canais) {
+          inserts.push({ title: 'Configuração de Campanha', description: `Canais: ${Array.isArray(plan.trafego.canais) ? plan.trafego.canais.join(', ') : plan.trafego.canais}\nPúblico: ${Array.isArray(plan.trafego.publicos_alvo) ? plan.trafego.publicos_alvo.join(', ') : plan.trafego.publicos_alvo}`, status: 'backlog', tags: ['Tráfego'], client_id: clientId, tenant_id: tenantId });
+        }
+        if (plan.comercial && plan.comercial.abordagem) {
+          inserts.push({ title: 'Alinhamento Comercial', description: plan.comercial.abordagem, status: 'backlog', tags: ['Comercial'], client_id: clientId, tenant_id: tenantId });
+        }
         
         if (inserts.length === 0) {
            // Fallback seguro caso as chaves não batam exatamente com o formato atual do prompt
