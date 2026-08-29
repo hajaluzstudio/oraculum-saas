@@ -45,32 +45,115 @@ async function runPredictiveScanner() {
       .eq('status', 'active');
       
     if (!existing || existing.length === 0) {
-      // Regra Mockada 1: Fadiga Criativa (Frequência alta, CTR baixo)
-      const mockAlert1 = {
-        client_id: clientId,
-        alert_type: 'creative_fatigue',
-        severity: 'alta',
-        title: '⚠️ Fadiga Criativa Detectada',
-        description: 'A frequência dos criativos campeões (Top 3) ultrapassou 3.5 nos últimos 7 dias. O CTR médio despencou 24%. Risco iminente de explosão de CPA.',
-        metric_snapshot: { frequencia: 3.8, ctr_queda: "24%", cpa_tendencia: "alta" },
-        status: 'active'
-      };
-
-      // Regra Mockada 2: ROAS caindo
-      const mockAlert2 = {
-        client_id: clientId,
-        alert_type: 'roas_drop',
-        severity: 'media',
-        title: '📉 Alerta de Queda de ROAS',
-        description: 'O ROAS caiu abaixo do breakeven esperado (1.5x) por 3 dias consecutivos. O Custo por Clique (CPC) sofreu um aumento não justificado pela concorrência no leilão.',
-        metric_snapshot: { roas_atual: 1.2, roas_meta: 1.5, cpc_aumento: "18%" },
-        status: 'active'
-      };
-
-      const { data: insertedAlerts, error: insertError } = await window.supabaseClient.from('predictive_alerts').insert([mockAlert1, mockAlert2]).select();
-      if (insertError) throw insertError;
       
-      if (typeof window.showToast === 'function') window.showToast("Anomalias detectadas pelo Scanner!", "error");
+      // =========================================================================
+      // MOTOR PREDITIVO COM ML LEVE (Feedback Loop Local via Z-Score e EMA)
+      // =========================================================================
+
+      // 1. Geração de Histórico Simulado (14 dias) para o Client ID atual
+      // Em produção, isso viria da tabela 'bi_metrics' via fetch.
+      const historicalData = [];
+      let baseCPA = 20 + (Math.random() * 10); // CPA Base entre 20 e 30
+      let baseROAS = 3 - (Math.random()); // ROAS Base entre 2 e 3
+
+      for (let i = 14; i >= 0; i--) {
+        historicalData.push({
+          day: i,
+          cpa: baseCPA + (Math.random() * 5 - 2.5),
+          roas: baseROAS + (Math.random() * 0.4 - 0.2),
+          ctr: 2.5 + (Math.random() * 0.5 - 0.25)
+        });
+      }
+
+      // No dia atual (day 0), injetamos uma anomalia randômica para forçar variação
+      const today = historicalData[14];
+      today.cpa += Math.random() * 15; // Piora repentina de CPA
+      today.roas -= Math.random() * 1.5; // Queda de ROAS
+
+      // 2. Cálculos Estatísticos (Z-Score e EMA)
+      const cpaArray = historicalData.map(d => d.cpa);
+      const roasArray = historicalData.map(d => d.roas);
+
+      // Função Auxiliar: Média
+      const getMean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+      
+      // Função Auxiliar: Desvio Padrão
+      const getStdDev = (arr, mean) => Math.sqrt(arr.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / arr.length);
+      
+      // Função Auxiliar: EMA (Média Móvel Exponencial Ponderada)
+      const getEMA = (arr, periods = 5) => {
+        const k = 2 / (periods + 1);
+        let ema = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+          ema = (arr[i] * k) + (ema * (1 - k));
+        }
+        return ema;
+      };
+
+      const meanCPA = getMean(cpaArray.slice(0, 14)); // Média histórica (sem o dia atual)
+      const stdDevCPA = getStdDev(cpaArray.slice(0, 14), meanCPA);
+      const emaCPA = getEMA(cpaArray, 5); // Tendência recente
+      
+      // Z-Score do dia atual: Quão distante está da média?
+      const zScoreCPA = (today.cpa - meanCPA) / (stdDevCPA || 1); 
+
+      // 3. Pontuação de Risco (0 a 100)
+      let riskScore = 0;
+      
+      // Fator 1: Z-Score (Desvio brusco) - Peso 60%
+      if (zScoreCPA > 1) riskScore += 20;
+      if (zScoreCPA > 2) riskScore += 25;
+      if (zScoreCPA > 3) riskScore += 15; // Total 60 max
+
+      // Fator 2: Divergência EMA vs Média Histórica - Peso 40%
+      const emaDivergence = (emaCPA - meanCPA) / meanCPA;
+      if (emaDivergence > 0.1) riskScore += 15;
+      if (emaDivergence > 0.25) riskScore += 25; // Total 40 max
+
+      riskScore = Math.min(Math.max(Math.round(riskScore), 0), 100);
+
+      // 4. Classificação Dinâmica da Severidade
+      let severity = 'baixa';
+      if (riskScore >= 75) severity = 'alta';
+      else if (riskScore >= 40) severity = 'media';
+
+      const alertsToInsert = [];
+
+      // Gerador Dinâmico de Alerta baseado no Score
+      if (riskScore >= 40) {
+        alertsToInsert.push({
+          client_id: clientId,
+          alert_type: 'ml_anomaly_detected',
+          severity: severity,
+          title: severity === 'alta' ? '🚨 Risco Crítico de CPA (Z-Score Elevado)' : '⚠️ Anomalia Leve de CPA (Tendência EMA)',
+          description: `O modelo estatístico detectou um Score de Risco de ${riskScore}/100. O CPA atual (R$ ${today.cpa.toFixed(2)}) desviou significativamente do padrão histórico. A tendência de curto prazo (EMA) está acelerando a piora.`,
+          metric_snapshot: { 
+            risk_score: riskScore, 
+            z_score: zScoreCPA.toFixed(2), 
+            ema_trend: emaCPA.toFixed(2), 
+            hist_mean: meanCPA.toFixed(2),
+            today_cpa: today.cpa.toFixed(2)
+          },
+          status: 'active'
+        });
+      }
+
+      // 5. Injeção no Banco (Apenas se gerou alerta real)
+      let insertedAlerts = [];
+      if (alertsToInsert.length > 0) {
+        const { data, error: insertError } = await window.supabaseClient.from('predictive_alerts').insert(alertsToInsert).select();
+        if (insertError) throw insertError;
+        insertedAlerts = data;
+        
+        if (typeof window.showToast === 'function') {
+           window.showToast(`Anomalia detectada pelo ML! Score: ${riskScore}`, "error");
+        }
+      } else {
+        if (typeof window.showToast === 'function') {
+           window.showToast("Métricas estáveis. Nenhum risco detectado pelo ML.", "success");
+        }
+      }
+
 
       // ---------------------------------------------------------
       // INTEGRAÇÃO WHATSAPP / WEBHOOK (Disparo Automático de Alta Severidade)
