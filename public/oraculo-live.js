@@ -356,8 +356,21 @@
       });
 
       const resData = await response.json();
-      let tarefasStr = (resData.data || resData.reply || '[]').trim().replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
-      const tarefas = JSON.parse(tarefasStr);
+      let tarefasStr = (resData.data || resData.reply || '[]').trim();
+      let tarefas = [];
+
+      try {
+        // Tenta extrair um array JSON em qualquer parte da string (limpa a tagarelice da IA)
+        const match = tarefasStr.match(/\[[\s\S]*\]/);
+        if (match) {
+          tarefas = JSON.parse(match[0]);
+        } else {
+          throw new Error('Nenhum array JSON encontrado na resposta da IA.');
+        }
+      } catch (parseError) {
+        console.error("Erro no Parse do JSON do Kanban:", parseError, "Resposta bruta:", tarefasStr);
+        throw new Error('A IA não retornou um formato estruturado válido.');
+      }
 
       if (tarefas.length > 0 && window.supabaseClient) {
         const inserts = tarefas.map(t => ({
