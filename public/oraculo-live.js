@@ -640,9 +640,13 @@ Seja direto, tático, analítico e resolutivo.`
     const btnLive = document.getElementById('btn-toggle-oraculo-live');
     const gavetaLive = document.getElementById('oraculo-live-drawer') || document.getElementById('gaveta-oraculo-live');
 
-    // Verifica se a aba de BI está visível no DOM
-    const biSection = document.getElementById('tab-bi') || document.getElementById('section-bi') || document.querySelector('[data-tab="tab-bi"]');
-    const isBiActive = biSection && !biSection.classList.contains('hidden') && biSection.style.display !== 'none';
+    // Identifica dinamicamente se a aba de BI está ativa (buscando por ID, classe ou atributo data)
+    const biSection = document.getElementById('tab-bi') || document.getElementById('section-bi') || document.querySelector('[data-tab="tab-bi"]') || document.querySelector('.tab-bi');
+    
+    // Considera ativo se o elemento existe e NÃO está com display none ou classe hidden
+    const isBiActive = biSection && 
+                       !biSection.classList.contains('hidden') && 
+                       window.getComputedStyle(biSection).display !== 'none';
 
     if (btnLive) {
       if (isBiActive) {
