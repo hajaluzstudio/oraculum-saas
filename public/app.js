@@ -4114,7 +4114,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (modal) {
         if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-robot"></i> ${title}`;
-        if (descEl) descEl.innerHTML = desc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        if (descEl) {
+            const finalDesc = desc && desc.trim() !== '' && desc !== 'undefined' ? desc : 'A IA capturou o título desta demanda, mas não gerou detalhes adicionais durante a reunião.';
+            descEl.innerHTML = finalDesc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        }
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');

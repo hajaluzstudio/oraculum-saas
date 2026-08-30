@@ -350,8 +350,8 @@
         headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
         body: JSON.stringify({
           clientId,
-          systemPrompt: 'Você é um extrator de tarefas. Retorne estritamente um array JSON puro: [ { "title": "...", "description": "...", "column": "backlog", "tag": "Trafego" } ].',
-          message: 'Extraia as tarefas acordadas nesta reunião. Retorne APENAS o JSON puro sem crases.'
+          systemPrompt: 'Você é um extrator de tarefas. Retorne estritamente um array JSON puro: [ { "title": "...", "description": "...", "column": "backlog", "tag": "Trafego" } ]. REGRA DE OURO: O campo "description" NUNCA pode ser vazio. Escreva um briefing MUITO DETALHADO, longo e completo sobre o que deve ser feito com base no contexto da reunião.',
+          message: 'Extraia as tarefas e demandas acordadas nesta reunião. Retorne APENAS o JSON puro. Não esqueça de gerar uma "description" longa e detalhada para cada demanda.'
         })
       });
 
