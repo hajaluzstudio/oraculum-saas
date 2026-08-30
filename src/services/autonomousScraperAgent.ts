@@ -15,18 +15,39 @@ export interface TopPlayerBenchmark {
   copyPattern: string;
   highTicketOfferStructure: string;
   positioningLanguage: string;
+// ============================================================================
+// autonomousScraperAgent.ts — Agente Autônomo com Search Grounding e Failover
+// ============================================================================
+
+import { GoogleGenAI } from '@google/genai';
+import dotenv from 'dotenv';
+import { supabase } from './supabaseClient';
+import { loadDossiersFromDisk, saveDossiersToDisk } from './diskStorage';
+
+dotenv.config();
+
+export interface TopPlayerBenchmark {
+  name: string;
+  marketPosition: string;
+  copyPattern: string;
+  highTicketOfferStructure: string;
+  positioningLanguage: string;
 }
 
 export interface AutonomousNicheScraperOutput {
   niche: string;
   searchedAt: string;
   topPlayers: TopPlayerBenchmark[];
-  marketTrends: string[];
+  marketTrends: {
+    trend: string;
+    justification: string;
+    strategicAction: string;
+  }[];
   regulatoryCompliance: {
     governingBodies: string[];
-    strictRules: string[];
-    forbiddenClaims: string[];
-    mandatoryDisclaimers: string[];
+    strictRules: { rule: string; explanation: string }[];
+    forbiddenClaims: { claim: string; explanation: string }[];
+    mandatoryDisclaimers: { disclaimer: string; explanation: string }[];
   };
   competitiveCopyInsights: {
     dominantAngles: string[];
@@ -43,7 +64,8 @@ export interface AutonomousNicheScraperOutput {
     title: string;
     summary: string;
     source: string;
-    timeAgo: string;
+    url: string;
+    publishedAt: string;
   }[];
 }
 
@@ -110,14 +132,23 @@ RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e
     }
   ],
   "marketTrends": [
-    "Tendência Global 1",
-    "Tendência Global 2"
+    {
+      "trend": "Nome da Tendência Global",
+      "justification": "Por que isso é relevante para o cliente e qual dor do consumidor isso resolve",
+      "strategicAction": "Ação estratégica recomendada baseada nessa tendência"
+    }
   ],
   "regulatoryCompliance": {
-    "governingBodies": ["Órgão 1"],
-    "strictRules": ["Regra Rígida 1"],
-    "forbiddenClaims": ["Alegação Proibida 1"],
-    "mandatoryDisclaimers": ["Disclaimer Obrigatório 1"]
+    "governingBodies": ["Órgão Regulador 1"],
+    "strictRules": [
+      {"rule": "Regra Rígida", "explanation": "Por que existe e o impacto na copy"}
+    ],
+    "forbiddenClaims": [
+      {"claim": "Alegação Proibida", "explanation": "Por que dá bloqueio ou processo (ex: promessa milagrosa)"}
+    ],
+    "mandatoryDisclaimers": [
+      {"disclaimer": "Aviso obrigatório", "explanation": "Onde usar e o porquê da exigência"}
+    ]
   },
   "competitiveCopyInsights": {
     "dominantAngles": ["Ângulo Dominante 1"],
@@ -135,9 +166,10 @@ RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e
     {
       "type": "Notícia Web ou Tendência",
       "title": "Título real da matéria ou artigo recém publicado",
-      "summary": "Resumo prático com link se possível",
+      "summary": "Resumo prático",
       "source": "Nome do Portal/Jornal/Site da fonte",
-      "timeAgo": "ex: Há 2 horas, Ontem, Há 3 dias"
+      "url": "https://link-da-noticia-se-houver.com",
+      "publishedAt": "Data/hora aproximada da publicação (ex: 'Hoje', 'Ontem', 'Há 2 dias')"
     }
   ]
 }
@@ -341,14 +373,22 @@ function generateFallbackScraperOutput(niche: string): AutonomousNicheScraperOut
       }
     ],
     marketTrends: [
-      'Adoção de inteligência artificial para qualificação instantânea',
-      'Ancoragem de valor através de conteúdo transparente'
+      {
+        trend: 'Adoção de inteligência artificial para qualificação instantânea',
+        justification: 'Consumidores estão perdendo a paciência com formulários longos e demorados. A dor da espera faz o CPL encarecer brutalmente. A IA resolve o timing do atendimento.',
+        strategicAction: 'Implementar assistentes autônomos no primeiro ponto de contato (WhatsApp) para segurar a atenção e gerar rapport imediato.'
+      },
+      {
+        trend: 'Ancoragem de valor através de conteúdo transparente',
+        justification: 'O público High-Ticket está blindado contra promessas falsas. Eles pesquisam a reputação antes de converter. A falta de transparência destrói a conversão.',
+        strategicAction: 'Basear a copy e os anúncios em estudos de caso reais e amostras do método, educando o cliente antes da oferta.'
+      }
     ],
     regulatoryCompliance: {
-      governingBodies: ['Órgãos Reguladores do Setor'],
-      strictRules: ['Proibição de promessas enganosas'],
-      forbiddenClaims: ['Resultados milagrosos garantidos'],
-      mandatoryDisclaimers: ['Os resultados podem variar conforme o caso']
+      governingBodies: ['Órgãos Reguladores Nacionais'],
+      strictRules: [{ rule: 'Proibição de promessas garantidas', explanation: 'Garantir resultado sem análise prévia caracteriza publicidade enganosa perante o CDC.' }],
+      forbiddenClaims: [{ claim: 'Resultados em X dias cravados', explanation: 'Cada indivíduo reage diferente. Essa alegação gera alto risco de bloqueios no Facebook Ads e processos legais.' }],
+      mandatoryDisclaimers: [{ disclaimer: 'Os resultados variam conforme o caso e engajamento do cliente.', explanation: 'Deve ser posicionado no rodapé das Landing Pages para proteção jurídica e compliance das redes.' }]
     },
     competitiveCopyInsights: {
       dominantAngles: ['Dor do retrabalho e busca por exclusividade'],
@@ -364,16 +404,18 @@ function generateFallbackScraperOutput(niche: string): AutonomousNicheScraperOut
       {
         type: 'Notícia Web',
         title: `Novas diretrizes de tráfego pago e conversão para o setor de ${niche}`,
-        summary: 'O mercado de anúncios digitais passa por uma reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco na transparência dos criativos e ancoragem de valor.',
+        summary: 'O mercado de anúncios digitais passa por uma reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco na transparência dos criativos.',
         source: 'Monitoramento de Portais de Marketing Digital',
-        timeAgo: 'Há 2 horas'
+        url: '#',
+        publishedAt: 'Ontem'
       },
       {
         type: 'Tendência',
         title: 'Relatório de comportamento do consumidor e retenção',
-        summary: 'Pesquisas recentes indicam que clientes buscam experiências hiperpersonalizadas desde o primeiro contato. O alinhamento entre a copy do anúncio e a recepção é o fator número um de fechamento.',
+        summary: 'Pesquisas recentes indicam que clientes buscam experiências hiperpersonalizadas desde o primeiro contato. O alinhamento entre a copy e a recepção é o fator de fechamento.',
         source: 'Inteligência de Mercado Global',
-        timeAgo: 'Há 5 horas'
+        url: '#',
+        publishedAt: 'Há 2 dias'
       }
     ]
   };

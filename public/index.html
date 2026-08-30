@@ -4561,28 +4561,54 @@ window.renderizarPortalInteligenciaVisual = function(dossierData) {
   // 1. Tendências Globais (Ajustado o espaçamento e layout limpo)
   const containerTendencias = document.getElementById('lista-tendencias-portal');
   if (containerTendencias) {
-    containerTendencias.innerHTML = (dossierData.marketTrends || []).map((tendencia, index) => `
-      <div onclick="abrirLeituraDetalhada('Tendência Global #${index + 1}', \`${tendencia}\`, 'Relatório analítico extraído via monitoramento autônomo da web.')" 
+    containerTendencias.innerHTML = (dossierData.marketTrends || []).map((tItem, index) => {
+      const isStr = typeof tItem === 'string';
+      const trendTitle = isStr ? tItem : tItem.trend;
+      const justification = isStr ? 'Contexto aprofundado não disponível nesta versão antiga da varredura.' : tItem.justification;
+      const strategy = isStr ? '' : `\\n\\n🎯 Ação Estratégica: ${tItem.strategicAction}`;
+      return `
+      <div onclick="abrirLeituraDetalhada('Tendência Global #${index + 1}', \`${justification}${strategy}\`, 'Relatório analítico extraído via monitoramento autônomo da web.')" 
            class="p-3 bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-emerald-500/50 rounded-lg cursor-pointer transition flex items-center justify-between group">
-        <span class="text-sm text-gray-200 group-hover:text-emerald-300">⚡ ${tendencia}</span>
-        <span class="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition font-medium">Ler Artigo &rarr;</span>
+        <span class="text-sm text-gray-200 group-hover:text-emerald-300">⚡ ${trendTitle}</span>
+        <span class="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition font-medium whitespace-nowrap ml-3">Ler Detalhes &rarr;</span>
       </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // 2. Compliance
   const containerCompliance = document.getElementById('lista-compliance-portal');
   if (containerCompliance) {
-    const forbidden = (dossierData.regulatoryCompliance?.forbiddenClaims || []).join(', ');
-    const mandatory = (dossierData.regulatoryCompliance?.mandatoryDisclaimers || []).join(', ');
+    const renderComplianceItem = (item, typeStr, color) => {
+      const isStr = typeof item === 'string';
+      const title = isStr ? item : (item.claim || item.disclaimer || item.rule);
+      const explanation = isStr ? 'Explicação detalhada não disponível na varredura antiga.' : item.explanation;
+      return `
+        <div onclick="abrirLeituraDetalhada('${typeStr}', \`${explanation}\`, 'Diretriz legal e de conformidade')" class="mt-1 cursor-pointer hover:bg-${color}-500/10 p-1.5 rounded transition flex justify-between items-center group">
+          <span class="text-xs text-gray-300 group-hover:text-${color}-300">&bull; ${title}</span>
+          <span class="text-[10px] text-${color}-400 opacity-0 group-hover:opacity-100 font-bold ml-2">Ler &rarr;</span>
+        </div>
+      `;
+    };
+
+    const forbiddenList = dossierData.regulatoryCompliance?.forbiddenClaims || [];
+    const forbiddenHtml = forbiddenList.length > 0 
+      ? forbiddenList.map(f => renderComplianceItem(f, 'Alegação Proibida', 'red')).join('') 
+      : '<p class="text-xs text-gray-500">Nenhuma restrição crítica.</p>';
+
+    const mandatoryList = dossierData.regulatoryCompliance?.mandatoryDisclaimers || [];
+    const mandatoryHtml = mandatoryList.length > 0 
+      ? mandatoryList.map(m => renderComplianceItem(m, 'Aviso Obrigatório', 'emerald')).join('') 
+      : '<p class="text-xs text-gray-500">Nenhum aviso obrigatório.</p>';
+
     containerCompliance.innerHTML = `
       <div class="p-3 bg-gray-800/50 rounded-lg border border-red-500/20 mb-2">
         <strong class="text-red-400 text-xs uppercase block mb-1">Alegações Proibidas (Forbidden Claims):</strong>
-        <p class="text-xs text-gray-300">${forbidden || 'Nenhuma restrição crítica listada.'}</p>
+        ${forbiddenHtml}
       </div>
       <div class="p-3 bg-gray-800/50 rounded-lg border border-emerald-500/20">
         <strong class="text-emerald-400 text-xs uppercase block mb-1">Avisos Obrigatórios (Mandatory Disclaimers):</strong>
-        <p class="text-xs text-gray-300">${mandatory || 'Nenhum disclaimer obrigatório especificado.'}</p>
+        ${mandatoryHtml}
       </div>
     `;
   }
@@ -4610,16 +4636,23 @@ window.renderizarPortalInteligenciaVisual = function(dossierData) {
   const containerFeed = document.getElementById('feed-materias-web');
   if (containerFeed) {
     if (dossierData.newsFeed && dossierData.newsFeed.length > 0) {
-      containerFeed.innerHTML = dossierData.newsFeed.map(news => `
+      containerFeed.innerHTML = dossierData.newsFeed.map(news => {
+        const linkBtn = (news.url && news.url !== '#' && news.url !== 'URL indisponível') 
+          ? `<a href="${news.url}" target="_blank" onclick="event.stopPropagation()" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[10px] whitespace-nowrap ml-2 border border-gray-700">Ler na Íntegra 🔗</a>` 
+          : '';
+        const timeText = news.publishedAt ? `Publicado: ${news.publishedAt}` : (news.timeAgo || 'Recente');
+        
+        return `
         <div onclick="abrirLeituraDetalhada('Matéria: ${news.title.replace(/'/g, "\\'")}', '${news.summary.replace(/'/g, "\\'")}', 'Fonte: ${news.source.replace(/'/g, "\\'")}')" 
              class="p-3 bg-gray-950/60 hover:bg-gray-800/60 border border-gray-800 hover:border-emerald-500/40 rounded-lg cursor-pointer transition flex flex-col md:flex-row md:items-center justify-between text-xs gap-3">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-1">
             <span class="px-2 py-1 ${news.type.toLowerCase().includes('tend') ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'} rounded font-medium whitespace-nowrap">${news.type || 'Notícia'}</span>
             <span class="text-gray-300 font-medium line-clamp-2 md:line-clamp-1">${news.title || 'Artigo de Inteligência'}</span>
+            ${linkBtn}
           </div>
-          <span class="text-gray-500 whitespace-nowrap md:text-right">${news.timeAgo || 'Recente'}</span>
+          <span class="text-gray-500 whitespace-nowrap md:text-right">${timeText}</span>
         </div>
-      `).join('');
+      `}).join('');
     } else {
       containerFeed.innerHTML = '<p class="text-gray-400 text-sm italic">Nenhuma notícia ou tendência recente encontrada para este nicho.</p>';
     }
