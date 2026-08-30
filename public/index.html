@@ -4689,16 +4689,16 @@ window.dispararScraperInteligencia = async function() {
 
     // O backend já salva no Supabase através do saveScraperDataToKnowledgeBase
     const scraperData = data.data.scraperOutput;
-
-    alert("🎉 Inteligência de mercado atualizada e salva com sucesso!");
-    
+    if (typeof window.showToast === 'function') {
+      window.showToast("🎉 Inteligência de mercado atualizada com sucesso!", "success");
+    }
     if (typeof window.carregarPortalInteligencia === 'function') {
       window.carregarPortalInteligencia();
     }
   } catch (err) {
-    console.error("Erro ao executar varredura:", err);
-    alert("⚠️ Erro: " + err.message);
-  }
+    if (typeof window.showToast === 'function') {
+      window.showToast("⚠️ Erro: " + err.message, "error");
+    }
 };
 </script>
 </body>
