@@ -38,6 +38,13 @@ export interface AutonomousNicheScraperOutput {
     oraclePromptContext: string;
     creativeBriefingGuidelines: string[];
   };
+  newsFeed?: {
+    type: string;
+    title: string;
+    summary: string;
+    source: string;
+    timeAgo: string;
+  }[];
 }
 
 export interface ScraperJobLog {
@@ -123,7 +130,16 @@ RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e
     "creativeBriefingGuidelines": [
       "Diretriz para Criativo 1"
     ]
-  }
+  },
+  "newsFeed": [
+    {
+      "type": "Notícia Web ou Tendência",
+      "title": "Título real da matéria ou artigo recém publicado",
+      "summary": "Resumo prático com link se possível",
+      "source": "Nome do Portal/Jornal/Site da fonte",
+      "timeAgo": "ex: Há 2 horas, Ontem, Há 3 dias"
+    }
+  ]
 }
 `;
 
@@ -342,7 +358,23 @@ function generateFallbackScraperOutput(niche: string): AutonomousNicheScraperOut
     strategicAdaptationDirectives: {
       clientPositioningRecommendation: `Posicionar o cliente como a escolha definitiva em ${niche}.`,
       oraclePromptContext: `CONTEXTO DOS LÍDERES DE ${niche.toUpperCase()}: Utilize autoridade inquestionável e compliance.`,
-      creativeBriefingGuidelines: ['Focar em autoridade', 'Evidenciar diferenciação']
-    }
+      creativeBriefingGuidelines: ['Utilizar imagens premium com prova social clara.']
+    },
+    newsFeed: [
+      {
+        type: 'Notícia Web',
+        title: `Novas diretrizes de tráfego pago e conversão para o setor de ${niche}`,
+        summary: 'O mercado de anúncios digitais passa por uma reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco na transparência dos criativos e ancoragem de valor.',
+        source: 'Monitoramento de Portais de Marketing Digital',
+        timeAgo: 'Há 2 horas'
+      },
+      {
+        type: 'Tendência',
+        title: 'Relatório de comportamento do consumidor e retenção',
+        summary: 'Pesquisas recentes indicam que clientes buscam experiências hiperpersonalizadas desde o primeiro contato. O alinhamento entre a copy do anúncio e a recepção é o fator número um de fechamento.',
+        source: 'Inteligência de Mercado Global',
+        timeAgo: 'Há 5 horas'
+      }
+    ]
   };
 }

@@ -4511,8 +4511,8 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
 
 <script>
 window.carregarPortalInteligencia = async function() {
-  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
-  const list = window.clientesMock || [];
+  const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client') || window.currentClientId;
+  const list = window.globalClientsList || window.clientesMock || [];
   const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
 
   const elNiche = document.getElementById('intel-niche-name');
@@ -4609,24 +4609,20 @@ window.renderizarPortalInteligenciaVisual = function(dossierData) {
   // 4. Feed de Matérias Clicáveis
   const containerFeed = document.getElementById('feed-materias-web');
   if (containerFeed) {
-    containerFeed.innerHTML = `
-      <div onclick="abrirLeituraDetalhada('Matéria: Novas diretrizes de tráfego pago e conversão', 'O mercado de anúncios digitais passa por uma reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco na transparência dos criativos e ancoragem de valor baseada em autoridade científica, reduzindo bloqueios de contas e aumentando o ROI a médio prazo.', 'Fonte: Monitoramento de Portais de Marketing Digital - 2026')" 
-           class="p-3 bg-gray-950/60 hover:bg-gray-800/60 border border-gray-800 hover:border-emerald-500/40 rounded-lg cursor-pointer transition flex items-center justify-between text-xs">
-        <div class="flex items-center gap-3">
-          <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded font-medium">Notícia Web</span>
-          <span class="text-gray-300 font-medium">Novas diretrizes de trágego pago e conversão para o setor</span>
+    if (dossierData.newsFeed && dossierData.newsFeed.length > 0) {
+      containerFeed.innerHTML = dossierData.newsFeed.map(news => `
+        <div onclick="abrirLeituraDetalhada('Matéria: ${news.title.replace(/'/g, "\\'")}', '${news.summary.replace(/'/g, "\\'")}', 'Fonte: ${news.source.replace(/'/g, "\\'")}')" 
+             class="p-3 bg-gray-950/60 hover:bg-gray-800/60 border border-gray-800 hover:border-emerald-500/40 rounded-lg cursor-pointer transition flex flex-col md:flex-row md:items-center justify-between text-xs gap-3">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-1 ${news.type.toLowerCase().includes('tend') ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'} rounded font-medium whitespace-nowrap">${news.type || 'Notícia'}</span>
+            <span class="text-gray-300 font-medium line-clamp-2 md:line-clamp-1">${news.title || 'Artigo de Inteligência'}</span>
+          </div>
+          <span class="text-gray-500 whitespace-nowrap md:text-right">${news.timeAgo || 'Recente'}</span>
         </div>
-        <span class="text-gray-500">Há 2 horas</span>
-      </div>
-      <div onclick="abrirLeituraDetalhada('Relatório: Comportamento do consumidor e retenção', 'Pesquisas recentes indicam que clientes de alto padrão buscam experiências hiperpersonalizadas desde o primeiro contato no Instagram até o atendimento no consultório. O alinhamento entre a copy do anúncio e a recepção no WhatsApp é o fator número um de fechamento.', 'Fonte: Inteligência de Mercado Global')" 
-           class="p-3 bg-gray-950/60 hover:bg-gray-800/60 border border-gray-800 hover:border-emerald-500/40 rounded-lg cursor-pointer transition flex items-center justify-between text-xs">
-        <div class="flex items-center gap-3">
-          <span class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded font-medium">Tendência</span>
-          <span class="text-gray-300 font-medium">Relatório de comportamento do consumidor e retenção</span>
-        </div>
-        <span class="text-gray-500">Há 5 horas</span>
-      </div>
-    `;
+      `).join('');
+    } else {
+      containerFeed.innerHTML = '<p class="text-gray-400 text-sm italic">Nenhuma notícia ou tendência recente encontrada para este nicho.</p>';
+    }
   }
 };
 
@@ -4664,8 +4660,8 @@ window.copiarRelatorioModal = function() {
 window.dispararScraperInteligencia = async function() {
   console.log("🟢 Botão clicado. Solicitando inteligência ao servidor...");
   
-  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
-  const list = window.clientesMock || [];
+  const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client') || window.currentClientId;
+  const list = window.globalClientsList || window.clientesMock || [];
   const clienteAtivo = list.find(c => String(c.id) === String(activeClientId));
 
   if (!clienteAtivo) {

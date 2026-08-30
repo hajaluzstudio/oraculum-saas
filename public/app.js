@@ -8148,6 +8148,11 @@ window.addEventListener('clientChanged', (e) => {
     window.loadClientKanbanCards(newClient.id);
   }
 
+  // 5. Portal de Inteligência
+  if (typeof window.carregarPortalInteligencia === 'function') {
+    window.carregarPortalInteligencia();
+  }
+
   // 5. Refresh do Dossiê Estratégico (se disponível no payload do cliente)
   if (newClient.dossier_data) {
     if (typeof window.renderDossierOutput === 'function') {
