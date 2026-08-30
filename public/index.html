@@ -1387,6 +1387,9 @@
                 <p>Processamento e movimentação autônoma de ativos por IA e Quality Gate.</p>
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" id="btn-add-kanban-task" onclick="window.openManualTaskModal()" class="btn-primary" style="display: none; font-size: 11px; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; cursor: pointer; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-plus"></i> Nova Demanda Manual
+                </button>
                 <button type="button" id="btn-refresh-kanban" class="btn-secondary" style="font-size: 11px; padding: 6px 12px; background: rgba(6, 182, 212, 0.12); color: #06B6D4; border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                   <i class="fa-solid fa-arrows-rotate"></i> Atualizar Kanban
                 </button>
@@ -1523,27 +1526,69 @@
             </div>
           </div>
 
-          <!-- MODAL DE DETALHES ORACULUM LIVE -->
+          <!-- MODAL DETALHES ORACULUM LIVE -->
           <div id="modal-oraculum-live-details" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4">
-            <div class="bg-slate-900 border-2 border-indigo-500/50 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] w-full max-w-lg overflow-hidden">
-              <div class="px-6 py-5 border-b border-indigo-500/20 flex justify-between items-center bg-indigo-950/30">
-                <h3 id="oraculum-live-details-title" class="text-lg font-bold text-indigo-400 flex items-center gap-2">
-                  <i class="fa-solid fa-robot"></i> Demanda do Oraculum Live
+            <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl relative">
+                <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.remove('flex'); document.getElementById('modal-oraculum-live-details').classList.add('hidden');" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                
+                <h3 id="oraculum-live-details-title" class="text-xl font-bold text-indigo-400 mb-6 flex items-center gap-3 pr-8">
+                    <i class="fa-solid fa-robot"></i> Detalhes da Demanda
                 </h3>
-                <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.replace('flex', 'hidden')" class="text-slate-400 hover:text-white transition-colors">
-                  <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
-              </div>
-              <div class="p-6">
-                <div class="bg-slate-950/80 rounded-xl p-5 border border-slate-800/80 text-slate-300 leading-relaxed text-sm whitespace-pre-wrap" id="oraculum-live-details-desc">
-                  <!-- Descrição da demanda do oraculum live -->
+                
+                <div class="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
+                    <div id="oraculum-live-details-desc" class="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap"></div>
                 </div>
-              </div>
-              <div class="px-6 py-4 bg-slate-900/50 border-t border-slate-800 flex justify-end">
-                <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.replace('flex', 'hidden')" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors border border-slate-700">
-                  Fechar
+                
+                <div class="mt-6 flex justify-end">
+                    <button type="button" onclick="document.getElementById('modal-oraculum-live-details').classList.remove('flex'); document.getElementById('modal-oraculum-live-details').classList.add('hidden');" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors border border-slate-700">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+          </div>
+
+          <!-- MODAL ADIÇÃO MANUAL KANBAN -->
+          <div id="modal-manual-kanban-task" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4">
+            <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl relative">
+                <button type="button" onclick="window.closeManualTaskModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-              </div>
+                
+                <h3 class="text-xl font-bold text-emerald-400 mb-6 flex items-center gap-3 pr-8">
+                    <i class="fa-solid fa-plus-circle"></i> Criar Demanda Manual
+                </h3>
+                
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-slate-300 text-xs font-semibold mb-1 uppercase tracking-wider">Título da Tarefa</label>
+                        <input type="text" id="manual-kanban-title" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-200 text-sm focus:border-emerald-500 focus:outline-none transition-colors" placeholder="Ex: Novo Criativo de Conversão">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-slate-300 text-xs font-semibold mb-1 uppercase tracking-wider">Descrição / Briefing</label>
+                        <textarea id="manual-kanban-desc" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-200 text-sm focus:border-emerald-500 focus:outline-none transition-colors" placeholder="Detalhes do que precisa ser feito..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-300 text-xs font-semibold mb-1 uppercase tracking-wider">Tag (Categoria)</label>
+                        <select id="manual-kanban-tag" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-200 text-sm focus:border-emerald-500 focus:outline-none transition-colors">
+                            <option value="Trafego">Tráfego</option>
+                            <option value="Copy">Copywriting</option>
+                            <option value="Design">Design / Vídeo</option>
+                            <option value="Comercial">Comercial</option>
+                            <option value="Geral" selected>Geral</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="window.closeManualTaskModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors border border-slate-700">Cancelar</button>
+                    <button type="button" onclick="window.saveManualKanbanTask()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-emerald-900/50 flex items-center gap-2">
+                        <i class="fa-solid fa-save"></i> Salvar Demanda
+                    </button>
+                </div>
             </div>
           </div>
 

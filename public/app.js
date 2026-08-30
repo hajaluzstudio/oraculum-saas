@@ -3964,6 +3964,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const kanbanGrid = document.getElementById('kanban-grid-container');
     if (!kanbanGrid) return;
+    
+    const btnAddKanban = document.getElementById('btn-add-kanban-task');
+    if (btnAddKanban) {
+        const isAdmin = typeof window.isUserMasterAdmin === 'function' ? window.isUserMasterAdmin() : false;
+        btnAddKanban.style.display = isAdmin ? 'flex' : 'none';
+    }
 
     // Limpeza imediata das colunas visuais
     const colunasIds = ['backlog', 'producao', 'analise', 'ajustes', 'pronto', 'entregue'];
@@ -4059,9 +4065,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const safeDesc = (task.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
     const safeTitle = (task.title || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
+    const isAdmin = typeof window.isUserMasterAdmin === 'function' ? window.isUserMasterAdmin() : false;
+
     return `
       <div class="kanban-card" style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : isOraculumLive ? '#818CF8' : '#F1F5F9'};">${task.title || 'Tarefa sem Título'}</div>
+        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : isOraculumLive ? '#818CF8' : '#F1F5F9'}; position: relative; padding-right: 20px;">
+          ${task.title || 'Tarefa sem Título'}
+          ${isAdmin ? `<button type="button" onclick="window.deleteKanbanTask('${task.id}')" style="position: absolute; right: -4px; top: -4px; color: #EF4444; background: rgba(239,68,68,0.1); border: none; border-radius: 4px; padding: 4px 6px; cursor: pointer;" title="Excluir Tarefa"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div>
         ${task.description ? `<div style="font-size: 11px; color: ${isRiscoPreditivo ? '#FCA5A5' : isOraculumLive ? '#A5B4FC' : '#94A3B8'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${task.description}</div>` : ''}
         ${tag ? `<div style="font-size: 10px; background: rgba(59, 130, 246, 0.2); color: #60A5FA; padding: 2px 6px; border-radius: 4px; align-self: flex-start;">${tag}</div>` : ''}
         
@@ -4123,6 +4134,76 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('flex');
     } else {
         alert(title + "\n\n" + desc);
+    }
+  };
+
+  // Funções Globais Kanban Manual & Delete
+  window.deleteKanbanTask = async function(taskId) {
+    if (!confirm('🛑 TEM CERTEZA? Esta demanda será excluída permanentemente do Kanban. Esta ação não pode ser desfeita.')) return;
+    try {
+      const { error } = await window.supabaseClient.from('kanban_tasks').delete().eq('id', taskId);
+      if (error) throw error;
+      const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_padrao';
+      if (typeof loadClientKanbanCards === 'function') {
+         loadClientKanbanCards(clientId);
+      }
+    } catch (e) {
+      alert('Erro ao excluir tarefa: ' + e.message);
+    }
+  };
+
+  window.openManualTaskModal = function() {
+    const modal = document.getElementById('modal-manual-kanban-task');
+    if (modal) {
+        document.getElementById('manual-kanban-title').value = '';
+        document.getElementById('manual-kanban-desc').value = '';
+        document.getElementById('manual-kanban-tag').value = 'Geral';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+  };
+
+  window.closeManualTaskModal = function() {
+    const modal = document.getElementById('modal-manual-kanban-task');
+    if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+  };
+
+  window.saveManualKanbanTask = async function() {
+    const title = document.getElementById('manual-kanban-title').value.trim();
+    const desc = document.getElementById('manual-kanban-desc').value.trim();
+    const tag = document.getElementById('manual-kanban-tag').value;
+    
+    if (!title) {
+        alert('Por favor, informe o título da tarefa.');
+        return;
+    }
+
+    try {
+      const tenantId = window.currentOrganizationId || localStorage.getItem('oraculum_tenant_id') || 'tenant_padrao';
+      const clientId = window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'cliente_padrao';
+
+      const insertData = {
+          client_id: clientId,
+          tenant_id: tenantId,
+          title: title,
+          description: desc,
+          status: 'backlog',
+          tags: [tag]
+      };
+
+      const { error } = await window.supabaseClient.from('kanban_tasks').insert([insertData]);
+      if (error) throw error;
+      
+      window.closeManualTaskModal();
+      
+      if (typeof loadClientKanbanCards === 'function') {
+         loadClientKanbanCards(clientId);
+      }
+    } catch (e) {
+      alert('Erro ao criar tarefa manual: ' + e.message);
     }
   };
 

@@ -881,10 +881,11 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    let promptInstrucao = "Você é o Oraculum AI.";
+    let promptInstrucao = systemPrompt || "Você é o Oraculum AI.";
 
-    if (mode === 'bi_live') {
-      promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO participando de uma reunião ao vivo com o usuário.
+    if (!systemPrompt) {
+      if (mode === 'bi_live') {
+        promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO participando de uma reunião ao vivo com o usuário.
 
 CONTEXTO DA CONTA / CLIENTE ATUAL (Use apenas quando relevante para responder à pergunta):
 ${JSON.stringify(clientContext || {}, null, 2)}
@@ -895,8 +896,8 @@ REGRAS RÍGIDAS DE INTERAÇÃO:
 3. Perguntas pontuais: Dê respostas diretas, sucintas e analíticas.
 4. Diagnósticos completos: Só estruture planos de tração, baselines e matrizes se o usuário pedir explicitamente (ex: "faça o diagnóstico", "analise a conta", "gere o plano").
 5. Tom de voz: Executivo, seguro, conciso e orientado a negócios.`;
-    } else if (mode === 'bi_feedback_loop') {
-      promptInstrucao = `Você é o Diretor de BI Preditivo e Growth Intelligence do Oraculum.
+      } else if (mode === 'bi_feedback_loop') {
+        promptInstrucao = `Você é o Diretor de BI Preditivo e Growth Intelligence do Oraculum.
 Analise os dados do cliente e as métricas do funil abaixo para gerar recomendações táticas preditivas.
 
 CONTEXTO DO CLIENTE E MÉTRICAS:
@@ -916,8 +917,8 @@ Gere exatamente DUAS seções concisas e aplicadas ao nicho do cliente:
 DIRETRIZES:
 - Se os dados estiverem zerados, use os benchmarks de alta performance do nicho como base analítica.
 - Seja direto, conciso e tático.`;
-    } else {
-      promptInstrucao = `Você é o Copiloto Estratégico do Oraculum.
+      } else {
+        promptInstrucao = `Você é o Copiloto Estratégico do Oraculum.
 Cliente Ativo: ${clientName || 'Dr. Lucas'} (${clientNiche || 'Medicina Estética'}).
 Dossiê Ativo: ${dossierContext || ''}
 
@@ -942,6 +943,7 @@ O JSON deve ter exatamente esta estrutura:
 - O campo "content" deve conter o material completo e pronto para uso: roteiro, copy, script, briefing ou diretriz de tráfego.
 - Inclua no array APENAS as categorias aplicáveis à demanda. Se uma categoria não for necessária, não a inclua.
 Responda com base estrita no Dossiê e nas regras do setor.`;
+      }
     }
 
     // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
