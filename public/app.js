@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
       subtitle: 'Geração por IA de páginas responsivas com psicologia de consumo e formulário de captura VIP.'
     },
     'tab-drive': {
-      title: 'Esteira Autônoma do Google Drive & Kanban',
+      title: 'Esteira Autônoma & Kanban',
       subtitle: 'Processamento de arquivos e movimentação autônoma de ativos por IA.'
     },
     'tab-bi': {
