@@ -4107,6 +4107,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.showOraculumLiveDetails = function(title, desc) {
+    const modal = document.getElementById('modal-oraculum-live-details');
+    const titleEl = document.getElementById('oraculum-live-details-title');
+    const descEl = document.getElementById('oraculum-live-details-desc');
+
+    if (modal) {
+        if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-robot"></i> ${title}`;
+        if (descEl) descEl.innerHTML = desc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } else {
+        alert(title + "\n\n" + desc);
+    }
+  };
+
   // ===============================================
   // HAND-OFF / MODAL DE ENTREGA
   // ===============================================
