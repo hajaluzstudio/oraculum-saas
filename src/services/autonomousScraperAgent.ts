@@ -15,23 +15,7 @@ export interface TopPlayerBenchmark {
   copyPattern: string;
   highTicketOfferStructure: string;
   positioningLanguage: string;
-// ============================================================================
-// autonomousScraperAgent.ts — Agente Autônomo com Search Grounding e Failover
-// ============================================================================
 
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
-import { supabase } from './supabaseClient';
-import { loadDossiersFromDisk, saveDossiersToDisk } from './diskStorage';
-
-dotenv.config();
-
-export interface TopPlayerBenchmark {
-  name: string;
-  marketPosition: string;
-  copyPattern: string;
-  highTicketOfferStructure: string;
-  positioningLanguage: string;
 }
 
 export interface AutonomousNicheScraperOutput {
