@@ -4669,7 +4669,9 @@ window.dispararScraperInteligencia = async function() {
     return;
   }
 
-  alert(`🚀 Varredura Web iniciada para o nicho: "${clienteAtivo.niche}"...\n\nAguarde um instante enquanto o servidor processa.`);
+  if (typeof window.showToast === 'function') {
+    window.showToast(`🚀 Varredura iniciada para: ${clienteAtivo.niche}. Aguarde o servidor processar.`, 'info');
+  }
 
   try {
     // Faz a requisição para a rota segura na Vercel
