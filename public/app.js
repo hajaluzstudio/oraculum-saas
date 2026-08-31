@@ -16,6 +16,12 @@ window.carregarUltimoBIDoCliente = function(clientId) {
 window.loadClientBiMetrics = window.carregarUltimoBIDoCliente;
 window.abrirModalLancarBI = window.abrirModalLancarBI || function() {};
 window.abrirModalBI = window.abrirModalLancarBI;
+window.abrirModalNovaAgencia = window.abrirModalNovaAgencia || function(e) {
+  if (typeof window.abrirModalAgencia === 'function') window.abrirModalAgencia();
+};
+window.abrirModalAgencia = window.abrirModalAgencia || function() {};
+window.carregarAgenciasDoSupabase = window.carregarAgenciasDoSupabase || function() {};
+window.renderizarListaAgencias = window.renderizarListaAgencias || function() {};
 
 /**
  * ORACULUM // PLATAFORMA SAAS DE MARKETING HÍBRIDO ROI-FIRST

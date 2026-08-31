@@ -676,7 +676,7 @@ window.salvarEdicaoUsuario = async function(userId, agencyId, agencyName) {
   const role = document.getElementById('edit-user-role').value;
   
   try {
-    const res = await fetch(\`/api/admin/agencies/\${agencyId}/users/\${userId}/edit\`, {
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/edit`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, role })
@@ -698,7 +698,7 @@ window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
   if(!confirm('Tem certeza? Uma nova senha temporária será gerada para este usuário.')) return;
   
   try {
-    const res = await fetch(\`/api/admin/agencies/\${agencyId}/users/\${userId}/reset-password\`, { method: 'PUT' });
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/reset-password`, { method: 'PUT' });
     const data = await res.json();
     
     if(data.success) {
@@ -707,7 +707,7 @@ window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
       // Reutilizando o modal de senha temporária
       const pswModal = document.createElement('div');
       pswModal.style.cssText = 'position: fixed; inset: 0; z-index: 9999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
-      pswModal.innerHTML = \`
+      pswModal.innerHTML = `
         <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center justify-center space-y-4 text-center">
           <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 text-3xl mb-2">
             <i class="fa-solid fa-key"></i>
@@ -718,18 +718,18 @@ window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
           <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-left space-y-3 mt-4">
             <div>
               <label class="text-xs text-slate-500 uppercase font-semibold">E-mail (Login)</label>
-              <div class="text-slate-200 font-medium select-all">\${userEmail}</div>
+              <div class="text-slate-200 font-medium select-all">${userEmail}</div>
             </div>
             <div>
               <label class="text-xs text-slate-500 uppercase font-semibold">Nova Senha Temporária</label>
-              <div class="text-emerald-400 font-bold text-lg select-all">\${data.tempPassword}</div>
+              <div class="text-emerald-400 font-bold text-lg select-all">${data.tempPassword}</div>
             </div>
           </div>
           <button onclick="this.parentElement.parentElement.remove()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors cursor-pointer">
             Entendi, já copiei!
           </button>
         </div>
-      \`;
+      `;
       document.body.appendChild(pswModal);
       
     } else {
@@ -1087,8 +1087,60 @@ window.carregarAgenciasDoSupabase = async function() {
     if (!isOffline) {
       localStorage.setItem('oraculum_agencias_backup', JSON.stringify(agencias));
     }
-  } else if (!window.agenciasMock) {
-      window.agenciasMock = [];
+  } else if (!window.agenciasMock || window.agenciasMock.length === 0) {
+      window.agenciasMock = [
+        {
+          id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104',
+          name: 'Agência Oraculum Master',
+          cnpj: '12.345.678/0001-90',
+          phone: '(11) 99999-8888',
+          admin_email: 'master@oraculum.com.br',
+          zip: '01001-000',
+          street: 'Praça da Sé',
+          neighborhood: 'Centro',
+          city: 'São Paulo',
+          state: 'SP',
+          plan: 'Enterprise',
+          monthly_fee: '1997.00',
+          users_count: 12,
+          active: true,
+          created_at: new Date().toLocaleDateString('pt-BR')
+        },
+        {
+          id: 'artcreations-agency-id',
+          name: 'ArtCreations Digital Agency',
+          cnpj: '33.444.555/0001-66',
+          phone: '(11) 97123-4567',
+          admin_email: 'contato@artcreations.com.br',
+          zip: '01310-100',
+          street: 'Av. Paulista',
+          neighborhood: 'Bela Vista',
+          city: 'São Paulo',
+          state: 'SP',
+          plan: 'Enterprise',
+          monthly_fee: '997.00',
+          users_count: 5,
+          active: true,
+          created_at: new Date().toLocaleDateString('pt-BR')
+        },
+        {
+          id: 'b7c9a2d1-8e4f-43f2-96b9-3094cf3g0205',
+          name: 'Agência Turbo Performance Digital',
+          cnpj: '98.765.432/0001-10',
+          phone: '(21) 98888-7777',
+          admin_email: 'contato@turbodigital.com.br',
+          zip: '20040-002',
+          street: 'Av. Rio Branco',
+          neighborhood: 'Centro',
+          city: 'Rio de Janeiro',
+          state: 'RJ',
+          plan: 'Pro',
+          monthly_fee: '994.00',
+          users_count: 8,
+          active: true,
+          created_at: new Date().toLocaleDateString('pt-BR')
+        }
+      ];
   }
 
   window.renderizarListaAgencias(isOffline);
