@@ -17,7 +17,7 @@ import { calculateOptimizedBudgetAllocation } from '../src/services/budgetOptimi
 import { getRolePermissions, defaultWhiteLabelConfig, UserRole } from '../src/services/authAndRoles';
 import { sendWhatsAppNotification, getClientNotificationHistory } from '../src/services/notificationCenter';
 import { generateAutonomousLandingPage } from '../src/services/landingPageGenerator';
-import { supabase } from '../src/services/supabaseClient';
+import { supabase, supabaseAdmin } from '../src/services/supabaseClient';
 import { analyzeCompetitorOffer } from '../src/services/competitorSpy';
 import {
   executeAutonomousScraperRun,
@@ -138,6 +138,15 @@ const tenantAuthMiddleware = (req: Request, res: Response, next: NextFunction) =
 };
 
 app.use(tenantAuthMiddleware);
+
+// Protege todas as rotas da IA e dos painéis contra acesso de agências bloqueadas
+// Excetuando as rotas de admin que precisam funcionar para que o Super Admin possa desbloquear a agência
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/admin/')) {
+    return next();
+  }
+  return checkAgencyStatus(req, res, next);
+});
 
 // Helper para ler arquivos da pasta public/ em qualquer ambiente Serverless Vercel
 const getStaticFilePath = (fileName: string) => {
@@ -1613,7 +1622,7 @@ app.post(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, r
     let defaultPassword = 'ChangeMe123!';
     const adminEmailToCreate = req.body.admin_email || email_billing;
     if (adminEmailToCreate) {
-      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
         email: adminEmailToCreate,
         password: defaultPassword,
         email_confirm: true,
@@ -1681,6 +1690,181 @@ app.put('/api/portal/agencies/:id', updateAgencyHandler);
 app.put('/api/admin/agencies/:id', updateAgencyHandler);
 app.patch('/api/portal/agencies/:id', updateAgencyHandler);
 app.patch('/api/admin/agencies/:id', updateAgencyHandler);
+
+// CRIAR USUÁRIO (COLABORADOR) DENTRO DA AGÊNCIA COM CONVITE POR E-MAIL
+app.post('/api/admin/agencies/:id/users', async (req: Request, res: Response) => {
+  try {
+    const agencyId = req.params.id;
+    const { name, email, role } = req.body;
+
+    if (!agencyId || !email) {
+      return res.status(400).json({ success: false, message: 'ID da agência e e-mail são obrigatórios.' });
+    }
+
+    console.log(`[API] Convidando usuário ${email} para agência ${agencyId}`);
+
+    const tempPassword = `Oraculum@${Math.floor(100000 + Math.random() * 900000)}`;
+
+    // Cria o usuário com uma senha temporária em vez de usar invite (que manda email padrão em inglês)
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: {
+        role: role || 'agency_member',
+        agency_id: agencyId,
+        full_name: name
+      }
+    });
+
+    if (userError) {
+      console.error('[Supabase] Erro ao criar colaborador:', userError);
+      return res.status(400).json({ success: false, message: userError.message });
+    }
+
+    // Opcional: inserir na tabela 'agency_users' se ela for usada para outra coisa além de mock
+    try {
+      await supabaseAdmin.from('agency_users').insert([{
+        agency_id: agencyId,
+        name,
+        email,
+        role
+      }]);
+    } catch(err) {
+      // Falha não bloqueante
+      console.warn("Aviso Supabase: Não foi possível persistir usuário na tabela secundária.", err);
+    }
+
+    console.log('[Supabase] ✅ Colaborador adicionado com sucesso:', userData.user.id);
+    return res.json({ success: true, message: 'Colaborador adicionado!', data: userData.user, tempPassword });
+  } catch (error: any) {
+    console.error('Erro na rota de convite:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// LISTAR USUÁRIOS DA AGÊNCIA (GET)
+app.get('/api/admin/agencies/:id/users', async (req: Request, res: Response) => {
+  try {
+    const agencyId = req.params.id;
+    
+    // Lista TODOS os usuários do Auth e filtra pelo agency_id no user_metadata
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authError) throw authError;
+
+    const agencyUsers = authData.users.filter((u: any) => u.user_metadata?.agency_id === agencyId);
+
+    const formattedUsers = agencyUsers.map((u: any) => ({
+      id: u.id,
+      name: u.user_metadata?.full_name || 'Colaborador',
+      email: u.email,
+      role: u.user_metadata?.role || 'Membro',
+      status: 'Ativo'
+    }));
+
+    return res.json({ success: true, data: formattedUsers });
+  } catch (error: any) {
+    console.error('Erro ao listar usuários:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// EXCLUIR USUÁRIO DA AGÊNCIA (DELETE)
+app.delete('/api/admin/agencies/:agencyId/users/:userId', async (req: Request, res: Response) => {
+  try {
+    const { agencyId, userId } = req.params;
+    
+    // Deleta o usuário da auth primeiro
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    
+    // Se der erro, vamos verificar se talvez o usuário nem esteja na auth e só na tabela
+    if (authError && authError.status !== 404) {
+      console.warn("Aviso ao deletar usuário da Auth:", authError.message);
+    }
+    
+    // Apaga registro nas tabelas relacionadas
+    await supabaseAdmin.from('profiles').delete().eq('id', userId);
+    await supabaseAdmin.from('agency_users').delete().eq('id', userId);
+    
+    return res.json({ success: true, message: 'Colaborador removido com sucesso.' });
+  } catch (error: any) {
+    console.error('Erro ao excluir usuário:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// BLOQUEAR/DESBLOQUEAR USUÁRIO DA AGÊNCIA (PUT)
+app.put('/api/admin/agencies/:agencyId/users/:userId/block', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { block } = req.body; // true ou false
+    
+    // Atualiza na Auth (ban_duration "none" para liberar, ou um valor alto para banir)
+    const { data, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      ban_duration: block ? '87600h' : 'none'
+    });
+    
+    if (authError) throw authError;
+
+    // Se tiver tabela de controle local, atualiza o status
+    await supabaseAdmin.from('agency_users').update({ status: block ? 'Bloqueado' : 'Ativo' }).eq('id', userId);
+    
+    return res.json({ success: true, message: block ? 'Colaborador bloqueado.' : 'Colaborador desbloqueado.' });
+  } catch (error: any) {
+    console.error('Erro ao bloquear/desbloquear usuário:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// EDITAR DADOS DO USUÁRIO DA AGÊNCIA (PUT)
+app.put('/api/admin/agencies/:agencyId/users/:userId/edit', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { name, role } = req.body;
+    
+    // Atualiza metadados na Auth
+    const { data: userObj, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (authError) throw authError;
+
+    const currentMetadata = userObj.user.user_metadata || {};
+    const newMetadata = { ...currentMetadata, full_name: name, role: role };
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      user_metadata: newMetadata
+    });
+    
+    if (updateError) throw updateError;
+    
+    // Opcional: Atualiza na tabela auxiliar se existir
+    await supabaseAdmin.from('agency_users').update({ name, role }).eq('id', userId);
+    
+    return res.json({ success: true, message: 'Dados atualizados com sucesso!' });
+  } catch (error: any) {
+    console.error('Erro ao editar usuário:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// REDEFINIR SENHA DO USUÁRIO DA AGÊNCIA (PUT)
+app.put('/api/admin/agencies/:agencyId/users/:userId/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    const tempPassword = `Oraculum@${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: tempPassword
+    });
+    
+    if (updateError) throw updateError;
+    
+    return res.json({ success: true, message: 'Senha redefinida com sucesso!', tempPassword });
+  } catch (error: any) {
+    console.error('Erro ao redefinir senha do usuário:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // EXCLUIR AGÊNCIA (DELETE)
 const deleteAgencyHandler = async (req: Request, res: Response) => {
@@ -1925,6 +2109,57 @@ app.post('/api/kanban/update-status', async (req: Request, res: Response) => {
     return res.json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: error.message });
+  }
+});
+// GET /api/agency-settings - Retorna todas as configurações da agência do Supabase
+app.get('/api/agency-settings', async (req: Request, res: Response) => {
+  try {
+    let settingsMap: Record<string, string> = {};
+    try {
+      const { data, error } = await supabase
+        .from('agency_settings')
+        .select('*');
+
+      if (!error && data) {
+        data.forEach(item => {
+          settingsMap[item.key] = item.value;
+        });
+      }
+    } catch (e) {
+      console.warn('[AgencySettings] Supabase fetch fallback.');
+    }
+
+    return res.json({ success: true, settings: settingsMap });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao carregar configurações.' });
+  }
+});
+
+// POST /api/agency-settings - Salva/atualiza configurações no Supabase
+app.post('/api/agency-settings', async (req: Request, res: Response) => {
+  try {
+    const { settings } = req.body;
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ error: 'Payload de configurações inválido.' });
+    }
+
+    const upsertPayload = Object.entries(settings).map(([key, value]) => ({
+      key,
+      value: String(value),
+      updated_at: new Date().toISOString()
+    }));
+
+    try {
+      await supabase
+        .from('agency_settings')
+        .upsert(upsertPayload, { onConflict: 'key' });
+    } catch (e) {
+      console.warn('[AgencySettings] Supabase upsert fallback.');
+    }
+
+    return res.json({ success: true, message: 'Configurações salvas no Banco de Dados com sucesso.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Erro ao salvar configurações.' });
   }
 });
 
