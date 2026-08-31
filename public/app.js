@@ -4087,7 +4087,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ? `<button type="button" onclick="window.showRiscoPreditivoDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Ver Detalhes do Risco</button>`
               : isOraculumLive
               ? `<button type="button" onclick="window.showOraculumLiveDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(99,102,241,0.15); color: #818CF8; border: 1px solid rgba(99,102,241,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-robot"></i> Ler Demanda da Reunião</button>`
-              : `<button type="button" onclick="window.inspectTaskInWarRoom('${tag}', '${task.id}', '${safeTitle}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-magnifying-glass"></i> Ver Estratégia / Inspecionar</button>`
+              : `<button type="button" onclick="window.showKanbanTaskDetails('${safeTitle}', '${safeDesc}', '${tag}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-book-open"></i> Ler Demanda / Detalhes</button>`
            }
         </div>
 
@@ -4103,6 +4103,27 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
+
+  window.showKanbanTaskDetails = function(title, desc, tag) {
+    const modal = document.getElementById('modal-kanban-task-details') || document.getElementById('modal-oraculum-live-details');
+    const titleEl = document.getElementById('kanban-task-details-title') || document.getElementById('oraculum-live-details-title');
+    const descEl = document.getElementById('kanban-task-details-desc') || document.getElementById('oraculum-live-details-desc');
+    const tagEl = document.getElementById('kanban-task-details-tag');
+
+    if (modal) {
+        if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-file-lines text-emerald-400"></i> ${title}`;
+        if (tagEl) tagEl.textContent = tag || 'Geral';
+        if (descEl) {
+            const finalDesc = desc && desc.trim() !== '' && desc !== 'undefined' ? desc : 'Nenhuma descrição detalhada informada para esta demanda.';
+            descEl.innerHTML = finalDesc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        }
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } else {
+        alert(title + "\n\n" + (desc || 'Sem descrição'));
+    }
+  };
 
   window.showRiscoPreditivoDetails = function(title, desc) {
     const modal = document.getElementById('modal-predictive-risk');
