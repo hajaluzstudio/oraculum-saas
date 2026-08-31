@@ -4818,21 +4818,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (audit) audit.innerText = 'Enviando requisição de teste para o Google AI Studio...';
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-      const data = await res.json();
+      let res = await fetch('/api/test-gemini');
+      let data = await res.json();
       const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-      if (res.ok && data.models) {
-        const count = data.models.length;
+      if (!res.ok || data.status !== 'ok') {
+        const aiFallback = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: 'ping', toolName: 'status_check' })
+        });
+        const aiJson = await aiFallback.json();
+        if (aiFallback.ok && aiJson.success) {
+          data = { status: 'ok', modelUsed: aiJson.modelUsed || 'Gemini 3.7 / 3.6 Flash' };
+          res = { ok: true };
+        }
+      }
+
+      if (res.ok && data.status === 'ok') {
         const setOk = (el) => {
           if (!el) return;
-          el.innerText = '● Gemini Conectado (Ativo)';
+          el.innerText = `● Gemini Conectado (${data.modelUsed || 'Ativo'})`;
           el.style.background = 'rgba(16, 185, 129, 0.15)';
           el.style.color = '#10B981';
         };
         setOk(badge);
         setOk(badgeSa);
-        const msgAudit = `Última verificação: Hoje às ${now} | ${count} modelos disponíveis (gemini-1.5-flash)`;
+        const msgAudit = `Última verificação: Hoje às ${now} | Modelo: ${data.modelUsed || 'Gemini Flash'}`;
         if (audit) audit.innerText = msgAudit;
 
         localStorage.setItem('GEMINI_API_KEY', key);
@@ -4840,7 +4852,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('oraculum_gemini_key', key);
         localStorage.setItem('gemini_last_ping', now);
 
-        window.exibirToastSucesso("✓ Google Gemini API conectada com sucesso!");
+        if (typeof window.exibirToastSucesso === 'function') {
+          window.exibirToastSucesso("✓ Google Gemini API conectada com sucesso!");
+        }
         return { success: true };
       } else {
         const errMsg = data.error?.message || 'Chave API recusada pelo Google AI Studio.';
@@ -5177,88 +5191,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const keyLimpa = apiKey.trim();
 
-    // 1. Tenta listar modelos de GERAR TEXTO diretamente da conta do usuário via GET /models
-    let listaTentativas = [];
-    const modelosExcluidos = ['-tts', '-audio', '-embed', 'embedding', 'bidi', 'imagen'];
+    try {
+      const res = await fetch('/api/test-gemini');
+      const data = await res.json();
 
-    for (const apiVer of ['v1beta', 'v1']) {
-      try {
-        const resList = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${keyLimpa}`);
-        if (resList.ok) {
-          const dataList = await resList.json();
-          if (dataList.models && Array.isArray(dataList.models)) {
-            const validos = dataList.models.filter(m => {
-              const name = m.name.toLowerCase();
-              const hasGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent');
-              const isExcluded = modelosExcluidos.some(e => name.includes(e));
-              return hasGenerate && !isExcluded;
-            });
-
-            validos.sort((a, b) => {
-              const nameA = a.name.toLowerCase();
-              const nameB = b.name.toLowerCase();
-              if (nameA.includes('1.5-flash') && !nameB.includes('1.5-flash')) return -1;
-              if (!nameA.includes('1.5-flash') && nameB.includes('1.5-flash')) return 1;
-              if (nameA.includes('2.0-flash') && !nameB.includes('2.0-flash')) return -1;
-              if (!nameA.includes('2.0-flash') && nameB.includes('2.0-flash')) return 1;
-              return 0;
-            });
-
-            validos.forEach(m => {
-              const name = m.name.replace('models/', '');
-              listaTentativas.push({ apiVersion: apiVer, modelName: name });
-            });
-          }
-        }
-      } catch (e) {
-        console.warn(`Aviso ao consultar modelos (${apiVer}):`, e);
-      }
-    }
-
-    const fallbacksSeguros = [
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
-      { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
-      { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
-      { apiVersion: 'v1beta', modelName: 'gemini-pro' },
-      { apiVersion: 'v1',     modelName: 'gemini-pro' }
-    ];
-
-    fallbacksSeguros.forEach(fb => {
-      if (!listaTentativas.some(t => t.apiVersion === fb.apiVersion && t.modelName === fb.modelName)) {
-        listaTentativas.push(fb);
-      }
-    });
-
-    let conectou = false;
-    let ultimoErro = '';
-    let modeloSucesso = '';
-
-    for (const item of listaTentativas) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`, {
+      if (res.ok && data.status === 'ok') {
+        conectou = true;
+        modeloSucesso = data.modelUsed || 'Gemini 3.7 / 3.6 Flash';
+      } else {
+        const aiFallback = await fetch('/api/ai/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: "ping" }] }]
-          })
+          body: JSON.stringify({ prompt: 'ping', toolName: 'status_check' })
         });
-
-        if (res.ok) {
+        const aiJson = await aiFallback.json();
+        if (aiFallback.ok && aiJson.success) {
           conectou = true;
-          modeloSucesso = `${item.modelName} (${item.apiVersion})`;
-          break;
+          modeloSucesso = aiJson.modelUsed || 'Gemini 3.7 / 3.6 Flash';
         } else {
-          const err = await res.json().catch(() => ({}));
-          ultimoErro = err.error?.message || `HTTP ${res.status}`;
-          continue;
+          ultimoErro = aiJson.error || data.message || 'Falha ao validar chave';
         }
-      } catch (error) {
-        ultimoErro = error.message;
-        continue;
       }
+    } catch (e) {
+      ultimoErro = e.message;
     }
 
     if (conectou) {

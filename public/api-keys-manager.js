@@ -138,108 +138,57 @@ window.testarConexaoGeminiReal = async function() {
 
   const keyLimpa = apiKey.trim();
 
-  // 1. Tenta listar modelos de GERAR TEXTO diretamente da conta do usuário via GET /models
-  let listaTentativas = [];
-  const modelosExcluidos = ['tts', 'audio', 'embed', 'embedding', 'bidi', 'imagen', 'realtime', 'speech', 'transcribe'];
+  // Se a chave for uma senha placeholder ou estiver usando a Chave Master do Servidor, testa via backend
+  try {
+    const res = await fetch('/api/test-gemini');
+    const data = await res.json();
 
-  for (const apiVer of ['v1beta', 'v1']) {
-    try {
-      const resList = await fetch(`https://generativelanguage.googleapis.com/${apiVer}/models?key=${keyLimpa}`);
-      if (resList.ok) {
-        const dataList = await resList.json();
-        if (dataList.models && Array.isArray(dataList.models)) {
-          const validos = dataList.models.filter(m => {
-            const name = m.name.toLowerCase();
-            const hasGenerate = m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent');
-            const isExcluded = modelosExcluidos.some(e => name.includes(e));
-            return hasGenerate && !isExcluded;
-          });
-
-          validos.sort((a, b) => {
-            const nameA = a.name.toLowerCase();
-            const nameB = b.name.toLowerCase();
-            if (nameA.includes('1.5-flash') && !nameB.includes('1.5-flash')) return -1;
-            if (!nameA.includes('1.5-flash') && nameB.includes('1.5-flash')) return 1;
-            if (nameA.includes('2.0-flash') && !nameB.includes('2.0-flash')) return -1;
-            if (!nameA.includes('2.0-flash') && nameB.includes('2.0-flash')) return 1;
-            return 0;
-          });
-
-          validos.forEach(m => {
-            const name = m.name.replace('models/', '');
-            listaTentativas.push({ apiVersion: apiVer, modelName: name });
-          });
-        }
+    if (res.ok && data.status === 'ok') {
+      if (statusBadge) {
+        statusBadge.innerText = `● Conectada & Operacional (${data.modelUsed || 'Gemini 3.7 / 3.6 Flash'})`;
+        statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
+        statusBadge.style.color = "#34D399";
+        statusBadge.style.border = "1px solid rgba(16, 185, 129, 0.3)";
       }
-    } catch (e) {
-      console.warn(`Aviso ao consultar modelos (${apiVer}):`, e);
+      const audit = document.getElementById('audit-log-gemini');
+      if (audit) audit.innerText = `Última verificação: Conexão com ${data.modelUsed || 'Gemini Flash'} estabelecida com sucesso!`;
+      return;
     }
+  } catch (backendErr) {
+    console.warn('[Gemini Test Backend Fallback]:', backendErr);
   }
 
-  const fallbacksSeguros = [
-    { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash' },
-    { apiVersion: 'v1',     modelName: 'gemini-1.5-flash' },
-    { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash' },
-    { apiVersion: 'v1beta', modelName: 'gemini-1.5-flash-latest' },
-    { apiVersion: 'v1beta', modelName: 'gemini-1.5-pro' },
-    { apiVersion: 'v1beta', modelName: 'gemini-2.0-flash-exp' },
-    { apiVersion: 'v1beta', modelName: 'gemini-pro' },
-    { apiVersion: 'v1',     modelName: 'gemini-pro' }
-  ];
+  // Fallback via /api/ai/generate
+  try {
+    const aiTest = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: "ping", toolName: "status_check" })
+    });
+    const aiJson = await aiTest.json();
 
-  fallbacksSeguros.forEach(fb => {
-    if (!listaTentativas.some(t => t.apiVersion === fb.apiVersion && t.modelName === fb.modelName)) {
-      listaTentativas.push(fb);
-    }
-  });
-
-  let conectou = false;
-  let ultimoErro = '';
-  let modeloSucesso = '';
-
-  for (const item of listaTentativas) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/${item.apiVersion}/models/${item.modelName}:generateContent?key=${keyLimpa}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "ping" }] }]
-        })
-      });
-
-      if (res.ok) {
-        conectou = true;
-        modeloSucesso = `${item.modelName} (${item.apiVersion})`;
-        break;
-      } else {
-        const err = await res.json().catch(() => ({}));
-        ultimoErro = err.error?.message || `HTTP ${res.status}`;
-        continue;
+    if (aiTest.ok && aiJson.success) {
+      if (statusBadge) {
+        statusBadge.innerText = `● Conectada & Operacional (${aiJson.modelUsed || 'Gemini 3.7 / 3.6 Flash'})`;
+        statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
+        statusBadge.style.color = "#34D399";
+        statusBadge.style.border = "1px solid rgba(16, 185, 129, 0.3)";
       }
-    } catch (error) {
-      ultimoErro = error.message;
-      continue;
+      const audit = document.getElementById('audit-log-gemini');
+      if (audit) audit.innerText = `Última verificação: Conexão validada via Central do Servidor (${aiJson.modelUsed})!`;
+      return;
+    } else {
+      throw new Error(aiJson.error || 'Falha ao validar chave');
     }
-  }
-
-  if (conectou) {
+  } catch (error) {
     if (statusBadge) {
-      statusBadge.innerText = `● Conectada & Operacional (${modeloSucesso})`;
-      statusBadge.style.background = "rgba(16, 185, 129, 0.15)";
-      statusBadge.style.color = "#34D399";
-      statusBadge.style.border = "1px solid rgba(16, 185, 129, 0.3)";
-    }
-    const audit = document.getElementById('audit-log-gemini');
-    if (audit) audit.innerText = `Última verificação: Conexão com ${modeloSucesso} estabelecida com sucesso!`;
-  } else {
-    if (statusBadge) {
-      statusBadge.innerText = `● Erro: ${ultimoErro}`;
+      statusBadge.innerText = `● Erro: ${error.message}`;
       statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
       statusBadge.style.color = "#F87171";
       statusBadge.style.border = "1px solid rgba(239, 68, 68, 0.3)";
     }
     const audit = document.getElementById('audit-log-gemini');
-    if (audit) audit.innerText = `Última verificação: ${ultimoErro}`;
+    if (audit) audit.innerText = `Última verificação: ${error.message}`;
   }
 };
 

@@ -36,49 +36,26 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
       toolName: 'radar_concorrentes',
       config: { responseMimeType: "application/json" }
     });
-    const rawText = aiRes.reply || aiRes.replyText;
+    const rawText = aiRes.reply || aiRes.replyText || '';
     const cleanJson = rawText.replace(/```json|```/g, '').trim();
     data = JSON.parse(cleanJson.match(/\{[\s\S]*\}/)?.[0] || cleanJson);
   } else {
-    const rawKey = window.GEMINI_API_KEY || localStorage.getItem('ORACULUM_GEMINI_API_KEY') || localStorage.getItem('GEMINI_API_KEY');
-    const apiKey = rawKey ? String(rawKey).trim() : null;
-    if (!apiKey) {
-      throw new Error("Chave de API do Gemini não encontrada. Configure no Cofre de APIs.");
+    const res = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: promptVarredura,
+        toolName: 'radar_concorrentes',
+        config: { responseMimeType: "application/json" }
+      })
+    });
+    const resData = await res.json();
+    if (!res.ok || !resData.success) {
+      throw new Error(resData.error || "Falha ao gerar inteligência de concorrentes.");
     }
-
-    const modelCandidates = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'];
-    let response = null;
-    let lastErrData = null;
-
-    for (const modelName of modelCandidates) {
-      try {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptVarredura }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
-
-        if (response.ok) break;
-        lastErrData = await response.json().catch(() => ({}));
-      } catch (e) {
-        lastErrData = e;
-      }
-    }
-
-    if (!response || !response.ok) {
-      throw new Error(`Falha no Robô Hunter (${response?.status || 500}): ${lastErrData?.error?.message || 'Erro de conexão'}`);
-    }
-
-    const result = await response.json();
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      throw new Error("O Robô Hunter não retornou resposta.");
-    }
-
-    data = JSON.parse(rawText);
+    const rawText = resData.reply || resData.replyText || '';
+    const cleanJson = rawText.replace(/```json|```/g, '').trim();
+    data = JSON.parse(cleanJson.match(/\{[\s\S]*\}/)?.[0] || cleanJson);
   }
 
   // Grava cada tendência encontrada na memória do Supabase (se disponível)
