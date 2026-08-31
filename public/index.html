@@ -4297,6 +4297,12 @@ window.atualizarCardUsuarioLogado = function(providedSession = null) {
         if (typeof window.atualizarCardUsuarioLogado === 'function') {
           window.atualizarCardUsuarioLogado(sessionObj);
         }
+        if (typeof window.carregarClientesDoSupabase === 'function') {
+          window.carregarClientesDoSupabase();
+        }
+        if (typeof window.carregarAgenciasDoSupabase === 'function') {
+          window.carregarAgenciasDoSupabase();
+        }
 
         const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
         if ((role === 'super_admin' || email === 'hajaluzstudio@gmail.com') && btnTabSuperAdmin) {
