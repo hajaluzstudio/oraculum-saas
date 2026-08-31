@@ -9027,3 +9027,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dá um tempo curto (800ms) para garantir que o login do usuário foi processado pelo navegador
     setTimeout(window.verificarBloqueioInadimplencia, 800);
 });
+
+function mostrarToastOraculum(mensagem, tipo = 'sucesso') {
+  const existingToast = document.getElementById('oraculum-custom-toast');
+  if (existingToast) existingToast.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'oraculum-custom-toast';
+  
+  const borderColor = tipo === 'sucesso' ? '#10B981' : '#EF4444';
+  const icon = tipo === 'sucesso' ? '✨' : '⚠️';
+
+  toast.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 18px;">${icon}</span>
+      <span style="font-family: inherit; font-size: 14px; font-weight: 500; color: #F3F4F6;">${mensagem}</span>
+    </div>
+  `;
+
+  toast.style.cssText = `
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    background-color: #111827;
+    border: 1px solid ${borderColor};
+    color: #F3F4F6;
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    transform: translateY(-20px);
+  `;
+
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
