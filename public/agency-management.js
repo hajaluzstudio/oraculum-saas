@@ -376,22 +376,30 @@ window.salvarAgencia = async function(e) {
       const client = getSupabaseClient();
       if (client) {
         try {
+          const cleanSupaPayload = {
+            name,
+            email_billing: admin_email,
+            cnpj_cpf: cnpj || null,
+            phone: phone || null,
+            plan_tier: plan || 'standard',
+            monthly_fee: monthly_fee || 0,
+            due_day: due_day || 10,
+            status: status || 'active'
+          };
           if (id) {
             const { error } = await client.from('agencies').update({
-              ...payload, updated_at: new Date().toISOString()
+              ...cleanSupaPayload, updated_at: new Date().toISOString()
             }).eq('id', id);
             if (!error) savedInSupa = true;
-            else window.mostrarNotificacaoAgencia(`❌ ERRO SUPABASE CLIENT (UPDATE): ${error.message}`, 'error');
           } else {
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36);
             const { error } = await client.from('agencies').insert([{
-              ...payload, slug
+              ...cleanSupaPayload, slug
             }]);
             if (!error) savedInSupa = true;
-            else window.mostrarNotificacaoAgencia(`❌ ERRO SUPABASE CLIENT (INSERT): ${error.message}`, 'error');
           }
         } catch (supaErr) {
-          window.mostrarNotificacaoAgencia(`❌ EXCEÇÃO SUPABASE CLIENT: ${supaErr.message}`, 'error');
+          console.warn('Exceção no fallback Supabase Client:', supaErr);
         }
       }
     }
@@ -818,6 +826,10 @@ window.salvarUsuarioAgencia = async function(e, agencyId, agencyName) {
       } else {
         window.mostrarNotificacaoAgencia(`Colaborador ${name} adicionado!`, 'success');
       }
+      
+      const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
+      if (ag) ag.users_count = (Number(ag.users_count) || 0) + 1;
+
       await window.abrirModalUsuarios(agencyId, agencyName);
       if (typeof window.renderizarListaAgencias === 'function') window.renderizarListaAgencias();
     } else {

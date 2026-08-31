@@ -1692,7 +1692,29 @@ app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, re
   try {
     const { data, error } = await supabase.from('agencies').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return res.json({ success: true, data });
+
+    // Busca contagem real de usuários/membros vinculados a cada agência
+    let userCountsByAgency: Record<string, number> = {};
+    try {
+      const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
+      if (authData && authData.users) {
+        authData.users.forEach((u: any) => {
+          const agId = u.user_metadata?.agency_id;
+          if (agId) {
+            userCountsByAgency[agId] = (userCountsByAgency[agId] || 0) + 1;
+          }
+        });
+      }
+    } catch (countErr) {
+      console.warn('[Agencies User Count Warning]:', countErr);
+    }
+
+    const enhancedData = (data || []).map(ag => ({
+      ...ag,
+      users_count: userCountsByAgency[ag.id] !== undefined ? userCountsByAgency[ag.id] : (ag.users_count || 1)
+    }));
+
+    return res.json({ success: true, data: enhancedData });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
@@ -1777,17 +1799,19 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
     };
 
     // Somente campos que existem de fato na tabela agencies do Supabase
+    // (name, slug, email_billing, cnpj_cpf, phone, monthly_fee, due_day, status, plan_tier)
     const allowedFields = [
       'name', 'slug', 'email_billing', 'cnpj_cpf', 'phone',
-      'monthly_fee', 'due_day', 'status', 'plan_tier', 'token_limit', 'tokens_used_month'
+      'monthly_fee', 'due_day', 'status', 'plan_tier'
     ];
     // Mapeamento de nomes legados do frontend → coluna real
     if (body['cnpj'] !== undefined && body['cnpj_cpf'] === undefined) body['cnpj_cpf'] = body['cnpj'];
+    if (body['plan'] !== undefined && body['plan_tier'] === undefined) body['plan_tier'] = body['plan'];
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'monthly_fee') updatePayload[field] = parseFloat(body[field]);
-        else if (field === 'due_day' || field === 'client_limit' || field === 'token_limit' || field === 'tokens_used_month') updatePayload[field] = parseInt(body[field]);
+        else if (field === 'due_day' || field === 'client_limit') updatePayload[field] = parseInt(body[field]);
         else updatePayload[field] = body[field];
       }
     }
@@ -1799,7 +1823,10 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase updateAgencyHandler Error]:', error);
+      throw error;
+    }
     return res.json({ success: true, data });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
