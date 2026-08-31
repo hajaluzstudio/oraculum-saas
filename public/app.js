@@ -6432,7 +6432,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <div style="margin-bottom: 12px;">
         <span style="font-size: 12px; font-weight: 700; color: #00F5A0;">⚔️ GATILHOS DE CONTRA-ATAQUE DE ALTA CONVERSÃO:</span>
-        <div style="margin-top: 8px; max-height: 220px; overflow-y: auto;">
+        <div class="spy-hooks-scroll" style="margin-top: 8px;">
           ${counterHooksHtml}
         </div>
       </div>
@@ -6441,6 +6441,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <strong>Veredito da Agência:</strong> ${spy.strategicAdvantageVerdict || ''}
       </div>
     `;
+
+    // Auto-foco com scroll suave para o início do bloco de resultados
+    setTimeout(() => {
+      const resultsContainer = document.getElementById('spy-results-container') || spyResultsBody;
+      if (resultsContainer && typeof resultsContainer.scrollIntoView === 'function') {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
   }
 
   // ==========================================

@@ -842,6 +842,33 @@ select option:checked {
   background: rgba(16, 185, 129, 0.45);
 }
 
+/* Scrollbar Minimalista para o Radar de Concorrentes */
+.spy-hooks-scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.3) transparent;
+}
+
+.spy-hooks-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.spy-hooks-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.spy-hooks-scroll::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.25);
+  border-radius: 9999px;
+}
+
+.spy-hooks-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.5);
+}
+
 .chat-msg {
   display: flex;
   gap: 12px;
