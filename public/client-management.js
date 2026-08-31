@@ -361,21 +361,39 @@ window.carregarClientesDoSupabase = async function() {
   console.log("🚀 Iniciando busca de clientes no Supabase com isolamento de tenant...");
   const supaClient = getSupabaseClient();
   
-  if (!supaClient) {
-      console.error("❌ Cliente Supabase ausente.");
-      return;
-  }
+  let data = null;
+  let isOffline = false;
 
   try {
     const identidade = await window.obterIdentidadeSegura();
-    const { data, error } = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
-    if (error) { console.error("❌ Erro na base:", error.message); return; }
-    
-    console.log(`✅ Banco retornou ${data ? data.length : 0} clientes no total.`);
 
+    if (supaClient) {
+      try {
+        const res = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
+        if (!res.error && res.data) {
+          data = res.data;
+        } else if (res.error) {
+          console.warn("Aviso na busca direta do Supabase:", res.error.message);
+        }
+      } catch (clientErr) {
+        console.warn("Aviso de rede na consulta direta ao Supabase:", clientErr);
+      }
+    }
+
+    // Se falhar ou estiver sem rede, tenta ler do cache local
+    if (!data || data.length === 0) {
+      try {
+        const localData = localStorage.getItem('oraculum_clients_cache');
+        if (localData) {
+          data = JSON.parse(localData);
+          isOffline = true;
+        }
+      } catch (e) {}
+    }
+    
     let clientesFiltrados = [];
     if (identidade.isMaster) {
-      // O Super Admin Master vê todos os clientes (incluindo os 7 de teste/demo)
+      // O Super Admin Master vê todos os clientes
       clientesFiltrados = data || []; 
     } else {
       // Agência individual: visualiza ESTRITAMENTE os clientes associados ao seu agencyId
@@ -394,6 +412,12 @@ window.carregarClientesDoSupabase = async function() {
     window.clientesMock = processedClients;
     window.clientsList = processedClients;
     window.globalClientsList = processedClients;
+
+    if (!isOffline && data && data.length > 0) {
+      try {
+        localStorage.setItem('oraculum_clients_cache', JSON.stringify(data));
+      } catch (e) {}
+    }
 
     // Se a agência não tem clientes, limpa o cliente ativo selecionado
     if (processedClients.length === 0) {
@@ -420,10 +444,10 @@ window.carregarClientesDoSupabase = async function() {
     setTimeout(() => {
         window.renderizarListaClientes();
         window.atualizarSeletorClientesOnboarding();
-    }, 200);
+    }, 100);
 
   } catch (err) {
-    console.error("❌ Erro fatal:", err);
+    console.error("❌ Erro ao processar clientes:", err);
   }
 };
 

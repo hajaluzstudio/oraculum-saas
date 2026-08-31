@@ -4078,33 +4078,12 @@ window.abrirModalPerfil = function() {
       window.executarLogout(e);
     };
 
-   // 3. FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
-window.atualizarCardUsuarioLogado = async function(providedSession = null) {
+// 3. FUNÇÃO GLOBAL PARA ATUALIZAR O CARD DE PERFIL DO USUÁRIO LOGADO
+window.atualizarCardUsuarioLogado = function(providedSession = null) {
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     let session = providedSession;
     if (!session) {
         try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e) {}
-    }
-
-    // 1. Busca perfil atualizado no Supabase (seja por id ou por email)
-    if (session && window.supabaseClient) {
-        try {
-            const query = window.supabaseClient.from('profiles').select('*');
-            if (session.id || session.userId) {
-                query.eq('id', session.id || session.userId);
-            } else if (session.email) {
-                query.eq('email', session.email);
-            }
-            const { data } = await query.maybeSingle();
-                
-            if (data) {
-                session.fullName = data.full_name || session.fullName;
-                session.fotoUrl = data.foto_url || session.fotoUrl;
-                session.agencyName = data.agency_name || session.agencyName;
-            }
-        } catch (e) {
-            console.error('Erro ao buscar perfil atualizado:', e);
-        }
     }
 
     const nomeEl = document.getElementById('user-display-name');
