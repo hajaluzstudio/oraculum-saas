@@ -327,20 +327,32 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadOrganizationClients() {
     let clientsList = [];
     try {
+      const identidade = (typeof window.obterIdentidadeSegura === 'function') 
+        ? await window.obterIdentidadeSegura() 
+        : { isMaster: true, agencyId: '' };
+
       if (window.supabaseClient) {
-        const { data: clientsFromDb, error } = await window.supabaseClient
+        let query = window.supabaseClient
           .from('clients')
           .select('*')
           .order('created_at', { ascending: false });
 
+        if (!identidade.isMaster && identidade.agencyId) {
+          query = query.eq('agency_id', identidade.agencyId);
+        }
+
+        const { data: clientsFromDb, error } = await query;
+
         if (error) {
           console.error("Erro ao carregar do Supabase (Client):", error.message);
-        } else if (clientsFromDb && clientsFromDb.length > 0) {
-          clientsList = clientsFromDb;
+        } else if (clientsFromDb) {
+          clientsList = (!identidade.isMaster && identidade.agencyId)
+            ? clientsFromDb.filter(c => String(c.agency_id).toLowerCase() === String(identidade.agencyId).toLowerCase())
+            : clientsFromDb;
         }
       }
 
-      if (clientsList.length === 0) {
+      if (clientsList.length === 0 && identidade.isMaster) {
         const res = await fetch(`${API_BASE_URL}/api/clients`, {
           headers: { 'x-organization-id': activeTenantId }
         });
@@ -350,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (err) {
-      console.warn('[Clients] Falha na requisição. Populando clientes em memória.', err);
+      console.warn('[Clients] Falha na requisição.', err);
     }
 
     if (activeClientSelect) {

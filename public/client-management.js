@@ -341,7 +341,7 @@ window.renderizarListaClientes = function() {
 
 // 8. O MOTOR PRINCIPAL DE BUSCA
 window.carregarClientesDoSupabase = async function() {
-  console.log("🚀 Iniciando busca de clientes no Supabase...");
+  console.log("🚀 Iniciando busca de clientes no Supabase com isolamento de tenant...");
   const supaClient = getSupabaseClient();
   
   if (!supaClient) {
@@ -354,22 +354,22 @@ window.carregarClientesDoSupabase = async function() {
     const { data, error } = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
     if (error) { console.error("❌ Erro na base:", error.message); return; }
     
-    console.log(`✅ Banco retornou ${data ? data.length : 0} clientes.`);
+    console.log(`✅ Banco retornou ${data ? data.length : 0} clientes no total.`);
 
     let clientesFiltrados = [];
     if (identidade.isMaster) {
+      // O Super Admin Master vê todos os clientes (incluindo os 7 de teste/demo)
       clientesFiltrados = data || []; 
     } else {
+      // Agência individual: visualiza ESTRITAMENTE os clientes associados ao seu agencyId
       if (identidade.agencyId) {
         const safeId = String(identidade.agencyId).toLowerCase();
         clientesFiltrados = (data || []).filter(c => 
           (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
           (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
         );
-      }
-      // Se não encontrou filtrado por agency_id estrito, permite listar clientes da conta
-      if (clientesFiltrados.length === 0 && data && data.length > 0) {
-        clientesFiltrados = data;
+      } else {
+        clientesFiltrados = [];
       }
     }
 
@@ -378,9 +378,16 @@ window.carregarClientesDoSupabase = async function() {
     window.clientsList = processedClients;
     window.globalClientsList = processedClients;
 
-    // Se nenhum cliente ativo estiver selecionado ou se o cliente salvo não existe mais, seleciona o primeiro
-    const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
-    if (processedClients.length > 0) {
+    // Se a agência não tem clientes, limpa o cliente ativo selecionado
+    if (processedClients.length === 0) {
+      localStorage.removeItem('oraculum_active_client');
+      localStorage.removeItem('oraculum_active_client_id');
+      sessionStorage.removeItem('oraculum_active_client');
+      sessionStorage.removeItem('oraculum_active_client_id');
+      window.currentClientId = null;
+      window.activeClientId = null;
+    } else {
+      const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
       const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
       if (!savedActiveId || !exists) {
         const firstClient = processedClients[0];
