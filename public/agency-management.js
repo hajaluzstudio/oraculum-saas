@@ -1109,7 +1109,17 @@ window.atualizarKPIsMaster = function() {
   const blockedCount = list.filter(ag => ag.active === false || ag.status === 'blocked').length;
   const totalClientsCount = list.reduce((sum, ag) => sum + (Number(ag.users_count) || Number(ag.clients_count) || 0), 0);
   const totalMrrSum = list.reduce((sum, ag) => {
-    const fee = typeof ag.monthly_fee === 'number' ? ag.monthly_fee : parseFloat(String(ag.monthly_fee || 0).replace('.', '').replace(',', '.'));
+    let fee = 0;
+    if (typeof ag.monthly_fee === 'number') {
+      fee = ag.monthly_fee;
+    } else if (typeof ag.monthly_fee === 'string') {
+      const raw = ag.monthly_fee.trim();
+      if (raw.includes(',')) {
+        fee = parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0;
+      } else {
+        fee = parseFloat(raw) || 0;
+      }
+    }
     return sum + (isNaN(fee) ? 0 : fee);
   }, 0);
 
