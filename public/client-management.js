@@ -317,6 +317,10 @@ window.carregarClientesDoSupabase = async function() {
   let isOffline = false;
 
   try {
+    const identidade = typeof window.obterIdentidadeSegura === 'function' 
+      ? window.obterIdentidadeSegura() 
+      : { isMaster: true, email: '', agencyId: '' };
+
     // 1. Tenta carregar via API Backend dedicada (Vercel Serverless) com service role (ignora RLS)
     try {
       const resApi = await fetch('/api/clients?organization_id=all');
