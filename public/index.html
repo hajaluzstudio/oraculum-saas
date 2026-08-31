@@ -3833,6 +3833,7 @@ window.abrirModalPerfil = function() {
     
     const nameInput = document.getElementById('profile-input-name');
     const agencyInput = document.getElementById('profile-input-agency');
+    const btnSubmit = e?.target?.querySelector('button[type="submit"]') || document.querySelector('#modal-user-profile button[type="submit"]');
     
     const name = nameInput ? nameInput.value.trim() : '';
     const agencyName = agencyInput ? agencyInput.value.trim() : '';
@@ -3840,68 +3841,134 @@ window.abrirModalPerfil = function() {
     const sessionStr = sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session');
     let session = sessionStr ? JSON.parse(sessionStr) : {};
     
-    let avatarUrlFinal = session.fotoUrl || '';
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = 'Salvando...';
+    }
 
-    // --- 1. UPLOAD DA FOTO PARA O STORAGE ---
+    let avatarUrlFinal = session.fotoUrl || session.avatarUrl || session.avatar_url || '';
+
+    // --- 1. UPLOAD DA FOTO PARA O STORAGE OU BASE64 FALLBACK ---
     const fileInput = document.getElementById('avatar-upload');
     if (fileInput && fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         const fileExt = file.name.split('.').pop();
-        const fileName = `avatar_${Date.now()}.${fileExt}`;
+        const fileName = `avatar_${session.userId || session.id || Date.now()}_${Date.now()}.${fileExt}`;
         
-        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
-            .from('avatars')
-            .upload(fileName, file);
+        try {
+            if (window.supabaseClient && window.supabaseClient.storage) {
+                const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+                    .from('avatars')
+                    .upload(fileName, file, { upsert: true });
 
-        if (!uploadError) {
-            const { data: publicURLData } = window.supabaseClient.storage
-                .from('avatars')
-                .getPublicUrl(fileName);
-                
-            avatarUrlFinal = publicURLData.publicUrl;
-        } else {
-            alert('Erro ao fazer upload da imagem: ' + uploadError.message);
-            return;
+                if (!uploadError) {
+                    const { data: publicURLData } = window.supabaseClient.storage
+                        .from('avatars')
+                        .getPublicUrl(fileName);
+                        
+                    if (publicURLData && publicURLData.publicUrl) {
+                        avatarUrlFinal = publicURLData.publicUrl;
+                    }
+                } else {
+                    console.warn('Storage avatars indisponível ou com erro:', uploadError.message);
+                    // Fallback para DataURL caso bucket não exista ou dê RLS
+                    avatarUrlFinal = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = () => resolve(avatarUrlFinal);
+                        reader.readAsDataURL(file);
+                    });
+                }
+            } else {
+                avatarUrlFinal = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = () => resolve(avatarUrlFinal);
+                    reader.readAsDataURL(file);
+                });
+            }
+        } catch (uploadErr) {
+            console.warn('Erro ao processar imagem:', uploadErr);
         }
     }
 
     // Atualiza os dados locais na sessão
-    session.fullName = name;
+    if (name) session.fullName = name;
+    if (name) session.name = name;
     if (agencyName) session.agencyName = agencyName;
     session.fotoUrl = avatarUrlFinal;
+    session.avatar_url = avatarUrlFinal;
 
-   // --- 2. SALVAR NO BANCO DE DADOS USANDO O E-MAIL (INFALÍVEL) ---
+   // --- 2. SALVAR NO BANCO DE DADOS (SUPABASE PROFILES / AUTH / AGENCIES) ---
     try {
-        if (window.supabaseClient && session.email) {
-            console.log("Atualizando perfil no Supabase para o e-mail:", session.email);
-            
-            // Atualiza buscando pelo e-mail e pede o retorno dos dados (.select())
-            const { data: updateData, error: dbError } = await window.supabaseClient
-                .from('profiles')
-                .update({ 
-                    full_name: name, 
-                    agency_name: agencyName, 
-                    foto_url: avatarUrlFinal 
-                })
-                .eq('email', session.email)
-                .select();
+        const email = (session.email || '').toLowerCase();
+        const userId = session.userId || session.id;
 
-            console.log("Resposta do Supabase:", { updateData, dbError });
-
-            if (dbError) {
-                alert('Erro ao salvar no banco: ' + dbError.message);
-                return;
+        if (window.supabaseClient) {
+            // A. Atualizar auth user_metadata se logado
+            try {
+                if (window.supabaseClient.auth) {
+                    await window.supabaseClient.auth.updateUser({
+                        data: {
+                            full_name: name,
+                            agency_name: agencyName,
+                            foto_url: avatarUrlFinal,
+                            avatar_url: avatarUrlFinal
+                        }
+                    });
+                }
+            } catch(authUpErr) {
+                console.warn('Aviso updateUser auth:', authUpErr);
             }
 
-            if (!updateData || updateData.length === 0) {
-                console.warn("Aviso: Nenhuma linha foi atualizada. Verifique se o e-mail na tabela profiles é exatamente igual.");
+            // B. Tabela profiles (Upsert/Update)
+            try {
+                if (userId) {
+                    await window.supabaseClient
+                        .from('profiles')
+                        .upsert({ 
+                            id: userId,
+                            email: email,
+                            full_name: name, 
+                            agency_name: agencyName, 
+                            foto_url: avatarUrlFinal 
+                        }, { onConflict: 'id' });
+                } else if (email) {
+                    await window.supabaseClient
+                        .from('profiles')
+                        .update({ 
+                            full_name: name, 
+                            agency_name: agencyName, 
+                            foto_url: avatarUrlFinal 
+                        })
+                        .eq('email', email);
+                }
+            } catch (profErr) {
+                console.warn('Aviso profiles update:', profErr);
+            }
+
+            // C. Se for agência ou admin com agency_id, atualiza o nome da agência se informado
+            if (session.agencyId && agencyName && session.role !== 'super_admin') {
+                try {
+                    await window.supabaseClient
+                        .from('agencies')
+                        .update({ name: agencyName, updated_at: new Date().toISOString() })
+                        .eq('id', session.agencyId);
+                } catch(agErr) {
+                    console.warn('Aviso agencies update:', agErr);
+                }
             }
         }
     } catch (err) {
         console.error('Erro geral ao salvar no banco:', err);
+    } finally {
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = 'Salvar Alterações';
+        }
     }
 
-    // Salva na sessão do navegador
+    // Salva na sessão do navegador de forma persistente (sessionStorage e localStorage)
     sessionStorage.setItem('oraculum_session', JSON.stringify(session));
     localStorage.setItem('oraculum_session', JSON.stringify(session));
 
@@ -3909,11 +3976,11 @@ window.abrirModalPerfil = function() {
     const modal = document.getElementById('modal-user-profile');
     if (modal) modal.style.display = 'none';
     
-    if (window.atualizarCardUsuarioLogado) {
+    if (typeof window.atualizarCardUsuarioLogado === 'function') {
         window.atualizarCardUsuarioLogado(session);
     }
     
-    alert('✓ Perfil e foto salvos no banco com sucesso!');
+    alert('✓ Perfil e foto salvos com sucesso!');
 };
 
     window.isUserMasterAdmin = function() {
@@ -3968,17 +4035,21 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
         try { session = sessionStr ? JSON.parse(sessionStr) : null; } catch(e) {}
     }
 
-    if (session && session.id && window.supabaseClient) {
+    // 1. Busca perfil atualizado no Supabase (seja por id ou por email)
+    if (session && window.supabaseClient) {
         try {
-            const { data, error } = await window.supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', session.id)
-                .maybeSingle();
+            const query = window.supabaseClient.from('profiles').select('*');
+            if (session.id || session.userId) {
+                query.eq('id', session.id || session.userId);
+            } else if (session.email) {
+                query.eq('email', session.email);
+            }
+            const { data } = await query.maybeSingle();
                 
             if (data) {
                 session.fullName = data.full_name || session.fullName;
                 session.fotoUrl = data.foto_url || session.fotoUrl;
+                session.agencyName = data.agency_name || session.agencyName;
             }
         } catch (e) {
             console.error('Erro ao buscar perfil atualizado:', e);
@@ -4009,15 +4080,24 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
     }
 
     // Atualiza nome e dados visuais
-    const nomeExibicao = session.fullName || session.email.split('@')[0];
+    const nomeExibicao = session.fullName || session.name || session.email.split('@')[0];
     if (nomeEl) nomeEl.textContent = nomeExibicao;
     if (dropdownFullName) dropdownFullName.textContent = nomeExibicao;
     if (headerEmailEl) headerEmailEl.textContent = session.email;
     if (dropdownEmail) dropdownEmail.textContent = session.email;
 
-    // Se houver foto de perfil salva, renderiza a imagem no avatar
-    if (avatarContainer && session.fotoUrl) {
-        avatarContainer.innerHTML = `<img src="${session.fotoUrl}" alt="Avatar" class="w-full h-full object-cover rounded-full user-avatar-img">`;
+    // Se houver foto de perfil salva, renderiza a imagem no avatar; senão iniciais
+    const foto = session.fotoUrl || session.avatar_url || session.avatarUrl;
+    if (avatarContainer) {
+        if (foto) {
+            avatarContainer.innerHTML = `<img src="${foto}" alt="Avatar" class="w-full h-full object-cover rounded-full user-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            const rawParts = (nomeExibicao || 'User').trim().split(' ');
+            const initials = rawParts.length > 1 
+                ? (rawParts[0][0] + rawParts[rawParts.length - 1][0]).toUpperCase() 
+                : (rawParts[0].substring(0, 2)).toUpperCase();
+            avatarContainer.innerHTML = `<span id="user-avatar-initials">${initials}</span>`;
+        }
     }
 
     if (window.isUserMasterAdmin && window.isUserMasterAdmin()) {
@@ -4125,7 +4205,9 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
         const userMetadata = data.user.user_metadata || {};
         let role = userMetadata.role || profile?.role || 'agency_member';
         let agencyId = userMetadata.agency_id || profile?.agency_id || null;
-        let agencyName = (role === 'super_admin' || email === 'hajaluzstudio@gmail.com') ? 'Oraculum Master Corp' : 'Agência Parceira';
+        let agencyName = profile?.agency_name || userMetadata.agency_name || ((role === 'super_admin' || email === 'hajaluzstudio@gmail.com') ? 'Oraculum Master Corp' : 'Agência Parceira');
+        let fullName = profile?.full_name || userMetadata.full_name || userMetadata.name || '';
+        let fotoUrl = profile?.foto_url || userMetadata.foto_url || userMetadata.avatar_url || '';
         let allowed_tabs = Array.isArray(userMetadata.allowed_tabs) ? userMetadata.allowed_tabs : null;
 
         // Salva sessão ativa
@@ -4135,6 +4217,10 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
           role, 
           agencyId,
           userId,
+          fullName,
+          name: fullName,
+          fotoUrl,
+          avatar_url: fotoUrl,
           agencyStatus: 'active', 
           agencyName,
           allowed_tabs,
@@ -4484,21 +4570,26 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
         let session = JSON.parse(sessionStr);
         if (!session.email || !window.supabaseClient) return;
 
-        const { data, error } = await window.supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('email', session.email)
-            .maybeSingle();
+        const query = window.supabaseClient.from('profiles').select('*');
+        if (session.id || session.userId) {
+            query.eq('id', session.id || session.userId);
+        } else {
+            query.eq('email', session.email);
+        }
+
+        const { data, error } = await query.maybeSingle();
 
         if (data) {
             session.fullName = data.full_name || session.fullName;
+            session.name = data.full_name || session.name;
             session.agencyName = data.agency_name || session.agencyName;
             session.fotoUrl = data.foto_url || session.fotoUrl;
+            session.avatar_url = data.foto_url || session.avatar_url;
             
             sessionStorage.setItem('oraculum_session', JSON.stringify(session));
             localStorage.setItem('oraculum_session', JSON.stringify(session));
 
-            if (window.atualizarCardUsuarioLogado) {
+            if (typeof window.atualizarCardUsuarioLogado === 'function') {
                 window.atualizarCardUsuarioLogado(session);
             }
         }

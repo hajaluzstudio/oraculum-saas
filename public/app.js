@@ -6983,9 +6983,9 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch(e) {}
         }
 
-        if (email === 'hajaluzstudio@gmail.com') {
-          role = 'super_admin';
-        }
+        let fullName = profile?.full_name || userMetadata.full_name || userMetadata.name || '';
+        let fotoUrl = profile?.foto_url || userMetadata.foto_url || userMetadata.avatar_url || '';
+        let agencyNameFinal = profile?.agency_name || userMetadata.agency_name || (role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira');
 
         const sessionData = {
           email,
@@ -6993,8 +6993,12 @@ document.addEventListener('DOMContentLoaded', () => {
           agencyId,
           agency_id: agencyId,
           userId,
+          fullName,
+          name: fullName,
+          fotoUrl,
+          avatar_url: fotoUrl,
           agencyStatus,
-          agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira',
+          agencyName: agencyNameFinal,
           loggedAt: new Date().toISOString()
         };
 
