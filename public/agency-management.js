@@ -2,59 +2,74 @@
 // GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC, EQUIPE E BLOQUEIO)
 // =======================================================
 
-window.agenciasMock = window.agenciasMock && window.agenciasMock.length > 0 ? window.agenciasMock : [
-  {
-    id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104',
-    name: 'Agência Oraculum Master',
-    cnpj: '12.345.678/0001-90',
-    phone: '(11) 99999-8888',
-    admin_email: 'master@oraculum.com.br',
-    zip: '01001-000',
-    street: 'Praça da Sé',
-    neighborhood: 'Centro',
-    city: 'São Paulo',
-    state: 'SP',
-    plan: 'Enterprise',
-    monthly_fee: '1997.00',
-    users_count: 12,
-    active: true,
-    created_at: new Date().toLocaleDateString('pt-BR')
-  },
-  {
-    id: 'b7c9a2d1-8e4f-43f2-96b9-3094cf3g0205',
-    name: 'Agência Turbo Performance Digital',
-    cnpj: '98.765.432/0001-10',
-    phone: '(21) 98888-7777',
-    admin_email: 'contato@turbodigital.com.br',
-    zip: '20040-002',
-    street: 'Av. Rio Branco',
-    neighborhood: 'Centro',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    plan: 'Pro',
-    monthly_fee: '994.00',
-    users_count: 8,
-    active: true,
-    created_at: new Date().toLocaleDateString('pt-BR')
-  },
-  {
-    id: 'c8d0b3e2-9f5a-44a3-07c0-4105dg4h0306',
-    name: 'Alpha Growth & ROI Agency',
-    cnpj: '45.678.901/0001-22',
-    phone: '(31) 97777-6666',
-    admin_email: 'financeiro@alphagrowth.io',
-    zip: '30130-000',
-    street: 'Av. Afonso Pena',
-    neighborhood: 'Boa Viagem',
-    city: 'Belo Horizonte',
-    state: 'MG',
-    plan: 'Starter',
-    monthly_fee: '0.00',
-    users_count: 4,
-    active: false,
-    created_at: new Date().toLocaleDateString('pt-BR')
-  }
-];
+(function carregarAgenciasLocalStorage() {
+  const defaultAgencies = [
+    {
+      id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104',
+      name: 'Agência Oraculum Master',
+      cnpj: '12.345.678/0001-90',
+      phone: '(11) 99999-8888',
+      admin_email: 'master@oraculum.com.br',
+      zip: '01001-000',
+      street: 'Praça da Sé',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      state: 'SP',
+      plan: 'Enterprise',
+      monthly_fee: '1997.00',
+      users_count: 12,
+      active: true,
+      created_at: new Date().toLocaleDateString('pt-BR')
+    },
+    {
+      id: 'artcreations-agency-id',
+      name: 'ArtCreations Digital Agency',
+      cnpj: '33.444.555/0001-66',
+      phone: '(11) 97123-4567',
+      admin_email: 'contato@artcreations.com.br',
+      zip: '01310-100',
+      street: 'Av. Paulista',
+      neighborhood: 'Bela Vista',
+      city: 'São Paulo',
+      state: 'SP',
+      plan: 'Enterprise',
+      monthly_fee: '997.00',
+      users_count: 5,
+      active: true,
+      created_at: new Date().toLocaleDateString('pt-BR')
+    },
+    {
+      id: 'b7c9a2d1-8e4f-43f2-96b9-3094cf3g0205',
+      name: 'Agência Turbo Performance Digital',
+      cnpj: '98.765.432/0001-10',
+      phone: '(21) 98888-7777',
+      admin_email: 'contato@turbodigital.com.br',
+      zip: '20040-002',
+      street: 'Av. Rio Branco',
+      neighborhood: 'Centro',
+      city: 'Rio de Janeiro',
+      state: 'RJ',
+      plan: 'Pro',
+      monthly_fee: '994.00',
+      users_count: 8,
+      active: true,
+      created_at: new Date().toLocaleDateString('pt-BR')
+    }
+  ];
+
+  try {
+    const savedCustom = localStorage.getItem('oraculum_custom_agencies');
+    if (savedCustom) {
+      const parsed = JSON.parse(savedCustom);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        window.agenciasMock = parsed;
+        return;
+      }
+    }
+  } catch(e) {}
+  window.agenciasMock = defaultAgencies;
+})();
+
 window.agencyUsersMock = window.agencyUsersMock || [];
 
 // Helper para obter o cliente Supabase disponível globalmente
@@ -388,6 +403,10 @@ window.salvarAgencia = async function(e) {
       if (!window.agenciasMock) window.agenciasMock = [];
       window.agenciasMock.unshift(novaAgencia);
     }
+
+    try {
+      localStorage.setItem('oraculum_custom_agencies', JSON.stringify(window.agenciasMock));
+    } catch(e) {}
 
     window.fecharModalAgencia();
     window.renderizarListaAgencias();
