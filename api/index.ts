@@ -1798,36 +1798,63 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
       updated_at: new Date().toISOString()
     };
 
-    // Somente campos que existem de fato na tabela agencies do Supabase
-    // (name, slug, email_billing, cnpj_cpf, phone, monthly_fee, due_day, status, plan_tier)
-    const allowedFields = [
+    // Campos core da tabela agencies
+    const coreFields = [
       'name', 'slug', 'email_billing', 'cnpj_cpf', 'phone',
-      'monthly_fee', 'due_day', 'status', 'plan_tier'
+      'monthly_fee', 'due_day', 'status', 'plan_tier', 'token_limit',
+      'zip_code', 'address_street', 'address_neighborhood', 'address_city', 'address_state'
     ];
+
     // Mapeamento de nomes legados do frontend → coluna real
     if (body['cnpj'] !== undefined && body['cnpj_cpf'] === undefined) body['cnpj_cpf'] = body['cnpj'];
     if (body['plan'] !== undefined && body['plan_tier'] === undefined) body['plan_tier'] = body['plan'];
+    if (body['zip'] !== undefined && body['zip_code'] === undefined) body['zip_code'] = body['zip'];
+    if (body['street'] !== undefined && body['address_street'] === undefined) body['address_street'] = body['street'];
+    if (body['neighborhood'] !== undefined && body['address_neighborhood'] === undefined) body['address_neighborhood'] = body['neighborhood'];
+    if (body['city'] !== undefined && body['address_city'] === undefined) body['address_city'] = body['city'];
+    if (body['state'] !== undefined && body['address_state'] === undefined) body['address_state'] = body['state'];
+    if (body['admin_email'] !== undefined && body['email_billing'] === undefined) body['email_billing'] = body['admin_email'];
 
-    for (const field of allowedFields) {
+    // 1. Tenta atualizar incluindo todos os campos disponíveis (com endereço/tokens)
+    const fullPayload: Record<string, any> = { updated_at: new Date().toISOString() };
+    for (const field of coreFields) {
       if (body[field] !== undefined) {
-        if (field === 'monthly_fee') updatePayload[field] = parseFloat(body[field]);
-        else if (field === 'due_day' || field === 'client_limit') updatePayload[field] = parseInt(body[field]);
-        else updatePayload[field] = body[field];
+        if (field === 'monthly_fee') fullPayload[field] = parseFloat(body[field]);
+        else if (field === 'due_day' || field === 'client_limit' || field === 'token_limit') fullPayload[field] = parseInt(body[field]);
+        else fullPayload[field] = body[field];
       }
     }
 
-    const { data, error } = await supabase
+    let result = await supabase
       .from('agencies')
-      .update(updatePayload)
+      .update(fullPayload)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('[Supabase updateAgencyHandler Error]:', error);
-      throw error;
+    // 2. Se falhar por causa de colunas opcionais (como zip_code ou token_limit), faz fallback seguro para as colunas básicas
+    if (result.error) {
+      console.warn('[Supabase updateAgencyHandler Full Update Warning]:', result.error.message);
+      const basicFields = ['name', 'slug', 'email_billing', 'cnpj_cpf', 'phone', 'monthly_fee', 'due_day', 'status', 'plan_tier'];
+      const basicPayload: Record<string, any> = { updated_at: new Date().toISOString() };
+      for (const field of basicFields) {
+        if (body[field] !== undefined) {
+          if (field === 'monthly_fee') basicPayload[field] = parseFloat(body[field]);
+          else if (field === 'due_day') basicPayload[field] = parseInt(body[field]);
+          else basicPayload[field] = body[field];
+        }
+      }
+      result = await supabase
+        .from('agencies')
+        .update(basicPayload)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+      
+      if (result.error) throw result.error;
     }
-    return res.json({ success: true, data });
+
+    return res.json({ success: true, data: result.data });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

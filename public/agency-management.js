@@ -186,7 +186,14 @@ window.abrirModalAgencia = function(agenciaId = null) {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Plano SaaS</label>
-              <select id="agency-plan-input" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
+              <select id="agency-plan-input" onchange="
+                const p = this.value;
+                const feeInput = document.getElementById('agency-fee-input');
+                const tokenInput = document.getElementById('agency-token-limit-input');
+                if (p === 'Starter') { if(feeInput) feeInput.value = '497.00'; if(tokenInput) tokenInput.value = '500000'; }
+                else if (p === 'Pro Growth' || p === 'Pro') { if(feeInput) feeInput.value = '997.00'; if(tokenInput) tokenInput.value = '2000000'; }
+                else if (p === 'Enterprise Pro' || p === 'Enterprise') { if(feeInput) feeInput.value = '1997.00'; if(tokenInput) tokenInput.value = '10000000'; }
+              " class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
                 <option value="Starter">Starter (500k tokens / 5 clientes)</option>
                 <option value="Pro Growth">Pro Growth (2M tokens / 20 clientes)</option>
                 <option value="Enterprise Pro">Enterprise Pro (10M tokens / Ilimitado)</option>
@@ -223,18 +230,26 @@ window.abrirModalAgencia = function(agenciaId = null) {
     if (ag) {
       document.getElementById('agency-id-input').value = ag.id;
       document.getElementById('agency-name-input').value = ag.name || '';
-      document.getElementById('agency-cnpj-input').value = ag.cnpj || '';
+      document.getElementById('agency-cnpj-input').value = ag.cnpj || ag.cnpj_cpf || '';
       document.getElementById('agency-phone-input').value = ag.phone || '';
-      document.getElementById('agency-admin-email').value = ag.admin_email || '';
-      document.getElementById('agency-zip').value = ag.zip || '';
-      document.getElementById('agency-street').value = ag.street || '';
-      document.getElementById('agency-neighborhood').value = ag.neighborhood || '';
-      document.getElementById('agency-city').value = ag.city || '';
-      document.getElementById('agency-state').value = ag.state || '';
-      document.getElementById('agency-plan-input').value = ag.plan || 'Starter';
-      document.getElementById('agency-fee-input').value = ag.monthly_fee || '';
+      document.getElementById('agency-admin-email').value = ag.admin_email || ag.email_billing || '';
+      document.getElementById('agency-zip').value = ag.zip || ag.zip_code || '';
+      document.getElementById('agency-street').value = ag.street || ag.address_street || '';
+      document.getElementById('agency-neighborhood').value = ag.neighborhood || ag.address_neighborhood || '';
+      document.getElementById('agency-city').value = ag.city || ag.address_city || '';
+      document.getElementById('agency-state').value = ag.state || ag.address_state || '';
+      
+      const planVal = ag.plan || ag.plan_tier || 'Starter';
+      const planSelect = document.getElementById('agency-plan-input');
+      if (planSelect) {
+        if (planVal === 'Enterprise' || planVal === 'enterprise') planSelect.value = 'Enterprise Pro';
+        else if (planVal === 'Pro' || planVal === 'pro') planSelect.value = 'Pro Growth';
+        else planSelect.value = planVal;
+      }
+      
+      document.getElementById('agency-fee-input').value = ag.monthly_fee || '497.00';
       const tokenInput = document.getElementById('agency-token-limit-input');
-      if (tokenInput) tokenInput.value = ag.token_limit || (ag.plan === 'Pro Growth' ? 2000000 : ag.plan === 'Enterprise Pro' ? 10000000 : 500000);
+      if (tokenInput) tokenInput.value = ag.token_limit || (planVal.includes('Enterprise') ? 10000000 : planVal.includes('Pro') ? 2000000 : 500000);
     }
   } else {
     const titleEl = document.getElementById('modal-agency-title');
