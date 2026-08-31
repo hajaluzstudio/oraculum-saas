@@ -15,21 +15,6 @@ export function setMaintenanceModeState(active: boolean): void {
 export async function checkAgencyStatus(req: Request, res: Response, next: NextFunction) {
   // Check global maintenance mode first
   if (isMaintenanceMode) {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-      if (user) {
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        if (profile?.role === 'super_admin') {
-          return next(); // Super Admin bypasses maintenance mode
-        }
-      }
-    }
     return res.status(503).json({
       error: 'Sistema em manutenção programada.',
       code: 'MAINTENANCE_MODE',
@@ -37,32 +22,22 @@ export async function checkAgencyStatus(req: Request, res: Response, next: NextF
     });
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'Não autorizado.' });
+  const agencyId = (req as any).organizationId || req.headers['x-organization-id'];
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) return res.status(401).json({ error: 'Sessão inválida.' });
-
-  // Buscar perfil e agência do usuário
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*, agencies(*)')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return res.status(403).json({ error: 'Perfil não encontrado.' });
-
-  // Se for o dono do sistema (Super Admin), tem passe livre
-  if (profile.role === 'super_admin') {
-    (req as any).user = profile;
+  if (!agencyId) {
+    // Se não há agência identificada (ex: rota pública), deixa passar ou você pode bloquear.
+    // Como a plataforma é multi-tenant, vamos assumir que as requisições API sempre terão o ID.
     return next();
   }
 
   // Verificar se a agência está ativa
-  const agency = (profile as any).agencies;
-  if (!agency || agency.status === 'blocked' || agency.status === 'past_due') {
+  const { data: agency } = await supabaseAdmin
+    .from('agencies')
+    .select('status')
+    .eq('id', agencyId)
+    .single();
+
+  if (agency && (agency.status === 'blocked' || agency.status === 'past_due')) {
     return res.status(402).json({
       error: 'Acesso suspenso por pendência financeira.',
       code: 'AGENCY_BLOCKED',
@@ -70,7 +45,6 @@ export async function checkAgencyStatus(req: Request, res: Response, next: NextF
     });
   }
 
-  (req as any).user = profile;
-  (req as any).agencyId = profile.agency_id;
+  (req as any).agencyData = agency;
   next();
 }

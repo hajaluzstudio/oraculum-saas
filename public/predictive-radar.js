@@ -25,7 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
 async function runPredictiveScanner() {
   const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id');
   if (!clientId) {
-    alert("Selecione um cliente ativo antes de rodar o scanner preditivo.");
+    if (typeof window.showToast === 'function') window.showToast("Selecione um cliente ativo antes de rodar o scanner preditivo.", "error"); else alert("Selecione um cliente ativo antes de rodar o scanner preditivo.");
     return;
   }
 
@@ -208,7 +208,7 @@ async function runPredictiveScanner() {
 
   } catch (error) {
     console.error("Erro no Scanner Preditivo:", error);
-    alert("Falha ao rodar scanner: " + error.message);
+    if (typeof window.showToast === 'function') window.showToast("Falha ao rodar scanner: " + error.message, "error"); else alert("Falha ao rodar scanner: " + error.message);
   } finally {
     if (btn) {
       btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Rodar Scanner Preditivo';
@@ -341,7 +341,7 @@ window.dispatchPredictiveToKanban = async function(alertId) {
     await loadPredictiveAlerts();
 
   } catch (error) {
-    alert("Erro ao despachar tarefa: " + error.message);
+    if (typeof window.showToast === 'function') window.showToast("Erro ao despachar tarefa: " + error.message, "error"); else alert("Erro ao despachar tarefa: " + error.message);
   }
 };
 
@@ -354,6 +354,6 @@ window.ignorePredictiveAlert = async function(alertId) {
     if (error) throw error;
     await loadPredictiveAlerts();
   } catch (err) {
-    alert("Erro ao ignorar alerta: " + err.message);
+    if (typeof window.showToast === 'function') window.showToast("Erro ao ignorar alerta: " + err.message, "error"); else alert("Erro ao ignorar alerta: " + err.message);
   }
 };

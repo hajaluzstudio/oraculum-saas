@@ -95,11 +95,11 @@ export async function mineNicheTopPlayersAndTrends(niche: string): Promise<Auton
 Você é o Agente Autônomo de Pesquisa e Inteligência Competitiva de Elite da nossa Plataforma SaaS de Marketing Híbrido.
 Sua missão é realizar uma mineração cirúrgica e profunda utilizando busca na web em tempo real (Google Search Grounding) para o nicho: "${niche}".
 
-OBJETIVOS DA PESQUISA:
-1. Mapear dinamicamente os 3 a 5 Maiores Players atuais neste nicho com base em dados frescos da web. Extrair o padrão de copy deles, a estrutura da oferta High-Ticket e a linguagem de posicionamento.
-2. Identificar Tendências Globais de Mercado atuais e recentes para este setor.
-3. Mapear Regulamentações e Compliance do setor (órgãos reguladores como CFM, OAB, ANVISA, PROCON, etc., regras rígidas de publicidade, promessas proibidas e disclaimers obrigatórios).
-4. Gerar Diretrizes Práticas de Adaptação para o Dossiê Estratégico.
+OBJETIVOS DA PESQUISA (NÍVEL ESTRATÉGICO):
+1. Mapear os 3 a 5 Maiores Players/Concorrentes atuais neste nicho. Aprofundar como eles estruturam a Oferta Irresistível e quais Dores Reais eles exploram.
+2. Identificar Tendências Globais de Mercado frescas (tecnologia, comportamento) e explicar detalhadamente qual problema latente (Dor) isso resolve no consumidor final.
+3. Mapear a fundo Regulamentações e Compliance (Órgãos, proibições, regras do Meta/Google Ads específicas para este nicho, e disclaimers jurídicos).
+4. Fornecer Notícias ou artigos recentes reais, incluindo a fonte e a URL para basear nossa inteligência.
 
 RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e sem texto fora do JSON:
 
@@ -108,36 +108,36 @@ RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e
   "searchedAt": "${new Date().toISOString()}",
   "topPlayers": [
     {
-      "name": "Nome do Player ou Empresa Líder 1",
-      "marketPosition": "Posicionamento e tamanho no mercado",
-      "copyPattern": "Padrão de copy, ganchos visuais e verbais utilizados por este líder",
-      "highTicketOfferStructure": "Como é montada a oferta High-Ticket (ancoragem, entregáveis, bônus)",
-      "positioningLanguage": "Tom de voz, vocabulário, arquétipo de marca e gatilhos mentais"
+      "name": "Nome do Player",
+      "marketPosition": "Posicionamento no mercado",
+      "copyPattern": "Ganchos emocionais e racionais usados na Copy",
+      "highTicketOfferStructure": "Como empacotam a oferta (Ancoragem, Entregáveis)",
+      "positioningLanguage": "Gatilhos mentais e tom de voz"
     }
   ],
   "marketTrends": [
     {
-      "trend": "Nome da Tendência Global",
-      "justification": "Por que isso é relevante para o cliente e qual dor do consumidor isso resolve",
-      "strategicAction": "Ação estratégica recomendada baseada nessa tendência"
+      "trend": "Tendência inovadora atual",
+      "justification": "Explicação profunda da dor real que essa tendência resolve no consumidor (MUITO IMPORTANTE)",
+      "strategicAction": "Plano de ação claro para implementarmos isso hoje"
     }
   ],
   "regulatoryCompliance": {
-    "governingBodies": ["Órgão Regulador 1"],
+    "governingBodies": ["Órgão 1 (Ex: CFM, OAB, etc)"],
     "strictRules": [
-      {"rule": "Regra Rígida", "explanation": "Por que existe e o impacto na copy"}
+      {"rule": "Regra", "explanation": "Por que existe e o risco jurídico"}
     ],
     "forbiddenClaims": [
-      {"claim": "Alegação Proibida", "explanation": "Por que dá bloqueio ou processo (ex: promessa milagrosa)"}
+      {"claim": "Promessa proibida (Ex: 'Cura garantida')", "explanation": "Risco de bloqueio no Facebook Ads ou processo"}
     ],
     "mandatoryDisclaimers": [
-      {"disclaimer": "Aviso obrigatório", "explanation": "Onde usar e o porquê da exigência"}
+      {"disclaimer": "Aviso legal", "explanation": "Contexto de uso"}
     ]
   },
   "competitiveCopyInsights": {
-    "dominantAngles": ["Ângulo Dominante 1"],
-    "irresistibleOffers": ["Estrutura Irresistível 1"],
-    "neuromarketingTriggers": ["Gatilho 1"]
+    "dominantAngles": ["Ângulo dominante de dor/desejo"],
+    "irresistibleOffers": ["Exemplo prático de oferta magnética"],
+    "neuromarketingTriggers": ["Gatilhos para usar nos anúncios"]
   },
   "strategicAdaptationDirectives": {
     "clientPositioningRecommendation": "Como o nosso cliente deve se posicionar",

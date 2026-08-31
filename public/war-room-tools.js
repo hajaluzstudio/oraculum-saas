@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => {
-      alert('Script copiado para o WhatsApp!');
+      if (typeof window.showToast === 'function') window.showToast('Script copiado para o WhatsApp!', 'success'); else alert('Script copiado para o WhatsApp!');
     });
   }
 
@@ -688,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnDespachar) {
     btnDespachar.addEventListener('click', async () => {
       if (!window.supabaseClient) {
-        alert('Conexão com o banco de dados não inicializada.');
+        if (typeof window.showToast === 'function') window.showToast('Conexão com o banco de dados não inicializada.', 'error'); else alert('Conexão com o banco de dados não inicializada.');
         return;
       }
       
@@ -696,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tenantId = window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id');
       
       if (!clientId) {
-        alert('Cliente não identificado.');
+        if (typeof window.showToast === 'function') window.showToast('Cliente não identificado.', 'error'); else alert('Cliente não identificado.');
         return;
       }
       
@@ -714,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fetchErr) throw fetchErr;
         
         if (!wrTasks || wrTasks.length === 0) {
-          alert('A Sala de Operações não possui tarefas novas/pendentes para despachar para este cliente.');
+          if (typeof window.showToast === 'function') window.showToast('A Sala de Operações não possui tarefas novas/pendentes para despachar para este cliente.', 'info'); else alert('A Sala de Operações não possui tarefas novas/pendentes para despachar para este cliente.');
           btnDespachar.disabled = false;
           btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
           return;
@@ -763,7 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
       } catch (err) {
         console.error('[ERRO DESPACHO WAR ROOM]', err);
-        alert('Erro ao despachar tarefas: ' + err.message);
+        if (typeof window.showToast === 'function') window.showToast('Erro ao despachar tarefas: ' + err.message, 'error'); else alert('Erro ao despachar tarefas: ' + err.message);
         btnDespachar.disabled = false;
         btnDespachar.innerHTML = '<i class="fa-solid fa-rocket"></i> Despachar para Kanban';
       }
