@@ -1687,6 +1687,58 @@ app.get('/api/autonomous-scraper/status', (req: Request, res: Response) => {
   return res.json({ success: true, data: status });
 });
 
+// AUTENTICAÇÃO BLINDADA BACKEND (SUPABASE NODE API)
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'E-mail e senha são obrigatórios.' });
+    }
+
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (authErr) {
+      return res.status(401).json({ success: false, error: authErr.message });
+    }
+
+    let profile = null;
+    try {
+      const { data: profData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+      profile = profData;
+    } catch(e) {}
+
+    return res.json({
+      success: true,
+      session: authData.session,
+      user: authData.user,
+      profile
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// LISTAR CLIENTES COM TENANT ISOLATION
+app.get('/api/clients', async (req: Request, res: Response) => {
+  try {
+    const orgId = req.headers['x-organization-id'] || req.query.organization_id || (req as any).organizationId;
+    let query = supabase.from('clients').select('*').order('created_at', { ascending: false });
+    
+    if (orgId && orgId !== 'all' && orgId !== 'master') {
+      query = query.or(`agency_id.eq.${orgId},organization_id.eq.${orgId}`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return res.json({ success: true, data: data || [] });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GESTÃO MASTER DE AGÊNCIAS & BLOQUEIO FINANCEIRO (SUPER ADMIN)
 app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, res: Response) => {
   try {

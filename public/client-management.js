@@ -367,20 +367,32 @@ window.carregarClientesDoSupabase = async function() {
   try {
     const identidade = await window.obterIdentidadeSegura();
 
-    if (supaClient) {
+    // 1. Tenta carregar via API Backend dedicada (Vercel Serverless)
+    try {
+      const resApi = await fetch(`/api/clients?organization_id=${identidade.isMaster ? 'all' : (identidade.agencyId || '')}`);
+      if (resApi.ok) {
+        const jsonApi = await resApi.json();
+        if (jsonApi.success && Array.isArray(jsonApi.data)) {
+          data = jsonApi.data;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('[Clients] Falha na API Backend, tentando fallback Supabase SDK:', apiErr);
+    }
+
+    // 2. Fallback direto Supabase SDK
+    if (!data && supaClient) {
       try {
         const res = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
         if (!res.error && res.data) {
           data = res.data;
-        } else if (res.error) {
-          console.warn("Aviso na busca direta do Supabase:", res.error.message);
         }
       } catch (clientErr) {
         console.warn("Aviso de rede na consulta direta ao Supabase:", clientErr);
       }
     }
 
-    // Se falhar ou estiver sem rede, tenta ler do cache local
+    // 3. Fallback de cache local
     if (!data || data.length === 0) {
       try {
         const localData = localStorage.getItem('oraculum_clients_cache');

@@ -4207,32 +4207,56 @@ window.atualizarCardUsuarioLogado = function(providedSession = null) {
           localStorage.removeItem('oraculum_saved_password');
         }
 
-        const supaClient = window.supabaseClient;
-        if (!supaClient || !supaClient.auth) {
-          throw new Error('Serviço de autenticação (Supabase) não inicializado.');
+        let authSuccessful = false;
+        let token = '';
+        let userId = '';
+        let userMetadata = {};
+        let profile = null;
+
+        // 1. Tenta autenticação via Backend API (Vercel Node runtime - Conexão Segura e Imune a falhas de CORS/HTTP2 no browser)
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          if (res.ok) {
+            const resJson = await res.json();
+            if (resJson.success && resJson.session) {
+              authSuccessful = true;
+              token = resJson.session.access_token;
+              userId = resJson.user.id;
+              userMetadata = resJson.user.user_metadata || {};
+              profile = resJson.profile || null;
+            }
+          }
+        } catch (apiAuthErr) {
+          console.warn('[Auth] Falha no login via Backend API, tentando Supabase direto:', apiAuthErr);
         }
 
-        // Tenta login real via Supabase
-        const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
-        if (error) {
-          throw error;
+        // 2. Fallback direto via Supabase Client
+        if (!authSuccessful) {
+          const supaClient = window.supabaseClient;
+          if (!supaClient || !supaClient.auth) {
+            throw new Error('Serviço de autenticação (Supabase) não inicializado.');
+          }
+
+          const { data, error } = await supaClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+
+          token = data.session.access_token;
+          userId = data.user.id;
+          userMetadata = data.user.user_metadata || {};
+
+          try {
+            const { data: profData } = await supaClient
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .maybeSingle();
+            if (profData) profile = profData;
+          } catch(e) {}
         }
-
-        const token = data.session.access_token;
-        const userId = data.user.id;
-
-        // Busca o papel e a agência do usuário na tabela profiles
-        const { data: profile, error: profileErr } = await supaClient
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        if (profileErr && profileErr.code !== 'PGRST116') {
-           console.error("Erro ao buscar profile:", profileErr);
-        }
-
-        const userMetadata = data.user.user_metadata || {};
         let role = userMetadata.role || profile?.role || 'agency_member';
         let agencyId = userMetadata.agency_id || profile?.agency_id || null;
         let agencyName = profile?.agency_name || userMetadata.agency_name || ((role === 'super_admin' || email === 'hajaluzstudio@gmail.com') ? 'Oraculum Master Corp' : 'Agência Parceira');
