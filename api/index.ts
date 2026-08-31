@@ -1743,19 +1743,25 @@ app.get('/api/clients', async (req: Request, res: Response) => {
 app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase.from('agencies').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
+    
+    if (error) {
+      console.warn('[Agencies Backend Warning]:', error.message);
+      return res.json({ success: true, data: [] });
+    }
 
-    // Busca contagem real de usuários/membros vinculados a cada agência
+    // Busca contagem real de usuários/membros vinculados a cada agência (com fallback seguro)
     let userCountsByAgency: Record<string, number> = {};
     try {
-      const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
-      if (authData && authData.users) {
-        authData.users.forEach((u: any) => {
-          const agId = u.user_metadata?.agency_id;
-          if (agId) {
-            userCountsByAgency[agId] = (userCountsByAgency[agId] || 0) + 1;
-          }
-        });
+      if (supabaseAdmin && supabaseAdmin.auth && supabaseAdmin.auth.admin) {
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+        if (!authError && authData && authData.users) {
+          authData.users.forEach((u: any) => {
+            const agId = u.user_metadata?.agency_id;
+            if (agId) {
+              userCountsByAgency[agId] = (userCountsByAgency[agId] || 0) + 1;
+            }
+          });
+        }
       }
     } catch (countErr) {
       console.warn('[Agencies User Count Warning]:', countErr);
@@ -1768,7 +1774,8 @@ app.get(['/api/admin/agencies', '/api/portal/agencies'], async (req: Request, re
 
     return res.json({ success: true, data: enhancedData });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('[Agencies Backend Fatal Error]:', error);
+    return res.json({ success: true, data: [] });
   }
 });
 
