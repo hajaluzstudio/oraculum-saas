@@ -154,7 +154,7 @@ window.salvarCliente = async function(e) {
 
     const identidade = await window.obterIdentidadeSegura();
     if (!identidade.isMaster && !identidade.agencyId) {
-      alert('❌ Erro: ID da agência não encontrado. Faça login novamente.');
+      if (typeof window.showToast === 'function') window.showToast('❌ Erro: ID da agência não encontrado. Faça login novamente.', 'error'); else alert('❌ Erro: ID da agência não encontrado. Faça login novamente.');
       return;
     }
 
@@ -178,9 +178,9 @@ window.salvarCliente = async function(e) {
 
     window.fecharModalNovoCliente();
     await window.carregarClientesDoSupabase();
-    alert(`🎉 Cliente salvo com sucesso!`);
+    if (typeof window.showToast === 'function') window.showToast(`🎉 Cliente salvo com sucesso!`, 'success'); else alert(`🎉 Cliente salvo com sucesso!`);
   } catch (err) {
-    alert('❌ Erro ao salvar: ' + err.message);
+    if (typeof window.showToast === 'function') window.showToast('❌ Erro ao salvar: ' + err.message, 'error'); else alert('❌ Erro ao salvar: ' + err.message);
   } finally {
     if (btn) { btn.innerText = 'Salvar'; btn.disabled = false; }
   }
