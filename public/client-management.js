@@ -176,15 +176,24 @@ window.salvarCliente = async function(e) {
 
     if (error) throw error;
 
-    window.fecharModalNovoCliente();
-    await window.carregarClientesDoSupabase();
-    if (typeof window.showToast === 'function') window.showToast(`🎉 Cliente salvo com sucesso!`, 'success'); else alert(`🎉 Cliente salvo com sucesso!`);
-  } catch (err) {
-    if (typeof window.showToast === 'function') window.showToast('❌ Erro ao salvar: ' + err.message, 'error'); else alert('❌ Erro ao salvar: ' + err.message);
-  } finally {
-    if (btn) { btn.innerText = 'Salvar'; btn.disabled = false; }
+   window.fecharModalNovoCliente();
+await window.carregarClientesDoSupabase();
+
+// Bloco de Sucesso
+if (typeof window.mostrarToastOraculum === 'function') {
+  window.mostrarToastOraculum('✨ Cliente salvo com sucesso!', 'sucesso');
+} else {
+  alert('✨ Cliente salvo com sucesso!');
+}
+
+} catch (err) {
+  // Bloco de Erro (fica dentro do catch)
+  if (typeof window.mostrarToastOraculum === 'function') {
+    window.mostrarToastOraculum('❌ Erro ao salvar: ' + err.message, 'erro');
+  } else {
+    alert('❌ Erro ao salvar: ' + err.message);
   }
-};
+}
 
 // 4. EXCLUIR CLIENTE
 window.excluirCliente = async function(clientId) {
