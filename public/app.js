@@ -286,6 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }, 60);
       }
+
+      if (targetTab === 'tab-super-admin') {
+        if (typeof window.carregarAgenciasDoSupabase === 'function') {
+          window.carregarAgenciasDoSupabase();
+        }
+      }
     });
   });
 
