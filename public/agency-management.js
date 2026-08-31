@@ -419,7 +419,16 @@ window.salvarAgencia = async function(e) {
       }
     }
 
-    // Atualiza estado local agenciasMock
+    // Atualiza estado local agenciasMock e salva no Address Store persistente
+    try {
+      const addressStore = JSON.parse(localStorage.getItem('oraculum_agencies_address_store') || '{}');
+      const targetId = id || String(Date.now());
+      addressStore[targetId] = {
+        zip, street, neighborhood, city, state, cnpj, phone, admin_email, plan, monthly_fee, token_limit
+      };
+      localStorage.setItem('oraculum_agencies_address_store', JSON.stringify(addressStore));
+    } catch(e) {}
+
     if (id) {
       const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(id));
       if (index !== -1) {
@@ -1312,30 +1321,39 @@ window.carregarAgenciasDoSupabase = async function() {
   }
 
   if (agencias.length > 0) {
-    window.agenciasMock = agencias.map(ag => ({
-      id: ag.id,
-      name: ag.name,
-      cnpj: ag.cnpj_cpf || ag.cnpj || '',
-      cnpj_cpf: ag.cnpj_cpf || ag.cnpj || '',
-      phone: ag.phone || '',
-      admin_email: ag.email_billing || ag.admin_email || ag.email || '',
-      email_billing: ag.email_billing || ag.admin_email || ag.email || '',
-      zip: ag.zip_code || ag.zip || '',
-      street: ag.address_street || ag.street || '',
-      neighborhood: ag.address_neighborhood || ag.neighborhood || '',
-      city: ag.address_city || ag.city || '',
-      state: ag.address_state || ag.state || '',
-      plan: ag.plan_tier || ag.plan || 'Starter',
-      plan_tier: ag.plan_tier || ag.plan || 'Starter',
-      monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : '997.00',
-      due_day: ag.due_day || 10,
-      token_limit: ag.token_limit || (ag.plan_tier === 'Enterprise Pro' || ag.plan_tier === 'Enterprise' ? 10000000 : ag.plan_tier === 'Pro Growth' ? 2000000 : 500000),
-      tokens_used_month: ag.tokens_used_month || 0,
-      users_count: ag.users_count !== undefined ? ag.users_count : 1,
-      active: ag.status === 'active' || ag.active === true,
-      status: ag.status || 'active',
-      created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
-    }));
+    // Carrega dados extras de endereço salvos localmente por agência
+    let addressStore = {};
+    try {
+      addressStore = JSON.parse(localStorage.getItem('oraculum_agencies_address_store') || '{}');
+    } catch(e) {}
+
+    window.agenciasMock = agencias.map(ag => {
+      const extra = addressStore[ag.id] || {};
+      return {
+        id: ag.id,
+        name: ag.name,
+        cnpj: ag.cnpj_cpf || ag.cnpj || extra.cnpj || '',
+        cnpj_cpf: ag.cnpj_cpf || ag.cnpj || extra.cnpj || '',
+        phone: ag.phone || extra.phone || '',
+        admin_email: ag.email_billing || ag.admin_email || ag.email || extra.admin_email || '',
+        email_billing: ag.email_billing || ag.admin_email || ag.email || extra.admin_email || '',
+        zip: ag.zip_code || ag.zip || extra.zip || '',
+        street: ag.address_street || ag.street || extra.street || '',
+        neighborhood: ag.address_neighborhood || ag.neighborhood || extra.neighborhood || '',
+        city: ag.address_city || ag.city || extra.city || '',
+        state: ag.address_state || ag.state || extra.state || '',
+        plan: ag.plan_tier || ag.plan || extra.plan || 'Starter',
+        plan_tier: ag.plan_tier || ag.plan || extra.plan || 'Starter',
+        monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : (extra.monthly_fee || '997.00'),
+        due_day: ag.due_day || extra.due_day || 10,
+        token_limit: ag.token_limit || extra.token_limit || (ag.plan_tier === 'Enterprise Pro' || ag.plan_tier === 'Enterprise' ? 10000000 : ag.plan_tier === 'Pro Growth' ? 2000000 : 500000),
+        tokens_used_month: ag.tokens_used_month || extra.tokens_used_month || 0,
+        users_count: ag.users_count !== undefined ? ag.users_count : (extra.users_count || 1),
+        active: ag.status === 'active' || ag.active === true,
+        status: ag.status || 'active',
+        created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
+      };
+    });
     
     if (!isOffline) {
       localStorage.setItem('oraculum_agencias_backup', JSON.stringify(agencias));
