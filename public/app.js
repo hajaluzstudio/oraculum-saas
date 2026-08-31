@@ -7434,8 +7434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window.carregarAgenciasDoSupabase === 'function') {
       await window.carregarAgenciasDoSupabase();
     } else {
-      currentAgenciesCache = getMockAgenciesList();
-      renderAgenciesTable(currentAgenciesCache);
+      console.warn("[Oraculum] carregarAgenciasDoSupabase não foi encontrada.");
     }
   }
 

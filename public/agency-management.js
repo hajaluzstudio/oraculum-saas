@@ -897,19 +897,24 @@ window.atualizarKPIsMaster = function() {
 };
 
 // 6. RENDERIZAR TABELA DO SUPER ADMIN (COM O BOTÃO DE BLOQUEIO RESTAURADO)
-window.renderizarListaAgencias = function() {
+window.renderizarListaAgencias = function(isOffline = false) {
   const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body');
   if (!container) return;
 
   const list = window.agenciasMock || [];
 
   if (list.length === 0) {
-    container.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhuma agência cadastrada ainda. Clique em "+ Nova Agência" para começar.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Nenhuma agência encontrada. ${isOffline ? '(Modo Offline - Sem conexão)' : 'Clique em "+ Nova Agência" para começar.'}</td></tr>`;
     if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
     return;
   }
+  
+  let html = '';
+  if (isOffline) {
+    html += `<tr><td colspan="7" class="text-center py-2 bg-amber-500/10 text-amber-500 text-xs font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Modo Offline: Exibindo backup local. Conecte-se para ver dados atualizados.</td></tr>`;
+  }
 
-  container.innerHTML = list.map(ag => {
+  html += list.map(ag => {
     const fee = typeof ag.monthly_fee === 'number' ? ag.monthly_fee : parseFloat(String(ag.monthly_fee || 0).replace(',', '.'));
     const due = ag.due_day || 10;
     const feeFormatted = isNaN(fee) ? 'R$ 0,00' : `R$ ${fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -950,6 +955,8 @@ window.renderizarListaAgencias = function() {
     </tr>
   `;
   }).join('');
+  
+  container.innerHTML = html;
 
   if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
 };
@@ -1006,31 +1013,56 @@ window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
 
 // 7. LEITURA INICIAL E PERSISTÊNCIA REAL DO SUPABASE
 window.carregarAgenciasDoSupabase = async function() {
-  let agencias = [];
-
-  // Tenta via backend API primeiro
-  try {
-    const res = await fetch('/api/admin/agencies');
-    const resData = await res.json();
-    if (resData.success && Array.isArray(resData.data)) {
-      agencias = resData.data;
-    }
-  } catch (err) {
-    console.warn("Aviso ao carregar agências via API backend:", err);
+  const container = document.querySelector('#sa-agencies-table-body, #agencies-table-body');
+  if (container) {
+    container.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando agências, por favor aguarde...</td></tr>`;
   }
 
-  // Fallback direct Supabase SDK
+  let agencias = [];
+  let isOffline = false;
+
+  // 1. Tenta via backend API primeiro
+  try {
+    const res = await fetch('/api/admin/agencies');
+    if (res.ok) {
+      const resData = await res.json();
+      if (resData.success && Array.isArray(resData.data)) {
+        agencias = resData.data;
+      }
+    }
+  } catch (err) {
+    console.warn("[Oraculum] Falha ao carregar agências via API backend:", err);
+  }
+
+  // 2. Fallback direct Supabase SDK
   if (agencias.length === 0) {
     const client = getSupabaseClient();
     if (client) {
       try {
         const { data, error } = await client.from('agencies').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           agencias = data;
         }
       } catch(e) {
-        console.warn('Usando dados em memória para agências:', e);
+        console.warn('[Oraculum] Erro ao carregar agências via Supabase SDK:', e);
       }
+    }
+  }
+
+  // 3. Fallback Offline (localStorage)
+  if (agencias.length === 0) {
+    try {
+      const offlineData = localStorage.getItem('oraculum_agencias_backup');
+      if (offlineData) {
+        const parsed = JSON.parse(offlineData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          agencias = parsed;
+          isOffline = true;
+          console.warn('[Oraculum] MODO OFFLINE: Usando backup local de agências.');
+        }
+      }
+    } catch (e) {
+      console.warn('[Oraculum] Falha ao ler backup local:', e);
     }
   }
 
@@ -1052,9 +1084,15 @@ window.carregarAgenciasDoSupabase = async function() {
       active: ag.status === 'active' || ag.active === true,
       created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')
     }));
+    
+    if (!isOffline) {
+      localStorage.setItem('oraculum_agencias_backup', JSON.stringify(agencias));
+    }
+  } else if (!window.agenciasMock) {
+      window.agenciasMock = [];
   }
 
-  window.renderizarListaAgencias();
+  window.renderizarListaAgencias(isOffline);
 };
 
 window.excluirAgencia = async function(agenciaId) {
