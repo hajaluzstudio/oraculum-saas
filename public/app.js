@@ -544,7 +544,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!chatErr && chatData && chatData.length > 0) {
           chatData.forEach(msg => {
             const role = (msg.role === 'user') ? 'user' : 'model';
-            const content = msg.content || msg.message || '';
+            let content = msg.content || msg.message || '';
+            let tasks = null;
+
+            try {
+              if (typeof content === 'string' && content.trim().startsWith('{')) {
+                const parsed = JSON.parse(content.trim());
+                if (parsed.replyText) content = parsed.replyText;
+                else if (parsed.display_text) content = parsed.display_text;
+                if (parsed.tasks) tasks = parsed.tasks;
+              }
+            } catch(e) {}
+
+            content = String(content)
+              .replace(/\\n/g, '<br>')
+              .replace(/\n/g, '<br>')
+              .replace(/^["']|["']$/g, '');
 
             if (role === 'model') {
               const replyHtml = `${content}<br><br><button class="btn-approve" onclick="window.dispatchBriefingToWarRoom(this)">✅ Aprovar & Despachar para Sala de Operação</button>`;
@@ -1473,6 +1488,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await res.json();
       const cleanReplyText = extrairTextoLimpo(data);
+      let formattedHtml = cleanReplyText;
+      if (typeof marked !== 'undefined') {
+        formattedHtml = marked.parse(cleanReplyText);
+      } else {
+        formattedHtml = cleanReplyText.replace(/\n/g, '<br>');
+      }
 
       // 4. Renderiza a resposta da IA com o card de aprovação
       const aiBubble = document.createElement('div');
@@ -1482,8 +1503,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="mb-3 text-emerald-400 font-medium flex items-center gap-2">
             <span>Oraculum Copiloto</span>
           </div>
-          <div class="chat-ai-content mb-4 text-slate-300" style="white-space: pre-wrap; word-break: break-word;">
-            ${cleanReplyText}
+          <div class="chat-ai-content mb-4 text-slate-300 markdown-body prose prose-invert max-w-none">
+            ${formattedHtml}
           </div>
           <div class="flex items-center gap-3 pt-3 border-t border-slate-800">
             <button type="button" class="btn-aprovar-despacho px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-950">
@@ -1834,13 +1855,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let finalContent = text;
     if (sender !== 'user') {
       try {
-        const parsed = JSON.parse(text);
-        if (parsed.replyText) finalContent = parsed.replyText;
-        else if (parsed.display_text) finalContent = parsed.display_text;
+        if (typeof text === 'string' && text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text.trim());
+          if (parsed.replyText) finalContent = parsed.replyText;
+          else if (parsed.display_text) finalContent = parsed.display_text;
+          if (Array.isArray(parsed.tasks) && (!tasksArray || tasksArray.length === 0)) {
+            tasksArray = parsed.tasks;
+          }
+        }
       } catch (e) {}
+
+      finalContent = String(finalContent)
+        .replace(/\\n/g, '\n')
+        .replace(/^["']|["']$/g, '');
 
       if (typeof marked !== 'undefined') {
         finalContent = marked.parse(finalContent);
+      } else {
+        finalContent = finalContent.replace(/\n/g, '<br>');
       }
     }
 
