@@ -326,6 +326,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetTab === 'tab-chat' && typeof window.inicializarEventosChatEstrategico === 'function') {
         window.inicializarEventosChatEstrategico();
         if (typeof window.restaurarHistoricoChat === 'function') window.restaurarHistoricoChat();
+        setTimeout(() => {
+          const chatContainer = document.getElementById('chat-messages-list') || document.querySelector('.chat-messages');
+          if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, 150);
       }
 
       if (targetTab === 'tab-spy' && typeof window.loadCompetitors === 'function') { // tab-spy is Radar
@@ -1422,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Limpa o input e desabilita o botão para evitar envio duplo
     inputEl.value = '';
     if (sendBtn) sendBtn.disabled = true;
-
+    
     // 2. Renderiza a mensagem do usuário na tela
     const userBubble = document.createElement('div');
     userBubble.className = 'flex justify-end mb-4';
@@ -1431,7 +1435,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ${message}
       </div>
     `;
-    if (chatContainer) chatContainer.appendChild(userBubble);
+    if (chatContainer) {
+      chatContainer.appendChild(userBubble);
+      setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 30);
+    }
 
     // 3. Exibe o indicador de processamento
     let loadingEl = document.getElementById('temp-chat-loading');
@@ -1441,6 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingEl.className = 'text-xs text-amber-400 font-mono tracking-wide py-2 flex items-center gap-2';
       loadingEl.innerHTML = `⚡ ORACULUM PROCESSANDO ESTRATÉGIA...`;
       chatContainer.appendChild(loadingEl);
+      setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 30);
     }
     if (processingIndicator) processingIndicator.classList.remove('hidden');
 
@@ -1511,7 +1519,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      if (chatContainer) chatContainer.appendChild(aiBubble);
+      if (chatContainer) {
+        chatContainer.appendChild(aiBubble);
+        setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 50);
+      }
 
       // Salva no histórico em memória
       if (!window.currentChatHistory) window.currentChatHistory = [];
@@ -1849,7 +1860,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     container.appendChild(msgWrapper);
-    container.scrollTop = container.scrollHeight;
+    
+    // Auto-scroll para a última mensagem recente
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+    }, 50);
   };
 
   // ============================================================================
