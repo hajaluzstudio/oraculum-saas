@@ -6948,14 +6948,17 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn("Aviso: Botão de ver senha ou input não encontrados no HTML.");
   }
 
-  // Restaurar E-mail Salvo no carregamento
+  // Restaurar E-mail Salvo no carregamento ou URL
   try {
-    const savedEmail = localStorage.getItem('oraculum_saved_email');
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    const savedEmail = emailFromUrl || localStorage.getItem('oraculum_saved_email');
+    
     const emailInput = document.getElementById('login-email');
     const rememberCheckbox = document.getElementById('remember-me');
     if (savedEmail && emailInput) {
       emailInput.value = savedEmail;
-      if (rememberCheckbox) rememberCheckbox.checked = true;
+      if (rememberCheckbox && !emailFromUrl) rememberCheckbox.checked = true;
     }
   } catch(e) {}
 
@@ -7444,7 +7447,66 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getMockAgenciesList() {
-    return [];
+    if (window.agenciasMock && window.agenciasMock.length > 0) {
+      return window.agenciasMock.map(ag => ({
+        id: ag.id,
+        name: ag.name,
+        cnpj: ag.cnpj || '-',
+        responsible_name: ag.responsible_name || 'Responsável Master',
+        email_billing: ag.admin_email || ag.email_billing || '-',
+        phone: ag.phone || '',
+        address_city: ag.city || 'São Paulo',
+        address_state: ag.state || 'SP',
+        monthly_fee: parseFloat(ag.monthly_fee || 997),
+        due_day: ag.due_day || 10,
+        status: ag.active ? 'active' : 'blocked',
+        clients_count: ag.users_count || 1
+      }));
+    }
+    return [
+      {
+        id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104',
+        name: 'Agência Oraculum Master',
+        cnpj: '12.345.678/0001-90',
+        responsible_name: 'Dr. Lucas / Haja Luz',
+        email_billing: 'master@oraculum.com.br',
+        phone: '(11) 99999-8888',
+        address_city: 'São Paulo',
+        address_state: 'SP',
+        monthly_fee: 1997.00,
+        due_day: 10,
+        status: 'active',
+        clients_count: 12
+      },
+      {
+        id: 'b7c9a2d1-8e4f-43f2-96b9-3094cf3g0205',
+        name: 'Agência Turbo Performance Digital',
+        cnpj: '98.765.432/0001-10',
+        responsible_name: 'Carlos Eduardo de Oliveira',
+        email_billing: 'contato@turbodigital.com.br',
+        phone: '(21) 98888-7777',
+        address_city: 'Rio de Janeiro',
+        address_state: 'RJ',
+        monthly_fee: 994.00,
+        due_day: 15,
+        status: 'active',
+        clients_count: 8
+      },
+      {
+        id: 'c8d0b3e2-9f5a-44a3-07c0-4105dg4h0306',
+        name: 'Alpha Growth & ROI Agency',
+        cnpj: '45.678.901/0001-22',
+        responsible_name: 'Mariana Souza',
+        email_billing: 'financeiro@alphagrowth.io',
+        phone: '(31) 97777-6666',
+        address_city: 'Belo Horizonte',
+        address_state: 'MG',
+        monthly_fee: 0.00,
+        due_day: 5,
+        status: 'blocked',
+        clients_count: 4
+      }
+    ];
   }
 
   function renderAgenciesTable(agencies) {
