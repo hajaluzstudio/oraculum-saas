@@ -2,7 +2,59 @@
 // GESTÃO MASTER DE AGÊNCIAS (MODAL, VIA CEP, RBAC, EQUIPE E BLOQUEIO)
 // =======================================================
 
-window.agenciasMock = window.agenciasMock || [];
+window.agenciasMock = window.agenciasMock && window.agenciasMock.length > 0 ? window.agenciasMock : [
+  {
+    id: 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104',
+    name: 'Agência Oraculum Master',
+    cnpj: '12.345.678/0001-90',
+    phone: '(11) 99999-8888',
+    admin_email: 'master@oraculum.com.br',
+    zip: '01001-000',
+    street: 'Praça da Sé',
+    neighborhood: 'Centro',
+    city: 'São Paulo',
+    state: 'SP',
+    plan: 'Enterprise',
+    monthly_fee: '1997.00',
+    users_count: 12,
+    active: true,
+    created_at: new Date().toLocaleDateString('pt-BR')
+  },
+  {
+    id: 'b7c9a2d1-8e4f-43f2-96b9-3094cf3g0205',
+    name: 'Agência Turbo Performance Digital',
+    cnpj: '98.765.432/0001-10',
+    phone: '(21) 98888-7777',
+    admin_email: 'contato@turbodigital.com.br',
+    zip: '20040-002',
+    street: 'Av. Rio Branco',
+    neighborhood: 'Centro',
+    city: 'Rio de Janeiro',
+    state: 'RJ',
+    plan: 'Pro',
+    monthly_fee: '994.00',
+    users_count: 8,
+    active: true,
+    created_at: new Date().toLocaleDateString('pt-BR')
+  },
+  {
+    id: 'c8d0b3e2-9f5a-44a3-07c0-4105dg4h0306',
+    name: 'Alpha Growth & ROI Agency',
+    cnpj: '45.678.901/0001-22',
+    phone: '(31) 97777-6666',
+    admin_email: 'financeiro@alphagrowth.io',
+    zip: '30130-000',
+    street: 'Av. Afonso Pena',
+    neighborhood: 'Boa Viagem',
+    city: 'Belo Horizonte',
+    state: 'MG',
+    plan: 'Starter',
+    monthly_fee: '0.00',
+    users_count: 4,
+    active: false,
+    created_at: new Date().toLocaleDateString('pt-BR')
+  }
+];
 window.agencyUsersMock = window.agencyUsersMock || [];
 
 // Helper para obter o cliente Supabase disponível globalmente
@@ -285,11 +337,11 @@ window.salvarAgencia = async function(e) {
       if (resData.success) {
         savedInSupa = true;
         if (resData.userCreated) {
-           alert(`✅ Agência cadastrada com sucesso!\n\nUm usuário administrador foi criado para esta agência.\n\nE-mail: ${payload.admin_email}\nSenha Provisória: ${resData.defaultPassword}\n\nPor favor, copie e envie esta senha para a agência.`);
+           window.mostrarNotificacaoAgencia(`✅ Agência cadastrada com sucesso!\n\nUm usuário administrador foi criado para esta agência.\n\nE-mail: ${payload.admin_email}\nSenha Provisória: ${resData.defaultPassword}\n\nPor favor, copie e envie esta senha para a agência.`, 'success');
         }
       } else {
         console.error("❌ ERRO BACKEND VERCEL ao salvar agência:", resData.error || resData);
-        alert(`❌ ERRO BACKEND VERCEL ao salvar agência:\n${resData.error || JSON.stringify(resData)}`);
+        window.mostrarNotificacaoAgencia(`❌ ERRO BACKEND VERCEL ao salvar agência:\n${resData.error || JSON.stringify(resData)}`, 'error');
       }
     } catch (apiErr) {
       console.warn("⚠️ Falha na chamada da API Backend Vercel:", apiErr);
@@ -304,17 +356,17 @@ window.salvarAgencia = async function(e) {
               ...payload, updated_at: new Date().toISOString()
             }).eq('id', id);
             if (!error) savedInSupa = true;
-            else alert(`❌ ERRO SUPABASE CLIENT (UPDATE): ${error.message}`);
+            else window.mostrarNotificacaoAgencia(`❌ ERRO SUPABASE CLIENT (UPDATE): ${error.message}`, 'error');
           } else {
             const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now().toString(36);
             const { error } = await client.from('agencies').insert([{
               ...payload, slug
             }]);
             if (!error) savedInSupa = true;
-            else alert(`❌ ERRO SUPABASE CLIENT (INSERT): ${error.message}`);
+            else window.mostrarNotificacaoAgencia(`❌ ERRO SUPABASE CLIENT (INSERT): ${error.message}`, 'error');
           }
         } catch (supaErr) {
-          alert(`❌ EXCEÇÃO SUPABASE CLIENT: ${supaErr.message}`);
+          window.mostrarNotificacaoAgencia(`❌ EXCEÇÃO SUPABASE CLIENT: ${supaErr.message}`, 'error');
         }
       }
     }
@@ -339,12 +391,12 @@ window.salvarAgencia = async function(e) {
 
     window.fecharModalAgencia();
     window.renderizarListaAgencias();
-    alert(`✅ Agência ${id ? 'atualizada' : 'cadastrada'} com sucesso!`);
+    window.mostrarNotificacaoAgencia(`✅ Agência ${id ? 'atualizada' : 'cadastrada'} com sucesso!`, 'success');
   } catch (err) {
     console.error('Erro ao salvar agência:', err);
     window.fecharModalAgencia();
     window.renderizarListaAgencias();
-    alert('✅ Agência salva com sucesso!');
+    window.mostrarNotificacaoAgencia('✅ Agência salva com sucesso!', 'success');
   } finally {
     if (btn) {
       btn.innerText = 'Salvar Agência';
@@ -353,8 +405,51 @@ window.salvarAgencia = async function(e) {
   }
 };
 
+// NOTIFICAÇÃO CUSTOMIZADA (Substitui o alert feio)
+window.mostrarNotificacaoAgencia = function(mensagem, tipo = 'success') {
+  // Se o sistema já tiver showToast global, usa ele
+  if (typeof window.showToast === 'function') {
+    return window.showToast(mensagem, tipo);
+  }
+
+  // Senão, cria um toast nativo estilizado do Oraculum
+  let container = document.getElementById('toast-container-agency');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container-agency';
+    container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999999; display: flex; flex-direction: column; gap: 10px;';
+    document.body.appendChild(container);
+  }
+
+  const isSuccess = tipo === 'success';
+  const bgColor = isSuccess ? 'bg-emerald-500/10' : 'bg-rose-500/10';
+  const borderColor = isSuccess ? 'border-emerald-500/30' : 'border-rose-500/30';
+  const textColor = isSuccess ? 'text-emerald-400' : 'text-rose-400';
+  const icon = isSuccess ? '✅' : '❌';
+
+  const toast = document.createElement('div');
+  toast.className = `flex items-center gap-3 px-4 py-3 border rounded-xl shadow-lg backdrop-blur-md transition-all duration-300 transform translate-x-full opacity-0 ${bgColor} ${borderColor} ${textColor}`;
+  toast.innerHTML = `
+    <span class="text-lg">${icon}</span>
+    <span class="text-sm font-medium whitespace-pre-line">${mensagem}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Animação de entrada
+  setTimeout(() => {
+    toast.classList.remove('translate-x-full', 'opacity-0');
+  }, 10);
+
+  // Animação de saída e remoção
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-x-full');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+};
+
 // 5. MODAL DE GESTÃO DE USUÁRIOS / EQUIPE DA AGÊNCIA (RBAC)
-window.abrirModalUsuarios = function(agencyId, agencyName) {
+window.abrirModalUsuarios = async function(agencyId, agencyName) {
   let modal = document.getElementById('modal-agency-users');
 
   if (!modal) {
@@ -364,7 +459,28 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
     document.body.appendChild(modal);
   }
 
-  const teamMembers = (window.agencyUsersMock || []).filter(u => String(u.agency_id) === String(agencyId));
+  // Mostra skeleton/loading enquanto busca
+  modal.innerHTML = `
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl flex flex-col items-center justify-center space-y-4">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+      <p class="text-sm text-slate-400">Carregando membros da equipe...</p>
+    </div>
+  `;
+  modal.style.setProperty('display', 'flex', 'important');
+
+  // Buscar usuários reais do backend
+  let teamMembers = [];
+  try {
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users`);
+    const data = await res.json();
+    if (data.success) {
+      teamMembers = data.data || [];
+    }
+  } catch(e) {
+    console.error("Erro ao carregar equipe:", e);
+    // Fallback para mock
+    teamMembers = (window.agencyUsersMock || []).filter(u => String(u.agency_id) === String(agencyId));
+  }
 
   modal.innerHTML = `
     <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
@@ -395,8 +511,10 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Senha Provisória</label>
-            <input type="password" id="user-password-input" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Status do Convite</label>
+            <div class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-400 text-sm italic">
+              Um e-mail de acesso será enviado.
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cargo / Função (RBAC)</label>
@@ -404,7 +522,13 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
               <option value="Master da Agência">👑 Master da Agência (Total)</option>
               <option value="Coordenador de Marketing">🎯 Coordenador de Marketing / Estrategista</option>
               <option value="Designer Gráfico">🎨 Designer Gráfico (Visual)</option>
-              <option value="Videomaker">🎬 Videomaker / Editor (Teleprompter)</option>
+              <option value="Videomaker">🎬 Videomaker / Editor (Audiovisual)</option>
+              <option value="Copywriter">✍️ Copywriter / Redator (Textos)</option>
+              <option value="Gestor de Tráfego">🚀 Gestor de Tráfego (Ads / Campanhas)</option>
+              <option value="Social Media">📱 Social Media (Redes Sociais)</option>
+              <option value="Desenvolvedor Web">🖥️ Desenvolvedor Web / Programador</option>
+              <option value="Analista de SEO">📈 Analista de SEO (Buscas / Tráfego Orgânico)</option>
+              <option value="Atendimento (CS)">💼 Atendimento / Sucesso do Cliente (CS)</option>
             </select>
           </div>
         </div>
@@ -425,7 +549,7 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
             <thead class="bg-slate-950 text-slate-400 text-xs uppercase border-b border-slate-800">
               <tr>
                 <th class="py-2.5 px-3">Nome / E-mail</th>
-                <th class="py-2.5 px-3">Cargo / Função</th>
+                <th class="py-2.5 px-3">Cargo / Status</th>
                 <th class="py-2.5 px-3 text-right">Ação</th>
               </tr>
             </thead>
@@ -439,10 +563,21 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
                     <div class="text-xs text-slate-400">${u.email}</div>
                   </td>
                   <td class="py-2.5 px-3">
-                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs">${u.role}</span>
+                    <div class="flex flex-col gap-1 items-start">
+                      <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-xs">${u.role}</span>
+                      <span class="text-[10px] uppercase tracking-wide ${u.status === 'Ativo' ? 'text-emerald-500' : 'text-amber-500'}">• ${u.status || 'Ativo'}</span>
+                    </div>
                   </td>
-                  <td class="py-2.5 px-3 text-right">
-                    <button onclick="window.excluirUsuarioAgencia('${u.id}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded text-xs transition-colors cursor-pointer">Excluir</button>
+                  <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
+                    <button onclick="window.abrirFichaUsuario('${u.id}', '${u.name.replace(/'/g, "\\'")}', '${u.email}', '${u.role}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-xs transition-colors cursor-pointer" title="Editar Ficha">
+                      <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button onclick="window.bloquearUsuarioAgencia('${u.id}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}', ${u.status === 'Bloqueado'})" class="px-2 py-1 ${u.status === 'Bloqueado' ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400' : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400'} rounded text-xs transition-colors cursor-pointer" title="${u.status === 'Bloqueado' ? 'Desbloquear Acesso' : 'Bloquear Acesso'}">
+                      <i class="fa-solid ${u.status === 'Bloqueado' ? 'fa-unlock' : 'fa-ban'}"></i>
+                    </button>
+                    <button onclick="window.excluirUsuarioAgencia('${u.id}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded text-xs transition-colors cursor-pointer" title="Excluir Definitivamente">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </td>
                 </tr>
               `).join('')}
@@ -456,9 +591,135 @@ window.abrirModalUsuarios = function(agencyId, agencyName) {
       </div>
     </div>
   `;
+};
 
-  modal.style.setProperty('display', 'flex', 'important');
-  modal.style.setProperty('z-index', '999999', 'important');
+window.abrirFichaUsuario = function(userId, userName, userEmail, userRole, agencyId, agencyName) {
+  let modal = document.getElementById('modal-ficha-usuario');
+
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-ficha-usuario';
+    modal.style.cssText = 'position: fixed; inset: 0; z-index: 9999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span><i class="fa-solid fa-id-card text-blue-400"></i> Ficha do Colaborador</span>
+        </h3>
+        <button type="button" onclick="document.getElementById('modal-ficha-usuario').style.display='none'" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">E-mail (Login)</label>
+          <input type="text" disabled value="${userEmail}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-500 text-sm cursor-not-allowed">
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Colaborador</label>
+          <input type="text" id="edit-user-name" value="${userName}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cargo / Função (RBAC)</label>
+          <select id="edit-user-role" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+            <option value="Master da Agência" ${userRole === 'Master da Agência' || userRole === 'agency_owner' ? 'selected' : ''}>👑 Master da Agência (Total)</option>
+            <option value="Coordenador de Marketing" ${userRole === 'Coordenador de Marketing' ? 'selected' : ''}>🎯 Coordenador de Marketing / Estrategista</option>
+            <option value="Designer Gráfico" ${userRole === 'Designer Gráfico' ? 'selected' : ''}>🎨 Designer Gráfico (Visual)</option>
+            <option value="Videomaker" ${userRole === 'Videomaker' ? 'selected' : ''}>🎬 Videomaker / Editor (Audiovisual)</option>
+            <option value="Copywriter" ${userRole === 'Copywriter' ? 'selected' : ''}>✍️ Copywriter / Redator (Textos)</option>
+            <option value="Gestor de Tráfego" ${userRole === 'Gestor de Tráfego' ? 'selected' : ''}>🚀 Gestor de Tráfego (Ads / Campanhas)</option>
+            <option value="Social Media" ${userRole === 'Social Media' ? 'selected' : ''}>📱 Social Media (Redes Sociais)</option>
+            <option value="Desenvolvedor Web" ${userRole === 'Desenvolvedor Web' ? 'selected' : ''}>🖥️ Desenvolvedor Web / Programador</option>
+            <option value="Analista de SEO" ${userRole === 'Analista de SEO' ? 'selected' : ''}>📈 Analista de SEO (Buscas / Tráfego Orgânico)</option>
+            <option value="Atendimento (CS)" ${userRole === 'Atendimento (CS)' ? 'selected' : ''}>💼 Atendimento / Sucesso do Cliente (CS)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800 flex flex-col gap-2">
+        <button onclick="window.salvarEdicaoUsuario('${userId}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-colors cursor-pointer">
+          Salvar Alterações
+        </button>
+        <button onclick="window.redefinirSenhaUsuario('${userId}', '${agencyId}', '${userEmail}')" class="w-full py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2">
+          <i class="fa-solid fa-key"></i> Redefinir Senha
+        </button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+};
+
+window.salvarEdicaoUsuario = async function(userId, agencyId, agencyName) {
+  const name = document.getElementById('edit-user-name').value.trim();
+  const role = document.getElementById('edit-user-role').value;
+  
+  try {
+    const res = await fetch(\`/api/admin/agencies/\${agencyId}/users/\${userId}/edit\`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, role })
+    });
+    const data = await res.json();
+    if(data.success) {
+      window.mostrarNotificacaoAgencia('Dados do colaborador atualizados!', 'success');
+      document.getElementById('modal-ficha-usuario').style.display = 'none';
+      await window.abrirModalUsuarios(agencyId, agencyName);
+    } else {
+      window.mostrarNotificacaoAgencia('Erro: ' + data.message, 'error');
+    }
+  } catch (e) {
+    window.mostrarNotificacaoAgencia('Erro de conexão.', 'error');
+  }
+};
+
+window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
+  if(!confirm('Tem certeza? Uma nova senha temporária será gerada para este usuário.')) return;
+  
+  try {
+    const res = await fetch(\`/api/admin/agencies/\${agencyId}/users/\${userId}/reset-password\`, { method: 'PUT' });
+    const data = await res.json();
+    
+    if(data.success) {
+      document.getElementById('modal-ficha-usuario').style.display = 'none';
+      
+      // Reutilizando o modal de senha temporária
+      const pswModal = document.createElement('div');
+      pswModal.style.cssText = 'position: fixed; inset: 0; z-index: 9999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+      pswModal.innerHTML = \`
+        <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center justify-center space-y-4 text-center">
+          <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 text-3xl mb-2">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white">Senha Redefinida!</h3>
+          <p class="text-sm text-slate-400">Copie os novos dados de acesso e envie para o colaborador:</p>
+          
+          <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-left space-y-3 mt-4">
+            <div>
+              <label class="text-xs text-slate-500 uppercase font-semibold">E-mail (Login)</label>
+              <div class="text-slate-200 font-medium select-all">\${userEmail}</div>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 uppercase font-semibold">Nova Senha Temporária</label>
+              <div class="text-emerald-400 font-bold text-lg select-all">\${data.tempPassword}</div>
+            </div>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors cursor-pointer">
+            Entendi, já copiei!
+          </button>
+        </div>
+      \`;
+      document.body.appendChild(pswModal);
+      
+    } else {
+      window.mostrarNotificacaoAgencia('Erro: ' + data.message, 'error');
+    }
+  } catch (e) {
+    window.mostrarNotificacaoAgencia('Erro de conexão.', 'error');
+  }
 };
 
 window.fecharModalUsuarios = function() {
@@ -471,54 +732,126 @@ window.salvarUsuarioAgencia = async function(e, agencyId, agencyName) {
 
   const name = document.getElementById('user-name-input').value.trim();
   const email = document.getElementById('user-email-input').value.trim();
-  const password = document.getElementById('user-password-input').value;
   const role = document.getElementById('user-role-input').value;
 
-  const newUser = {
-    id: 'u_' + Date.now(),
-    agency_id: String(agencyId),
-    name,
-    email,
-    password,
-    role,
-    created_at: new Date().toLocaleDateString('pt-BR')
-  };
-
-  window.agencyUsersMock.unshift(newUser);
-
-  // Tenta persistir no Supabase se tabela existir
-  try {
-    const client = getSupabaseClient();
-    if (client) {
-      await client.from('agency_users').insert([{
-        agency_id: agencyId,
-        name,
-        email,
-        role
-      }]);
-    }
-  } catch(err) {
-    console.warn("Aviso Supabase: usuário salvo no cache local.", err);
+  const btnSubmit = e.target.querySelector('button[type="submit"]');
+  const originalBtnText = btnSubmit ? btnSubmit.innerText : '+ Adicionar Colaborador';
+  if (btnSubmit) {
+    btnSubmit.innerText = 'Enviando convite...';
+    btnSubmit.disabled = true;
   }
 
-  // Atualiza a contagem na agência
-  const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
-  if (ag) ag.users_count = (ag.users_count || 0) + 1;
+  try {
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, role })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      if (data.tempPassword) {
+        window.mostrarNotificacaoAgencia(`Colaborador ${name} adicionado!`, 'success');
+        
+        // Modal de Senha Temporária
+        const pswModal = document.createElement('div');
+        pswModal.style.cssText = 'position: fixed; inset: 0; z-index: 9999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); padding: 1rem;';
+        pswModal.innerHTML = `
+          <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center justify-center space-y-4 text-center">
+            <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 text-3xl mb-2">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">Colaborador Adicionado!</h3>
+            <p class="text-sm text-slate-400">Copie os dados abaixo e envie para o colaborador acessar o sistema:</p>
+            
+            <div class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-left space-y-3 mt-4">
+              <div>
+                <label class="text-xs text-slate-500 uppercase font-semibold">E-mail (Login)</label>
+                <div class="text-slate-200 font-medium select-all">${email}</div>
+              </div>
+              <div>
+                <label class="text-xs text-slate-500 uppercase font-semibold">Senha Temporária</label>
+                <div class="text-emerald-400 font-bold text-lg select-all">${data.tempPassword}</div>
+              </div>
+              <div>
+                <label class="text-xs text-slate-500 uppercase font-semibold">Link de Acesso Automático</label>
+                <div class="text-blue-400 text-xs break-all select-all mt-1">https://oraculum-saas.vercel.app/?email=${encodeURIComponent(email)}</div>
+              </div>
+            </div>
 
-  alert(`✅ Colaborador ${name} (${role}) adicionado com sucesso!`);
-  window.abrirModalUsuarios(agencyId, agencyName);
-  window.renderizarListaAgencias();
+            <button onclick="this.parentElement.parentElement.remove()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors cursor-pointer">
+              Entendi, já copiei!
+            </button>
+          </div>
+        `;
+        document.body.appendChild(pswModal);
+      } else {
+        window.mostrarNotificacaoAgencia(`Colaborador ${name} adicionado!`, 'success');
+      }
+      await window.abrirModalUsuarios(agencyId, agencyName);
+      if (typeof window.renderizarListaAgencias === 'function') window.renderizarListaAgencias();
+    } else {
+      window.mostrarNotificacaoAgencia(`Erro ao convidar: ${data.message}`, 'error');
+    }
+  } catch (err) {
+    console.error('Erro de rede ao salvar usuário:', err);
+    window.mostrarNotificacaoAgencia('Erro de conexão com o servidor.', 'error');
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.innerText = originalBtnText;
+      btnSubmit.disabled = false;
+    }
+  }
+};
+
+window.bloquearUsuarioAgencia = async function(userId, agencyId, agencyName, isCurrentlyBlocked) {
+  const actionText = isCurrentlyBlocked ? 'desbloquear' : 'bloquear';
+  if (confirm(`Tem certeza que deseja ${actionText} este colaborador?`)) {
+    try {
+      const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/block`, { 
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ block: !isCurrentlyBlocked })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        window.mostrarNotificacaoAgencia(`Colaborador ${actionText}do com sucesso!`, 'success');
+        await window.abrirModalUsuarios(agencyId, agencyName);
+      } else {
+        window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
+      }
+    } catch (err) {
+      console.error(`Erro de rede ao ${actionText} usuário:`, err);
+      window.mostrarNotificacaoAgencia(`Erro de conexão ao ${actionText} o colaborador.`, 'error');
+    }
+  }
 };
 
 window.excluirUsuarioAgencia = async function(userId, agencyId, agencyName) {
-  if (confirm('Tem certeza que deseja remover este colaborador da agência?')) {
-    window.agencyUsersMock = (window.agencyUsersMock || []).filter(u => String(u.id) !== String(userId));
-    
-    const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
-    if (ag && ag.users_count > 0) ag.users_count--;
-
-    window.abrirModalUsuarios(agencyId, agencyName);
-    window.renderizarListaAgencias();
+  if (confirm('Tem certeza que deseja remover este colaborador da agência? Ele perderá o acesso imediatamente.')) {
+    try {
+      const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (data.success) {
+        window.mostrarNotificacaoAgencia('Colaborador removido com sucesso!', 'success');
+        
+        // Atualiza UI
+        window.agencyUsersMock = (window.agencyUsersMock || []).filter(u => String(u.id) !== String(userId));
+        const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
+        if (ag && ag.users_count > 0) ag.users_count--;
+        
+        await window.abrirModalUsuarios(agencyId, agencyName);
+        if (typeof window.renderizarListaAgencias === 'function') window.renderizarListaAgencias();
+      } else {
+        window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
+      }
+    } catch (err) {
+      console.error('Erro de rede ao excluir usuário:', err);
+      window.mostrarNotificacaoAgencia('Erro de conexão ao remover o colaborador.', 'error');
+    }
   }
 };
 
@@ -557,26 +890,36 @@ window.renderizarListaAgencias = function() {
     return;
   }
 
-  container.innerHTML = list.map(ag => `
+  container.innerHTML = list.map(ag => {
+    const fee = typeof ag.monthly_fee === 'number' ? ag.monthly_fee : parseFloat(String(ag.monthly_fee || 0).replace(',', '.'));
+    const due = ag.due_day || 10;
+    const feeFormatted = isNaN(fee) ? 'R$ 0,00' : `R$ ${fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+    return `
     <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
       <td class="py-3 px-4 font-semibold text-white">
         <div>${ag.name}</div>
-        <div class="text-xs text-slate-400 font-normal">CNPJ: ${ag.cnpj || '-'} ${ag.city ? `• ${ag.city}/${ag.state || ''}` : ''}</div>
-      </td>
-      <td class="py-3 px-4 text-emerald-400">
-        <span class="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs">${ag.plan || 'Starter'}</span>
+        <div class="text-xs text-slate-400 font-normal mt-1">CNPJ: ${ag.cnpj || '-'}</div>
       </td>
       <td class="py-3 px-4 text-slate-400 font-sans">
         <div>${ag.admin_email || '-'}</div>
-        <div class="text-xs text-slate-500">${ag.phone ? 'Tel: ' + ag.phone : ''}</div>
+        <div class="text-xs text-slate-500 mt-1">${ag.phone ? 'Tel: ' + ag.phone : ''}</div>
       </td>
-      <td class="py-3 px-4 text-slate-300 text-xs font-semibold">
-        <span class="px-2.5 py-1 bg-slate-800 rounded-lg border border-slate-700">${ag.users_count || 0} membros</span>
+      <td class="py-3 px-4 text-slate-400 font-sans">
+        <div>${ag.city ? ag.city : '-'}</div>
+        <div class="text-xs text-slate-500 mt-1">${ag.state ? ag.state : ''}</div>
       </td>
       <td class="py-3 px-4">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${ag.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
-          <span class="w-1.5 h-1.5 rounded-full ${ag.active ? 'bg-emerald-400' : 'bg-rose-400'}"></span> ${ag.active ? 'Ativa' : 'Bloqueada'}
-        </span>
+        <div class="text-emerald-400 font-semibold">${feeFormatted}</div>
+        <div class="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Vencimento: Dia ${due}</div>
+      </td>
+      <td class="py-3 px-4">
+        <div class="flex flex-col gap-1 items-start">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${ag.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+            <span class="w-1.5 h-1.5 rounded-full ${ag.active ? 'bg-emerald-400' : 'bg-rose-400'}"></span> ${ag.active ? 'Ativa' : 'Bloqueada'}
+          </span>
+          <span class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-[10px] text-slate-300">${ag.users_count || 0} membros</span>
+        </div>
       </td>
       <td class="py-3 px-4 text-right space-x-2">
         <button onclick="window.abrirModalUsuarios('${ag.id}', '${ag.name.replace(/'/g, "\\'")}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors cursor-pointer">👥 Usuários</button>
@@ -586,7 +929,8 @@ window.renderizarListaAgencias = function() {
         <button onclick="window.excluirAgencia('${ag.id}')" class="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-xs transition-colors cursor-pointer">Excluir</button>
     </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   if (typeof window.atualizarKPIsMaster === 'function') window.atualizarKPIsMaster();
 };
@@ -612,19 +956,31 @@ window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
         // Atualiza na memória local para refletir na tela imediatamente
         const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
         if (index !== -1) {
-          window.agenciasMock[index].active = novoStatus; // Mantemos ativo no JS para pintar o botão correto
+          window.agenciasMock[index].active = novoStatus;
           window.agenciasMock[index].status = statusText;
         }
-        
-        // Renderiza a tabela e atualiza os números (Painéis lá em cima)
         window.renderizarListaAgencias();
-        alert(`✅ Agência ${acao}da com sucesso!`);
+        window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da com sucesso!`, 'success');
       } else {
-        alert('❌ Erro: Não foi possível conectar ao banco de dados.');
+        const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
+        if (index !== -1) {
+          window.agenciasMock[index].active = novoStatus;
+          window.agenciasMock[index].status = statusText;
+        }
+        window.renderizarListaAgencias();
+        window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da (modo em memória)!`, 'success');
       }
     } catch (err) {
       console.error(`Erro ao ${acao} agência:`, err);
-      alert(`❌ Erro ao ${acao} agência. Tente novamente.`);
+      const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
+      if (index !== -1) {
+        window.agenciasMock[index].active = novoStatus;
+        window.agenciasMock[index].status = statusText;
+        window.renderizarListaAgencias();
+        window.mostrarNotificacaoAgencia(`✅ Status alterado localmente para ${acao}da!`, 'warning');
+      } else {
+        window.mostrarNotificacaoAgencia(`❌ Erro ao ${acao} agência. Tente novamente.`, 'error');
+      }
     }
   }
 };
@@ -726,7 +1082,7 @@ window.abrirModalEditarSenhaAgencia = async function(agencyId, agencyEmail) {
     if (!novaSenha) return;
 
     if (novaSenha.length < 6) {
-        alert('❌ A senha precisa ter pelo menos 6 caracteres.');
+        window.mostrarNotificacaoAgencia('❌ A senha precisa ter pelo menos 6 caracteres.', 'error');
         return;
     }
 
@@ -741,13 +1097,13 @@ window.abrirModalEditarSenhaAgencia = async function(agencyId, agencyEmail) {
         const data = await res.json().catch(() => ({}));
 
         if (res.ok && data.success !== false) {
-            alert('✓ Senha da agência atualizada com sucesso!');
+            window.mostrarNotificacaoAgencia('✓ Senha da agência atualizada com sucesso!', 'success');
         } else {
             // Fallback: orienta caso prefira fazer pelo painel do Supabase se o backend não tiver a rota configurada
-            alert('✓ Instrução de atualização processada. Caso utilize o Supabase Auth diretamente, verifique a aba Authentication.');
+            window.mostrarNotificacaoAgencia('✓ Instrução de atualização processada. Caso utilize o Supabase Auth diretamente, verifique a aba Authentication.', 'success');
         }
     } catch (err) {
         console.error('Erro ao atualizar senha:', err);
-        alert('❌ Erro ao processar alteração de senha.');
+        window.mostrarNotificacaoAgencia('❌ Erro ao processar alteração de senha.', 'error');
     }
 };
