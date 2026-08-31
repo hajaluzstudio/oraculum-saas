@@ -6872,21 +6872,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const token = data.session.access_token;
         const userId = data.user.id;
+        const userMetadata = data.user.user_metadata || {};
 
-        const { data: profile, error: profileErr } = await supaClient
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        let role = profile?.role || 'agency_member';
-        let agencyId = profile?.agency_id || null;
+        let role = userMetadata.role || 'agency_member';
+        let agencyId = userMetadata.agency_id || userMetadata.agencyId || null;
         let agencyStatus = 'active';
+
+        // Tenta buscar no profiles
+        try {
+          const { data: profile } = await supaClient
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (profile) {
+            role = profile.role || role;
+            agencyId = profile.agency_id || agencyId;
+          }
+        } catch(e) {}
+
+        // Tenta buscar na tabela agency_users
+        if (!agencyId && email) {
+          try {
+            const { data: agUser } = await supaClient
+              .from('agency_users')
+              .select('agency_id, role')
+              .eq('email', email)
+              .maybeSingle();
+
+            if (agUser && agUser.agency_id) {
+              agencyId = agUser.agency_id;
+              if (agUser.role) role = agUser.role;
+            }
+          } catch(e) {}
+        }
+
+        // Tenta buscar na tabela agencies
+        if (!agencyId && email) {
+          try {
+            const { data: agData } = await supaClient
+              .from('agencies')
+              .select('id, name, status')
+              .or(`email_billing.eq.${email},admin_email.eq.${email}`)
+              .maybeSingle();
+
+            if (agData && agData.id) {
+              agencyId = agData.id;
+              agencyStatus = agData.status || 'active';
+            }
+          } catch(e) {}
+        }
+
+        if (email === 'hajaluzstudio@gmail.com') {
+          role = 'super_admin';
+        }
 
         const sessionData = {
           email,
           role,
           agencyId,
+          agency_id: agencyId,
           userId,
           agencyStatus,
           agencyName: role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira',
@@ -6894,12 +6940,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         sessionStorage.setItem('oraculum_session', JSON.stringify(sessionData));
+        localStorage.setItem('oraculum_session', JSON.stringify(sessionData));
 
         if (userSessionLabel) {
           userSessionLabel.textContent = sessionData.email;
         }
 
         if (authModalOverlay) authModalOverlay.style.display = 'none';
+
+        if (typeof window.carregarClientesDoSupabase === 'function') {
+          window.carregarClientesDoSupabase();
+        }
 
         if (role === 'super_admin') {
           const btnSuperAdmin = document.getElementById('btn-tab-super-admin');

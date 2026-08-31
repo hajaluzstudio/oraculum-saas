@@ -29,12 +29,12 @@ window.obterIdentidadeSegura = async function() {
   let email = '';
   let isMaster = false;
   let agencyId = '';
+  let authUser = null;
 
   const supaClient = getSupabaseClient();
 
   if (supaClient) {
       try {
-          let authUser = null;
           if (typeof supaClient.auth.getUser === 'function') {
               const { data } = await supaClient.auth.getUser();
               authUser = data?.user;
@@ -44,6 +44,9 @@ window.obterIdentidadeSegura = async function() {
           if (authUser && authUser.email) {
               email = String(authUser.email).toLowerCase();
           }
+          if (authUser && authUser.user_metadata) {
+              agencyId = authUser.user_metadata.agency_id || authUser.user_metadata.agencyId || '';
+          }
       } catch (err) { console.warn("Aviso: Falha ao ler Supabase Auth."); }
   }
 
@@ -51,20 +54,34 @@ window.obterIdentidadeSegura = async function() {
   const session = sessionStr ? JSON.parse(sessionStr) : {};
 
   if (!email) email = String(session.email || '').toLowerCase();
-  agencyId = session.agency_id || session.agencyId || session.id || '';
+  if (!agencyId) agencyId = session.agency_id || session.agencyId || session.id || '';
 
+  // Se ainda não temos agencyId, busca na tabela agency_users ou agencies
   if (email && email !== 'hajaluzstudio@gmail.com' && !agencyId && supaClient) {
       try {
-          const { data: agData } = await supaClient.from('agencies').select('id').eq('email_billing', email).single();
-          if (agData) {
-              agencyId = agData.id;
-              session.agency_id = agData.id;
+          const { data: userData } = await supaClient.from('agency_users').select('agency_id').eq('email', email).maybeSingle();
+          if (userData && userData.agency_id) {
+              agencyId = userData.agency_id;
+              session.agency_id = userData.agency_id;
               sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+              localStorage.setItem('oraculum_session', JSON.stringify(session));
           }
       } catch (err) {}
+
+      if (!agencyId) {
+        try {
+            const { data: agData } = await supaClient.from('agencies').select('id').or(`email_billing.eq.${email},admin_email.eq.${email}`).maybeSingle();
+            if (agData && agData.id) {
+                agencyId = agData.id;
+                session.agency_id = agData.id;
+                sessionStorage.setItem('oraculum_session', JSON.stringify(session));
+                localStorage.setItem('oraculum_session', JSON.stringify(session));
+            }
+        } catch (err) {}
+      }
   }
 
-  if (session.role === 'master' || email === 'hajaluzstudio@gmail.com') {
+  if (session.role === 'master' || session.role === 'super_admin' || email === 'hajaluzstudio@gmail.com') {
       isMaster = true;
   }
 
