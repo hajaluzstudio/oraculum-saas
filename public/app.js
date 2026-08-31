@@ -7429,21 +7429,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Carregar e Renderizar Agências
+  // Carregar e Renderizar Agências via Supabase
   async function loadSuperAdminAgencies() {
-    if (!tbodyAgencies) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/agencies`);
-      if (res.ok) {
-        const { data } = await res.json();
-        currentAgenciesCache = data && data.length ? data : getMockAgenciesList();
-      } else {
-        if (!currentAgenciesCache.length) currentAgenciesCache = getMockAgenciesList();
-      }
-    } catch (e) {
-      if (!currentAgenciesCache.length) currentAgenciesCache = getMockAgenciesList();
+    if (typeof window.carregarAgenciasDoSupabase === 'function') {
+      await window.carregarAgenciasDoSupabase();
+    } else {
+      currentAgenciesCache = getMockAgenciesList();
+      renderAgenciesTable(currentAgenciesCache);
     }
-    renderAgenciesTable(currentAgenciesCache);
   }
 
   function getMockAgenciesList() {
