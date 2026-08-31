@@ -442,6 +442,58 @@ window.salvarAgencia = async function(e) {
   }
 };
 
+// MODAL DE CONFIRMAÇÃO MODERNO ORACULUM (Substitui confirm() feio do browser)
+window.confirmarAcaoOraculum = function({ titulo = 'Confirmação', mensagem, icone = 'fa-triangle-exclamation', corBotao = 'emerald', textoConfirmar = 'Confirmar', textoCancelar = 'Cancelar' }) {
+  return new Promise((resolve) => {
+    let modal = document.getElementById('modal-confirmacao-oraculum');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modal-confirmacao-oraculum';
+      modal.style.cssText = 'position: fixed; inset: 0; z-index: 99999999; display: flex; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(10px); padding: 1rem;';
+      document.body.appendChild(modal);
+    }
+
+    const isDanger = corBotao === 'rose' || corBotao === 'red' || corBotao === 'danger';
+    const isAmber = corBotao === 'amber' || corBotao === 'orange' || corBotao === 'warning';
+    
+    const iconColor = isDanger ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : (isAmber ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20');
+    const btnColor = isDanger ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/40' : (isAmber ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/40' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/40');
+
+    modal.innerHTML = `
+      <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white text-center animate-scale-up">
+        <div class="w-14 h-14 ${iconColor} border rounded-2xl flex items-center justify-center text-2xl mx-auto mb-1">
+          <i class="fa-solid ${icone}"></i>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-bold text-white mb-1.5">${titulo}</h3>
+          <p class="text-xs text-slate-300 leading-relaxed whitespace-pre-line">${mensagem}</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" id="btn-confirm-cancel" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer border border-slate-700">
+            ${textoCancelar}
+          </button>
+          <button type="button" id="btn-confirm-ok" class="w-full py-2.5 ${btnColor} text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-lg">
+            ${textoConfirmar}
+          </button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+
+    document.getElementById('btn-confirm-cancel').onclick = () => {
+      modal.style.display = 'none';
+      resolve(false);
+    };
+
+    document.getElementById('btn-confirm-ok').onclick = () => {
+      modal.style.display = 'none';
+      resolve(true);
+    };
+  });
+};
+
 // NOTIFICAÇÃO CUSTOMIZADA (Substitui o alert feio)
 window.mostrarNotificacaoAgencia = function(mensagem, tipo = 'success') {
   // Se o sistema já tiver showToast global, usa ele
@@ -815,7 +867,16 @@ window.salvarEdicaoUsuario = async function(userId, agencyId, agencyName) {
 };
 
 window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
-  if(!confirm('Tem certeza? Uma nova senha temporária será gerada para este usuário.')) return;
+  const confirmou = await window.confirmarAcaoOraculum({
+    titulo: 'Redefinir Senha de Acesso',
+    mensagem: `Tem certeza que deseja gerar uma nova senha para ${userEmail}?\nA senha anterior deixará de funcionar imediatamente.`,
+    icone: 'fa-key',
+    corBotao: 'amber',
+    textoConfirmar: 'Sim, Gerar Nova Senha',
+    textoCancelar: 'Cancelar'
+  });
+
+  if (!confirmou) return;
   
   try {
     const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/reset-password`, { method: 'PUT' });
@@ -856,7 +917,7 @@ window.redefinirSenhaUsuario = async function(userId, agencyId, userEmail) {
       window.mostrarNotificacaoAgencia('Erro: ' + data.message, 'error');
     }
   } catch (e) {
-    window.mostrarNotificacaoAgencia('Erro de conexão.', 'error');
+    window.mostrarNotificacaoAgencia('Erro de conexão com o servidor.', 'error');
   }
 };
 
@@ -951,51 +1012,69 @@ window.salvarUsuarioAgencia = async function(e, agencyId, agencyName) {
 
 window.bloquearUsuarioAgencia = async function(userId, agencyId, agencyName, isCurrentlyBlocked) {
   const actionText = isCurrentlyBlocked ? 'desbloquear' : 'bloquear';
-  if (confirm(`Tem certeza que deseja ${actionText} este colaborador?`)) {
-    try {
-      const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/block`, { 
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ block: !isCurrentlyBlocked })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        window.mostrarNotificacaoAgencia(`Colaborador ${actionText}do com sucesso!`, 'success');
-        await window.abrirModalUsuarios(agencyId, agencyName);
-      } else {
-        window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
-      }
-    } catch (err) {
-      console.error(`Erro de rede ao ${actionText} usuário:`, err);
-      window.mostrarNotificacaoAgencia(`Erro de conexão ao ${actionText} o colaborador.`, 'error');
+  const confirmou = await window.confirmarAcaoOraculum({
+    titulo: `${isCurrentlyBlocked ? 'Desbloquear' : 'Bloquear'} Colaborador`,
+    mensagem: `Tem certeza que deseja ${actionText} este colaborador?\n${isCurrentlyBlocked ? 'O acesso dele à agência será reativado.' : 'Ele será impedido de fazer login imediatamente.'}`,
+    icone: isCurrentlyBlocked ? 'fa-lock-open' : 'fa-ban',
+    corBotao: isCurrentlyBlocked ? 'emerald' : 'orange',
+    textoConfirmar: `Sim, ${actionText}`,
+    textoCancelar: 'Cancelar'
+  });
+
+  if (!confirmou) return;
+
+  try {
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/block`, { 
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ block: !isCurrentlyBlocked })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      window.mostrarNotificacaoAgencia(`Colaborador ${actionText}do com sucesso!`, 'success');
+      await window.abrirModalUsuarios(agencyId, agencyName);
+    } else {
+      window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
     }
+  } catch (err) {
+    console.error(`Erro de rede ao ${actionText} usuário:`, err);
+    window.mostrarNotificacaoAgencia(`Erro de conexão ao ${actionText} o colaborador.`, 'error');
   }
 };
 
 window.excluirUsuarioAgencia = async function(userId, agencyId, agencyName) {
-  if (confirm('Tem certeza que deseja remover este colaborador da agência? Ele perderá o acesso imediatamente.')) {
-    try {
-      const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}`, { method: 'DELETE' });
-      const data = await res.json();
+  const confirmou = await window.confirmarAcaoOraculum({
+    titulo: 'Excluir Colaborador',
+    mensagem: 'Tem certeza que deseja remover este colaborador da agência?\nEle perderá o acesso imediatamente e a ação não pode ser desfeita.',
+    icone: 'fa-trash-can',
+    corBotao: 'rose',
+    textoConfirmar: 'Sim, Excluir',
+    textoCancelar: 'Cancelar'
+  });
+
+  if (!confirmou) return;
+
+  try {
+    const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}`, { method: 'DELETE' });
+    const data = await res.json();
+    
+    if (data.success) {
+      window.mostrarNotificacaoAgencia('Colaborador removido com sucesso!', 'success');
       
-      if (data.success) {
-        window.mostrarNotificacaoAgencia('Colaborador removido com sucesso!', 'success');
-        
-        // Atualiza UI
-        window.agencyUsersMock = (window.agencyUsersMock || []).filter(u => String(u.id) !== String(userId));
-        const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
-        if (ag && ag.users_count > 0) ag.users_count--;
-        
-        await window.abrirModalUsuarios(agencyId, agencyName);
-        if (typeof window.renderizarListaAgencias === 'function') window.renderizarListaAgencias();
-      } else {
-        window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
-      }
-    } catch (err) {
-      console.error('Erro de rede ao excluir usuário:', err);
-      window.mostrarNotificacaoAgencia('Erro de conexão ao remover o colaborador.', 'error');
+      // Atualiza UI
+      window.agencyUsersMock = (window.agencyUsersMock || []).filter(u => String(u.id) !== String(userId));
+      const ag = (window.agenciasMock || []).find(a => String(a.id) === String(agencyId));
+      if (ag && ag.users_count > 0) ag.users_count--;
+      
+      await window.abrirModalUsuarios(agencyId, agencyName);
+      if (typeof window.renderizarListaAgencias === 'function') window.renderizarListaAgencias();
+    } else {
+      window.mostrarNotificacaoAgencia(`Erro: ${data.message}`, 'error');
     }
+  } catch (err) {
+    console.error('Erro de rede ao excluir usuário:', err);
+    window.mostrarNotificacaoAgencia('Erro de conexão ao remover o colaborador.', 'error');
   }
 };
 
@@ -1018,7 +1097,7 @@ window.atualizarKPIsMaster = function() {
   if (elActive) elActive.textContent = `${activeCount} / ${list.length}`;
   if (elBlocked) elBlocked.textContent = String(blockedCount);
   if (elClients) elClients.textContent = String(totalClientsCount);
-  if (elMrr) elMrr.textContent = `R$ ${totalMrrSum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (elMrr) elMrr.textContent = `R$ ${totalMrrSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 };
 
 // 6. RENDERIZAR TABELA DO SUPER ADMIN (COM O BOTÃO DE BLOQUEIO RESTAURADO)
@@ -1109,46 +1188,55 @@ window.alternarStatusAgencia = async function(agenciaId, isAtivo) {
   const novoStatus = !isAtivo;
   const statusText = novoStatus ? 'active' : 'blocked';
 
-  if (confirm(`Tem certeza que deseja ${acao} esta agência?\n${isAtivo ? 'Ela perderá o acesso ao sistema temporariamente.' : 'O acesso dela será restaurado.'}`)) {
-    try {
-      const client = getSupabaseClient();
-      if (client) {
-        // Atualiza no banco de dados (Apenas o status, pois a coluna active não existe)
-        const { error } = await client.from('agencies').update({
-          status: statusText,
-          updated_at: new Date().toISOString()
-        }).eq('id', agenciaId);
+  const confirmou = await window.confirmarAcaoOraculum({
+    titulo: `${isAtivo ? 'Bloquear' : 'Desbloquear'} Agência`,
+    mensagem: `Tem certeza que deseja ${acao} esta agência?\n${isAtivo ? 'Ela perderá o acesso ao sistema temporariamente.' : 'O acesso dela será restaurado.'}`,
+    icone: isAtivo ? 'fa-ban' : 'fa-lock-open',
+    corBotao: isAtivo ? 'orange' : 'emerald',
+    textoConfirmar: `Sim, ${acao}`,
+    textoCancelar: 'Cancelar'
+  });
 
-        if (error) throw error;
+  if (!confirmou) return;
 
-        // Atualiza na memória local para refletir na tela imediatamente
-        const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
-        if (index !== -1) {
-          window.agenciasMock[index].active = novoStatus;
-          window.agenciasMock[index].status = statusText;
-        }
-        window.renderizarListaAgencias();
-        window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da com sucesso!`, 'success');
-      } else {
-        const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
-        if (index !== -1) {
-          window.agenciasMock[index].active = novoStatus;
-          window.agenciasMock[index].status = statusText;
-        }
-        window.renderizarListaAgencias();
-        window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da (modo em memória)!`, 'success');
-      }
-    } catch (err) {
-      console.error(`Erro ao ${acao} agência:`, err);
+  try {
+    const client = getSupabaseClient();
+    if (client) {
+      // Atualiza no banco de dados (Apenas o status, pois a coluna active não existe)
+      const { error } = await client.from('agencies').update({
+        status: statusText,
+        updated_at: new Date().toISOString()
+      }).eq('id', agenciaId);
+
+      if (error) throw error;
+
+      // Atualiza na memória local para refletir na tela imediatamente
       const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
       if (index !== -1) {
         window.agenciasMock[index].active = novoStatus;
         window.agenciasMock[index].status = statusText;
-        window.renderizarListaAgencias();
-        window.mostrarNotificacaoAgencia(`✅ Status alterado localmente para ${acao}da!`, 'warning');
-      } else {
-        window.mostrarNotificacaoAgencia(`❌ Erro ao ${acao} agência. Tente novamente.`, 'error');
       }
+      window.renderizarListaAgencias();
+      window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da com sucesso!`, 'success');
+    } else {
+      const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
+      if (index !== -1) {
+        window.agenciasMock[index].active = novoStatus;
+        window.agenciasMock[index].status = statusText;
+      }
+      window.renderizarListaAgencias();
+      window.mostrarNotificacaoAgencia(`✅ Agência ${acao}da (modo em memória)!`, 'success');
+    }
+  } catch (err) {
+    console.error(`Erro ao ${acao} agência:`, err);
+    const index = (window.agenciasMock || []).findIndex(a => String(a.id) === String(agenciaId));
+    if (index !== -1) {
+      window.agenciasMock[index].active = novoStatus;
+      window.agenciasMock[index].status = statusText;
+      window.renderizarListaAgencias();
+      window.mostrarNotificacaoAgencia(`✅ Status alterado localmente para ${acao}da!`, 'warning');
+    } else {
+      window.mostrarNotificacaoAgencia(`❌ Erro ao ${acao} agência. Tente novamente.`, 'error');
     }
   }
 };
@@ -1292,17 +1380,26 @@ window.carregarAgenciasDoSupabase = async function() {
 };
 
 window.excluirAgencia = async function(agenciaId) {
-  if (confirm('Tem certeza que deseja excluir esta agência? Todos os dados e clientes associados serão desativados.')) {
-    try {
-      await fetch(`/api/admin/agencies/${agenciaId}`, { method: 'DELETE' });
-    } catch(e) {
-      const client = getSupabaseClient();
-      if (client) {
-        await client.from('agencies').delete().eq('id', agenciaId);
-      }
+  const confirmou = await window.confirmarAcaoOraculum({
+    titulo: 'Excluir Agência Definitivamente',
+    mensagem: 'Tem certeza que deseja excluir esta agência?\nTodos os colaboradores e dados associados serão desativados.',
+    icone: 'fa-trash-can',
+    corBotao: 'rose',
+    textoConfirmar: 'Sim, Excluir Agência',
+    textoCancelar: 'Cancelar'
+  });
+
+  if (!confirmou) return;
+
+  try {
+    await fetch(`/api/admin/agencies/${agenciaId}`, { method: 'DELETE' });
+  } catch(e) {
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('agencies').delete().eq('id', agenciaId);
     }
-    window.carregarAgenciasDoSupabase();
   }
+  window.carregarAgenciasDoSupabase();
 };
 
 window.getTenantAgencyId = function() {
