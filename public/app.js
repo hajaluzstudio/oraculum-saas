@@ -1370,7 +1370,11 @@ document.addEventListener('DOMContentLoaded', () => {
             appendChatMessage(msg.role, displayText, parsedTasks, true);
           }
         });
-        container.scrollTop = container.scrollHeight;
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+          const mainList = document.getElementById('chat-messages-list');
+          if (mainList) mainList.scrollTop = mainList.scrollHeight;
+        }, 100);
       }
     } catch (e) {
       console.error('[Load History Error]:', e);
@@ -1476,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aiBubble.innerHTML = `
         <div class="w-full bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 text-slate-200 text-sm leading-relaxed shadow-xl">
           <div class="mb-3 text-emerald-400 font-medium flex items-center gap-2">
-            <span>👁️ Oraculum Copiloto</span>
+            <span>Oraculum Copiloto</span>
           </div>
           <div class="chat-ai-content mb-4 text-slate-300" style="white-space: pre-wrap; word-break: break-word;">
             ${cleanReplyText}
