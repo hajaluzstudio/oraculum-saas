@@ -606,7 +606,7 @@ window.abrirModalUsuarios = async function(agencyId, agencyName) {
                     </div>
                   </td>
                   <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
-                    <button onclick="window.abrirFichaUsuario('${u.id}', '${u.name.replace(/'/g, "\\'")}', '${u.email}', '${u.role}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-xs transition-colors cursor-pointer" title="Editar Ficha">
+                    <button onclick='window.abrirFichaUsuario("${u.id}", "${u.name.replace(/'/g, "\\'")}", "${u.email}", "${u.role}", "${agencyId}", "${agencyName.replace(/'/g, "\\'")}", ${JSON.stringify(u.allowed_tabs || null)})' class="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded text-xs transition-colors cursor-pointer" title="Editar Ficha e Acessos">
                       <i class="fa-solid fa-pen"></i> Editar
                     </button>
                     <button onclick="window.bloquearUsuarioAgencia('${u.id}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}', ${u.status === 'Bloqueado'})" class="px-2 py-1 ${u.status === 'Bloqueado' ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400' : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400'} rounded text-xs transition-colors cursor-pointer" title="${u.status === 'Bloqueado' ? 'Desbloquear Acesso' : 'Bloquear Acesso'}">
@@ -630,7 +630,63 @@ window.abrirModalUsuarios = async function(agencyId, agencyName) {
   `;
 };
 
-window.abrirFichaUsuario = function(userId, userName, userEmail, userRole, agencyId, agencyName) {
+// Definição dos Módulos e Abas da Plataforma Oraculum
+const ORACULUM_MODULOS_ABAS = [
+  { id: 'tab-clientes', label: 'Carteira de Clientes', icon: 'fa-users' },
+  { id: 'tab-onboarding', label: 'Onboarding Autônomo', icon: 'fa-user-plus' },
+  { id: 'tab-chat', label: 'Chat Estratégico', icon: 'fa-comments' },
+  { id: 'tab-spy', label: 'Radar de Concorrentes', icon: 'fa-user-secret' },
+  { id: 'tab-war-room', label: 'Sala de Operação (War Room)', icon: 'fa-bolt' },
+  { id: 'tab-lp', label: 'Landing Pages', icon: 'fa-globe' },
+  { id: 'tab-drive', label: 'Trilha & Kanban', icon: 'fa-columns' },
+  { id: 'tab-bi', label: 'BI & Feedback Loop', icon: 'fa-chart-line' },
+  { id: 'tab-predictive', label: 'Radar Preditivo de Risco', icon: 'fa-satellite-dish' },
+  { id: 'tab-intelligence', label: 'Portal de Inteligência', icon: 'fa-brain' },
+  { id: 'tab-settings', label: 'Configurações & APIs', icon: 'fa-gear' }
+];
+
+// Presets padrão recomendados por cargo
+function obterTabsPadraoPorCargo(role) {
+  const r = (role || '').toLowerCase();
+  if (r.includes('master') || r.includes('owner') || r.includes('coordenador') || r.includes('estrategista')) {
+    return ORACULUM_MODULOS_ABAS.map(m => m.id);
+  }
+  if (r.includes('design') || r.includes('videomaker') || r.includes('editor')) {
+    return ['tab-clientes', 'tab-war-room', 'tab-drive'];
+  }
+  if (r.includes('copy') || r.includes('redator')) {
+    return ['tab-clientes', 'tab-chat', 'tab-war-room', 'tab-lp', 'tab-drive'];
+  }
+  if (r.includes('tráfego') || r.includes('trafego') || r.includes('ads')) {
+    return ['tab-clientes', 'tab-bi', 'tab-predictive', 'tab-war-room', 'tab-drive'];
+  }
+  if (r.includes('social') || r.includes('seo')) {
+    return ['tab-clientes', 'tab-spy', 'tab-war-room', 'tab-drive', 'tab-intelligence'];
+  }
+  if (r.includes('atendimento') || r.includes('cs')) {
+    return ['tab-clientes', 'tab-onboarding', 'tab-war-room', 'tab-bi'];
+  }
+  return ['tab-clientes', 'tab-war-room', 'tab-drive'];
+}
+
+window.atualizarCheckboxesPorCargo = function() {
+  const roleSelect = document.getElementById('edit-user-role');
+  if (!roleSelect) return;
+  const tabsPadrao = obterTabsPadraoPorCargo(roleSelect.value);
+  ORACULUM_MODULOS_ABAS.forEach(mod => {
+    const chk = document.getElementById(`chk-perm-${mod.id}`);
+    if (chk) chk.checked = tabsPadrao.includes(mod.id);
+  });
+};
+
+window.marcarTodasTabs = function(marcar) {
+  ORACULUM_MODULOS_ABAS.forEach(mod => {
+    const chk = document.getElementById(`chk-perm-${mod.id}`);
+    if (chk) chk.checked = Boolean(marcar);
+  });
+};
+
+window.abrirFichaUsuario = function(userId, userName, userEmail, userRole, agencyId, agencyName, allowedTabsRaw = null) {
   let modal = document.getElementById('modal-ficha-usuario');
 
   if (!modal) {
@@ -640,29 +696,40 @@ window.abrirFichaUsuario = function(userId, userName, userEmail, userRole, agenc
     document.body.appendChild(modal);
   }
 
+  // Descobre permissões ativas
+  let allowedTabs = Array.isArray(allowedTabsRaw) ? allowedTabsRaw : null;
+  if (!allowedTabs) {
+    const foundUser = (window.agencyUsersMock || []).find(u => String(u.id) === String(userId));
+    if (foundUser && Array.isArray(foundUser.allowed_tabs)) {
+      allowedTabs = foundUser.allowed_tabs;
+    } else {
+      allowedTabs = obterTabsPadraoPorCargo(userRole);
+    }
+  }
+
   modal.innerHTML = `
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-white">
+    <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          <span><i class="fa-solid fa-id-card text-blue-400"></i> Ficha do Colaborador</span>
+          <span><i class="fa-solid fa-id-card text-emerald-400"></i> Ficha & Permissões do Colaborador</span>
         </h3>
         <button type="button" onclick="document.getElementById('modal-ficha-usuario').style.display='none'" class="text-slate-400 hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
       </div>
 
-      <div class="space-y-4 text-left">
+      <div class="space-y-3 text-left">
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">E-mail (Login)</label>
-          <input type="text" disabled value="${userEmail}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-500 text-sm cursor-not-allowed">
+          <input type="text" disabled value="${userEmail}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 font-mono text-xs cursor-not-allowed">
         </div>
         
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nome do Colaborador</label>
-          <input type="text" id="edit-user-name" value="${userName}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+          <input type="text" id="edit-user-name" value="${userName}" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
         </div>
         
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Cargo / Função (RBAC)</label>
-          <select id="edit-user-role" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+          <select id="edit-user-role" onchange="window.atualizarCheckboxesPorCargo()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
             <option value="Master da Agência" ${userRole === 'Master da Agência' || userRole === 'agency_owner' ? 'selected' : ''}>👑 Master da Agência (Total)</option>
             <option value="Coordenador de Marketing" ${userRole === 'Coordenador de Marketing' ? 'selected' : ''}>🎯 Coordenador de Marketing / Estrategista</option>
             <option value="Designer Gráfico" ${userRole === 'Designer Gráfico' ? 'selected' : ''}>🎨 Designer Gráfico (Visual)</option>
@@ -675,13 +742,40 @@ window.abrirFichaUsuario = function(userId, userName, userEmail, userRole, agenc
             <option value="Atendimento (CS)" ${userRole === 'Atendimento (CS)' ? 'selected' : ''}>💼 Atendimento / Sucesso do Cliente (CS)</option>
           </select>
         </div>
+
+        <!-- GRADE GRANULAR DE PERMISSÕES DE ABAS -->
+        <div class="border-t border-slate-800 pt-3 mt-3">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-lock"></i> Permissões de Acesso às Abas
+            </label>
+            <div class="space-x-1">
+              <button type="button" onclick="window.marcarTodasTabs(true)" class="text-[10px] text-emerald-400 hover:underline">Marcar Todas</button>
+              <span class="text-slate-600">|</span>
+              <button type="button" onclick="window.marcarTodasTabs(false)" class="text-[10px] text-slate-400 hover:underline">Desmarcar</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+            ${ORACULUM_MODULOS_ABAS.map(mod => {
+              const isChecked = allowedTabs.includes(mod.id);
+              return `
+                <label class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-slate-900 cursor-pointer transition-colors text-xs text-slate-200 select-none">
+                  <input type="checkbox" id="chk-perm-${mod.id}" value="${mod.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                  <i class="fa-solid ${mod.icon} text-slate-400 w-4 text-center"></i>
+                  <span>${mod.label}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
       </div>
 
-      <div class="pt-4 border-t border-slate-800 flex flex-col gap-2">
-        <button onclick="window.salvarEdicaoUsuario('${userId}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-colors cursor-pointer">
-          Salvar Alterações
+      <div class="pt-3 border-t border-slate-800 flex flex-col gap-2">
+        <button onclick="window.salvarEdicaoUsuario('${userId}', '${agencyId}', '${agencyName.replace(/'/g, "\\'")}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-lg shadow-emerald-900/30">
+          ✓ Salvar Permissões do Colaborador
         </button>
-        <button onclick="window.redefinirSenhaUsuario('${userId}', '${agencyId}', '${userEmail}')" class="w-full py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-2">
+        <button onclick="window.redefinirSenhaUsuario('${userId}', '${agencyId}', '${userEmail}')" class="w-full py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center gap-2">
           <i class="fa-solid fa-key"></i> Redefinir Senha
         </button>
       </div>
@@ -694,15 +788,22 @@ window.salvarEdicaoUsuario = async function(userId, agencyId, agencyName) {
   const name = document.getElementById('edit-user-name').value.trim();
   const role = document.getElementById('edit-user-role').value;
   
+  // Coleta as abas selecionadas
+  const allowed_tabs = [];
+  ORACULUM_MODULOS_ABAS.forEach(mod => {
+    const chk = document.getElementById(`chk-perm-${mod.id}`);
+    if (chk && chk.checked) allowed_tabs.push(mod.id);
+  });
+  
   try {
     const res = await fetch(`/api/admin/agencies/${agencyId}/users/${userId}/edit`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, role })
+      body: JSON.stringify({ name, role, allowed_tabs })
     });
     const data = await res.json();
     if(data.success) {
-      window.mostrarNotificacaoAgencia('Dados do colaborador atualizados!', 'success');
+      window.mostrarNotificacaoAgencia('✓ Permissões e dados do colaborador salvos com sucesso!', 'success');
       document.getElementById('modal-ficha-usuario').style.display = 'none';
       await window.abrirModalUsuarios(agencyId, agencyName);
     } else {
@@ -778,11 +879,13 @@ window.salvarUsuarioAgencia = async function(e, agencyId, agencyName) {
     btnSubmit.disabled = true;
   }
 
+  const allowed_tabs = obterTabsPadraoPorCargo(role);
+
   try {
     const res = await fetch(`/api/admin/agencies/${agencyId}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, role })
+      body: JSON.stringify({ name, email, role, allowed_tabs })
     });
     
     const data = await res.json();

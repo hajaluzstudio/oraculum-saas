@@ -4122,9 +4122,11 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
            console.error("Erro ao buscar profile:", profileErr);
         }
 
-        let role = profile?.role || 'agency_member';
-        let agencyId = profile?.agency_id || null;
-        let agencyName = role === 'super_admin' ? 'Oraculum Master Corp' : 'Agência Parceira';
+        const userMetadata = data.user.user_metadata || {};
+        let role = userMetadata.role || profile?.role || 'agency_member';
+        let agencyId = userMetadata.agency_id || profile?.agency_id || null;
+        let agencyName = (role === 'super_admin' || email === 'hajaluzstudio@gmail.com') ? 'Oraculum Master Corp' : 'Agência Parceira';
+        let allowed_tabs = Array.isArray(userMetadata.allowed_tabs) ? userMetadata.allowed_tabs : null;
 
         // Salva sessão ativa
         const sessionObj = { 
@@ -4134,7 +4136,8 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
           agencyId,
           userId,
           agencyStatus: 'active', 
-          agencyName, 
+          agencyName,
+          allowed_tabs,
           loggedAt: new Date().toISOString() 
         };
         sessionStorage.setItem('oraculum_session', JSON.stringify(sessionObj));
@@ -4148,19 +4151,21 @@ window.atualizarCardUsuarioLogado = async function(providedSession = null) {
         if (mainDash) mainDash.style.setProperty('display', 'block', 'important');
         if (appContainer) appContainer.style.setProperty('display', 'flex', 'important');
 
-        if (typeof applyRbacAndSessionVisibility === 'function') {
-          applyRbacAndSessionVisibility(sessionObj);
+        if (typeof window.applyRbacAndSessionVisibility === 'function') {
+          window.applyRbacAndSessionVisibility(sessionObj);
         }
         if (typeof window.atualizarCardUsuarioLogado === 'function') {
           window.atualizarCardUsuarioLogado(sessionObj);
         }
 
         const btnTabSuperAdmin = document.getElementById('btn-tab-super-admin');
-        if (role === 'super_admin' && btnTabSuperAdmin) {
+        if ((role === 'super_admin' || email === 'hajaluzstudio@gmail.com') && btnTabSuperAdmin) {
           btnTabSuperAdmin.click();
         } else {
-           const btnClientes = document.getElementById('btn-tab-clientes');
-           if (btnClientes) btnClientes.click();
+          // Se tiver abas permitidas, clica na primeira permitida disponível
+          const firstAllowed = Array.isArray(allowed_tabs) && allowed_tabs.length > 0 ? allowed_tabs[0] : 'tab-clientes';
+          const btnFirst = document.getElementById(`btn-${firstAllowed}`) || document.getElementById('btn-tab-clientes');
+          if (btnFirst) btnFirst.click();
         }
 
       } catch (err) {

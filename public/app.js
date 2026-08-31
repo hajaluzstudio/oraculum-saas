@@ -234,9 +234,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ============================================================================
+  // RBAC & CONTROLE DINÂMICO DE VISIBILIDADE DE ABAS POR USUÁRIO
+  // ============================================================================
+  window.applyRbacAndSessionVisibility = function(session) {
+    try {
+      const sess = session || JSON.parse(sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session') || '{}');
+      const email = String(sess.email || '').toLowerCase();
+      const role = String(sess.role || '').toLowerCase();
+      const isSuperAdmin = (email === 'hajaluzstudio@gmail.com' || role === 'super_admin' || role.includes('master'));
+      const allowedTabs = Array.isArray(sess.allowed_tabs) ? sess.allowed_tabs : null;
+
+      // Se for Super Admin ou Master Supremo, libera todas as abas
+      if (isSuperAdmin) {
+        document.querySelectorAll('.nav-menu .nav-item').forEach(item => {
+          item.style.removeProperty('display');
+        });
+        return;
+      }
+
+      // Oculta a aba Super Admin para membros comuns
+      const btnSuperAdmin = document.getElementById('btn-tab-super-admin');
+      if (btnSuperAdmin) btnSuperAdmin.style.setProperty('display', 'none', 'important');
+
+      // Se o usuário tem uma lista personalizada de abas permitidas
+      if (allowedTabs && allowedTabs.length > 0) {
+        document.querySelectorAll('.nav-menu .nav-item').forEach(item => {
+          const tabId = item.getAttribute('data-tab');
+          if (!tabId || tabId === 'tab-super-admin') return;
+          if (allowedTabs.includes(tabId)) {
+            item.style.removeProperty('display');
+          } else {
+            item.style.setProperty('display', 'none', 'important');
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('Erro ao aplicar RBAC nas abas:', e);
+    }
+  };
+
+  // Executa imediatamente na inicialização
+  window.applyRbacAndSessionVisibility();
+
   navItems.forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
       const targetTab = item.getAttribute('data-tab');
+
+      // Verificação de permissão no clique
+      const sess = JSON.parse(sessionStorage.getItem('oraculum_session') || localStorage.getItem('oraculum_session') || '{}');
+      const email = String(sess.email || '').toLowerCase();
+      const role = String(sess.role || '').toLowerCase();
+      const isSuperAdmin = (email === 'hajaluzstudio@gmail.com' || role === 'super_admin' || role.includes('master'));
+      const allowedTabs = Array.isArray(sess.allowed_tabs) ? sess.allowed_tabs : null;
+
+      if (!isSuperAdmin && allowedTabs && allowedTabs.length > 0) {
+        if (!allowedTabs.includes(targetTab)) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert('🔒 Acesso Restrito: Seu usuário não possui permissão para acessar esta aba.');
+          return;
+        }
+      }
 
       if (targetTab === 'tab-settings' && typeof window.isUserMasterAdmin === 'function') {
         if (!window.isUserMasterAdmin()) {

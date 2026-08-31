@@ -1860,7 +1860,8 @@ app.post('/api/admin/agencies/:id/users', async (req: Request, res: Response) =>
       user_metadata: {
         role: role || 'agency_member',
         agency_id: agencyId,
-        full_name: name
+        full_name: name,
+        allowed_tabs: Array.isArray(req.body.allowed_tabs) ? req.body.allowed_tabs : null
       }
     });
 
@@ -1907,6 +1908,7 @@ app.get('/api/admin/agencies/:id/users', async (req: Request, res: Response) => 
       name: u.user_metadata?.full_name || 'Colaborador',
       email: u.email,
       role: u.user_metadata?.role || 'Membro',
+      allowed_tabs: u.user_metadata?.allowed_tabs || null,
       status: 'Ativo'
     }));
 
@@ -1968,14 +1970,19 @@ app.put('/api/admin/agencies/:agencyId/users/:userId/block', async (req: Request
 app.put('/api/admin/agencies/:agencyId/users/:userId/edit', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { name, role } = req.body;
+    const { name, role, allowed_tabs } = req.body;
     
     // Atualiza metadados na Auth
     const { data: userObj, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (authError) throw authError;
 
     const currentMetadata = userObj.user.user_metadata || {};
-    const newMetadata = { ...currentMetadata, full_name: name, role: role };
+    const newMetadata = {
+      ...currentMetadata,
+      full_name: name,
+      role: role,
+      allowed_tabs: Array.isArray(allowed_tabs) ? allowed_tabs : currentMetadata.allowed_tabs || null
+    };
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: newMetadata
@@ -1986,7 +1993,7 @@ app.put('/api/admin/agencies/:agencyId/users/:userId/edit', async (req: Request,
     // Opcional: Atualiza na tabela auxiliar se existir
     await supabaseAdmin.from('agency_users').update({ name, role }).eq('id', userId);
     
-    return res.json({ success: true, message: 'Dados atualizados com sucesso!' });
+    return res.json({ success: true, message: 'Dados atualizados com sucesso!', data: newMetadata });
   } catch (error: any) {
     console.error('Erro ao editar usuário:', error);
     return res.status(500).json({ success: false, message: error.message });
