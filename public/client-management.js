@@ -176,24 +176,31 @@ window.salvarCliente = async function(e) {
 
     if (error) throw error;
 
-   window.fecharModalNovoCliente();
-await window.carregarClientesDoSupabase();
+    window.fecharModalNovoCliente();
+    await window.carregarClientesDoSupabase();
 
-// Bloco de Sucesso
-if (typeof window.mostrarToastOraculum === 'function') {
-  window.mostrarToastOraculum('✨ Cliente salvo com sucesso!', 'sucesso');
-} else {
-  alert('✨ Cliente salvo com sucesso!');
-}
+    // Bloco de Sucesso
+    if (typeof window.mostrarToastOraculum === 'function') {
+      window.mostrarToastOraculum('✨ Cliente salvo com sucesso!', 'sucesso');
+    } else if (typeof window.showToast === 'function') {
+      window.showToast('✨ Cliente salvo com sucesso!', 'success');
+    } else {
+      alert('✨ Cliente salvo com sucesso!');
+    }
 
-} catch (err) {
-  // Bloco de Erro (fica dentro do catch)
-  if (typeof window.mostrarToastOraculum === 'function') {
-    window.mostrarToastOraculum('❌ Erro ao salvar: ' + err.message, 'erro');
-  } else {
-    alert('❌ Erro ao salvar: ' + err.message);
+  } catch (err) {
+    // Bloco de Erro
+    if (typeof window.mostrarToastOraculum === 'function') {
+      window.mostrarToastOraculum('❌ Erro ao salvar: ' + err.message, 'erro');
+    } else if (typeof window.showToast === 'function') {
+      window.showToast('❌ Erro ao salvar: ' + err.message, 'error');
+    } else {
+      alert('❌ Erro ao salvar: ' + err.message);
+    }
+  } finally {
+    if (btn) { btn.innerText = 'Salvar'; btn.disabled = false; }
   }
-}
+};
 
 // 4. EXCLUIR CLIENTE
 window.excluirCliente = async function(clientId) {
@@ -209,27 +216,34 @@ window.excluirCliente = async function(clientId) {
 // 5. CARREGAR DADOS NO ONBOARDING
 window.carregarDadosClienteNoOnboarding = function(clientId) {
   if (!clientId) return;
-  // Aciona diretamente o seletor padrão do app.js se ele existir, garantindo a troca global
+  
+  localStorage.setItem('oraculum_active_client', clientId);
+  localStorage.setItem('oraculum_active_client_id', clientId);
+  sessionStorage.setItem('oraculum_active_client', clientId);
+  sessionStorage.setItem('oraculum_active_client_id', clientId);
+  window.currentClientId = clientId;
+  window.activeClientId = clientId;
+
   const selectHeader = document.getElementById('active-client-select');
   if (selectHeader) {
     selectHeader.value = clientId;
-    // Dispara o evento de mudança para o app.js capturar e atualizar o Dossiê/Chat
     selectHeader.dispatchEvent(new Event('change'));
+  }
+  if (typeof window.setActiveClient === 'function') {
+    window.setActiveClient(clientId);
   } else if (typeof window.selectActiveClient === 'function') {
     window.selectActiveClient(clientId);
-  } else if (typeof window.setActiveClient === 'function') {
-    window.setActiveClient(clientId);
   }
 };
 
 // 6. ATUALIZAR SELETORES E VISOR DO CABEÇALHO
 window.atualizarSeletorClientesOnboarding = function() {
   const selectOnboarding = document.getElementById('select-onboarding-client');
-  const selectHeader = document.getElementById('active-client-select'); // O select original (pode estar oculto ou não)
-  const selectHeaderDisplay = document.getElementById('active-client-display'); // Nosso span visual limpo
-  const list = window.clientesMock || []; 
+  const selectHeader = document.getElementById('active-client-select');
+  const selectHeaderDisplay = document.getElementById('active-client-display');
+  const list = window.clientesMock || window.clientsList || []; 
 
-  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+  const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
 
   // Preenche o seletor da aba de Onboarding
   if (selectOnboarding) {
@@ -250,7 +264,9 @@ window.atualizarSeletorClientesOnboarding = function() {
       const selectedId = e.target.value;
       if (selectedId) {
         localStorage.setItem('oraculum_active_client', selectedId);
+        localStorage.setItem('oraculum_active_client_id', selectedId);
         sessionStorage.setItem('oraculum_active_client', selectedId);
+        sessionStorage.setItem('oraculum_active_client_id', selectedId);
         window.carregarDadosClienteNoOnboarding(selectedId);
       }
     };
@@ -335,28 +351,52 @@ window.carregarClientesDoSupabase = async function() {
 
   try {
     const identidade = await window.obterIdentidadeSegura();
-    const { data, error } = await supaClient.from('clients').select('*');
+    const { data, error } = await supaClient.from('clients').select('*').order('created_at', { ascending: false });
     if (error) { console.error("❌ Erro na base:", error.message); return; }
     
-    console.log(`✅ Banco retornou ${data.length} clientes.`);
+    console.log(`✅ Banco retornou ${data ? data.length : 0} clientes.`);
 
     let clientesFiltrados = [];
     if (identidade.isMaster) {
-      clientesFiltrados = data; 
+      clientesFiltrados = data || []; 
     } else {
       if (identidade.agencyId) {
         const safeId = String(identidade.agencyId).toLowerCase();
-        clientesFiltrados = data.filter(c => c.agency_id && String(c.agency_id).toLowerCase() === safeId);
+        clientesFiltrados = (data || []).filter(c => 
+          (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
+          (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
+        );
+      }
+      // Se não encontrou filtrado por agency_id estrito, permite listar clientes da conta
+      if (clientesFiltrados.length === 0 && data && data.length > 0) {
+        clientesFiltrados = data;
       }
     }
 
-    window.clientesMock = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes) }));
-    window.clientsList = window.clientesMock;
+    const processedClients = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes || c.previous_agency_notes) }));
+    window.clientesMock = processedClients;
+    window.clientsList = processedClients;
+    window.globalClientsList = processedClients;
+
+    // Se nenhum cliente ativo estiver selecionado ou se o cliente salvo não existe mais, seleciona o primeiro
+    const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
+    if (processedClients.length > 0) {
+      const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
+      if (!savedActiveId || !exists) {
+        const firstClient = processedClients[0];
+        localStorage.setItem('oraculum_active_client', firstClient.id);
+        localStorage.setItem('oraculum_active_client_id', firstClient.id);
+        sessionStorage.setItem('oraculum_active_client', firstClient.id);
+        sessionStorage.setItem('oraculum_active_client_id', firstClient.id);
+        window.currentClientId = firstClient.id;
+        window.activeClientId = firstClient.id;
+      }
+    }
 
     setTimeout(() => {
         window.renderizarListaClientes();
         window.atualizarSeletorClientesOnboarding();
-    }, 400);
+    }, 200);
 
   } catch (err) {
     console.error("❌ Erro fatal:", err);

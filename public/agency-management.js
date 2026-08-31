@@ -287,12 +287,11 @@ window.fecharModalNovaAgencia = function(event) {
 window.salvarAgencia = async function(e) {
   if (e) e.preventDefault();
   
-  const formCrud = document.getElementById('form-agency-crud');
-  const isFormCrud = Boolean(formCrud && e && e.target === formCrud);
+  const targetFormId = e && e.target ? e.target.id : '';
 
   let id = '', name = '', cnpj = '', phone = '', admin_email = '', zip = '', street = '', neighborhood = '', city = '', state = '', plan = 'Starter', monthly_fee = 497, responsible_name = '', due_day = 10, status = 'active';
 
-  if (isFormCrud || document.getElementById('agency-input-name')) {
+  if (targetFormId === 'form-agency-crud' || (!document.getElementById('agency-name-input') && document.getElementById('agency-input-name'))) {
     id = document.getElementById('agency-modal-id')?.value || '';
     name = document.getElementById('agency-input-name')?.value?.trim() || '';
     cnpj = document.getElementById('agency-input-cnpj')?.value?.trim() || '';

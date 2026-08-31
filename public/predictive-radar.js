@@ -11,11 +11,17 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Se a aba for ativada, carregamos os alertas
-  // Observação: precisaremos escutar um evento ou verificar quando a aba muda se quisermos 
-  // carregar sem recarregar a pág, mas o clique no menu tab-predictive já serve.
   document.addEventListener('click', (e) => {
     const itemMenu = e.target.closest('.nav-menu .nav-item, [data-section], [data-tab]');
     if (itemMenu && itemMenu.getAttribute('data-tab') === 'tab-predictive') {
+      loadPredictiveAlerts();
+    }
+  });
+
+  // Reage imediatamente a trocas globais de cliente
+  window.addEventListener('clientChanged', () => {
+    const tabPredictive = document.getElementById('tab-predictive');
+    if (tabPredictive && (tabPredictive.classList.contains('active') || tabPredictive.style.display !== 'none')) {
       loadPredictiveAlerts();
     }
   });
@@ -23,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // 1. O MOTOR DE VARREDURA PREDITIVA (Simulação de Análise BI)
 async function runPredictiveScanner() {
-  const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id');
+  const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client') || window.currentClientId;
   if (!clientId) {
     if (typeof window.showToast === 'function') window.showToast("Selecione um cliente ativo antes de rodar o scanner preditivo.", "error"); else alert("Selecione um cliente ativo antes de rodar o scanner preditivo.");
     return;
@@ -222,7 +228,7 @@ async function loadPredictiveAlerts() {
   const container = document.getElementById('predictive-alerts-container');
   if (!container || !window.supabaseClient) return;
 
-  const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id');
+  const clientId = window.activeClient?.id || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client') || window.currentClientId;
   if (!clientId) {
     container.innerHTML = `<div style="text-align: center; grid-column: 1 / -1; padding: 40px; color: #94A3B8;">Selecione um cliente no topo primeiro.</div>`;
     return;
