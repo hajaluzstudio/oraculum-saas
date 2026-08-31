@@ -9094,12 +9094,12 @@ window.verificarBloqueioInadimplencia = async function() {
         // 2. O Master Supremo NUNCA é bloqueado
         if (email === 'hajaluzstudio@gmail.com') return;
 
-        // 3. Vai no banco e pergunta se essa agência está bloqueada
+        // 3. Vai no banco e pergunta se essa agência está bloqueada (.maybeSingle evita 406 do PostgREST)
         const { data: agData } = await supaClient
             .from('agencies')
             .select('status')
             .eq('email_billing', email)
-            .single();
+            .maybeSingle();
 
         // 4. SE ESTIVER BLOQUEADA: Apaga a plataforma e sobe o cadeado
         if (agData && agData.status === 'blocked') {
