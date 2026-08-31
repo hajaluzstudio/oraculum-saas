@@ -183,18 +183,23 @@ window.abrirModalAgencia = function(agenciaId = null) {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Plano SaaS</label>
               <select id="agency-plan-input" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
-                <option value="Starter">Starter (Até 5 clientes)</option>
-                <option value="Pro Growth">Pro Growth (Até 20 clientes)</option>
-                <option value="Enterprise Pro">Enterprise Pro (Ilimitado)</option>
+                <option value="Starter">Starter (500k tokens / 5 clientes)</option>
+                <option value="Pro Growth">Pro Growth (2M tokens / 20 clientes)</option>
+                <option value="Enterprise Pro">Enterprise Pro (10M tokens / Ilimitado)</option>
+                <option value="Personalizado">Personalizado (Cota Custom)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Mensalidade (R$)</label>
               <input type="text" id="agency-fee-input" placeholder="Ex: 997,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-emerald-400 uppercase mb-1">Cota IA (Tokens/mês)</label>
+              <input type="number" id="agency-token-limit-input" placeholder="Ex: 2000000" class="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
             </div>
           </div>
 
@@ -228,11 +233,15 @@ window.abrirModalAgencia = function(agenciaId = null) {
       document.getElementById('agency-state').value = ag.state || '';
       document.getElementById('agency-plan-input').value = ag.plan || 'Starter';
       document.getElementById('agency-fee-input').value = ag.monthly_fee || '';
+      const tokenInput = document.getElementById('agency-token-limit-input');
+      if (tokenInput) tokenInput.value = ag.token_limit || (ag.plan === 'Pro Growth' ? 2000000 : ag.plan === 'Enterprise Pro' ? 10000000 : 500000);
     }
   } else {
     const titleEl = document.getElementById('modal-agency-title');
     if (titleEl) titleEl.innerText = 'Cadastrar Nova Agência';
     document.getElementById('agency-id-input').value = '';
+    const tokenInput = document.getElementById('agency-token-limit-input');
+    if (tokenInput) tokenInput.value = '500000';
   }
 
   modal.style.setProperty('display', 'flex', 'important');
@@ -289,7 +298,7 @@ window.salvarAgencia = async function(e) {
   
   const targetFormId = e && e.target ? e.target.id : '';
 
-  let id = '', name = '', cnpj = '', phone = '', admin_email = '', zip = '', street = '', neighborhood = '', city = '', state = '', plan = 'Starter', monthly_fee = 497, responsible_name = '', due_day = 10, status = 'active';
+  let id = '', name = '', cnpj = '', phone = '', admin_email = '', zip = '', street = '', neighborhood = '', city = '', state = '', plan = 'Starter', monthly_fee = 497, responsible_name = '', due_day = 10, status = 'active', token_limit = 500000;
 
   if (targetFormId === 'form-agency-crud' || (!document.getElementById('agency-name-input') && document.getElementById('agency-input-name'))) {
     id = document.getElementById('agency-modal-id')?.value || '';
@@ -322,6 +331,8 @@ window.salvarAgencia = async function(e) {
     plan = document.getElementById('agency-plan-input')?.value || 'Starter';
     const monthly_fee_raw = document.getElementById('agency-fee-input')?.value?.trim() || '497';
     monthly_fee = parseFloat(monthly_fee_raw.replace(',', '.')) || 497.00;
+    const tokenVal = document.getElementById('agency-token-limit-input')?.value?.trim();
+    token_limit = tokenVal ? parseInt(tokenVal) : (plan === 'Pro Growth' ? 2000000 : plan === 'Enterprise Pro' ? 10000000 : 500000);
   }
 
   const btn = document.getElementById('btn-submit-agency-modal') || document.getElementById('btn-save-agency');
@@ -335,7 +346,7 @@ window.salvarAgencia = async function(e) {
     const payload = {
       name, cnpj, phone, email_billing: admin_email, admin_email, zip, street, neighborhood, city, state,
       address_street: street, address_neighborhood: neighborhood, address_city: city, address_state: state, zip_code: zip,
-      plan, plan_tier: plan, monthly_fee, responsible_name, due_day, status, active: status === 'active'
+      plan, plan_tier: plan, monthly_fee, responsible_name, due_day, status, active: status === 'active', token_limit
     };
 
     // 1. Tenta salvar via API backend
@@ -918,6 +929,11 @@ window.renderizarListaAgencias = function(isOffline = false) {
     const due = ag.due_day || 10;
     const feeFormatted = isNaN(fee) ? 'R$ 0,00' : `R$ ${fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
+    const limit = Number(ag.token_limit) || (ag.plan === 'Pro Growth' ? 2000000 : ag.plan === 'Enterprise Pro' ? 10000000 : 500000);
+    const used = Number(ag.tokens_used_month) || 0;
+    const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+    const barColor = pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
+
     return `
     <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
       <td class="py-3 px-4 font-semibold text-white">
@@ -935,6 +951,18 @@ window.renderizarListaAgencias = function(isOffline = false) {
       <td class="py-3 px-4">
         <div class="text-emerald-400 font-semibold">${feeFormatted}</div>
         <div class="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Vencimento: Dia ${due}</div>
+      </td>
+      <td class="py-3 px-4">
+        <div class="space-y-1.5 min-w-[130px]">
+          <div class="flex justify-between items-center text-[10px]">
+            <span class="text-slate-400 font-medium">${(used / 1000).toFixed(1)}k / ${(limit / 1000).toFixed(0)}k</span>
+            <span class="font-bold font-mono ${pct >= 90 ? 'text-rose-400' : 'text-emerald-400'}">${pct}%</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="${barColor} h-1.5 rounded-full transition-all duration-300" style="width: ${pct}%;"></div>
+          </div>
+          <div class="text-[9px] text-slate-500 uppercase tracking-wider">${ag.plan || 'Starter'}</div>
+        </div>
       </td>
       <td class="py-3 px-4">
         <div class="flex flex-col gap-1 items-start">
@@ -1077,8 +1105,10 @@ window.carregarAgenciasDoSupabase = async function() {
       neighborhood: ag.neighborhood || '',
       city: ag.city || '',
       state: ag.state || '',
-      plan: ag.plan || 'Starter',
+      plan: ag.plan || ag.plan_tier || 'Starter',
       monthly_fee: ag.monthly_fee ? Number(ag.monthly_fee).toFixed(2) : '997.00',
+      token_limit: ag.token_limit || (ag.plan === 'Pro Growth' ? 2000000 : ag.plan === 'Enterprise Pro' ? 10000000 : 500000),
+      tokens_used_month: ag.tokens_used_month || 0,
       users_count: ag.users_count || 1,
       active: ag.status === 'active' || ag.active === true,
       created_at: new Date(ag.created_at || Date.now()).toLocaleDateString('pt-BR')

@@ -1,5 +1,57 @@
 // Gerenciador Definitivo de Chaves de API (Gemini & ElevenLabs com Supabase)
 
+/**
+ * ⚡ MOTOR UNIVERSAL DE IA DO ORACULUM SAAS
+ * Envia requisições para a rota centralizada /api/ai/generate com a Chave Master do backend.
+ * Rastreia tokens automaticamente por agência e conta com cascata de contingência.
+ */
+window.chamarIAUniversal = async function({ prompt, message, systemInstruction, toolName, config, agencyId }) {
+  const activeAgencyId = agencyId || (window.getTenantAgencyId ? window.getTenantAgencyId() : null) || (window.activeTenantId || localStorage.getItem('oraculum_active_tenant_id') || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104');
+  const userPrompt = prompt || message;
+
+  try {
+    const res = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-organization-id': activeAgencyId
+      },
+      body: JSON.stringify({
+        prompt: userPrompt,
+        systemInstruction,
+        toolName: toolName || 'oraculum_frontend',
+        config: config || {},
+        agencyId: activeAgencyId
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      if (data.quotaExceeded) {
+        if (typeof window.showToast === 'function') {
+          window.showToast(data.error, 'error');
+        } else {
+          alert('⚠️ ' + data.error);
+        }
+        throw new Error(data.error);
+      }
+      throw new Error(data.error || 'Erro ao processar inteligência artificial.');
+    }
+
+    return {
+      reply: data.reply || data.replyText,
+      replyText: data.reply || data.replyText,
+      modelUsed: data.modelUsed,
+      usage: data.usage,
+      tokensUsed: data.tokensUsed
+    };
+  } catch (err) {
+    console.error('[chamarIAUniversal Erro]:', err);
+    throw err;
+  }
+};
+
 window.getGeminiKey = async function() {
   // 1. Tenta o cache imediato no LocalStorage
   let key = localStorage.getItem('GEMINI_API_KEY') || localStorage.getItem('gemini_api_key') || localStorage.getItem('custom_gemini_api_key') || localStorage.getItem('oraculum_gemini_key');

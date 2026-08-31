@@ -30,15 +30,17 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-3.7-flash",      // 1ª Opção: Inteligência máxima (20 req/dia de topo)
-  "gemini-3.5-flash-lite", // 2ª Opção: Assume de imediato com 500 req/dia livres
-  "gemini-3.5-flash",      // 3ª Opção: Resposta padrão
-  "gemma-4-26b",           // 4ª Opção: Retaguarda massiva (14.400 req/dia)
-  "gemma-4-31b"            // 5ª Opção: Contingência avançada (14.400 req/dia)
+  "gemini-3.7-flash",      // 1ª Opção: Inteligência máxima (Raciocínio de topo)
+  "gemini-3.6-flash",      // 2ª Opção: Alta performance e resposta rápida
+  "gemini-3.5-flash-lite", // 3ª Opção: Assume com 500 req/dia livres e altíssima velocidade
+  "gemini-3.5-flash",      // 4ª Opção: Resposta padrão de alta capacidade
+  "gemma-4-26b",           // 5ª Opção: Retaguarda massiva (14.400 req/dia)
+  "gemma-4-31b"            // 6ª Opção: Contingência avançada (14.400 req/dia)
 ];
 
 /**
  * Função executora universal para TODOS os módulos (Onboarding, Chat, BI, Live, Radar)
+ * Retorna { reply, modelUsed, usageMetadata }
  */
 async function executarIAComFallback(genAI: any, systemInstruction: string, promptOuConteudo: any) {
   let ultimoErro: any = null;
@@ -49,7 +51,7 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
 
       let config: any = {
         temperature: 0.7,
-        maxOutputTokens: 1500
+        maxOutputTokens: 2000
       };
 
       // thinkingConfig zero-delay exclusivo para Gemini 3.7 (parâmetro inválido em 3.5/Gemma)
@@ -81,9 +83,20 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       const response = await genAI.models.generateContent(requestOptions);
       const reply = response.text;
 
+      // Extrai metadados de tokens da resposta oficial da API
+      const usage = response.usageMetadata || {};
+      const usageMetadata = {
+        promptTokenCount: usage.promptTokenCount || usage.prompt_tokens || Math.ceil((typeof promptOuConteudo === 'string' ? promptOuConteudo.length : 100) / 4),
+        candidatesTokenCount: usage.candidatesTokenCount || usage.candidates_tokens || Math.ceil((reply?.length || 100) / 4),
+        totalTokenCount: usage.totalTokenCount || usage.total_tokens || 0
+      };
+      if (!usageMetadata.totalTokenCount) {
+        usageMetadata.totalTokenCount = usageMetadata.promptTokenCount + usageMetadata.candidatesTokenCount;
+      }
+
       if (reply && reply.trim().length > 0) {
-        console.log(`[AI Cascata] Sucesso com modelo: ${modelName}`);
-        return { reply, modelUsed: modelName };
+        console.log(`[AI Cascata] Sucesso com modelo: ${modelName} (${usageMetadata.totalTokenCount} tokens)`);
+        return { reply, modelUsed: modelName, usageMetadata };
       }
 
       // Resposta vazia = modelo indisponível, tenta próximo
@@ -94,20 +107,22 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
 
       const status = err?.status || err?.response?.status;
       const isCotaOuIndisponivel =
-        status === 429 || status === 503 ||
-        msg.includes('429') || msg.includes('503') ||
+        status === 429 || status === 503 || status === 404 ||
+        msg.includes('429') || msg.includes('503') || msg.includes('404') ||
         msg.toLowerCase().includes('quota') ||
         msg.toLowerCase().includes('resourceexhausted') ||
+        msg.toLowerCase().includes('not found') ||
         msg.toLowerCase().includes('overloaded') ||
         msg.toLowerCase().includes('rate limit');
 
       if (isCotaOuIndisponivel) {
-        console.warn(`[AI Cascata] Modelo ${modelName} sem cota. Saltando para o próximo...`);
+        console.warn(`[AI Cascata] Modelo ${modelName} sem cota ou indisponível (${msg.slice(0, 80)}). Saltando para o próximo...`);
         continue;
       }
 
-      console.error(`[AI Cascata] Erro fatal no modelo ${modelName}:`, msg.slice(0, 200));
-      throw err;
+      console.error(`[AI Cascata] Erro no modelo ${modelName}:`, msg.slice(0, 200));
+      // Tenta próximo modelo em caso de erro de API
+      continue;
     }
   }
 
@@ -1136,6 +1151,111 @@ app.get('/api/test-gemini', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * 🚀 ENDPOINT UNIVERSAL DE IA COM CHAVE MASTER & GESTÃO DE COTAS POR AGÊNCIA
+ * POST /api/ai/generate ou POST /api/ai/chat
+ */
+app.post(['/api/ai/generate', '/api/ai/chat'], async (req: Request, res: Response) => {
+  try {
+    const { prompt, message, systemInstruction, toolName, config, agencyId, organizationId } = req.body;
+    const activeAgencyId = agencyId || organizationId || (req as any).organizationId || DEFAULT_TENANT_ID;
+    const userPrompt = prompt || message;
+
+    if (!userPrompt) {
+      return res.status(400).json({ success: false, error: 'O parâmetro "prompt" ou "message" é obrigatório.' });
+    }
+
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: 'Chave Master GEMINI_API_KEY não configurada no servidor.' });
+    }
+
+    // 1. Verificação de cota mensal da agência (se configurada)
+    let agencyRecord: any = null;
+    try {
+      if (activeAgencyId && process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+        const { data: ag } = await supabase.from('agencies').select('*').eq('id', activeAgencyId).maybeSingle();
+        if (ag) {
+          agencyRecord = ag;
+          const tokenLimit = ag.token_limit ? Number(ag.token_limit) : null;
+          const tokensUsed = Number(ag.tokens_used_month || 0);
+
+          // Se tem limite e atingiu a cota
+          if (tokenLimit && tokenLimit > 0 && tokensUsed >= tokenLimit) {
+            return res.status(429).json({
+              success: false,
+              quotaExceeded: true,
+              tokensUsed,
+              tokenLimit,
+              error: `Limite mensal de IA do seu plano (${tokenLimit.toLocaleString('pt-BR')} tokens) foi atingido. Entre em contato com o administrador para expandir seu plano.`
+            });
+          }
+        }
+      }
+    } catch (quotaErr) {
+      console.warn('[AI Quota Check Warning]:', quotaErr);
+    }
+
+    // 2. Executa a IA com cascata inteligente de modelos
+    const { GoogleGenAI } = require('@google/genai');
+    const aiInstance = new GoogleGenAI({ apiKey });
+
+    const aiResult = await executarIAComFallback(aiInstance, systemInstruction || '', {
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      config: config || {}
+    });
+
+    const totalTokens = aiResult.usageMetadata?.totalTokenCount || 0;
+
+    // 3. Atualiza o contador de tokens da agência no Supabase de forma assíncrona
+    try {
+      if (activeAgencyId && totalTokens > 0 && process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('placeholder')) {
+        const novoTotal = (Number(agencyRecord?.tokens_used_month) || 0) + totalTokens;
+        
+        // Atualiza a tabela agencies
+        await supabase
+          .from('agencies')
+          .update({
+            tokens_used_month: novoTotal,
+            last_ai_usage_at: new Date().toISOString()
+          })
+          .eq('id', activeAgencyId);
+
+        // Registra log detalhado na tabela ai_usage_logs (se existir)
+        try {
+          await supabase.from('ai_usage_logs').insert([{
+            agency_id: activeAgencyId,
+            tool_name: toolName || 'general_ai',
+            model_used: aiResult.modelUsed,
+            prompt_tokens: aiResult.usageMetadata?.promptTokenCount || 0,
+            candidates_tokens: aiResult.usageMetadata?.candidatesTokenCount || 0,
+            total_tokens: totalTokens,
+            created_at: new Date().toISOString()
+          }]);
+        } catch (_) {}
+      }
+    } catch (logErr) {
+      console.warn('[AI Usage Log Warning]:', logErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      reply: aiResult.reply,
+      replyText: aiResult.reply,
+      modelUsed: aiResult.modelUsed,
+      usage: aiResult.usageMetadata,
+      tokensUsed: totalTokens
+    });
+
+  } catch (error: any) {
+    console.error('[API /api/ai/generate Error]:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Erro ao processar requisição de inteligência artificial.'
+    });
+  }
+});
+
 // WORKFLOW & KANBAN
 app.get(['/api/workflow/:clientId', '/api/kanban/:clientId', '/api/kanban'], async (req: Request, res: Response) => {
   try {
@@ -1659,7 +1779,7 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
     // Somente campos que existem de fato na tabela agencies do Supabase
     const allowedFields = [
       'name', 'slug', 'email_billing', 'cnpj_cpf', 'phone',
-      'monthly_fee', 'due_day', 'status', 'plan_tier'
+      'monthly_fee', 'due_day', 'status', 'plan_tier', 'token_limit', 'tokens_used_month'
     ];
     // Mapeamento de nomes legados do frontend → coluna real
     if (body['cnpj'] !== undefined && body['cnpj_cpf'] === undefined) body['cnpj_cpf'] = body['cnpj'];
@@ -1667,7 +1787,7 @@ const updateAgencyHandler = async (req: Request, res: Response) => {
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         if (field === 'monthly_fee') updatePayload[field] = parseFloat(body[field]);
-        else if (field === 'due_day' || field === 'client_limit') updatePayload[field] = parseInt(body[field]);
+        else if (field === 'due_day' || field === 'client_limit' || field === 'token_limit' || field === 'tokens_used_month') updatePayload[field] = parseInt(body[field]);
         else updatePayload[field] = body[field];
       }
     }
