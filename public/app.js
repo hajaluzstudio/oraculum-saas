@@ -9045,6 +9045,7 @@ function mostrarToastOraculum(mensagem, tipo = 'sucesso') {
     </div>
   `;
 
+  
   toast.style.cssText = `
     position: fixed;
     top: 24px;
