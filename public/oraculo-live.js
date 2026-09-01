@@ -245,13 +245,60 @@
         if (isUser) {
           msgDiv.innerHTML = `<span style="font-weight: 700; font-size: 10px; color: #34d399; display: block; margin-bottom: 3px;">Você / Reunião</span>${formatarMarkdown(msg)}`;
         } else {
+          const btnAprovarId = 'btn-aprovar-live-' + Date.now() + Math.random().toString(36).substr(2, 5);
           msgDiv.innerHTML = `
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
               <img src="/logo-oraculum-03.svg" alt="AI" style="width: 15px; height: 15px; object-fit: contain;" />
               <span style="font-weight: 700; font-size: 11px; color: #22d3ee;">Oraculum Live</span>
             </div>
             <div>${formatarMarkdown(msg)}</div>
+            <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(51, 65, 85, 0.6); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <span style="font-size: 10px; color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block;"></span> Diretriz Acordada
+              </span>
+              <button 
+                id="${btnAprovarId}" 
+                type="button" 
+                style="padding: 4px 10px; background: #10b981; color: #022c22; border: none; border-radius: 6px; font-weight: 700; font-size: 10.5px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+              >
+                ⚡ Aprovar & Enviar para Sala de Operação
+              </button>
+            </div>
           `;
+          
+          setTimeout(() => {
+            const btnEl = shadow.getElementById(btnAprovarId);
+            if (btnEl) {
+              btnEl.onclick = async () => {
+                btnEl.disabled = true;
+                btnEl.innerText = '⏳ Despachando...';
+                
+                try {
+                  const { clientId, tenantId } = obterContextoAtivo();
+                  if (window.supabaseClient && clientId) {
+                    await window.supabaseClient.from('war_room_tasks').insert([{
+                      client_id: clientId,
+                      tenant_id: tenantId,
+                      origin_source: 'oraculum_live',
+                      title: 'Diretriz de Reunião BI: Redução de SLA Comercial',
+                      description: msg,
+                      status: 'backlog',
+                      tags: ['BI Live', 'Comercial', 'SLA']
+                    }]);
+                  }
+                  btnEl.style.background = '#064e3b';
+                  btnEl.style.color = '#34d399';
+                  btnEl.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                  btnEl.style.cursor = 'default';
+                  btnEl.innerText = '✅ Aprovado e Enviado';
+                } catch (e) {
+                  console.error('Erro ao despachar:', e);
+                  btnEl.disabled = false;
+                  btnEl.innerText = '❌ Erro ao enviar';
+                }
+              };
+            }
+          }, 50);
         }
         feed.appendChild(msgDiv);
       });
@@ -293,6 +340,7 @@
       const data = await response.json();
       const respostaIA = data.reply || data.replyText || (typeof data.data === 'string' ? data.data : data.data?.replyText) || 'Sem resposta.';
 
+      const btnAprovarId = 'btn-aprovar-live-' + Date.now();
       aiDiv.style.fontStyle = 'normal';
       aiDiv.style.color = '#e2e8f0';
       aiDiv.innerHTML = `
@@ -301,7 +349,53 @@
           <span style="font-weight: 700; font-size: 11px; color: #22d3ee;">Oraculum Live</span>
         </div>
         <div>${formatarMarkdown(respostaIA)}</div>
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(51, 65, 85, 0.6); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="font-size: 10px; color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block;"></span> Diretriz Acordada
+          </span>
+          <button 
+            id="${btnAprovarId}" 
+            type="button" 
+            style="padding: 4px 10px; background: #10b981; color: #022c22; border: none; border-radius: 6px; font-weight: 700; font-size: 10.5px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+          >
+            ⚡ Aprovar & Enviar para Sala de Operação
+          </button>
+        </div>
       `;
+      
+      setTimeout(() => {
+        const btnEl = shadow.getElementById(btnAprovarId);
+        if (btnEl) {
+          btnEl.onclick = async () => {
+            btnEl.disabled = true;
+            btnEl.innerText = '⏳ Despachando...';
+            
+            try {
+              const { clientId, tenantId } = obterContextoAtivo();
+              if (window.supabaseClient && clientId) {
+                await window.supabaseClient.from('war_room_tasks').insert([{
+                  client_id: clientId,
+                  tenant_id: tenantId,
+                  origin_source: 'oraculum_live',
+                  title: 'Diretriz de Reunião BI: Redução de SLA Comercial',
+                  description: respostaIA,
+                  status: 'backlog',
+                  tags: ['BI Live', 'Comercial', 'SLA']
+                }]);
+              }
+              btnEl.style.background = '#064e3b';
+              btnEl.style.color = '#34d399';
+              btnEl.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+              btnEl.style.cursor = 'default';
+              btnEl.innerText = '✅ Aprovado e Enviado';
+            } catch (e) {
+              console.error('Erro ao despachar:', e);
+              btnEl.disabled = false;
+              btnEl.innerText = '❌ Erro ao enviar';
+            }
+          };
+        }
+      }, 50);
       feed.scrollTop = feed.scrollHeight;
 
       if (window.supabaseClient && clientId !== 'default_client') {
