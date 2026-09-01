@@ -1176,28 +1176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.descartarSugestaoChat = async function(msgId, dbId) {
-    const el = document.getElementById(msgId);
-    if (el) el.remove();
-
-    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-    if (window.supabaseClient && clientId) {
-      try {
-        if (dbId) {
-          await window.supabaseClient.from('chat_history').delete().eq('id', dbId);
-        } else {
-          // Remove a última mensagem do assistente caso não tenha dbId específico
-          await window.supabaseClient
-            .from('chat_history')
-            .delete()
-            .eq('client_id', String(clientId))
-            .eq('role', 'model');
-        }
-      } catch(e) {
-        console.warn('[Chat] Erro ao deletar mensagem descartada:', e);
-      }
-    }
-  };
 
   window.aprovarParaSalaOperacao = function(msgId) {
     const el = document.getElementById(msgId);
@@ -1219,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="whitespace-pre-wrap markdown-body">${typeof marked !== 'undefined' ? marked.parse(text) : text}</div>
         
         <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
-          <button onclick="descartarSugestaoChat('${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
+          <button onclick="recusarSugestaoChat(this, '${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
           <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 12px;">
             <p style="color: var(--primary-cyan); font-weight: bold; margin-bottom: 4px;">📊 Divisão Orçamentária Recomendada:</p>
             <p>💻 Tráfego Digital: <strong style="color: var(--accent-emerald);">${dossier.budgetAllocation?.digitalTrafficPercent ?? 50}%</strong> | 📻 Mídia Tradicional: <strong style="color: var(--primary-cyan);">${dossier.budgetAllocation?.traditionalMediaPercent ?? 25}%</strong> | 🤝 Eventos Presenciais: <strong style="color: var(--accent-gold);">${dossier.budgetAllocation?.offlineEventsPercent ?? 25}%</strong></p>
@@ -1375,26 +1353,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.descartarSugestaoChat = async function(msgId, dbId) {
-    const el = document.getElementById(msgId);
-    if (el) el.remove();
 
-    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
-    if (window.supabaseClient && clientId) {
-      try {
-        if (dbId) {
-          await window.supabaseClient.from('chat_history').delete().eq('id', dbId);
-        } else {
-          // Remove a última mensagem do assistente caso não tenha dbId específico
-          await window.supabaseClient
-            .from('chat_history')
-            .delete()
-            .eq('client_id', String(clientId))
-            .eq('role', 'model');
-        }
-      } catch(e) {
-        console.warn('[Chat] Erro ao deletar mensagem descartada:', e);
-      }
+  window.recusarSugestaoChat = function(buttonEl, msgId) {
+    const card = buttonEl ? buttonEl.closest('.chat-message-ai, .bg-\\[\\#05110f\\], [data-chat-card]') : document.getElementById(msgId);
+    if (card) {
+      card.style.transition = 'all 0.3s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        card.innerHTML = `
+          <div class="p-3 text-xs text-rose-400/80 bg-rose-950/20 border border-rose-800/30 rounded-xl flex items-center justify-between">
+            <span>❌ Proposta recusada e descartada da pauta.</span>
+            <span class="text-[10px] text-slate-500 font-mono">${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+        `;
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1)';
+      }, 300);
     }
   };
 
@@ -1418,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="whitespace-pre-wrap markdown-body">${typeof marked !== 'undefined' ? marked.parse(text) : text}</div>
         
         <div class="mt-4 pt-3 border-t border-[#1B3B36] flex items-center justify-end space-x-3">
-          <button onclick="descartarSugestaoChat('${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
+          <button onclick="recusarSugestaoChat(this, '${messageId}')" class="px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800/40 rounded-lg transition-colors flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             Descartar
           </button>
@@ -1486,68 +1461,72 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Carrega histórico direto da API do servidor
-  async function carregarHistoricoChat() {
-    const container = document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
-    if (!container) return;
+  window.carregarHistoricoChatEstrategico = async function(clientId) {
+    const container = document.getElementById('chat-messages-feed') || document.getElementById('strategic-chat-feed') || document.getElementById('chat-messages-container') || document.querySelector('.chat-messages');
+    if (!container || !window.supabaseClient || !clientId) return;
 
-    const clientId = window.activeClientId || (window.activeClient && window.activeClient.id) || 'client_1787406730';
-    
     try {
-      const res = await fetch(`/api/chat?client_id=${clientId}`);
-      const data = await res.json();
-      
-      if (data.history && Array.isArray(data.history)) {
-        container.innerHTML = '';
-        data.history.forEach(msg => {
-          let parsedTasks = null;
-          let displayText = msg.content;
-          
-          if (msg.role === 'model' || msg.role === 'assistant') {
-            try {
-              const parsed = JSON.parse(msg.content);
-              if (parsed.tasks) parsedTasks = parsed.tasks;
-            } catch(e) {}
-            // Extrai o texto limpo usando a função robusta já existente no arquivo
-            displayText = extrairTextoLimpo(msg.content);
-          }
+      const { data, error } = await window.supabaseClient
+        .from('chat_history')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true });
 
+      if (!error && Array.isArray(data)) {
+        // Filtra mensagens técnicas/resíduos do Oraculum Live
+        const validMessages = data.filter(m => {
+          const c = String(m.content || '').toLowerCase();
+          return !c.includes('analise todos os dados e histórico') && 
+                 !c.includes('top_channel') && 
+                 !c.includes('diagnóstico executivo da conta');
+        });
+
+        // Renderiza as mensagens filtradas e limpas
+        container.innerHTML = '';
+        validMessages.forEach(msg => {
+          let displayText = msg.content;
+          if (msg.role === 'model' || msg.role === 'assistant') {
+            displayText = extrairTextoLimpoChat(msg.content);
+          }
           if (typeof appendChatMessage === 'function') {
-            appendChatMessage(msg.role, displayText, parsedTasks, true);
+            appendChatMessage(msg.role, displayText, null, true);
           }
         });
+        
         setTimeout(() => {
           container.scrollTop = container.scrollHeight;
           const mainList = document.getElementById('chat-messages-list');
           if (mainList) mainList.scrollTop = mainList.scrollHeight;
         }, 100);
       }
-    } catch (e) {
-      console.error('[Load History Error]:', e);
+    } catch(err) {
+      console.warn('[Chat Estratégico] Erro ao carregar histórico:', err);
     }
-  }
+  };
 
   // Parser isolado para limpar qualquer JSON residual da tela
-  function extrairTextoLimpo(resposta) {
-    if (!resposta) return '';
-    let texto = resposta;
-    let tasks = [];
+  function extrairTextoLimpoChat(rawContent) {
+    if (!rawContent) return '';
+    let str = typeof rawContent === 'object' ? JSON.stringify(rawContent) : String(rawContent);
 
-    if (typeof resposta === 'object' && resposta !== null) {
-      texto = resposta.replyText || resposta.message || resposta.reply || JSON.stringify(resposta);
-      if (Array.isArray(resposta.tasks)) tasks = resposta.tasks;
-    } else if (typeof resposta === 'string') {
-      const trimmed = resposta.trim();
-      if (trimmed.startsWith('{') && trimmed.includes('"replyText"')) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          texto = parsed.replyText || texto;
-          if (Array.isArray(parsed.tasks)) tasks = parsed.tasks;
-        } catch (e) {
-          const match = trimmed.match(/"replyText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-          if (match && match[1]) {
-            texto = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-          }
-        }
+    // 1. Tenta extrair replyText de estruturas JSON
+    if (str.includes('replyText')) {
+      try {
+        const parsed = typeof rawContent === 'object' ? rawContent : JSON.parse(str);
+        if (parsed.replyText) return parsed.replyText;
+      } catch(e) {
+        const match = str.match(/"replyText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (match && match[1]) return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      }
+    }
+
+    // 2. Remove instruções de sistema residuais (ex: "Atue como Estrategista Chefe...")
+    str = str.replace(/Atue como Estrategista Chefe.*?(?=(\n\n|\{|$))/gs, '');
+    str = str.replace(/Extraia as tarefas e demandas.*?(?=(\n\n|\{|$))/gs, '');
+    str = str.replace(/\{"replyText":/g, '').replace(/,"tasks":\[.*\]\}/gs, '').replace(/\\n/g, '\n').replace(/\\"/g, '"').trim();
+    
+    return str.trim();
+  }
       }
     }
 
