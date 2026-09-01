@@ -1251,7 +1251,13 @@
                 </div>
                 <div class="form-group">
                   <label for="previous-agency-notes">Histórico Sanitizado & Briefing Híbrido (Agência + IA)</label>
-                  <textarea id="previous-agency-notes" rows="3" placeholder="Insira metas de CAC, objeções do público, tom de voz e diretrizes estratégicas..."></textarea>
+                  <textarea 
+                    id="previous-agency-notes" 
+                    rows="5" 
+                    placeholder="Histórico, restrições e preferências do cliente..." 
+                    class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition custom-scrollbar resize-y"
+                    style="min-height: 120px;"
+                  ></textarea>
                 </div>
                 <button type="submit" class="btn-primary" id="btn-run-onboarding">
                   <i class="fa-solid fa-wand-magic-sparkles"></i> Disparar Onboarding por IA
