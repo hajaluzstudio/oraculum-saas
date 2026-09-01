@@ -2859,107 +2859,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!targetKey) targetKey = 'video';
     const key = String(targetKey).toLowerCase().trim();
 
-    // Mapeamento abrangente de IDs para tolerar qualquer versão estrutural do HTML
-    const mapIds = {
-      'video':       ['wr-tab-video', 'wr-panel-video', 'video-pane', 'war-room-video-content'],
-      'design':      ['wr-tab-design', 'wr-panel-design', 'design-pane', 'wr-design-container', 'design-content'],
-      'trafego':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane', 'wr-traffic-container', 'traffic-content'],
-      'traffic':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane', 'wr-traffic-container', 'traffic-content'],
-      'copy':        ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane', 'copywriting-content'],
-      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane', 'copywriting-content'],
-      'comercial':   ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane', 'comercial-content'],
-      'sales':       ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane', 'comercial-content']
-    };
-
-    // Normalização da categoria limpa a partir de qualquer variante de key
-    let pureCategory = 'video';
-    if (key.includes('design'))                               pureCategory = 'design';
-    else if (key.includes('trafeg') || key.includes('traffic')) pureCategory = 'trafego';
-    else if (key.includes('copy'))                            pureCategory = 'copywriting';
-    else if (key.includes('comerc') || key.includes('sale')) pureCategory = 'comercial';
-
-    // 1. Oculta todos os painéis e contêineres da War Room
-    document.querySelectorAll('.wr-subtab-content, .wr-panel, [id^="wr-tab-"], [id^="wr-panel-"]').forEach(el => {
+    // 1. Oculta todos os painéis e sub-abas existentes na War Room
+    document.querySelectorAll('#tab-war-room .wr-panel, #tab-war-room .wr-subtab-content, [id^="wr-tab-"]').forEach(el => {
       el.classList.add('hidden');
-      el.style.display = 'none';
+      el.style.setProperty('display', 'none', 'important');
     });
 
-    // Feed compartilhado de categorias (versão ce9ad1a)
-    const sharedFeed = document.getElementById('war-room-other-categories-feed') ||
-                       document.getElementById('war-room-nonvideo-feed');
-    const videoTools = document.querySelectorAll('#tab-war-room > div:not(#war-room-subtabs-nav):not(.war-room-nav):not(#war-room-other-categories-feed):not(#war-room-nonvideo-feed)');
+    // 2. Mapeamento direto para os IDs reais comprovados no DOM
+    let targetId = 'wr-tab-video';
+    if (key.includes('design'))                               targetId = 'wr-tab-design';
+    else if (key.includes('trafeg') || key.includes('traffic')) targetId = 'wr-tab-traffic';
+    else if (key.includes('copy'))                            targetId = 'wr-tab-copywriting';
+    else if (key.includes('comerc') || key.includes('sale')) targetId = 'wr-tab-comercial';
 
-    // 2. Tenta exibir contêiner próprio por ID
-    let found = false;
-    const candidateIds = mapIds[pureCategory] || [];
-    for (const id of candidateIds) {
-      const target = document.getElementById(id);
-      if (target) {
-        target.classList.remove('hidden');
-        target.style.display = 'block';
-        found = true;
-        break;
-      }
+    // 3. Fallback inteligente para variações de ID
+    const target = document.getElementById(targetId) ||
+                   document.getElementById(targetId.replace('traffic', 'trafego')) ||
+                   document.getElementById(`wr-panel-${key}`);
+
+    if (target) {
+      target.classList.remove('hidden');
+      target.style.setProperty('display', 'block', 'important');
+      target.style.setProperty('visibility', 'visible', 'important');
     }
 
-    // 3. Fallback estrutural: feed compartilhado ou gerado dinamicamente
-    if (!found && sharedFeed) {
-      if (pureCategory === 'video') {
-        videoTools.forEach(el => el.style.display = '');
-        sharedFeed.style.display = 'none';
-      } else {
-        videoTools.forEach(el => el.style.display = 'none');
-        sharedFeed.style.display = 'grid';
-
-        const cards = sharedFeed.querySelectorAll('[data-category]');
-        let count = 0;
-        cards.forEach(c => {
-          const cat = (c.getAttribute('data-category') || '').toLowerCase();
-          if (cat === pureCategory || (pureCategory === 'trafego' && cat === 'traffic')) {
-            c.style.display = 'block';
-            count++;
-          } else {
-            c.style.display = 'none';
-          }
-        });
-
-        if (count === 0) {
-          sharedFeed.innerHTML = `
-            <div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
-              Nenhum entregável despachado para a equipe de <strong class="text-emerald-400">${pureCategory.toUpperCase()}</strong> no momento. Gere pautas no Chat Estratégico.
-            </div>
-          `;
-        }
-      }
-    }
-
-    // 4. Atualiza os botões visuais
+    // 4. Atualiza estado visual dos botões
     document.querySelectorAll('#war-room-subtabs-nav button, .war-room-nav button, .wr-tab-btn, [data-subtab], [data-wr-tab]').forEach(b => {
-      const txt      = (b.textContent || '').toLowerCase();
-      const subAttr  = (b.getAttribute('data-subtab') || b.getAttribute('data-wr-tab') || '').toLowerCase();
+      const txt = (b.textContent || '').toLowerCase();
+      const sub = (b.getAttribute('data-subtab') || b.getAttribute('data-wr-tab') || '').toLowerCase();
 
-      const isActive = subAttr.includes(pureCategory) ||
-                       txt.includes(pureCategory) ||
-                       (pureCategory === 'trafego' && (txt.includes('tráfego') || txt.includes('trafego')));
-
-      if (isActive) {
-        b.classList.add('active');
-        b.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        b.style.color = '#10B981';
+      if (sub.includes(key) || txt.includes(key) || (key.includes('trafeg') && (txt.includes('tráfego') || txt.includes('trafego')))) {
+        b.classList.add('active', 'bg-[#10B981]', 'text-black');
+        b.classList.remove('bg-[#0B1514]', 'text-slate-400');
       } else {
-        b.classList.remove('active');
-        b.style.backgroundColor = 'transparent';
-        b.style.color = '#94A3B8';
+        b.classList.remove('active', 'bg-[#10B981]', 'text-black');
+        b.classList.add('bg-[#0B1514]', 'text-slate-400');
       }
     });
 
-    // 5. Hidratação da gaveta de Tráfego
-    if (pureCategory === 'trafego') {
-      if (typeof window.carregarAtivosEntreguesTrafego === 'function') {
-        window.carregarAtivosEntreguesTrafego();
-      } else if (typeof window.loadArchivedTrafficCards === 'function') {
-        window.loadArchivedTrafficCards();
-      }
+    // 5. Hidratação da gaveta de Tráfego se aplicável
+    if ((key.includes('trafeg') || key.includes('traffic')) && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+      window.carregarAtivosEntreguesTrafego();
     }
   };
 
