@@ -2296,52 +2296,7 @@
                       </div>
                     </div>
 
-                    <!-- Ferramenta 3: Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO) -->
-                    <div class="card-glass mt-4" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                      <div class="card-header" style="cursor: pointer; padding: 16px; background: #071311; border: 1px solid #1B3B36; border-radius: 12px;" onclick="window.toggleCollapsibleSection('metadata-cert-content', this)">
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                          <div>
-                            <h3 style="margin: 0; color: #00F5A0; font-size: 14px;"><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
-                          </div>
-                          <span class="tool-arrow" style="font-size: 12px; color: #94A3B8;">▼ Expandir Ferramenta</span>
-                        </div>
-                      </div>
-                      <div id="metadata-cert-content" class="hidden" style="margin-top: 16px;">
-                        <div class="card-glass" id="metadata-certificate-section">
-                          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                            <div>
-                              <h3><i class="fa-solid fa-stamp"></i> Certidão de Nascimento Digital (Injeção EXIF / XMP / GEO)</h3>
-                              <p>Blindagem de autoridade e SEO local invisível gravado nos metadados da mídia antes do tráfego.</p>
-                            </div>
-                        <button type="button" class="btn-primary sm" id="btn-generate-metadata-cert" style="font-size: 11px; padding: 6px 14px;">
-                          <i class="fa-solid fa-certificate"></i> Emitir Certidão de Metadados
-                        </button>
-                      </div>
 
-                      <div id="metadata-certificate-output" style="margin-top: 14px; display: none;">
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 12px;">
-                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                            <span style="font-size: 11px; color: #94A3B8;">Autor & Copyright:</span>
-                            <p id="meta-val-author" style="color: #FFF; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
-                          </div>
-                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                            <span style="font-size: 11px; color: #94A3B8;">Geolocalização & GPS:</span>
-                            <p id="meta-val-geo" style="color: #00F5A0; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
-                          </div>
-                          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                            <span style="font-size: 11px; color: #94A3B8;">Tags de Compra Injetadas:</span>
-                            <p id="meta-val-keywords" style="color: #06B6D4; font-weight: 600; margin: 4px 0 0; font-size: 13px;">-</p>
-                          </div>
-                        </div>
-                        <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px;">
-                          <span style="font-size: 11px; color: #94A3B8; font-weight: bold;">Legenda Social Media com Gatilho Neuroeconômico:</span>
-                          <p id="meta-val-social-copy" style="color: #E2E8F0; margin: 6px 0 0; font-size: 12px; line-height: 1.5; white-space: pre-line;">-</p>
-                        </div>
-                      </div>
-                    </div>
-                    </div>
-                    </div>
-                  </div>
 
                 </div>
               </div>
@@ -4550,7 +4505,7 @@ window.atualizarCardUsuarioLogado = function(providedSession = null) {
     });
   }
 </script>
-<script src="/app.js?v=2026.240.0"></script>
+<script src="/app.js?v=2026.260.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');

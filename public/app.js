@@ -4048,12 +4048,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    cards[targetCardIndex].locked = false;
                    cards[targetCardIndex].adjustments_needed = null;
                    
-                   const btnCert = document.getElementById('btn-generate-metadata-cert');
-                   if (btnCert) {
-                     btnCert.disabled = false;
-                     btnCert.classList.remove('opacity-50', 'cursor-not-allowed');
-                   }
-                }
+                 }
                 
                 localStorage.setItem(`oraculum_kanban_${activeClientId}`, JSON.stringify(cards));
                 
@@ -6357,54 +6352,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ============================================================================
-  // ETAPA 2: 🏷️ INJEÇÃO REAL DE METADADOS (EXIF / XMP / GEO)
-  // ============================================================================
-  const btnGenerateMetadataCert = document.getElementById('btn-generate-metadata-cert');
-  const metadataCertificateOutput = document.getElementById('metadata-certificate-output');
-
-  if (btnGenerateMetadataCert) {
-    btnGenerateMetadataCert.addEventListener('click', async () => {
-      const inspectTitle = document.getElementById('inspect-title')?.value || 'Vídeo de Alta Conversão';
-      const inspectNiche = document.getElementById('inspect-niche')?.value || 'Saúde & Estética';
-
-      btnGenerateMetadataCert.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Injetando Metadados...';
-      btnGenerateMetadataCert.disabled = true;
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/creatives/inject-metadata`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-organization-id': activeTenantId
-          },
-          body: JSON.stringify({
-            assetTitle: inspectTitle,
-            niche: inspectNiche,
-            clientName: activeClientName || 'Cliente Ativo',
-            customCity: 'São Paulo, SP'
-          })
-        });
-
-        const json = await res.json();
-        if (!json.success || !json.data) throw new Error(json.error || 'Erro ao gerar certidão');
-
-        const cert = json.data;
-        if (metadataCertificateOutput) {
-          metadataCertificateOutput.style.display = 'block';
-          document.getElementById('meta-val-author').textContent = `${cert.author} (${cert.copyright})`;
-          document.getElementById('meta-val-geo').textContent = `${cert.geoData?.city || 'São Paulo'}, ${cert.geoData?.state || 'SP'} (${cert.exifData?.gpsCoordinates || '23°33\'S'})`;
-          document.getElementById('meta-val-keywords').textContent = (cert.keywords || []).slice(0, 5).join(', ');
-          document.getElementById('meta-val-social-copy').textContent = `📢 Headline: ${cert.socialCopy?.headline || ''}\n\n${cert.socialCopy?.bodyText || ''}\n\n👉 CTA: ${cert.socialCopy?.callToAction || ''}\n\n${(cert.socialCopy?.hashtags || []).join(' ')}`;
-        }
-      } catch (err) {
-        alert(`Erro ao emitir certidão: ${err.message}`);
-      } finally {
-        btnGenerateMetadataCert.innerHTML = '<i class="fa-solid fa-certificate"></i> Emitir Certidão de Metadados';
-        btnGenerateMetadataCert.disabled = false;
-      }
-    });
-  }
 
   // ============================================================================
   // ETAPA 3: 📊 OTIMIZADOR PREDITIVO DE ALOCAÇÃO DE ORÇAMENTO POR IA
