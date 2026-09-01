@@ -8257,24 +8257,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const wrPanels = document.querySelectorAll('.wr-panel');
   wrTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      // Remove active de todos os botões e painéis
-      wrTabBtns.forEach(b => b.classList.remove('active'));
-      wrPanels.forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none';
-      });
-      // Adiciona active no clicado
-      btn.classList.add('active');
       const targetId = btn.getAttribute('data-wr-target');
-      const targetPanel = document.getElementById(targetId);
-      if (targetPanel) {
-        targetPanel.classList.add('active');
-        targetPanel.style.display = 'block';
-        
-        // Gatilho para carregar ativos de tráfego ao clicar na aba
-        if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
-          window.carregarAtivosEntreguesTrafego();
-        }
+      if (typeof window.switchWarRoomTab === 'function') {
+        window.switchWarRoomTab(targetId);
       }
     });
   });
