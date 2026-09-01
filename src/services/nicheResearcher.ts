@@ -12,6 +12,11 @@ export interface ClientOnboardingInput {
   website?: string;
   logoUrl?: string;
   previousAgencyNotes?: string; // Histórico sanitizado da agência anterior
+  avgTicket?: number;
+  targetRevenue?: number;
+  mainService?: string;
+  billingModel?: string;
+  salesCycle?: string;
 }
 
 export interface ClientOnboardingOutput {
@@ -45,7 +50,20 @@ export const localDossiersStore: Record<string, any> = loadDossiersFromDisk();
 export async function registerClientAndGenerateDossier(
   input: ClientOnboardingInput
 ): Promise<ClientOnboardingOutput> {
-  const { organizationId, clientId, clientName, niche, website, logoUrl, previousAgencyNotes } = input;
+  const {
+    organizationId,
+    clientId,
+    clientName,
+    niche,
+    website,
+    logoUrl,
+    previousAgencyNotes,
+    avgTicket,
+    targetRevenue,
+    mainService,
+    billingModel,
+    salesCycle
+  } = input;
 
   if (!organizationId || !clientName || !niche) {
     throw new Error('Parâmetros obrigatórios ausentes: organizationId, clientName e niche.');
@@ -106,10 +124,22 @@ export async function registerClientAndGenerateDossier(
     console.warn(`[Agente de Nicho] ⚠️ Erro no robô autônomo scraper, continuando com dossier padrão:`, errScraper.message);
   }
 
-  console.log(`[Agente de Nicho] 3/5 - Disparando Oráculo Gemini (@google/genai) para o dossiê de "${niche}"...`);
+  console.log(`[Agente de Nicho] 3/5 - Disparando Oráculo Gemini (@google/genai) para o dossiê de "${niche}" com Unit Economics...`);
 
   // 3. DISPARO DA IA PARA GERAÇÃO DO DOSSIÊ ESTRATÉGICO DE NICHO
-  const dossier: NicheDossier = await generateNicheStrategicDossier(niche, clientName, website, previousAgencyNotes);
+  const dossier: NicheDossier = await generateNicheStrategicDossier(
+    niche,
+    clientName,
+    website,
+    previousAgencyNotes,
+    {
+      avgTicket,
+      targetRevenue,
+      mainService,
+      billingModel,
+      salesCycle
+    }
+  );
 
   if (topPlayersData) {
     (dossier as any).topPlayersAnalysis = topPlayersData.topPlayers;

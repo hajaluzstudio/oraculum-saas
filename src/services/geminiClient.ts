@@ -259,21 +259,38 @@ const nicheDossierExhaustiveSchema: Schema = {
   ],
 };
 
+export interface UnitEconomicsInput {
+  avgTicket?: number;
+  targetRevenue?: number;
+  mainService?: string;
+  billingModel?: string;
+  salesCycle?: string;
+}
+
 /**
  * Gera autônomamente o Dossiê Estratégico Preditivo Exaustivo Multicanal utilizando alta profundidade de tokens (maxOutputTokens: 8192).
  * 
  * @param niche Nome ou descrição do nicho (ex: "Médico Cirurgião Plástico")
  * @param clientName Nome opcional do cliente
+ * @param website Website da marca
+ * @param briefingTexto Briefing sanitizado e histórico
+ * @param unitEconomics Dados vitais de precificação, ticket médio e metas
  * @returns Promessa com o Dossiê Estratégico Completo
  */
 export async function generateNicheStrategicDossier(
   niche: string,
   clientName?: string,
   website?: string,
-  briefingTexto?: string
+  briefingTexto?: string,
+  unitEconomics?: UnitEconomicsInput
 ): Promise<NicheDossier> {
   const nomeCliente = clientName || 'Cliente Padrão';
   const nichoMercado = niche || 'Geral';
+  const avgTicket = Number(unitEconomics?.avgTicket) || 0;
+  const targetRevenue = Number(unitEconomics?.targetRevenue) || 0;
+  const mainService = unitEconomics?.mainService || 'Geral';
+  const billingModel = unitEconomics?.billingModel || 'unico';
+  const salesCycle = unitEconomics?.salesCycle || 'imediato';
 
   const systemInstruction = `Você é o Diretor de Estratégia e Neuromarketing do ecossistema Oraculum SaaS.
 Sua missão é criar o DOSSIÊ ESTRATÉGICO PREDITIVO COMPLETO e exclusivo para a marca informada.
@@ -284,14 +301,19 @@ DADOS DA MARCA:
 - Website: ${website || 'Não informado'}
 - Briefing, Branding e Diferenciais: ${briefingTexto || 'Análise setorial de alto padrão'}
 
-DIRETRIZES DE CONSTRUÇÃO OBRIGATÓRIAS:
-1. NÃO GERE TEXTOS GENÉRICOS. Incorpore os diferenciais exatos, objeções e posicionamento informados no Briefing.
-2. Aplique regras regulatórias e éticas reais do conselho de classe do nicho (ex: CFM/CRM para medicina, OAB para advocacia, etc.).
-3. Formate a saída rigorosamente nos 4 blocos estruturados:
-   - VISÃO DE MERCADO & PERFIL ICP (Público A/B, Nível de Consciência, Dores Viscerais).
-   - PSICOLOGIA DE CONSUMO & NEUROECONOMIA (Medos Inconfessáveis, Vieses Cognitivos, Ancoragem de Preço).
-   - MODELAGEM DE PRECIFICAÇÃO & ORÇAMENTO PREDITIVO (Ticket Médio Sugerido, CAC Máximo Aceitável, LTV Projetado, Proporção LTV/CAC Alvo >= 3:1, Orçamento Mensal Recomendado).
-   - DIRETRIZES DE NEUROMARKETING PARA VÍDEO (3 Ganchos Visuais/Hooks de 3s específicos para o tom da marca).`;
+DADOS FINANCEIROS & UNIT ECONOMICS DA MARCA:
+- Ticket Médio Real Cadastrado: R$ ${avgTicket > 0 ? avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Não informado (estimar pelo nicho)'}
+- Meta de Faturamento Mensal: R$ ${targetRevenue > 0 ? targetRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Não informada'}
+- Serviço/Produto Carro-Chefe: ${mainService}
+- Modelo de Cobrança: ${billingModel} (${salesCycle})
+
+DIRETRIZES DE CÁLCULO OBRIGATÓRIAS:
+1. Se o Ticket Médio Real foi informado (R$ ${avgTicket > 0 ? avgTicket : 'N/A'}), utilize-o OBRIGATORIAMENTE no bloco de Modelagem de Precificação como suggestedAverageTicket (NÃO invente outro valor sugerido).
+2. Trave o CAC Máximo Aceitável (maxAcceptableCAC) rigorosamente entre 15% e 20% do Ticket Médio Real.
+3. Se a Meta de Faturamento foi fornecida (R$ ${targetRevenue > 0 ? targetRevenue : 'N/A'}), calcule a meta mensal de clientes fechados (Meta Faturamento ÷ Ticket Médio) e o orçamento sugerido de mídia (Meta de Clientes × CAC Máximo).
+4. NÃO GERE TEXTOS GENÉRICOS. Incorpore os diferenciais exatos, objeções e posicionamento informados no Briefing.
+5. Aplique regras regulatórias e éticas reais do conselho de classe do nicho (ex: CFM/CRM para medicina, OAB para advocacia, etc.).
+6. Formate a saída rigorosamente nos blocos estruturados do schema JSON.`;
 
   const prompt = `Gere o Dossiê Estratégico Preditivo MULTICANAL COMPLETO para o Nicho: "${niche}"${
     clientName ? ` (Cliente: "${clientName}")` : ''

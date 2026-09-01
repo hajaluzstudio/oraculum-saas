@@ -699,10 +699,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const clientName = document.getElementById('client-name')?.value || '';
-    const niche = document.getElementById('client-niche')?.value || '';
-    const website = document.getElementById('client-website')?.value || '';
-    const sanitizedHistory = document.getElementById('previous-agency-notes')?.value || '';
+    const clientList = window.clientsList || window.clientesMock || [];
+    const clientObj = clientList.find(c => c && String(c.id) === String(clientId)) || window.currentClientData || {};
+
+    const clientName = document.getElementById('client-name')?.value || clientObj.name || '';
+    const niche = document.getElementById('client-niche')?.value || clientObj.niche || '';
+    const website = document.getElementById('client-website')?.value || clientObj.website || '';
+    const sanitizedHistory = document.getElementById('previous-agency-notes')?.value || clientObj.notes || '';
+
+    const avgTicket = Number(clientObj.avg_ticket || clientObj.ticket) || 0;
+    const targetRevenue = Number(clientObj.target_revenue || clientObj.meta_faturamento) || 0;
+    const mainService = clientObj.main_service || '';
+    const billingModel = clientObj.billing_model || 'unico';
+    const salesCycle = clientObj.sales_cycle || 'imediato';
 
     dossierBadge.textContent = '1/1 - Preparando Dossiê...';
     dossierBadge.style.background = 'rgba(6, 182, 212, 0.2)';
@@ -716,15 +725,21 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     try {
-      // Dispara a geração do Dossiê Estratégico usando o ID selecionado
-      await generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website);
+      // Dispara a geração do Dossiê Estratégico usando o ID selecionado e dados de Unit Economics
+      await generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website, {
+        avgTicket,
+        targetRevenue,
+        mainService,
+        billingModel,
+        salesCycle
+      });
     } catch (error) {
       console.error('Erro no fluxo de geração de dossiê:', error);
       alert('Erro inesperado: ' + error.message);
     }
   }
 
-  async function generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website = '') {
+  async function generateAndSaveDossier(clientId, clientName, niche, sanitizedHistory, website = '', unitEconomics = {}) {
     dossierBadge.textContent = '2/2 - Disparando Oraculum Gemini (Dossiê)...';
 
     dossierContent.innerHTML = `
@@ -746,7 +761,13 @@ document.addEventListener('DOMContentLoaded', () => {
           clientName,
           niche,
           website,
-          previousAgencyNotes: sanitizedHistory
+          previousAgencyNotes: sanitizedHistory,
+          // Dados Vitais de Unit Economics e Vendas:
+          avgTicket: unitEconomics.avgTicket || 0,
+          targetRevenue: unitEconomics.targetRevenue || 0,
+          mainService: unitEconomics.mainService || '',
+          billingModel: unitEconomics.billingModel || 'unico',
+          salesCycle: unitEconomics.salesCycle || 'imediato'
         })
       });
 

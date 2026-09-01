@@ -682,9 +682,22 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
   try {
     console.log('[API /api/onboarding] Requisição de onboarding recebida');
     const organizationId = (req as any).organizationId;
-    const { clientId, clientName, niche, sanitized_history, website, previous_agency_notes, previousAgencyNotes } = req.body || {};
+    const {
+      clientId,
+      clientName,
+      niche,
+      sanitized_history,
+      website,
+      previous_agency_notes,
+      previousAgencyNotes,
+      avgTicket,
+      targetRevenue,
+      mainService,
+      billingModel,
+      salesCycle
+    } = req.body || {};
 
-    console.log('[API /api/onboarding] Body recebido:', { organizationId, clientId, clientName, niche, website });
+    console.log('[API /api/onboarding] Body recebido:', { organizationId, clientId, clientName, niche, website, avgTicket, targetRevenue });
 
     // Validação defensiva da chave do Gemini
     const apiKey = process.env.GEMINI_API_KEY;
@@ -702,13 +715,19 @@ app.post('/api/onboarding', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'clientName e niche são obrigatórios.' });
     }
 
-    console.log('[API /api/onboarding] Executando registerClientAndGenerateDossier...');
+    console.log('[API /api/onboarding] Executando registerClientAndGenerateDossier com Unit Economics...');
     const result = await registerClientAndGenerateDossier({
       organizationId,
+      clientId,
       clientName,
       niche,
       website,
       previousAgencyNotes: sanitized_history || previous_agency_notes || previousAgencyNotes,
+      avgTicket: Number(avgTicket) || 0,
+      targetRevenue: Number(targetRevenue) || 0,
+      mainService: mainService || '',
+      billingModel: billingModel || 'unico',
+      salesCycle: salesCycle || 'imediato'
     });
 
     // Usa o clientId que veio do frontend (já salvo no Supabase) ou o gerado pelo service
