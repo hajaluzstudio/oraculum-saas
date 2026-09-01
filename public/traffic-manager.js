@@ -3,143 +3,101 @@
 // =======================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  const wrTrafficPanel = document.getElementById('wr-traffic');
-  if (!wrTrafficPanel) return;
-
-  // Cria o container para a lista de criativos despachados
-  const creativesContainer = document.createElement('div');
-  creativesContainer.id = 'traffic-ready-creatives-container';
-  creativesContainer.className = 'card-glass mt-4';
-  creativesContainer.style.marginTop = '24px';
-  creativesContainer.innerHTML = `
-    <h3>📦 Criativos Prontos para Subida de Anúncios</h3>
-    <div id="traffic-creatives-list" class="space-y-3 mt-3" style="display: flex; flex-direction: column; gap: 12px;"></div>
-  `;
-  wrTrafficPanel.appendChild(creativesContainer);
-
-  const creativesGrid = document.getElementById('traffic-creatives-list');
-
-  function renderTrafficCard(card) {
-    const isVideo = card.asset_type?.toLowerCase().includes('v') || card.title.toLowerCase().includes('vídeo');
-    const typeBadge = isVideo ? '🎬 Vídeo' : '🎨 Estático';
-    
-    return `
-      <div class="card-glass" style="padding: 14px; border: 1px solid rgba(16,185,129,0.3); border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 11px; font-weight: 700; background: rgba(16,185,129,0.15); color: #10B981; padding: 2px 8px; border-radius: 4px;">${typeBadge}</span>
-          <span style="font-size: 11px; color: #94A3B8;">ID: ${card.id.substring(0,6)}</span>
-        </div>
-        <h4 style="font-size: 14px; font-weight: 600; color: #FFF; margin-bottom: 8px;">${card.title}</h4>
-        
-        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #CBD5E1; max-height: 80px; overflow-y: auto;">
-          <strong>Headline / Copy Sugerida:</strong><br>
-          ${card.description || 'Nenhuma copy descrita.'}
-        </div>
-        
-        <div style="display: flex; gap: 8px;">
-          <button type="button" onclick="navigator.clipboard.writeText('${(card.description || '').replace(/'/g, "\\'")}')" style="flex: 1; background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
-            📋 Copiar Texto do Anúncio
-          </button>
-          <button type="button" onclick="window.markTrafficCardPublished('${card.id}')" style="flex: 1; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
-            ✅ Marcar como Veiculado no Gerenciador
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  window.loadArchivedTrafficCards = async function() {
+  window.carregarAtivosEntreguesTrafego = async function() {
     const container = document.getElementById('traffic-creatives-list');
     if (!container) return;
 
-    container.innerHTML = '<p class="text-sm text-emerald-400">⏳ Conectando ao Supabase e carregando criativos...</p>';
+    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+    let cards = [];
 
-    if (!window.supabaseClient) {
-      container.innerHTML = '<div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">⚠️ <strong>Erro:</strong> window.supabaseClient não inicializado.</div>';
+    // 1. Busca no Supabase por tarefas finalizadas
+    if (window.supabaseClient) {
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('kanban_tasks')
+          .select('*')
+          .eq('client_id', String(clientId))
+          .in('status', ['entregues', 'completed', 'delivered', 'archived_traffic'])
+          .order('created_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          cards = data;
+        }
+      } catch(err) {
+        console.warn('[Traffic Manager] Erro ao buscar tarefas do Supabase:', err);
+      }
+    }
+
+    // 2. Fallback de localStorage
+    if (!cards || cards.length === 0) {
+      const local = JSON.parse(localStorage.getItem(`kanban_tasks_${clientId}`) || '[]');
+      cards = local.filter(c => ['entregues', 'completed', 'delivered', 'archived_traffic'].includes(c.status));
+    }
+
+    if (cards.length === 0) {
+      container.innerHTML = `
+        <div class="p-6 text-center text-slate-400 bg-[#040c0b] border border-slate-800/80 rounded-xl text-xs">
+          Nenhum criativo aguardando veiculação no momento. Conclua entregas na <strong class="text-emerald-400">Trilha de Equipe & Kanban</strong> para despachar materiais para cá.
+        </div>
+      `;
       return;
     }
 
-    try {
-      let query = window.supabaseClient
-        .from('kanban_tasks')
-        .select('*')
-        .in('status', ['entregues', 'completed']);
+    container.innerHTML = cards.map(c => {
+      const driveLink = c.drive_url || c.asset_url || c.delivery_url || c.link || (c.description && c.description.match(/https:\/\/drive\.google\.com[^\s\n]+/)?.[0]) || '';
+      const safeText = (c.description || c.content || c.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const tagNome = (c.tags && c.tags[0]) || (c.category || 'COPYWRITING').toUpperCase();
 
-      if (window.currentClientId) {
-        query = query.eq('client_id', window.currentClientId);
-      }
-
-      const { data, error } = await query.order('id', { ascending: false });
-
-      if (error) {
-        console.error("[Traffic Error] Falha na consulta:", error);
-        container.innerHTML = `
-          <div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">
-            <strong>❌ Erro ao consultar Supabase:</strong> ${error.message} (Código: ${error.code || 'N/A'})
-            <br><span class="text-gray-400">Detalhe: ${error.details || error.hint || 'Verifique o schema/RLS'}</span>
-          </div>`;
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-400">Nenhum criativo aguardando veiculação no momento.</p>';
-        return;
-      }
-
-      container.innerHTML = data.map(c => {
-        const driveLink = c.delivery_url || c.link || '';
-        const hasLink = driveLink && driveLink.startsWith('http');
-        
-        return `
-        <div class="card-glass p-4 rounded-lg flex flex-col gap-3 border border-emerald-500/30 mb-3 bg-black/40 relative">
-          <div class="flex justify-between items-start">
-            <div>
-              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : (c.type === 'copy' ? '✍️ COPY' : '🎬 VÍDEO')}</span>
-              <h4 class="text-sm font-semibold text-white mt-1.5">${c.title || 'Sem título'}</h4>
+      return `
+        <div class="p-4 bg-[#05110f] border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1.5 flex-1 pr-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 text-[9px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800/60 rounded uppercase tracking-wider">
+                ${tagNome}
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">${new Date(c.created_at || Date.now()).toLocaleDateString('pt-BR')}</span>
             </div>
-            <span class="text-[10px] text-gray-500 font-mono">ID: ${c.id.substring(0, 6)}</span>
+            <h5 class="text-xs font-bold text-white">${c.title || 'Material Criativo'}</h5>
+            <p class="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">${c.description || c.content || ''}</p>
           </div>
-          
-          <div class="text-xs text-gray-300 bg-gray-900/50 p-3 rounded-md border border-gray-800 line-clamp-3">
-            <div class="text-[10px] text-emerald-500/70 uppercase font-bold mb-1">Headline / Legenda / Copy</div>
-            ${c.description || 'Nenhuma copy descrita.'}
-          </div>
-          
-          <div class="flex flex-wrap gap-2 shrink-0 justify-end mt-1">
-            <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('✅ Copy copiada com sucesso!');" class="btn-xs btn-secondary border-blue-500/30 text-blue-400 hover:bg-blue-500/10">📋 Copiar Texto do Anúncio</button>
-            
-            ${hasLink ? `<a href="${driveLink}" target="_blank" class="btn-xs btn-secondary border-amber-500/30 text-amber-400 hover:bg-amber-500/10 flex items-center gap-1 no-underline"><i class="fa-brands fa-google-drive"></i> Abrir Arquivo no Google Drive</a>` : ''}
-            
-            <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary shadow-lg shadow-emerald-500/20">✅ Marcar como Veiculado no Gerenciador</button>
+
+          <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+            ${driveLink ? `
+              <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all">
+                <i class="fa-brands fa-google-drive"></i> Abrir Drive
+              </a>
+            ` : ''}
+            <button type="button" onclick="navigator.clipboard.writeText('${safeText}'); alert('📋 Conteúdo e Copy copiados com sucesso!');" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all">
+              <i class="fa-regular fa-copy"></i> Copiar Texto
+            </button>
+            <button type="button" onclick="window.marcarCriativoVeiculado('${c.id}')" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20">
+              <i class="fa-solid fa-check"></i> Marcar Veiculado
+            </button>
           </div>
         </div>
-        `;
-      }).join('');
+      `;
+    }).join('');
+  };
 
-    } catch (err) {
-      console.error("[Traffic Catch Exception]:", err);
-      container.innerHTML = `<div class="p-3 bg-red-950/80 border border-red-500 rounded text-red-300 text-xs">💥 <strong>Exceção:</strong> ${err.message}</div>`;
+  window.marcarCriativoVeiculado = async function(taskId) {
+    if (window.supabaseClient && taskId) {
+      try {
+        await window.supabaseClient
+          .from('kanban_tasks')
+          .update({ status: 'published', published_at: new Date().toISOString() })
+          .eq('id', taskId);
+      } catch(e) {
+        console.warn('[Traffic Manager] Erro ao marcar veiculado:', e);
+      }
     }
-  }
-
-  window.markTrafficCardPublished = async function(cardId) {
-    if (!window.supabaseClient) return;
-    const { error } = await window.supabaseClient
-      .from('kanban_tasks')
-      .update({ status: 'published', updated_at: new Date().toISOString() })
-      .eq('id', cardId);
-
-    if (error) {
-      alert("Erro ao marcar como veiculado: " + error.message);
-    } else {
-      window.loadArchivedTrafficCards();
-    }
+    alert('✅ Material marcado como veiculado e arquivado com sucesso!');
+    window.carregarAtivosEntreguesTrafego();
   };
 
   // Escuta a troca de abas e evento do kanban
-  window.addEventListener('cardSentToTraffic', window.loadArchivedTrafficCards);
-  window.addEventListener('clientChanged', () => setTimeout(window.loadArchivedTrafficCards, 100));
+  window.addEventListener('cardSentToTraffic', window.carregarAtivosEntreguesTrafego);
+  window.addEventListener('clientChanged', () => setTimeout(window.carregarAtivosEntreguesTrafego, 100));
 
   // Carrega na montagem
-  setTimeout(window.loadArchivedTrafficCards, 500);
+  setTimeout(window.carregarAtivosEntreguesTrafego, 500);
 });

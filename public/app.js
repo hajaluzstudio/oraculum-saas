@@ -8241,6 +8241,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetPanel) {
         targetPanel.classList.add('active');
         targetPanel.style.display = 'block';
+        
+        // Gatilho para carregar ativos de tráfego ao clicar na aba
+        if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+          window.carregarAtivosEntreguesTrafego();
+        }
       }
     });
   });

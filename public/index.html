@@ -2582,6 +2582,29 @@
                   <div class="card-header">
                     <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
                   </div>
+
+                  <!-- Gaveta Mestra de Criativos Entregues -->
+                  <div id="container-traffic-delivered-assets" class="p-5 bg-[#071311] border border-emerald-500/30 rounded-2xl shadow-xl space-y-4 my-4">
+                    <div class="flex items-center justify-between border-b border-emerald-950/80 pb-3">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 text-sm">
+                          <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-bold text-white tracking-wide">📦 Criativos & Materiais Prontos para Veiculação</h4>
+                          <span class="text-[10px] text-slate-400 font-mono">Prontos para subir no Gerenciador de Anúncios / Postagem</span>
+                        </div>
+                      </div>
+                      <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-rotate text-[11px]"></i> Atualizar Lista
+                      </button>
+                    </div>
+                    
+                    <div id="traffic-creatives-list" class="space-y-3">
+                      <!-- Cards injetados dinamicamente -->
+                    </div>
+                  </div>
+
                   <!-- Feed de Gavetas de Tráfego -->
                   <div id="feed-gavetas-trafego" class="space-y-4 mt-0 mb-4"></div>
                   <!-- Ferramenta Inspecionar Criativo Modular (Tráfego) -->
