@@ -261,7 +261,7 @@
                 type="button" 
                 style="padding: 4px 10px; background: #10b981; color: #022c22; border: none; border-radius: 6px; font-weight: 700; font-size: 10.5px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
               >
-                ⚡ Aprovar & Enviar para Sala de Operação
+                ⚡ Aprovar & Enviar para Trilha Kanban
               </button>
             </div>
           `;
@@ -274,25 +274,48 @@
                 btnEl.innerText = '⏳ Despachando...';
                 
                 try {
-                  const { clientId, tenantId } = obterContextoAtivo();
-                  if (window.supabaseClient && clientId) {
-                    const taskData = {
-                      client_id: clientId,
-                      tenant_id: tenantId,
-                      origin_source: 'oraculum_live',
-                      title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
-                      description: msg,
-                      status: 'backlog',
-                      tags: ['Oraculum Live', 'BI Live', 'Comercial'],
-                      color: 'emerald'
-                    };
-                    await window.supabaseClient.from('war_room_tasks').insert([taskData]);
-                    await window.supabaseClient.from('kanban_tasks').insert([taskData]);
-                    
-                    if (typeof window.loadClientKanbanCards === 'function') {
-                      window.loadClientKanbanCards();
+                  const activeClientId = window.currentClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+                  
+                  const payloadKanban = {
+                    client_id: String(activeClientId),
+                    title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
+                    description: msg,
+                    content: msg,
+                    status: 'backlog',
+                    stage: 'backlog',
+                    category: 'comercial',
+                    type: 'oraculum_live',
+                    created_at: new Date().toISOString()
+                  };
+
+                  if (window.supabaseClient) {
+                    try {
+                      await window.supabaseClient.from('kanban_tasks').insert([payloadKanban]);
+                    } catch(e) {
+                      try {
+                        await window.supabaseClient.from('war_room_tasks').insert([{
+                          client_id: String(activeClientId),
+                          title: payloadKanban.title,
+                          content: payloadKanban.content,
+                          category: 'comercial',
+                          status: 'pending'
+                        }]);
+                      } catch(err2) { console.warn('Fallback war_room_tasks:', err2); }
                     }
                   }
+
+                  const kanbanKey = `oraculum_kanban_${activeClientId}`;
+                  const localCards = JSON.parse(localStorage.getItem(kanbanKey) || '[]');
+                  localCards.unshift({
+                    ...payloadKanban,
+                    id: 'live_' + Date.now(),
+                    origin_source: 'oraculum_live',
+                    color: 'emerald'
+                  });
+                  localStorage.setItem(kanbanKey, JSON.stringify(localCards));
+
+                  if (typeof window.loadClientKanbanCards === 'function') window.loadClientKanbanCards();
+                  if (typeof window.renderKanban === 'function') window.renderKanban();
                   btnEl.style.background = '#064e3b';
                   btnEl.style.color = '#34d399';
                   btnEl.style.border = '1px solid rgba(16, 185, 129, 0.4)';
@@ -365,7 +388,7 @@
             type="button" 
             style="padding: 4px 10px; background: #10b981; color: #022c22; border: none; border-radius: 6px; font-weight: 700; font-size: 10.5px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
           >
-            ⚡ Aprovar & Enviar para Sala de Operação
+            ⚡ Aprovar & Enviar para Trilha Kanban
           </button>
         </div>
       `;
@@ -378,25 +401,48 @@
             btnEl.innerText = '⏳ Despachando...';
             
             try {
-              const { clientId, tenantId } = obterContextoAtivo();
-              if (window.supabaseClient && clientId) {
-                const taskData = {
-                  client_id: clientId,
-                  tenant_id: tenantId,
-                  origin_source: 'oraculum_live',
-                  title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
-                  description: respostaIA,
-                  status: 'backlog',
-                  tags: ['Oraculum Live', 'BI Live', 'Comercial'],
-                  color: 'emerald'
-                };
-                await window.supabaseClient.from('war_room_tasks').insert([taskData]);
-                await window.supabaseClient.from('kanban_tasks').insert([taskData]);
-                
-                if (typeof window.loadClientKanbanCards === 'function') {
-                  window.loadClientKanbanCards();
+              const activeClientId = window.currentClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+              
+              const payloadKanban = {
+                client_id: String(activeClientId),
+                title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
+                description: respostaIA,
+                content: respostaIA,
+                status: 'backlog',
+                stage: 'backlog',
+                category: 'comercial',
+                type: 'oraculum_live',
+                created_at: new Date().toISOString()
+              };
+
+              if (window.supabaseClient) {
+                try {
+                  await window.supabaseClient.from('kanban_tasks').insert([payloadKanban]);
+                } catch(e) {
+                  try {
+                    await window.supabaseClient.from('war_room_tasks').insert([{
+                      client_id: String(activeClientId),
+                      title: payloadKanban.title,
+                      content: payloadKanban.content,
+                      category: 'comercial',
+                      status: 'pending'
+                    }]);
+                  } catch(err2) { console.warn('Fallback war_room_tasks:', err2); }
                 }
               }
+
+              const kanbanKey = `oraculum_kanban_${activeClientId}`;
+              const localCards = JSON.parse(localStorage.getItem(kanbanKey) || '[]');
+              localCards.unshift({
+                ...payloadKanban,
+                id: 'live_' + Date.now(),
+                origin_source: 'oraculum_live',
+                color: 'emerald'
+              });
+              localStorage.setItem(kanbanKey, JSON.stringify(localCards));
+
+              if (typeof window.loadClientKanbanCards === 'function') window.loadClientKanbanCards();
+              if (typeof window.renderKanban === 'function') window.renderKanban();
               btnEl.style.background = '#064e3b';
               btnEl.style.color = '#34d399';
               btnEl.style.border = '1px solid rgba(16, 185, 129, 0.4)';
