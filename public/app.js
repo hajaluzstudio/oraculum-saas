@@ -1393,14 +1393,15 @@ document.addEventListener('DOMContentLoaded', () => {
         data.history.forEach(msg => {
           let parsedTasks = null;
           let displayText = msg.content;
-          try {
-            if (msg.role === 'model') {
+          
+          if (msg.role === 'model' || msg.role === 'assistant') {
+            try {
               const parsed = JSON.parse(msg.content);
               if (parsed.tasks) parsedTasks = parsed.tasks;
-              if (parsed.replyText) displayText = parsed.replyText;
-              else if (parsed.display_text) displayText = parsed.display_text;
-            }
-          } catch(e) {}
+            } catch(e) {}
+            // Extrai o texto limpo usando a função robusta já existente no arquivo
+            displayText = extrairTextoLimpo(msg.content);
+          }
 
           if (typeof appendChatMessage === 'function') {
             appendChatMessage(msg.role, displayText, parsedTasks, true);
@@ -1810,7 +1811,8 @@ document.addEventListener('DOMContentLoaded', () => {
             category: String(t.category || 'geral'),
             title: String(t.title || `[${(t.category || 'GERAL').toUpperCase()}] Pauta Estratégica`),
             content: sanitizedContent,
-            status: 'pending'
+            status: 'pending',
+            origin_source: 'chat_estrategico'
           };
           const { error } = await supabase.from('war_room_tasks').insert([supabasePayload]);
           if (error) console.error('[Supabase Insert Error]:', error);
