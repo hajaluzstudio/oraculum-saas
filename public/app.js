@@ -2854,58 +2854,39 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(tabKey) {
-    // 1. Sanitização e Fallback Seguro contra null/undefined
-    const rawKey = (typeof tabKey === 'string' && tabKey.trim().length > 0) 
-      ? tabKey.trim().toLowerCase() 
+  window.switchWarRoomTab = function(targetKey, btnEl) {
+    let key = (typeof targetKey === 'string' && targetKey.trim().length > 0)
+      ? targetKey.trim().toLowerCase()
       : 'video';
   
-    const map = {
-      'video': 'wr-tab-video',
-      'design': 'wr-tab-design',
-      'traffic': 'wr-tab-traffic',
-      'trafego': 'wr-tab-traffic',
-      'copy': 'wr-tab-copywriting',
-      'copywriting': 'wr-tab-copywriting',
-      'comercial': 'wr-tab-comercial',
-      'sales': 'wr-tab-comercial'
-    };
+    if (key === 'traffic') key = 'trafego';
+    if (key === 'copy') key = 'copywriting';
+    if (key === 'sales') key = 'comercial';
   
-    // 2. Determinação segura do ID alvo
-    let targetId = map[rawKey];
-    if (!targetId) {
-      targetId = rawKey.startsWith('wr-') ? rawKey : `wr-tab-${rawKey}`;
-    }
-  
-    // 3. Oculta todos os painéis com tolerância de seletores
-    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
-      el.style.display = 'none';
-      el.classList.add('hidden');
+    // 1. Atualiza botões do topo
+    document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn').forEach(b => {
+      b.className = 'wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
     });
   
-    // 4. Exibe o painel correspondente
-    const targetEl = document.getElementById(targetId) || document.getElementById(`wr-panel-${rawKey}`);
-    if (targetEl) {
-      targetEl.style.display = 'block';
-      targetEl.classList.remove('hidden');
+    const activeBtn = btnEl || document.querySelector(`#war-room-subtabs-nav button[data-subtab="${key}"]`);
+    if (activeBtn) {
+      activeBtn.className = 'wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors';
     }
   
-    // 5. Atualiza o estado visual dos botões de navegação
-    document.querySelectorAll('.war-room-nav .wr-tab-btn, #war-room-subtabs-nav button, [data-wr-tab]').forEach(btn => {
-      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target') || '';
-      if (key === rawKey || key === targetId || map[key] === targetId) {
-        btn.classList.add('active');
-        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        btn.style.color = '#10B981';
-      } else {
-        btn.classList.remove('active');
-        btn.style.backgroundColor = 'transparent';
-        btn.style.color = '#94A3B8';
-      }
+    // 2. Oculta todos os painéis físicos e exibe o correto
+    document.querySelectorAll('.wr-panel').forEach(p => {
+      p.classList.add('hidden');
+      p.style.display = 'none';
     });
   
-    // 6. Gatilhos de hidratação sob demanda
-    if ((rawKey === 'traffic' || rawKey === 'trafego') && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+    const targetPanel = document.getElementById(`wr-panel-${key}`);
+    if (targetPanel) {
+      targetPanel.classList.remove('hidden');
+      targetPanel.style.display = 'block';
+    }
+  
+    // 3. Hidratação sob demanda
+    if (key === 'trafego' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
       window.carregarAtivosEntreguesTrafego();
     }
   };
@@ -10184,26 +10165,12 @@ window.carregarMetricasBI = async function(forcedClientId) {
   }
 };
 
-window.trocarSubAbaWarRoom = function(targetKey, btnEl) {
-  // 1. Atualizar Botões (Visual)
-  const botoes = document.querySelectorAll('.wr-tab-btn');
-  botoes.forEach(b => {
-    b.classList.remove('active', 'bg-[#10B981]', 'text-black');
-    b.classList.add('bg-[#0B1514]', 'text-slate-400');
-  });
+window.trocarSubAbaWarRoom = window.switchWarRoomTab;
 
-  if (btnEl) {
-    btnEl.classList.remove('bg-[#0B1514]', 'text-slate-400');
-    btnEl.classList.add('active', 'bg-[#10B981]', 'text-black');
-  }
-
-  // 2. Alternar Paineis (DOM Preservado via display hidden)
-  const paineis = document.querySelectorAll('.wr-panel');
-  paineis.forEach(p => p.classList.add('hidden'));
-
-  const alvo = document.getElementById(`wr-panel-${targetKey}`);
-  if (alvo) alvo.classList.remove('hidden');
-};
+// Auto-ativação ao carregar ou trocar de aba
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => window.switchWarRoomTab('video'), 100);
+});
 
 window.toggleToolSection = function(contentId, headerEl) {
   const content = document.getElementById(contentId);

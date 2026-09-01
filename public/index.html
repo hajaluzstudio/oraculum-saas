@@ -2162,123 +2162,121 @@
         <section id="tab-war-room" class="tab-panel">
           <div class="war-room-container" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
 <div id="war-room-subtabs-nav" class="mb-6 flex flex-wrap gap-2">
-  <button type="button" onclick="window.trocarSubAbaWarRoom('video', this)" class="wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black">🎥 Vídeo & Gravação</button>
-  <button type="button" onclick="window.trocarSubAbaWarRoom('design', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎨 Design & Web</button>
-  <button type="button" onclick="window.trocarSubAbaWarRoom('trafego', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎯 Tráfego</button>
-  <button type="button" onclick="window.trocarSubAbaWarRoom('copywriting', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">✍️ Copywriting</button>
-  <button type="button" onclick="window.trocarSubAbaWarRoom('comercial', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🤝 Comercial & Vendas</button>
+  <button type="button" data-subtab="video" onclick="window.switchWarRoomTab('video', this)" class="wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black">🎥 Vídeo & Gravação</button>
+  <button type="button" data-subtab="design" onclick="window.switchWarRoomTab('design', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎨 Design & Web</button>
+  <button type="button" data-subtab="trafego" onclick="window.switchWarRoomTab('trafego', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎯 Tráfego</button>
+  <button type="button" data-subtab="copywriting" onclick="window.switchWarRoomTab('copywriting', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">✍️ Copywriting</button>
+  <button type="button" data-subtab="comercial" onclick="window.switchWarRoomTab('comercial', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🤝 Comercial & Vendas</button>
 </div>
 
-<!-- CONTAINER MESTRE DE CONTEÚDO DAS SUB-ABAS -->
-<div id="war-room-panels-container">
-
-  <!-- 1. PAINEL VÍDEO -->
-  <div id="wr-panel-video" class="wr-panel space-y-6">
-    <!-- Pautas de Vídeo e Widgets existentes de Vídeo (Teleprompter, Quality Gate, SEO) -->
-    <div id="video-deliverables-list" class="space-y-4"></div>
-  </div>
-
-  <!-- 2. PAINEL DESIGN -->
-  <div id="wr-panel-design" class="wr-panel hidden space-y-6">
-    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">🎨</span>
-          <div>
-            <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
-            <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela IA.</p>
-          </div>
+<!-- 1. PAINEL VÍDEO -->
+<div id="wr-panel-video" class="wr-panel space-y-6">
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2.5">
+        <span class="text-xl">🎬</span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-100">Pautas & Roteiros de Vídeo</h3>
+          <p class="text-xs text-slate-400">Roteiros validados, áudio-guia e teleprompter.</p>
         </div>
-        <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
       </div>
-      <div id="design-deliverables-list" class="space-y-4"></div>
+      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Produção Audiovisual</span>
     </div>
-
-    <!-- Ferramenta: Quality Gate Design -->
-    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
-      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection('design-qc-box', this)">
-        <div class="flex items-center gap-3">
-          <span class="text-lg">📸</span>
-          <h4 class="text-sm font-bold text-slate-200">Inspecionar Criativo Visual (Visão Computacional)</h4>
+    <div id="video-deliverables-list" class="space-y-4">
+      <div class="p-4 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs text-slate-300">
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-bold text-emerald-400 uppercase">Pauta Ativa</span>
+          <span class="text-slate-400">Tema: Medicina Estética</span>
         </div>
-        <span class="text-xs text-slate-400">▼ Expandir</span>
-      </div>
-      <div id="design-qc-box" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
-        <input type="file" id="design-qc-file" accept="image/*,video/*" class="text-xs text-slate-400" />
-      </div>
-    </div>
-
-    <!-- Ferramenta: Safe Zones Overlay -->
-    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
-      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection('design-safe-box', this)">
-        <div class="flex items-center gap-3">
-          <span class="text-lg">📱</span>
-          <h4 class="text-sm font-bold text-slate-200">Simulador de Safe Zones (Reels / Stories / TikTok)</h4>
-        </div>
-        <span class="text-xs text-slate-400">▼ Expandir</span>
-      </div>
-      <div id="design-safe-box" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
-        <div class="flex gap-2">
-          <select id="safezone-select" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
-            <option value="9:16">9:16 (Reels/TikTok)</option>
-            <option value="1:1">1:1 (Feed Quadrado)</option>
-            <option value="4:5">4:5 (Feed Retrato)</option>
-          </select>
-        </div>
+        <p>Acesse o Chat Estratégico para aprovar novos roteiros dinâmicos.</p>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- 3. PAINEL TRÁFEGO -->
-  <div id="wr-panel-trafego" class="wr-panel hidden space-y-6">
-    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-emerald-400 font-bold">🎯</span>
-        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
+<!-- 2. PAINEL DESIGN -->
+<div id="wr-panel-design" class="wr-panel hidden space-y-6">
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2.5">
+        <span class="text-xl">🎨</span>
+        <div>
+          <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
+          <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela IA.</p>
+        </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
-        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-          <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
-          <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
-        </div>
-        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-          <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
-          <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
-        </div>
-        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-          <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
-          <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
-        </div>
+      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
+    </div>
+    <div id="design-deliverables-list" class="space-y-4">
+      <div class="text-center py-6 border-2 border-dashed border-slate-800 rounded-xl">
+        <p class="text-xs text-slate-500">Nenhum criativo visual pendente para esta equipe.</p>
       </div>
     </div>
+  </div>
+</div>
 
-    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <span class="text-emerald-400 font-bold">📦</span>
-          <div>
-            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
-            <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
-          </div>
-        </div>
-        <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold">
-          🔄 Atualizar Lista
-        </button>
+<!-- 3. PAINEL TRÁFEGO -->
+<div id="wr-panel-trafego" class="wr-panel hidden space-y-6">
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-emerald-400 font-bold">🎯</span>
+      <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+      <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+        <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
+        <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
       </div>
-      <div id="traffic-creatives-list" class="space-y-3"></div>
+      <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+        <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
+        <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
+      </div>
+      <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+        <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
+        <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
+      </div>
     </div>
   </div>
 
-  <!-- 4. PAINEL COPYWRITING -->
-  <div id="wr-panel-copywriting" class="wr-panel hidden space-y-6">
-    <div id="copywriting-deliverables-list" class="space-y-4"></div>
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-emerald-400 font-bold">📦</span>
+        <div>
+          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
+          <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
+        </div>
+      </div>
+      <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold">
+        🔄 Atualizar Lista
+      </button>
+    </div>
+    <div id="traffic-creatives-list" class="space-y-3"></div>
   </div>
+</div>
 
-  <!-- 5. PAINEL COMERCIAL -->
-  <div id="wr-panel-comercial" class="wr-panel hidden space-y-6">
-    <div id="comercial-deliverables-list" class="space-y-4"></div>
+<!-- 4. PAINEL COPYWRITING -->
+<div id="wr-panel-copywriting" class="wr-panel hidden space-y-6">
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
+    <h3 class="text-base font-semibold text-slate-100 mb-2">✍️ Entregáveis de Copywriting</h3>
+    <div id="copywriting-deliverables-list" class="space-y-4">
+      <div class="p-4 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs text-slate-300">
+        <p>Aguardando novas headlines e copys do Chat Estratégico.</p>
+      </div>
+    </div>
   </div>
+</div>
 
+<!-- 5. PAINEL COMERCIAL -->
+<div id="wr-panel-comercial" class="wr-panel hidden space-y-6">
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
+    <h3 class="text-base font-semibold text-slate-100 mb-2">🤝 Comercial & Playbooks</h3>
+    <div id="comercial-deliverables-list" class="space-y-4">
+      <div class="p-4 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs text-slate-300">
+        <p>Scripts de WhatsApp e quebras de objeção BANT.</p>
+      </div>
+    </div>
+  </div>
 </div>
           </div>
         </section>
