@@ -2854,42 +2854,107 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(targetKey, btnEl) {
-    let key = (typeof targetKey === 'string' && targetKey.trim().length > 0)
-      ? targetKey.trim().toLowerCase()
-      : 'video';
-  
-    if (key === 'traffic') key = 'trafego';
-    if (key === 'copy') key = 'copywriting';
-    if (key === 'sales') key = 'comercial';
-  
-    // 1. Atualiza botões do topo
-    document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn').forEach(b => {
-      b.className = 'wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
-    });
-  
-    const activeBtn = btnEl || document.querySelector(`#war-room-subtabs-nav button[data-subtab="${key}"]`);
-    if (activeBtn) {
-      activeBtn.className = 'wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors';
-    }
-  
-    // 2. Oculta todos os painéis físicos e exibe o correto
-    document.querySelectorAll('.wr-panel').forEach(p => {
-      p.classList.add('hidden');
-      p.style.display = 'none';
-    });
-  
-    const targetPanel = document.getElementById(`wr-panel-${key}`);
-    if (targetPanel) {
-      targetPanel.classList.remove('hidden');
-      targetPanel.style.display = 'block';
-    }
-  
-    // 3. Hidratação sob demanda
-    if (key === 'trafego' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
-      window.carregarAtivosEntreguesTrafego();
-    }
+// Alternador Universal de Sub-Abas da War Room
+window.switchWarRoomTab = function(targetKey, btnEl) {
+  let key = (typeof targetKey === 'string' && targetKey.trim().length > 0)
+    ? targetKey.trim().toLowerCase()
+    : 'video';
+
+  if (key === 'traffic') key = 'trafego';
+  if (key === 'copy') key = 'copywriting';
+  if (key === 'sales') key = 'comercial';
+
+  // 1. Atualiza botões visuais do topo
+  document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn').forEach(b => {
+    b.className = 'wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
+  });
+
+  const activeBtn = btnEl || document.querySelector(`#war-room-subtabs-nav button[data-subtab="${key}"]`);
+  if (activeBtn) {
+    activeBtn.className = 'wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors';
+  }
+
+  // 2. Alterna painéis físicos sem apagar DOM
+  document.querySelectorAll('.wr-panel').forEach(p => {
+    p.classList.add('hidden');
+    p.style.display = 'none';
+  });
+
+  const targetPanel = document.getElementById(`wr-panel-${key}`);
+  if (targetPanel) {
+    targetPanel.classList.remove('hidden');
+    targetPanel.style.display = 'block';
+  }
+
+  // 3. Hidratação sob demanda
+  if (key === 'trafego' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+    window.carregarAtivosEntreguesTrafego();
+  }
+  if (typeof window.renderWarRoomTasksByCategory === 'function') {
+    window.renderWarRoomTasksByCategory(key);
+  }
+};
+
+window.trocarSubAbaWarRoom = window.switchWarRoomTab;
+
+// Expansor/Recolhedor de Ferramentas Retráteis
+window.toggleToolSection = function(contentId, headerEl) {
+  const content = document.getElementById(contentId);
+  if (!content) return;
+  content.classList.toggle('hidden');
+  const span = headerEl ? headerEl.querySelector('span:last-child') : null;
+  if (span) {
+    span.textContent = content.classList.contains('hidden') ? '▼ Expandir Ferramenta' : '▲ Recolher Ferramenta';
+  }
+};
+
+// Renderização dinâmica de tarefas por categoria na Sala de Operação
+window.renderWarRoomTasksByCategory = function(category) {
+  const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+  const listIdMap = {
+    'video': 'video-deliverables-list',
+    'design': 'design-deliverables-list',
+    'copywriting': 'copywriting-deliverables-list',
+    'comercial': 'comercial-deliverables-list'
   };
+
+  const containerId = listIdMap[category];
+  if (!containerId) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const storageKey = `war_room_all_tasks_${clientId}`;
+  let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  const filtered = tasks.filter(t => (t.category || '').toLowerCase() === category);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-6 border-2 border-dashed border-slate-800 rounded-xl">
+        <p class="text-xs text-slate-500">Nenhum entregável despachado para esta equipe no momento. Gere e aprove pautas no Chat Estratégico.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(t => `
+    <div class="p-4 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-md space-y-2">
+      <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
+        <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase">${t.theme || t.title || category.toUpperCase()}</span>
+        <span class="text-[11px] text-slate-400">${new Date(t.created_at || Date.now()).toLocaleTimeString()}</span>
+      </div>
+      <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">${t.content}</div>
+    </div>
+  `).join('');
+};
+
+// Auto-ativação ao navegar para a Sala de Operação
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (typeof window.switchWarRoomTab === 'function') {
+      window.switchWarRoomTab('video');
+    }
+  }, 100);
+});
 
   function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
@@ -10167,28 +10232,4 @@ window.carregarMetricasBI = async function(forcedClientId) {
 
 window.trocarSubAbaWarRoom = window.switchWarRoomTab;
 
-// Auto-ativação ao carregar ou trocar de aba
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => window.switchWarRoomTab('video'), 100);
-});
 
-window.toggleToolSection = function(contentId, headerEl) {
-  const content = document.getElementById(contentId);
-  if (!content) return;
-
-  const isHidden = content.classList.contains('hidden');
-  
-  if (isHidden) {
-    content.classList.remove('hidden');
-    if (headerEl) {
-      const icon = headerEl.querySelector('span:last-child');
-      if (icon) icon.innerText = '▲ Recolher';
-    }
-  } else {
-    content.classList.add('hidden');
-    if (headerEl) {
-      const icon = headerEl.querySelector('span:last-child');
-      if (icon) icon.innerText = '▼ Expandir';
-    }
-  }
-};
