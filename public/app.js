@@ -4593,8 +4593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Atualiza status no Kanban para "entregues" de forma segura (sem colunas inexistentes)
         const { data: updatedTaskArray, error } = await window.supabaseClient.from('kanban_tasks').update({ 
           status: 'entregues',
-          description: newDesc,
-          updated_at: new Date().toISOString()
+          description: newDesc
         }).eq('id', taskId).select();
         
         if (error) throw error;
