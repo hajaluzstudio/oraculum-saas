@@ -8872,6 +8872,31 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     setTxt('bi-val-taxa-conv', taxaConv);
     setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
 
+    // Cálculos dos novos KPIs derivados
+    const cacReal = vendas > 0 ? (gasto / vendas) : 0;
+    const cplMedio = leads > 0 ? (gasto / leads) : 0;
+    const margemLiquidaPct = faturamento > 0 ? ((lucro / faturamento) * 100).toFixed(1) : '0.0';
+
+    // Injeção dos valores calculados no DOM
+    setTxt('bi-val-cac-real', fmt(cacReal));
+    setTxt('bi-val-cpl-medio', fmt(cplMedio));
+
+    const elMargem = document.getElementById('bi-val-margem-liq');
+    if (elMargem) {
+      elMargem.innerText = `${margemLiquidaPct}% Margem Líquida`;
+    }
+
+    const elCacSub = document.getElementById('bi-val-cac-sub');
+    if (elCacSub) {
+      const ticketCalc = vendas > 0 ? (faturamento / vendas) : 0;
+      if (ticketCalc > 0) {
+        const tetoMax = ticketCalc * 0.20;
+        elCacSub.innerText = `Teto Max: ${fmt(tetoMax)} (20%)`;
+      } else {
+        elCacSub.innerText = 'Teto Alvo (15-20%)';
+      }
+    }
+
     // Renderização do Ticket Médio da Ficha do Cliente de forma 100% segura
     try {
       const infoTicket = window.obterTicketMedioClienteSeguro(clientOverride || window.currentClientData, data);

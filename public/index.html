@@ -1777,7 +1777,7 @@
           </div>
 
           <!-- Grid de Métricas Principais -->
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 mb-6">
             <!-- Card 1: Faturamento -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
               <span class="text-[11px] text-slate-400 block mb-1">Faturamento Total</span>
@@ -1801,28 +1801,42 @@
               <span class="text-[10px] text-slate-500 block mt-1">Meta & Google Ads</span>
             </div>
 
-            <!-- Card 3: Lucro Líquido -->
+            <!-- Card 4: Lucro Líquido Caixa -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
               <span class="text-[11px] text-slate-400 block mb-1">Lucro Líquido Caixa</span>
               <h3 id="bi-val-lucro" class="text-lg font-bold text-emerald-400 font-mono">R$ 24.400,00</h3>
-              <span class="text-[10px] text-slate-500 block mt-1">Margem Real</span>
+              <span id="bi-val-margem-liq" class="text-[10px] text-slate-500 block mt-1">Margem Real</span>
             </div>
 
-            <!-- Card 4: ROAS Médio -->
+            <!-- Card 5: CAC Médio Real -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">CAC Médio Real</span>
+              <h3 id="bi-val-cac-real" class="text-lg font-bold text-amber-400 font-mono">R$ 0,00</h3>
+              <span id="bi-val-cac-sub" class="text-[10px] text-slate-500 block mt-1">Teto Alvo (15-20%)</span>
+            </div>
+
+            <!-- Card 6: CPL Médio -->
+            <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+              <span class="text-[11px] text-slate-400 block mb-1">CPL Médio</span>
+              <h3 id="bi-val-cpl-medio" class="text-lg font-bold text-cyan-400 font-mono">R$ 0,00</h3>
+              <span id="bi-val-cpl-sub" class="text-[10px] text-slate-500 block mt-1">Custo por Lead</span>
+            </div>
+
+            <!-- Card 7: ROAS Médio -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
               <span class="text-[11px] text-slate-400 block mb-1">ROAS Médio</span>
               <h3 id="bi-val-roas" class="text-lg font-bold text-sky-400 font-mono">6.42x</h3>
               <span class="text-[10px] text-slate-500 block mt-1">Retorno do Anúncio</span>
             </div>
 
-            <!-- Card 5: Proporção LTV / CAC -->
+            <!-- Card 8: Proporção LTV / CAC -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
               <span class="text-[11px] text-slate-400 block mb-1">Proporção LTV / CAC</span>
               <h3 id="bi-val-ltv-cac" class="text-lg font-bold text-amber-400 font-mono">0.0 : 1</h3>
               <span class="text-[10px] text-slate-500 block mt-1">Saudável (≥ 3:1)</span>
             </div>
 
-            <!-- Card 6: Taxa Conversão -->
+            <!-- Card 9: Taxa Conversão -->
             <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
               <span class="text-[11px] text-slate-400 block mb-1">Taxa Conv. Global</span>
               <h3 id="bi-val-taxa-conv" class="text-lg font-bold text-cyan-400 font-mono">7.61%</h3>
