@@ -1165,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClearChat = document.getElementById('btn-clear-chat');
 
   if (btnClearChat) {
-    btnClearChat.addEventListener('click', () => {
+    btnClearChat.addEventListener('click', async () => {
       chatHistory = [];
       chatMessagesList.innerHTML = `
         <div class="chat-msg model">
@@ -1173,6 +1173,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="bubble"><p>Histórico limpo. Como posso ajudar nas estratégias deste cliente?</p></div>
         </div>
       `;
+      const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+      if (window.supabaseClient && clientId) {
+        try {
+          await window.supabaseClient.from('chat_history').delete().eq('client_id', String(clientId));
+        } catch(e) {
+          console.warn('[Chat] Erro ao limpar histórico do DB:', e);
+        }
+      }
     });
   }
 
@@ -1354,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  window.recusarSugestaoChat = function(buttonEl, msgId) {
+  window.recusarSugestaoChat = async function(buttonEl, msgId) {
     const card = buttonEl ? buttonEl.closest('.chat-message-ai, .bg-\\[\\#05110f\\], [data-chat-card]') : document.getElementById(msgId);
     if (card) {
       card.style.transition = 'all 0.3s ease';
@@ -1370,6 +1378,25 @@ document.addEventListener('DOMContentLoaded', () => {
         card.style.opacity = '1';
         card.style.transform = 'scale(1)';
       }, 300);
+    }
+    
+    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+    if (window.supabaseClient && clientId) {
+      try {
+        const { data } = await window.supabaseClient
+          .from('chat_history')
+          .select('id')
+          .eq('client_id', String(clientId))
+          .eq('role', 'model')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (data && data.length > 0) {
+          await window.supabaseClient.from('chat_history').delete().eq('id', data[0].id);
+        }
+      } catch(e) {
+        console.warn('[Chat] Erro ao deletar mensagem recusada:', e);
+      }
     }
   };
 
