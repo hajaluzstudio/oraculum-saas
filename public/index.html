@@ -1946,6 +1946,98 @@
                 </div>
               </div>
             </div>
+
+            <!-- MÓDULO INDEPENDENTE: AUDITOR DE SLA COMERCIAL & SPEED-TO-LEAD -->
+            <div id="container-sla-comercial" class="mt-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="p-2 bg-amber-500/10 text-amber-400 rounded-xl"><i class="fa-solid fa-stopwatch-20"></i></span>
+                  <div>
+                    <h4 class="text-sm font-bold text-white tracking-wide">Auditoria de SLA & Eficiência Comercial</h4>
+                    <p class="text-[11px] text-slate-400">Monitoramento de tempo de resposta (Speed-to-Lead) e perda de receita no atendimento</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="window.abrirModalConfigSLA()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Configurar SLA</span>
+                  </button>
+                  <button type="button" onclick="window.gerarDiagnosticoComercialIA()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Gerar Laudo de Gargalo</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Cards de KPIs do Atendimento Comercial -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-slate-950/60 p-3.5 border border-slate-800 rounded-xl">
+                  <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Tempo Médio de Resposta</span>
+                  <div id="sla-val-tempo-medio" class="text-lg font-bold text-white">--</div>
+                  <span id="sla-status-badge" class="text-[10px] font-semibold text-slate-400">Aguardando dados</span>
+                </div>
+                <div class="bg-slate-950/60 p-3.5 border border-slate-800 rounded-xl">
+                  <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Taxa de Contato Efetivo</span>
+                  <div id="sla-val-taxa-contato" class="text-lg font-bold text-emerald-400">--</div>
+                  <span class="text-[10px] text-slate-500">Leads abordados pelo comercial</span>
+                </div>
+                <div class="bg-slate-950/60 p-3.5 border border-slate-800 rounded-xl">
+                  <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Leads Esfriados / Perdidos</span>
+                  <div id="sla-val-leads-perdidos" class="text-lg font-bold text-rose-400">--</div>
+                  <span class="text-[10px] text-slate-500">Resposta acima do teto tolerado</span>
+                </div>
+                <div class="bg-slate-950/60 p-3.5 border border-slate-800 rounded-xl">
+                  <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">Impacto Financeiro Estimado</span>
+                  <div id="sla-val-impacto-financeiro" class="text-lg font-bold text-amber-400">--</div>
+                  <span class="text-[10px] text-slate-500">Receita em risco no período</span>
+                </div>
+              </div>
+
+              <!-- Box de Parecer Executivo para Apresentação ao Cliente -->
+              <div id="sla-parecer-box" class="hidden bg-slate-950/80 border border-slate-800 p-4 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-shield"></i>
+                    <span>Parecer de Auditoria de Funil (Oraculum Live)</span>
+                  </span>
+                  <button onclick="document.getElementById('sla-parecer-box').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs">✕</button>
+                </div>
+                <p id="sla-parecer-texto" class="text-xs text-slate-300 leading-relaxed"></p>
+              </div>
+            </div>
+
+            <!-- Modal de Configuração de SLA por Cliente -->
+            <div id="modal-config-sla" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[999999] hidden items-center justify-center p-4">
+              <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 text-white">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i>
+                    <span>Configurar SLA de Atendimento</span>
+                  </h3>
+                  <button type="button" onclick="window.fecharModalConfigSLA()" class="text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+                </div>
+                <form id="form-config-sla" onsubmit="window.salvarConfigSLA(event)" class="space-y-3">
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Tempo Ideal de Resposta (Minutos)</label>
+                    <input type="number" id="sla-input-tempo-alvo" required min="1" placeholder="Ex: 15" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 outline-none">
+                    <span class="text-[10px] text-slate-500">Meta recomendada para retenção térmica do lead.</span>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Teto Crítico de Esfriamento (Minutos)</label>
+                    <input type="number" id="sla-input-tempo-critico" required min="5" placeholder="Ex: 60" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 outline-none">
+                    <span class="text-[10px] text-slate-500">Tempo a partir do qual a probabilidade de fechamento despenca.</span>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Responsável / Equipe Comercial</label>
+                    <input type="text" id="sla-input-responsavel" placeholder="Ex: Recepção / Comercial Interno" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 outline-none">
+                  </div>
+                  <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="window.fecharModalConfigSLA()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer">Salvar Configuração</button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
 
           <!-- FEEDBACK LOOP PREDITIVO -->
