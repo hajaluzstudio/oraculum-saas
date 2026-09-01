@@ -8665,16 +8665,74 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   }
 };
 
-/* ==========================================================================
-   ORACULUM BI & FEEDBACK LOOP - MOTOR DEFINITIVO E AUTÔNOMO
-   ========================================================================== */
-
 (function () {
+  // ============================================================================
+  // NOTIFICAÇÃO TOAST MODERNA ULTRA-SLIM DARK GLASSMORPHISM
+  // ============================================================================
+  window.mostrarToastBI = function(mensagem, tipo = 'sucesso') {
+    let container = document.getElementById('oraculum-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'oraculum-toast-container';
+      container.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:9999999; display:flex; flex-direction:column; gap:10px; pointer-events:none; font-family:Inter,sans-serif;';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const isSuccess = tipo === 'sucesso';
+    toast.style.cssText = `
+      pointer-events:auto;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:14px 18px;
+      border-radius:14px;
+      background:rgba(15, 23, 42, 0.95);
+      border:1px solid ${isSuccess ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'};
+      box-shadow:0 20px 40px rgba(0,0,0,0.6), 0 0 20px ${isSuccess ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
+      backdrop-filter:blur(12px);
+      color:#f8fafc;
+      font-size:13px;
+      font-weight:600;
+      opacity:0;
+      transform:translateY(20px) scale(0.95);
+      transition:all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    `;
+
+    toast.innerHTML = `
+      <div style="width:28px; height:28px; border-radius:50%; background:${isSuccess ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; display:flex; align-items:center; justify-content:center; color:${isSuccess ? '#34d399' : '#f87171'}; font-size:14px;">
+        ${isSuccess ? '✓' : '✕'}
+      </div>
+      <div style="flex:1;">
+        <div style="color:${isSuccess ? '#34d399' : '#f87171'}; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin-bottom:2px;">
+          ${isSuccess ? 'Lançamento de BI' : 'Aviso do Sistema'}
+        </div>
+        <div style="color:#e2e8f0; font-size:13px;">${mensagem}</div>
+      </div>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    });
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(15px) scale(0.95)';
+      setTimeout(() => toast.remove(), 400);
+    }, 4000);
+  };
+
   // Helper para recuperar ID do cliente ativo no State Manager / LocalStorage
   window.obterClienteAtivoBI = function () {
+    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
     return window.activeClientId || 
+           window.currentClientId || 
+           (selectEl ? selectEl.value : null) || 
            localStorage.getItem('active_client_id') || 
-           localStorage.getItem('selected_client_id') || 
+           localStorage.getItem('oraculum_active_client_id') || 
            'client_1787406730';
   };
 
@@ -8696,57 +8754,77 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     window.carregarMetricasBI(clientId);
   };
 
-  // 2. Modal Lançar BI
+  // 2. Modal Lançar BI com Identificação e Pré-preenchimento
   window.abrirModalLancarBI = function (event) {
     if (event) event.preventDefault();
+    const clientId = window.obterClienteAtivoBI();
     let modal = document.getElementById('modal-lancar-bi');
+    
+    // Recupera dados prévios para preencher nos inputs
+    let dadosPrevios = {};
+    const rawLocal = localStorage.getItem(`oraculum_bi_metrics_${clientId}`);
+    if (rawLocal) {
+      try { dadosPrevios = JSON.parse(rawLocal) || {}; } catch(e) {}
+    }
+
+    const prevFat = dadosPrevios.faturamento_total || dadosPrevios.revenue || '';
+    const prevGas = dadosPrevios.gasto_trafego || dadosPrevios.ad_spend || '';
+    const prevVen = dadosPrevios.vendas_fechadas || dadosPrevios.sales || '';
+    const prevLea = dadosPrevios.leads_gerados || dadosPrevios.leads || '';
+    const prevCli = dadosPrevios.cliques || dadosPrevios.clicks || '';
     
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'modal-lancar-bi';
-      modal.style.cssText = 'position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:16px; font-family:Inter,sans-serif;';
-      modal.innerHTML = `
-        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:16px; width:100%; max-width:480px; padding:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #1e293b; padding-bottom:12px;">
-            <h3 style="font-size:16px; font-weight:700; color:#f8fafc; margin:0; display:flex; align-items:center; gap:8px;">
-              💰 Lançar Métricas de BI
-            </h3>
-            <button type="button" onclick="window.fecharModalLancarBI()" style="background:transparent; border:none; color:#94a3b8; font-size:18px; cursor:pointer;">✕</button>
-          </div>
-          <form id="form-lancar-bi-modal" onsubmit="window.salvarMetricasBIModal(event)" style="display:flex; flex-direction:column; gap:12px;">
-            <div>
-              <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:4px;">Faturamento Total (R$)</label>
-              <input type="number" step="0.01" id="bi-input-faturamento" required placeholder="Ex: 25900" style="width:100%; background:#020617; border:1px solid #334155; border-radius:8px; padding:10px; color:#fff; font-size:14px; box-sizing:border-box;">
-            </div>
-            <div>
-              <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:4px;">Gasto em Tráfego (R$)</label>
-              <input type="number" step="0.01" id="bi-input-gasto" required placeholder="Ex: 4800" style="width:100%; background:#020617; border:1px solid #334155; border-radius:8px; padding:10px; color:#fff; font-size:14px; box-sizing:border-box;">
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <div>
-                <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:4px;">Vendas Fechadas</label>
-                <input type="number" id="bi-input-vendas" required placeholder="Ex: 14" style="width:100%; background:#020617; border:1px solid #334155; border-radius:8px; padding:10px; color:#fff; font-size:14px; box-sizing:border-box;">
-              </div>
-              <div>
-                <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:4px;">Leads Gerados</label>
-                <input type="number" id="bi-input-leads" required placeholder="Ex: 184" style="width:100%; background:#020617; border:1px solid #334155; border-radius:8px; padding:10px; color:#fff; font-size:14px; box-sizing:border-box;">
-              </div>
-            </div>
-            <div>
-              <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:4px;">Cliques nos Anúncios</label>
-              <input type="number" id="bi-input-cliques" required placeholder="Ex: 1420" style="width:100%; background:#020617; border:1px solid #334155; border-radius:8px; padding:10px; color:#fff; font-size:14px; box-sizing:border-box;">
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
-              <button type="button" onclick="window.fecharModalLancarBI()" style="background:#1e293b; color:#94a3b8; border:none; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer;">Cancelar</button>
-              <button type="submit" style="background:#10b981; color:#020617; border:none; border-radius:8px; padding:10px 18px; font-weight:700; cursor:pointer;">Salvar Métricas</button>
-            </div>
-          </form>
-        </div>
-      `;
+      modal.style.cssText = 'position:fixed; inset:0; z-index:999999; background:rgba(2,6,23,0.85); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; padding:16px; font-family:Inter,sans-serif;';
       document.body.appendChild(modal);
-    } else {
-      modal.style.display = 'flex';
     }
+
+    modal.innerHTML = `
+      <div style="background:#090d16; border:1px solid rgba(51, 65, 85, 0.7); border-radius:20px; width:100%; max-width:480px; padding:26px; box-shadow:0 25px 60px -15px rgba(0,0,0,0.9), 0 0 30px rgba(16,185,129,0.08); animation:modalSlideUp 0.3s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(30, 41, 59, 0.8); padding-bottom:14px;">
+          <div>
+            <h3 style="font-size:16px; font-weight:700; color:#f8fafc; margin:0; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:18px;">💰</span> Lançar Métricas de BI
+            </h3>
+            <span style="font-size:11px; color:#64748b; font-mono; display:block; margin-top:2px;">Cliente ID: ${clientId}</span>
+          </div>
+          <button type="button" onclick="window.fecharModalLancarBI()" style="background:#1e293b; border:none; color:#94a3b8; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:all 0.2s;">✕</button>
+        </div>
+        <form id="form-lancar-bi-modal" onsubmit="window.salvarMetricasBIModal(event)" style="display:flex; flex-direction:column; gap:14px;">
+          <input type="hidden" id="bi-input-client-id" value="${clientId}">
+          
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:6px;">Faturamento Total (R$)</label>
+            <input type="number" step="0.01" id="bi-input-faturamento" value="${prevFat}" required placeholder="Ex: 25900" style="width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 14px; color:#fff; font-size:14px; font-family:monospace; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#334155'">
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:6px;">Gasto em Tráfego (R$)</label>
+            <input type="number" step="0.01" id="bi-input-gasto" value="${prevGas}" required placeholder="Ex: 4800" style="width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 14px; color:#fff; font-size:14px; font-family:monospace; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#334155'">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:6px;">Vendas Fechadas</label>
+              <input type="number" id="bi-input-vendas" value="${prevVen}" required placeholder="Ex: 14" style="width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 14px; color:#fff; font-size:14px; font-family:monospace; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#334155'">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:6px;">Leads Gerados</label>
+              <input type="number" id="bi-input-leads" value="${prevLea}" required placeholder="Ex: 184" style="width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 14px; color:#fff; font-size:14px; font-family:monospace; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#334155'">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:600; color:#94a3b8; display:block; margin-bottom:6px;">Cliques nos Anúncios</label>
+            <input type="number" id="bi-input-cliques" value="${prevCli}" required placeholder="Ex: 1420" style="width:100%; background:#020617; border:1px solid #334155; border-radius:10px; padding:11px 14px; color:#fff; font-size:14px; font-family:monospace; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='#334155'">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+            <button type="button" onclick="window.fecharModalLancarBI()" style="background:#1e293b; color:#94a3b8; border:none; border-radius:10px; padding:11px 18px; font-weight:600; font-size:13px; cursor:pointer;">Cancelar</button>
+            <button type="submit" style="background:#10b981; color:#020617; border:none; border-radius:10px; padding:11px 22px; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,185,129,0.35);">Salvar Métricas</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    modal.style.display = 'flex';
   };
 
   window.fecharModalLancarBI = function () {
@@ -8823,6 +8901,17 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       if (elFonte && infoTicket.fonte) elFonte.innerText = infoTicket.fonte;
     } catch (_) {}
 
+    // Injeção do Teto Máximo de CAC (20%)
+    const elCacSub = document.getElementById('bi-val-cac-sub');
+    if (elCacSub) {
+      const ticketCalc = (vendas > 0 ? (faturamento / vendas) : 0);
+      if (ticketCalc > 0) {
+        elCacSub.innerText = `Teto Max: ${fmt(ticketCalc * 0.20)} (20%)`;
+      } else {
+        elCacSub.innerText = 'Teto Alvo (15-20%)';
+      }
+    }
+
     // Atualização dos Gráficos Chart.js
     if (typeof window.renderizarGraficosBI === 'function') {
       window.renderizarGraficosBI({
@@ -8844,12 +8933,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       event.stopPropagation();
     }
 
-    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-    const clientId = document.getElementById('bi-input-client-id')?.value 
-                  || window.currentClientId 
-                  || window.activeClientId 
-                  || (selectEl ? selectEl.value : null) 
-                  || 'client_1787406730';
+    const clientId = document.getElementById('bi-input-client-id')?.value || window.obterClienteAtivoBI();
 
     const parseVal = (id) => {
       const el = document.getElementById(id);
@@ -8898,23 +8982,21 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
     window.fecharModalLancarBI();
 
+    // Notificação Toast Moderna
+    window.mostrarToastBI('Métricas de BI salvas e aplicadas em tela com sucesso!');
+
     // Persiste no Supabase e Backend com tolerância total a schemas legados
     try {
-      // 1. Tenta API backend unificada
       fetch(`/api/bi/metrics/${clientId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }).catch(() => {});
 
-      // 2. Tenta Supabase direto
       const supa = getSupabaseBI();
       if (supa && supa.from) {
-        // Tenta payload completo
         const { error: err1 } = await supa.from('bi_analytics_data').insert([payload]);
         if (err1) {
-          console.warn('[BI] Tentando schema sanitizado bi_analytics_data:', err1.message);
-          // Fallback para colunas essenciais
           const payloadSanitizado = {
             client_id: String(clientId),
             reference_date: payload.reference_date,
@@ -8932,8 +9014,6 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     } catch (err) {
       console.warn('[BI] Erro tolerado ao gravar no Supabase:', err);
     }
-
-    alert('✅ Métricas de BI salvas e aplicadas na tela com sucesso!');
   };
 
   // Aliases para formulários legados
@@ -9013,16 +9093,17 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 
   // 2. RECUPERAÇÃO DO SUPABASE / STORAGE NO CARREGAMENTO
   window.carregarMetricasBI = async function(forcedClientId) {
-    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-    const clientId = forcedClientId 
-                  || window.currentClientId 
-                  || window.activeClientId 
-                  || (selectEl ? selectEl.value : null) 
-                  || 'client_1787406730';
+    const clientId = forcedClientId || window.obterClienteAtivoBI();
+
+    const titleEl = document.getElementById('bi-active-client-title');
+    const headerTitle = document.getElementById('dropdown-active-client-name') || document.querySelector('[data-active-client-name]');
+    if (titleEl && headerTitle) {
+      titleEl.innerText = headerTitle.innerText?.trim() || 'Cliente Selecionado';
+    }
 
     let data = null;
 
-    // 1. Tenta recuperar do Supabase o registro mais recente que contenha faturamento > 0 ou o último criado
+    // 1. Tenta recuperar do Supabase o registro mais recente gravado
     try {
       const supa = getSupabaseBI();
       if (supa && supa.from) {
@@ -9042,7 +9123,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       console.warn('[BI] Falha ao consultar Supabase:', e);
     }
 
-    // 2. Fallback para LocalStorage se o banco estiver vazio ou offline
+    // 2. Fallback para LocalStorage
     if (!data || (!data.faturamento_total && !data.revenue && !data.faturamento)) {
       const rawLocal = localStorage.getItem(`oraculum_bi_metrics_${clientId}`);
       if (rawLocal) {
@@ -9053,6 +9134,15 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     // 3. Aplica na tela
     if (data) {
       window.aplicarMetricasBIEmTela(data);
+    } else {
+      // Zera o painel se não houver dados
+      window.aplicarMetricasBIEmTela({
+        faturamento_total: 0,
+        gasto_trafego: 0,
+        vendas_fechadas: 0,
+        leads_gerados: 0,
+        cliques: 0
+      });
     }
   };
 
