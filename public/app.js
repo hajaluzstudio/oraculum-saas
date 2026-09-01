@@ -2859,8 +2859,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!targetKey) targetKey = 'video';
     const key = String(targetKey).toLowerCase().trim();
 
-    // 1. Oculta todos os painéis e sub-abas existentes na War Room
-    document.querySelectorAll('#tab-war-room .wr-panel, #tab-war-room .wr-subtab-content, [id^="wr-tab-"]').forEach(el => {
+    // 1. Oculta todos os painéis dentro da War Room (escopo restrito para não afetar outros elementos)
+    document.querySelectorAll('#tab-war-room .wr-panel, #tab-war-room .wr-subtab-content, #tab-war-room [id^="wr-tab-"]').forEach(el => {
       el.classList.add('hidden');
       el.style.setProperty('display', 'none', 'important');
     });
@@ -2913,15 +2913,24 @@ document.addEventListener('DOMContentLoaded', () => {
     navButtons.forEach(btn => {
       btn.onclick = (e) => {
         if (e) e.preventDefault();
+        // Salva a escolha do usuário para não ser sobrescrita por recargas
         const targetId = btn.getAttribute('data-wr-target') || btn.getAttribute('data-wr-tab');
+        window.__WAR_ROOM_ACTIVE_TAB__ = targetId;
         window.switchWarRoomTab(targetId);
       };
     });
 
-    // Ativa Vídeo por padrão se nenhum ativo
+    // Só ativa aba padrão (vídeo) se o usuário ainda não escolheu uma aba diferente
+    const userSelectedTab = window.__WAR_ROOM_ACTIVE_TAB__;
+    if (userSelectedTab) {
+      // Respeita a seleção atual do usuário — apenas re-vincula sem trocar de aba
+      return;
+    }
+    // Primeira carga: ativa o botão marcado como 'active' no HTML (vídeo por padrão)
     const activeBtn = Array.from(navButtons).find(b => b.classList.contains('active')) || navButtons[0];
     if (activeBtn) {
       const targetId = activeBtn.getAttribute('data-wr-target') || activeBtn.getAttribute('data-wr-tab');
+      window.__WAR_ROOM_ACTIVE_TAB__ = targetId;
       window.switchWarRoomTab(targetId);
     }
   }
