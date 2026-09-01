@@ -1460,6 +1460,56 @@ app.get('/api/bi/metrics/:clientId', async (req, res) => {
   }
 });
 
+// ============================================================================
+// WEBHOOK UNIVERSAL: INGESTÃO DE SLA COMERCIAL POR CLIENTE (CRM INTEGRATION)
+// ============================================================================
+app.post('/api/webhooks/crm-sla', async (req: Request, res: Response) => {
+  try {
+    const { 
+      client_id,          // ID do cliente no Oraculum (passado via query param ou body)
+      lead_phone,         // Telefone/identificador do lead
+      lead_created_at,    // Timestamp de entrada do lead (ISO string ou unix)
+      first_contact_at,   // Timestamp do primeiro contato do vendedor
+      lead_status         // 'ganho', 'perdido', 'em_aberto'
+    } = req.body;
+
+    const targetClientId = (req.query.clientId as string) || client_id;
+
+    if (!targetClientId || !lead_created_at) {
+      return res.status(400).json({ success: false, error: 'clientId e lead_created_at são obrigatórios' });
+    }
+
+    const tEntrada = new Date(lead_created_at).getTime();
+    const tResposta = first_contact_at ? new Date(first_contact_at).getTime() : Date.now();
+    const tempoMinutos = Math.max(0, Math.round((tResposta - tEntrada) / (1000 * 60)));
+
+    // Grava o log individual de atendimento
+    if (supabase) {
+      const { error } = await supabase.from('commercial_lead_logs').insert([{
+        client_id: String(targetClientId),
+        lead_phone: lead_phone || null,
+        lead_created_at: new Date(tEntrada).toISOString(),
+        first_response_at: new Date(tResposta).toISOString(),
+        response_time_minutes: tempoMinutos,
+        status_atendimento: tempoMinutos > 60 ? 'esfriado' : 'respondido'
+      }]);
+
+      if (error) {
+        console.warn('[CRM Webhook] Erro ao gravar log:', error.message);
+      }
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'SLA comercial registrado com sucesso',
+      response_time_minutes: tempoMinutos 
+    });
+  } catch (err: any) {
+    console.error('[CRM Webhook Catch]:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/bi/metrics/:clientId
 app.post('/api/bi/metrics/:clientId', async (req, res) => {
   try {
