@@ -9675,15 +9675,18 @@ window.salvarConfigSLA = async function(e) {
   alert('✅ Configuração de SLA do cliente salva com sucesso!');
 };
 
-window.atualizarVisualSLAComercial = async function(clientId, metricsData = null) {
+window.atualizarVisualSLAComercial = async function(forcedClientId, metricsData = null) {
+  // Identifica o client_id ativo de forma universal
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
-  const targetId = clientId 
+  const targetId = forcedClientId 
                 || window.currentClientId 
                 || window.activeClientId 
                 || (selectEl ? selectEl.value : null) 
                 || localStorage.getItem('oraculum_active_client_id')
                 || 'client_1787406730';
-  
+
+  console.log('[SLA AUDITOR] Consultando logs para o cliente:', targetId);
+
   let config = { tempo_alvo: 15, tempo_critico: 60 };
   const rawConfig = localStorage.getItem(`oraculum_sla_config_${targetId}`);
   if (rawConfig) {
@@ -9694,55 +9697,37 @@ window.atualizarVisualSLAComercial = async function(clientId, metricsData = null
   let tempoMedio = 0;
   let leadsPerdidos = 0;
   let leadsContatados = 0;
-  let logsReaisEncontrados = false;
 
-  // 1. Busca logs reais na tabela commercial_lead_logs do Supabase
   const supa = typeof supabase !== 'undefined' ? supabase : (window.supabaseClient || window.supabase);
   if (supa && supa.from) {
     try {
+      // Consulta buscando tanto pelo ID exato quanto pela string limpa
       const { data: logs, error } = await supa
         .from('commercial_lead_logs')
         .select('*')
-        .eq('client_id', String(targetId))
+        .or(`client_id.eq.${String(targetId)},client_id.eq.${String(targetId).replace('client_', '')}`)
         .order('created_at', { ascending: false });
 
-      if (!error && logs && logs.length > 0) {
-        logsReaisEncontrados = true;
+      if (error) {
+        console.error('[SLA Supabase Error]:', error);
+      } else if (logs && logs.length > 0) {
         totalLogs = logs.length;
         leadsContatados = logs.filter(l => l.status_atendimento !== 'sem_resposta').length;
-        
         const somaTempo = logs.reduce((acc, l) => acc + (Number(l.response_time_minutes) || 0), 0);
         tempoMedio = Math.round(somaTempo / totalLogs);
         leadsPerdidos = logs.filter(l => (Number(l.response_time_minutes) || 0) > config.tempo_alvo).length;
-        console.log(`[SLA] Logs reais carregados para ${targetId}: ${totalLogs} registros, Média: ${tempoMedio} min`);
+        console.log(`[SLA SUCESSO] ${totalLogs} logs carregados do Supabase. Média: ${tempoMedio} min.`);
       }
     } catch (err) {
-      console.warn('[SLA Real Data] Erro ao consultar logs:', err);
-    }
-  }
-
-  // 2. Se não houver NENHUM log registrado via webhook, usa os dados do BI ativo
-  if (!logsReaisEncontrados) {
-    let leads = Number(metricsData?.leads_gerados ?? metricsData?.leads ?? 0);
-    if (!leads) {
-      const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
-      if (rawBI) {
-        try { leads = Number(JSON.parse(rawBI).leads_gerados || 0); } catch(e) {}
-      }
-    }
-    if (leads > 0) {
-      tempoMedio = 0;
-      totalLogs = leads;
-      leadsContatados = leads;
-      leadsPerdidos = 0;
+      console.warn('[SLA Real Data] Catch:', err);
     }
   }
 
   const taxaContato = totalLogs > 0 ? ((leadsContatados / totalLogs) * 100).toFixed(1) + '%' : '100.0%';
   
-  // Cálculo do Ticket Médio Real para estimativa de perda
-  const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
+  // Cálculo do Ticket Médio para perda estimada
   let ticketMedio = 38000;
+  const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
   if (rawBI) {
     try {
       const bi = JSON.parse(rawBI);
@@ -9751,18 +9736,18 @@ window.atualizarVisualSLAComercial = async function(clientId, metricsData = null
       if (fat > 0 && ven > 0) ticketMedio = fat / ven;
     } catch(e) {}
   }
-  const impactoFinanceiro = leadsPerdidos * (ticketMedio * 0.10); // 10% de conversão potencial perdida
+  const impactoFinanceiro = leadsPerdidos * (ticketMedio * 0.10);
 
   const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
-  setTxt('sla-val-tempo-medio', totalLogs > 0 ? `${tempoMedio} min` : '--');
+  setTxt('sla-val-tempo-medio', totalLogs > 0 ? `${tempoMedio} min` : '0 min');
   setTxt('sla-val-taxa-contato', taxaContato);
-  setTxt('sla-val-leads-perdidos', totalLogs > 0 ? `${leadsPerdidos} leads` : '--');
-  setTxt('sla-val-impacto-financeiro', totalLogs > 0 ? Number(impactoFinanceiro).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '--');
+  setTxt('sla-val-leads-perdidos', totalLogs > 0 ? `${leadsPerdidos} leads` : '0 leads');
+  setTxt('sla-val-impacto-financeiro', totalLogs > 0 ? Number(impactoFinanceiro).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00');
 
   const badge = document.getElementById('sla-status-badge');
-  if (badge && totalLogs > 0) {
-    if (tempoMedio <= config.tempo_alvo) {
+  if (badge) {
+    if (totalLogs === 0 || tempoMedio <= config.tempo_alvo) {
       badge.innerText = '🟢 Atendimento Ágil (Excelente)';
       badge.className = 'text-[10px] font-semibold text-emerald-400';
     } else if (tempoMedio <= config.tempo_critico) {
