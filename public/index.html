@@ -2301,264 +2301,146 @@
                 </div>
               </div>
 
-              <!-- 2. DESIGN -->
-              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="card-glass">
-                  <div class="card-header">
-                    <h3><i class="fa-solid fa-palette"></i> Briefings Visuais e Landing Pages</h3>
+              <!-- 2. DESIGN & WEB -->
+              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
+                
+                <!-- 1. Gaveta Mestra de Pautas e Entregáveis Visuais -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                      <span class="text-xl">🎨</span>
+                      <div>
+                        <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
+                        <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela IA.</p>
+                      </div>
+                    </div>
+                    <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
                   </div>
-                  <!-- Feed de Gavetas de Design -->
-                  <div id="feed-gavetas-design" class="space-y-4 mt-0 mb-4"></div>
-                  <!-- Ferramenta Inspecionar Criativo Modular (Design) -->
-                  <div id="container-inspector-design" class="mb-4"></div>
-
-                  <!-- Ferramenta: Indexador de SEO Visual & Social (OCR / Alt-Text / Carrossel) -->
-                  <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mt-4 mb-4">
-                    <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between cursor-pointer select-none" onclick="window.toggleDesignSeoTool()">
-                      <div class="flex items-center gap-2">
-                        <span class="text-base">⚡</span>
-                        <span class="font-bold text-sm text-emerald-400">Indexador de SEO Visual & Social (OCR / Alt-Text / Carrossel)</span>
-                      </div>
-                      <span id="icon-toggle-design-seo" class="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
-                        ▼ Expandir Ferramenta
-                      </span>
-                    </div>
-
-                    <div id="body-design-seo" class="hidden p-6 bg-slate-950/40 space-y-5">
-                      <div class="space-y-3">
-                        <label class="block text-xs font-semibold text-slate-300">Roteiro / Título do Card / Carrossel *</label>
-                        <textarea id="design-seo-input" rows="3" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="Cole ou digite a ideia, copy ou briefing da peça gráfica / carrossel..."></textarea>
-                      </div>
-
-                      <button type="button" id="btn-generate-design-seo" onclick="window.gerarMatrizSeoDesign()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer">
-                        <span>🚀 Gerar Matriz de Indexação Visual</span>
-                      </button>
-
-                      <!-- Painel de Resultados da Matriz de Design (Grid 2x2) -->
-                      <div id="design-seo-results" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        
-                        <!-- Card 1: Micro-Hook de Arraste -->
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                          <div>
-                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                              <span>👉</span> Gatilho de Deslize (Micro-Hook do Carrossel)
-                            </span>
-                            <p id="design-val-slide-hook" class="text-xs text-slate-200 font-semibold mt-2 bg-slate-950 p-2.5 rounded border border-slate-800">-</p>
-                          </div>
-                          <button type="button" onclick="window.copiarTextoSeo('design-val-slide-hook')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>📋 Copiar Gancho de Arraste</span>
-                          </button>
-                        </div>
-
-                        <!-- Card 2: OCR Screen Anchor (Capa / Card 1) -->
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                          <div>
-                            <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                              <span>🎨</span> Âncora de OCR (Texto da Capa / Card 1)
-                            </span>
-                            <p id="design-val-ocr-anchor" class="text-xs text-slate-200 font-semibold mt-2 bg-slate-950 p-2.5 rounded border border-slate-800">-</p>
-                          </div>
-                          <button type="button" onclick="window.copiarTextoSeo('design-val-ocr-anchor')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>📋 Copiar Texto de Capa</span>
-                          </button>
-                        </div>
-
-                        <!-- Card 3: Alt-Text Semântico (Instagram & Web) -->
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                          <div>
-                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                              <span>👁️</span> Alt-Text Semântico (Instagram & Web &lt;img&gt;)
-                            </span>
-                            <p id="design-val-alt-text" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto leading-relaxed">-</p>
-                          </div>
-                          <button type="button" onclick="window.copiarTextoSeo('design-val-alt-text')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>📋 Copiar Alt-Text</span>
-                          </button>
-                        </div>
-
-                        <!-- Card 4: Legenda Search-First -->
-                        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                          <div>
-                            <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
-                              <span>🔍</span> Legenda Search-First
-                            </span>
-                            <p id="design-val-caption" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto whitespace-pre-wrap leading-relaxed">-</p>
-                          </div>
-                          <button type="button" onclick="window.copiarTextoSeo('design-val-caption')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                            <span>📋 Copiar Legenda</span>
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-                  <!-- Ferramenta: Simulador de Mockup & Safe Zones (Reels / TikTok / Stories) -->
-                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-6 transition-all duration-300">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleSafeZoneMockupTool()">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xl">📱</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                            Simulador de Mockup & Safe Zones (Reels / TikTok / Stories)
-                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Interface Guard</span>
-                          </h3>
-                          <p class="text-xs text-slate-400">Validação visual de margens de segurança e sobreposição de botões da interface nativa.</p>
-                        </div>
-                      </div>
-                      <button id="btn-toggle-safezone" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                        ▼ Expandir Ferramenta
-                      </button>
-                    </div>
-
-                    <div id="safezone-mockup-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-5">
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Formato do Criativo / Rede *</label>
-                          <select id="safezone-format-select" onchange="window.handleSafeZoneFormatChange()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
-                            <option value="9:16">Story / Reels / TikTok (9:16 Vertical)</option>
-                            <option value="1:1">Feed Quadrado (1:1)</option>
-                            <option value="4:5">Feed Retrato (4:5)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Upload da Peça Gráfica (Imagem) *</label>
-                          <input type="file" id="safezone-file-input" accept="image/*" onchange="window.handleSafeZoneFileUpload(event)" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
-                        </div>
-                      </div>
-
-                      <!-- Preview Container Centralizado com Overlay de Safe Zone -->
-                      <div class="flex flex-col items-center justify-center p-4 bg-slate-950/60 border border-slate-800 rounded-xl">
-                        <div class="flex items-center gap-3 mb-4">
-                          <button id="btn-toggle-safezone-overlay" onclick="window.toggleSafeZoneOverlay()" class="text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 px-3.5 py-1.5 rounded-lg hover:bg-emerald-600/30 transition-all font-medium flex items-center gap-1.5 cursor-pointer">
-                            👁️ Alternar Safe Zone Overlay
-                          </button>
-                        </div>
-                        <div id="mockup-preview-viewport" class="relative max-w-[280px] w-full aspect-[9/16] bg-slate-900 border-2 border-dashed border-slate-700 rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center select-none">
-                          <!-- Placeholder inicial -->
-                          <span id="mockup-placeholder-text" class="text-xs text-slate-500 text-center px-4">Faça upload de uma imagem para simular o mockup</span>
-
-                          <!-- Imagem Base (Z-10) -->
-                          <img id="mockup-preview-img" class="hidden absolute inset-0 w-full h-full object-cover z-10" alt="Preview da Arte">
-
-                          <!-- Camada 1: Interface Nativa 9:16 Reels/TikTok (Z-20) -->
-                          <div id="mockup-native-916" class="hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3.5 bg-gradient-to-b from-black/40 via-transparent to-black/70">
-                            <!-- Topo -->
-                            <div class="flex items-center justify-between text-white/90 pt-1 text-xs">
-                              <span class="font-semibold tracking-wide">Reels</span>
-                              <span class="text-sm">📷</span>
-                            </div>
-
-                            <!-- Centro e Lateral Direita -->
-                            <div class="flex items-end justify-between w-full">
-                              <!-- Coluna da Esquerda (Perfil + Legenda + CTA) -->
-                              <div class="space-y-2 max-w-[70%] text-left pb-1">
-                                <button class="bg-emerald-500/90 text-slate-950 font-bold text-[11px] px-3 py-1 rounded-md shadow-lg flex items-center gap-1">
-                                  Saiba Mais <span>↗</span>
-                                </button>
-                                <div class="flex items-center gap-1.5 text-xs text-white font-medium drop-shadow">
-                                  <div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">HL</div>
-                                  <span>@cliente_ativo</span>
-                                  <span class="text-[10px] text-emerald-300 font-normal">• Seguir</span>
-                                </div>
-                                <p class="text-[10px] text-white/90 line-clamp-2 drop-shadow leading-snug">
-                                  Confira os detalhes e transforme seus resultados com nossa metodologia... <span class="text-white/60">mais</span>
-                                </p>
-                                <div class="flex items-center gap-1 text-[9px] text-white/80 drop-shadow">
-                                  <span>♫</span>
-                                  <span class="truncate">Áudio Original • Oraculum Studio</span>
-                                </div>
-                              </div>
-
-                              <!-- Coluna da Direita (Ações) -->
-                              <div class="flex flex-col items-center gap-3 text-white text-right pb-1">
-                                <div class="flex flex-col items-center">
-                                  <span class="text-lg drop-shadow">❤️</span>
-                                  <span class="text-[9px] font-bold drop-shadow">24.8K</span>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                  <span class="text-lg drop-shadow">💬</span>
-                                  <span class="text-[9px] font-bold drop-shadow">512</span>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                  <span class="text-lg drop-shadow">✈️</span>
-                                  <span class="text-[9px] font-bold drop-shadow">1.2K</span>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                  <span class="text-lg drop-shadow">🔖</span>
-                                  <span class="text-[9px] font-bold drop-shadow">Salvar</span>
-                                </div>
-                                <div class="w-6 h-6 rounded-full bg-slate-800 border border-white/40 flex items-center justify-center text-[10px] animate-spin">
-                                  💿
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Camada 2: Interface Nativa Feed 1:1 e 4:5 (Z-20) -->
-                          <div id="mockup-native-feed" class="hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 bg-gradient-to-b from-black/50 via-transparent to-black/60">
-                            <div class="flex items-center justify-between text-white text-xs pt-1">
-                              <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-emerald-600 text-[10px] font-bold flex items-center justify-center text-white">HL</div>
-                                <span class="font-semibold text-xs">@cliente_ativo</span>
-                              </div>
-                              <span>•••</span>
-                            </div>
-                            <div class="space-y-1.5 pb-1 text-white">
-                              <div class="w-full bg-emerald-500/90 text-slate-950 text-center font-bold text-[11px] py-1 rounded shadow">
-                                Saiba Mais
-                              </div>
-                              <div class="flex items-center justify-between text-base px-1">
-                                <div class="flex items-center gap-2.5">
-                                  <span>❤️</span>
-                                  <span>💬</span>
-                                  <span>✈️</span>
-                                </div>
-                                <span>🔖</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Camada 3: Safe Zone Grid (Z-30) -->
-                          <div id="mockup-safezone-grid" class="hidden absolute inset-0 z-30 pointer-events-none border-t-[48px] border-b-[88px] border-r-[52px] border-transparent bg-red-500/15 before:absolute before:inset-0 before:border-2 before:border-dashed before:border-emerald-400">
-                            <div class="absolute bottom-1 left-2 text-[9px] text-emerald-300 font-mono bg-slate-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40">
-                              Área Segura (Safe Zone)
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                  
+                  <div id="design-deliverables-list" class="space-y-4">
+                    <!-- Injetado dinamicamente via JS ou estado padrão -->
+                    <div class="text-center py-8 border-2 border-dashed border-slate-800 rounded-xl">
+                      <p class="text-xs text-slate-500">Nenhum criativo visual despachado para esta equipe no momento. Gere pautas no Chat Estratégico.</p>
                     </div>
                   </div>
                 </div>
+
+                <!-- 2. Ferramenta 1: Inspecionar Criativo (Visão Computacional - AI Quality Gate) -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
+                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-quality-gate-content', this)">
+                    <div class="flex items-center gap-3">
+                      <span class="text-lg">📸</span>
+                      <h4 class="text-sm font-bold text-slate-200">Inspecionar Criativo (Visão Computacional)</h4>
+                      <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-purple-950/80 border border-purple-800/50 text-purple-300 rounded">AI Quality Gate</span>
+                    </div>
+                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
+                  </div>
+                  <div id="design-quality-gate-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
+                    <p class="text-xs text-slate-400">Faça o upload do criativo final (PNG, JPG, MP4) para a auditoria multimodal do Gemini antes de aprovar para tráfego.</p>
+                    <div class="flex items-center gap-3">
+                      <input type="file" id="design-qc-file" accept="image/*,video/*" class="text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-500/20 file:text-emerald-400 hover:file:bg-emerald-500/30 cursor-pointer" />
+                      <button onclick="window.executarInspecaoCriativoDesign && window.executarInspecaoCriativoDesign()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                        🔍 Executar Auditoria Visual
+                      </button>
+                    </div>
+                    <div id="design-qc-results" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-300"></div>
+                  </div>
+                </div>
+
+                <!-- 3. Ferramenta 2: Indexador de SEO Visual & Social (OCR / Alt-Text) -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
+                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-seo-indexer-content', this)">
+                    <div class="flex items-center gap-3">
+                      <span class="text-lg">⚡</span>
+                      <h4 class="text-sm font-bold text-slate-200">Indexador de SEO Visual & Social (OCR / Alt-Text / Carrossel)</h4>
+                    </div>
+                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
+                  </div>
+                  <div id="design-seo-indexer-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
+                    <div>
+                      <label class="text-xs font-bold text-slate-300 block mb-1">Tema / Conceito do Criativo Visual *</label>
+                      <input type="text" id="design-seo-theme-input" placeholder="Ex: Antes e depois / Cuidados no pós-operatório..." class="w-full p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60" />
+                    </div>
+                    <button onclick="window.gerarSeoVisualDesign && window.gerarSeoVisualDesign()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-xl text-xs transition">
+                      🚀 Gerar Matriz Visual & Alt-Text
+                    </button>
+                    <div id="design-seo-results" class="hidden space-y-3"></div>
+                  </div>
+                </div>
+
+                <!-- 4. Ferramenta 3: Simulador de Mockup & Safe Zones -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
+                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-safezone-content', this)">
+                    <div class="flex items-center gap-3">
+                      <span class="text-lg">📱</span>
+                      <h4 class="text-sm font-bold text-slate-200">Simulador de Mockup & Safe Zones (Reels / TikTok / Stories)</h4>
+                      <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-950/80 border border-emerald-800/50 text-emerald-300 rounded">Overlay Guard</span>
+                    </div>
+                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
+                  </div>
+                  <div id="design-safezone-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
+                    <div class="flex items-center gap-3 flex-wrap">
+                      <input type="file" id="safezone-file-input" accept="image/*" onchange="window.handleSafeZoneFileUpload && window.handleSafeZoneFileUpload(event)" class="text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 cursor-pointer" />
+                      <select id="safezone-format-select" onchange="window.handleSafeZoneFormatChange && window.handleSafeZoneFormatChange()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
+                        <option value="9:16">9:16 (Stories / Reels / TikTok)</option>
+                        <option value="1:1">1:1 (Feed Quadrado)</option>
+                        <option value="4:5">4:5 (Feed Retrato)</option>
+                      </select>
+                      <button onclick="window.toggleSafeZoneOverlay && window.toggleSafeZoneOverlay()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-semibold border border-slate-700">
+                        👁️ Alternar Safe Zone Overlay
+                      </button>
+                    </div>
+                    <div id="safezone-preview-container" class="relative max-w-xs mx-auto border border-slate-800 rounded-2xl overflow-hidden bg-black/40 min-h-[300px] flex items-center justify-center">
+                      <span id="safezone-empty-hint" class="text-xs text-slate-500">Faça o upload de uma arte para simular</span>
+                      <img id="safezone-img-preview" class="hidden w-full h-full object-cover" />
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               <!-- 3. TRÁFEGO -->
-              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="card-glass">
-                  <div class="card-header">
-                    <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
+              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
+                <!-- Bloco 1: Parâmetros de Campanha -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="text-emerald-400 font-bold">🎯</span>
+                    <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
                   </div>
+                  <div id="traffic-params-content" class="text-xs text-slate-300 leading-relaxed grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
+                      <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
+                    </div>
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
+                      <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
+                    </div>
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
+                      <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
+                    </div>
+                  </div>
+                </div>
 
-                  <!-- Gaveta Mestra de Criativos Entregues -->
-                  <div id="container-traffic-delivered-assets" class="p-5 bg-[#071311] border border-emerald-500/30 rounded-2xl shadow-xl space-y-4 my-4">
-                    <div class="flex items-center justify-between border-b border-emerald-950/80 pb-3">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 text-sm">
-                          <i class="fa-solid fa-bullhorn"></i>
-                        </div>
-                        <div>
-                          <h4 class="text-sm font-bold text-white tracking-wide">📦 Criativos & Materiais Prontos para Veiculação</h4>
-                          <span class="text-[10px] text-slate-400 font-mono">Prontos para subir no Gerenciador de Anúncios / Postagem</span>
-                        </div>
+                <!-- Bloco 2: Gaveta de Criativos Prontos para Veiculação -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                      <span class="text-emerald-400 font-bold">📦</span>
+                      <div>
+                        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
+                        <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
                       </div>
-                      <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
-                        <i class="fa-solid fa-rotate text-[11px]"></i> Atualizar Lista
-                      </button>
                     </div>
-                    
-                    <div id="traffic-creatives-list" class="space-y-3">
-                      <!-- Cards injetados dinamicamente -->
-                    </div>
+                    <button onclick="if(typeof window.carregarAtivosEntreguesTrafego==='function') window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                      🔄 Atualizar Lista
+                    </button>
                   </div>
+                  <div id="traffic-creatives-list" class="space-y-3">
+                    <!-- Injetado dinamicamente via JS -->
+                  </div>
+                </div>
 
                   <!-- Feed de Gavetas de Tráfego -->
                   <div id="feed-gavetas-trafego" class="space-y-4 mt-0 mb-4"></div>
@@ -4505,7 +4387,7 @@ window.atualizarCardUsuarioLogado = function(providedSession = null) {
     });
   }
 </script>
-<script src="/app.js?v=2026.341.0"></script>
+<script src="/app.js?v=2026.320.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
