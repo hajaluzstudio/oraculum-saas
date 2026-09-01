@@ -2161,722 +2161,125 @@
         <!-- ABA WAR ROOM: SALA DE OPERAÇÃO -->
         <section id="tab-war-room" class="tab-panel">
           <div class="war-room-container" style="display: flex; flex-direction: column; gap: 20px; height: 100%;">
-            <!-- Cabeçalho de Navegação Interno (As 5 Equipes) e Botão de Despacho -->
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <div class="war-room-nav" style="display: flex; gap: 8px; background: var(--bg-surface); padding: 8px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.15); overflow-x: auto; flex: 1;">
-                <button class="wr-tab-btn active" data-wr-target="wr-tab-video" data-wr-tab="video"><i class="fa-solid fa-film"></i> Vídeo & Gravação</button>
-                <button class="wr-tab-btn" data-wr-target="wr-tab-design" data-wr-tab="design"><i class="fa-solid fa-palette"></i> Design & Web</button>
-                <button class="wr-tab-btn" data-wr-target="wr-tab-traffic" data-wr-tab="traffic"><i class="fa-solid fa-bullseye"></i> Tráfego</button>
-                <button class="wr-tab-btn" data-wr-target="wr-tab-copywriting" data-wr-tab="copywriting"><i class="fa-solid fa-pen-nib"></i> Copywriting</button>
-                <button class="wr-tab-btn" data-wr-target="wr-tab-comercial" data-wr-tab="comercial"><i class="fa-solid fa-handshake"></i> Comercial & Vendas</button>
-              </div>
-              <button id="btn-despachar-war-room" style="background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
-                <i class="fa-solid fa-rocket"></i> Despachar para Kanban
-              </button>
-            </div>
+<div id="war-room-subtabs-nav" class="mb-6 flex flex-wrap gap-2">
+  <button type="button" onclick="window.trocarSubAbaWarRoom('video', this)" class="wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black">🎥 Vídeo & Gravação</button>
+  <button type="button" onclick="window.trocarSubAbaWarRoom('design', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎨 Design & Web</button>
+  <button type="button" onclick="window.trocarSubAbaWarRoom('trafego', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🎯 Tráfego</button>
+  <button type="button" onclick="window.trocarSubAbaWarRoom('copywriting', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">✍️ Copywriting</button>
+  <button type="button" onclick="window.trocarSubAbaWarRoom('comercial', this)" class="wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36]">🤝 Comercial & Vendas</button>
+</div>
 
-            <!-- Painéis das 5 Equipes -->
-            <div class="war-room-content" style="flex: 1; position: relative;">
-              
-              <!-- 1. VÍDEO -->
-              <div id="wr-tab-video" id-legacy="wr-video" class="wr-panel wr-subtab-content active">
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                  
-                  <!-- DADOS INJETADOS PELA IA (JSON - HIDDEN) -->
-                  <div id="wr-video-content" style="display: none;"></div>
+<!-- CONTAINER MESTRE DE CONTEÚDO DAS SUB-ABAS -->
+<div id="war-room-panels-container">
 
-                  <!-- 1. FEED DE GAVETAS MESTRAS DE GRAVAÇÃO (PRIORIDADE PRINCIPAL) -->
-                  <div class="mb-4">
-                    <div id="feed-gavetas-video" class="space-y-4">
-                      <!-- Renderizado dinamicamente pelo public/app.js -->
-                    </div>
-                  </div>
+  <!-- 1. PAINEL VÍDEO -->
+  <div id="wr-panel-video" class="wr-panel space-y-6">
+    <!-- Pautas de Vídeo e Widgets existentes de Vídeo (Teleprompter, Quality Gate, SEO) -->
+    <div id="video-deliverables-list" class="space-y-4"></div>
+  </div>
 
-                  <!-- 2. FERRAMENTAS AUXILIARES DE ESTÚDIO E PRODUÇÃO -->
-                  <div class="space-y-3">
-                    <!-- Ferramenta 1: Estúdio de Gravação, Áudio-Guia & Teleprompter -->
-                    <div class="border border-slate-800/80 bg-slate-900/40 rounded-xl overflow-hidden">
-                      <button type="button" onclick="window.toggleVideoStudioTool()" class="w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
-                        <div class="flex items-center gap-2.5">
-                          <span class="text-emerald-400 text-sm">🎬</span>
-                          <span class="text-xs font-bold text-emerald-400 tracking-wide">Estúdio de Gravação (Áudio-Guia & Teleprompter)</span>
-                        </div>
-                        <span id="icon-toggle-video-studio" class="text-xs text-slate-400">▼ Expandir Ferramenta</span>
-                      </button>
-                      <div id="container-video-studio" class="hidden p-5 border-t border-slate-800/80 bg-slate-950/50">
-                        <div class="flex items-center justify-end gap-2 mb-4">
-                          <button type="button" id="btn-ouvir-audio-guia" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer">
-                            🔊 Ouvir Áudio-Guia
-                          </button>
-                          <button type="button" id="btn-abrir-teleprompter-modal" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors flex items-center gap-1.5 cursor-pointer">
-                            ▶ Modo Teleprompter
-                          </button>
-                        </div>
-                        <div id="video-script-preview-area" class="p-4 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono min-h-[100px] whitespace-pre-wrap">Selecione um roteiro na gaveta acima e clique em "▶ Carregar no Teleprompter" para projetar o texto.</div>
-                      </div>
-                    </div>
+  <!-- 2. PAINEL DESIGN -->
+  <div id="wr-panel-design" class="wr-panel hidden space-y-6">
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🎨</span>
+          <div>
+            <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
+            <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela IA.</p>
+          </div>
+        </div>
+        <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
+      </div>
+      <div id="design-deliverables-list" class="space-y-4"></div>
+    </div>
 
-                    <!-- Ferramenta 2: Inspecionar Criativo Modular (Visão Computacional) -->
-                    <div id="container-inspector-video"></div>
+    <!-- Ferramenta: Quality Gate Design -->
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection('design-qc-box', this)">
+        <div class="flex items-center gap-3">
+          <span class="text-lg">📸</span>
+          <h4 class="text-sm font-bold text-slate-200">Inspecionar Criativo Visual (Visão Computacional)</h4>
+        </div>
+        <span class="text-xs text-slate-400">▼ Expandir</span>
+      </div>
+      <div id="design-qc-box" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
+        <input type="file" id="design-qc-file" accept="image/*,video/*" class="text-xs text-slate-400" />
+      </div>
+    </div>
 
-                    <!-- Ferramenta: Indexador de SEO Social (Triangulação ASR / OCR / Alt-Text) -->
-                    <div class="border border-slate-800 bg-slate-900/60 rounded-xl overflow-hidden mt-4 mb-4">
-                      <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between cursor-pointer select-none" onclick="window.toggleSocialSeoTool()">
-                        <div class="flex items-center gap-2">
-                          <span class="text-base">⚡</span>
-                          <span class="font-bold text-sm text-emerald-400">Indexador de SEO Social (Triangulação ASR / OCR / Alt-Text)</span>
-                        </div>
-                        <span id="icon-toggle-social-seo" class="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
-                          ▼ Expandir Ferramenta
-                        </span>
-                      </div>
+    <!-- Ferramenta: Safe Zones Overlay -->
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection('design-safe-box', this)">
+        <div class="flex items-center gap-3">
+          <span class="text-lg">📱</span>
+          <h4 class="text-sm font-bold text-slate-200">Simulador de Safe Zones (Reels / Stories / TikTok)</h4>
+        </div>
+        <span class="text-xs text-slate-400">▼ Expandir</span>
+      </div>
+      <div id="design-safe-box" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
+        <div class="flex gap-2">
+          <select id="safezone-select" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+            <option value="9:16">9:16 (Reels/TikTok)</option>
+            <option value="1:1">1:1 (Feed Quadrado)</option>
+            <option value="4:5">4:5 (Feed Retrato)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
 
-                      <div id="body-social-seo" class="hidden p-6 bg-slate-950/40 space-y-5">
-                        <div class="space-y-3">
-                          <label class="block text-xs font-semibold text-slate-300">Roteiro / Título da Pauta Ativa *</label>
-                          <textarea id="seo-script-text" rows="3" class="w-full bg-slate-900 border border-slate-700/80 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="Cole ou selecione o roteiro/pauta da gravação para calcular a matriz de SEO..."></textarea>
-                        </div>
+  <!-- 3. PAINEL TRÁFEGO -->
+  <div id="wr-panel-trafego" class="wr-panel hidden space-y-6">
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-emerald-400 font-bold">🎯</span>
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+          <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
+          <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
+        </div>
+        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+          <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
+          <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
+        </div>
+        <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+          <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
+          <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
+        </div>
+      </div>
+    </div>
 
-                        <button type="button" id="btn-generate-social-seo" onclick="window.gerarMatrizSocialSeo()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer">
-                          <span>🚀 Gerar Matriz de Indexação Algorítmica</span>
-                        </button>
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-emerald-400 font-bold">📦</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
+            <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold">
+          🔄 Atualizar Lista
+        </button>
+      </div>
+      <div id="traffic-creatives-list" class="space-y-3"></div>
+    </div>
+  </div>
 
-                        <!-- Painel de Resultados da Matriz em Grid 2x2 -->
-                        <div id="social-seo-results" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                          
-                          <!-- Card 1: ASR Audio Triggers -->
-                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2">
-                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                              <span>🎙️</span> Gatilhos de Áudio (ASR - 0 a 5s)
-                            </span>
-                            <p class="text-[10px] text-slate-400">Palavras-chave obrigatórias a pronunciar nos primeiros 5 segundos:</p>
-                            <div id="seo-val-audio-triggers" class="flex flex-wrap gap-1.5 pt-1"></div>
-                          </div>
+  <!-- 4. PAINEL COPYWRITING -->
+  <div id="wr-panel-copywriting" class="wr-panel hidden space-y-6">
+    <div id="copywriting-deliverables-list" class="space-y-4"></div>
+  </div>
 
-                          <!-- Card 2: OCR Screen Anchor -->
-                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                            <div>
-                              <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-                                <span>📺</span> Âncora de OCR (Texto na Tela)
-                              </span>
-                              <p id="seo-val-ocr-anchor" class="text-xs text-slate-200 font-semibold mt-2 bg-slate-950 p-2.5 rounded border border-slate-800">-</p>
-                            </div>
-                            <button type="button" onclick="window.copiarTextoSeo('seo-val-ocr-anchor')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                              <span>📋 Copiar Texto de Tela</span>
-                            </button>
-                          </div>
+  <!-- 5. PAINEL COMERCIAL -->
+  <div id="wr-panel-comercial" class="wr-panel hidden space-y-6">
+    <div id="comercial-deliverables-list" class="space-y-4"></div>
+  </div>
 
-                          <!-- Card 3: Alt-Text Semântico -->
-                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                            <div>
-                              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                                <span>👁️</span> Alt-Text Semântico (Acessibilidade Oculta)
-                              </span>
-                              <p id="seo-val-alt-text" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto leading-relaxed">-</p>
-                            </div>
-                            <button type="button" onclick="window.copiarTextoSeo('seo-val-alt-text')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                              <span>📋 Copiar Alt-Text</span>
-                            </button>
-                          </div>
-
-                          <!-- Card 4: Legenda Search-First -->
-                          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2 flex flex-col justify-between">
-                            <div>
-                              <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
-                                <span>🔍</span> Legenda Search-First
-                              </span>
-                              <p id="seo-val-caption" class="text-xs text-slate-300 mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 max-h-32 overflow-y-auto whitespace-pre-wrap leading-relaxed">-</p>
-                            </div>
-                            <button type="button" onclick="window.copiarTextoSeo('seo-val-caption')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] rounded border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                              <span>📋 Copiar Legenda</span>
-                            </button>
-                          </div>
-
-                        </div>
-                      </div>
-                    </div>
-
-
-
-                </div>
-              </div>
-
-              <!-- 2. DESIGN & WEB -->
-              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
-                
-                <!-- 1. Gaveta Mestra de Pautas e Entregáveis Visuais -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
-                  <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2.5">
-                      <span class="text-xl">🎨</span>
-                      <div>
-                        <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
-                        <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela IA.</p>
-                      </div>
-                    </div>
-                    <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
-                  </div>
-                  
-                  <div id="design-deliverables-list" class="space-y-4">
-                    <!-- Injetado dinamicamente via JS ou estado padrão -->
-                    <div class="text-center py-8 border-2 border-dashed border-slate-800 rounded-xl">
-                      <p class="text-xs text-slate-500">Nenhum criativo visual despachado para esta equipe no momento. Gere pautas no Chat Estratégico.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2. Ferramenta 1: Inspecionar Criativo (Visão Computacional - AI Quality Gate) -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
-                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-quality-gate-content', this)">
-                    <div class="flex items-center gap-3">
-                      <span class="text-lg">📸</span>
-                      <h4 class="text-sm font-bold text-slate-200">Inspecionar Criativo (Visão Computacional)</h4>
-                      <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-purple-950/80 border border-purple-800/50 text-purple-300 rounded">AI Quality Gate</span>
-                    </div>
-                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
-                  </div>
-                  <div id="design-quality-gate-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
-                    <p class="text-xs text-slate-400">Faça o upload do criativo final (PNG, JPG, MP4) para a auditoria multimodal do Gemini antes de aprovar para tráfego.</p>
-                    <div class="flex items-center gap-3">
-                      <input type="file" id="design-qc-file" accept="image/*,video/*" class="text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-500/20 file:text-emerald-400 hover:file:bg-emerald-500/30 cursor-pointer" />
-                      <button onclick="window.executarInspecaoCriativoDesign && window.executarInspecaoCriativoDesign()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-2">
-                        🔍 Executar Auditoria Visual
-                      </button>
-                    </div>
-                    <div id="design-qc-results" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-300"></div>
-                  </div>
-                </div>
-
-                <!-- 3. Ferramenta 2: Indexador de SEO Visual & Social (OCR / Alt-Text) -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
-                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-seo-indexer-content', this)">
-                    <div class="flex items-center gap-3">
-                      <span class="text-lg">⚡</span>
-                      <h4 class="text-sm font-bold text-slate-200">Indexador de SEO Visual & Social (OCR / Alt-Text / Carrossel)</h4>
-                    </div>
-                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
-                  </div>
-                  <div id="design-seo-indexer-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
-                    <div>
-                      <label class="text-xs font-bold text-slate-300 block mb-1">Tema / Conceito do Criativo Visual *</label>
-                      <input type="text" id="design-seo-theme-input" placeholder="Ex: Antes e depois / Cuidados no pós-operatório..." class="w-full p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60" />
-                    </div>
-                    <button onclick="window.gerarSeoVisualDesign && window.gerarSeoVisualDesign()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-xl text-xs transition">
-                      🚀 Gerar Matriz Visual & Alt-Text
-                    </button>
-                    <div id="design-seo-results" class="hidden space-y-3"></div>
-                  </div>
-                </div>
-
-                <!-- 4. Ferramenta 3: Simulador de Mockup & Safe Zones -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 transition-all">
-                  <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleToolSection && window.toggleToolSection('design-safezone-content', this)">
-                    <div class="flex items-center gap-3">
-                      <span class="text-lg">📱</span>
-                      <h4 class="text-sm font-bold text-slate-200">Simulador de Mockup & Safe Zones (Reels / TikTok / Stories)</h4>
-                      <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-emerald-950/80 border border-emerald-800/50 text-emerald-300 rounded">Overlay Guard</span>
-                    </div>
-                    <span class="text-xs text-slate-400 font-semibold">▼ Expandir Ferramenta</span>
-                  </div>
-                  <div id="design-safezone-content" class="hidden mt-4 pt-4 border-t border-slate-800/80 space-y-4">
-                    <div class="flex items-center gap-3 flex-wrap">
-                      <input type="file" id="safezone-file-input" accept="image/*" onchange="window.handleSafeZoneFileUpload && window.handleSafeZoneFileUpload(event)" class="text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 cursor-pointer" />
-                      <select id="safezone-format-select" onchange="window.handleSafeZoneFormatChange && window.handleSafeZoneFormatChange()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
-                        <option value="9:16">9:16 (Stories / Reels / TikTok)</option>
-                        <option value="1:1">1:1 (Feed Quadrado)</option>
-                        <option value="4:5">4:5 (Feed Retrato)</option>
-                      </select>
-                      <button onclick="window.toggleSafeZoneOverlay && window.toggleSafeZoneOverlay()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl font-semibold border border-slate-700">
-                        👁️ Alternar Safe Zone Overlay
-                      </button>
-                    </div>
-                    <div id="safezone-preview-container" class="relative max-w-xs mx-auto border border-slate-800 rounded-2xl overflow-hidden bg-black/40 min-h-[300px] flex items-center justify-center">
-                      <span id="safezone-empty-hint" class="text-xs text-slate-500">Faça o upload de uma arte para simular</span>
-                      <img id="safezone-img-preview" class="hidden w-full h-full object-cover" />
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              <!-- 3. TRÁFEGO -->
-              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
-                <!-- Bloco 1: Parâmetros de Campanha -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                  <div class="flex items-center gap-2 mb-3">
-                    <span class="text-emerald-400 font-bold">🎯</span>
-                    <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
-                  </div>
-                  <div id="traffic-params-content" class="text-xs text-slate-300 leading-relaxed grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-                      <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
-                      <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
-                    </div>
-                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-                      <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
-                      <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
-                    </div>
-                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
-                      <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
-                      <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Bloco 2: Gaveta de Criativos Prontos para Veiculação -->
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                  <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                      <span class="text-emerald-400 font-bold">📦</span>
-                      <div>
-                        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
-                        <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
-                      </div>
-                    </div>
-                    <button onclick="if(typeof window.carregarAtivosEntreguesTrafego==='function') window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
-                      🔄 Atualizar Lista
-                    </button>
-                  </div>
-                  <div id="traffic-creatives-list" class="space-y-3">
-                    <!-- Injetado dinamicamente via JS -->
-                  </div>
-                </div>
-
-                  <!-- Feed de Gavetas de Tráfego -->
-                  <div id="feed-gavetas-trafego" class="space-y-4 mt-0 mb-4"></div>
-                  <!-- Ferramenta Inspecionar Criativo Modular (Tráfego) -->
-                  <div id="container-inspector-trafego" class="mb-4"></div>
-                  <div id="wr-traffic-content" class="wr-data-box" style="margin-top: 16px;">
-                    <!-- CARD 1: SIMULADOR PREDITIVO DE CPA & ROAS -->
-                    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-6 transition-all duration-300">
-                      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleCpaRoasTool()">
-                        <div class="flex items-center gap-3">
-                          <span class="text-xl">📊</span>
-                          <div>
-                            <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                              Simulador Preditivo de CPA & ROAS
-                              <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Unit Economics</span>
-                            </h3>
-                            <p class="text-xs text-slate-400">Calcule o Breakeven, o CPL Máximo Tolerável e a Meta de Retorno antes de ligar o tráfego.</p>
-                          </div>
-                        </div>
-                        <button id="btn-toggle-cpa-roas" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                          ▼ Expandir Ferramenta
-                        </button>
-                      </div>
-
-                      <div id="cpa-roas-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-5">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Orçamento Diário (R$) *</label>
-                            <input type="number" id="sim-orcamento-diario" value="100" oninput="window.calcularCpaRoas()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Ticket Médio do Produto (R$) *</label>
-                            <input type="number" id="sim-ticket-medio" value="297" oninput="window.calcularCpaRoas()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Conversão Estimada da LP (%) *</label>
-                            <input type="number" step="0.1" id="sim-taxa-conversao" value="2.0" oninput="window.calcularCpaRoas()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Meta de ROAS Desejada (Multiplicador) *</label>
-                            <input type="number" step="0.1" id="sim-meta-roas" value="3.0" oninput="window.calcularCpaRoas()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                        </div>
-
-                        <!-- Grid de Resultados Preditivos -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                          <div class="p-4 bg-slate-950/80 border border-emerald-500/30 rounded-xl">
-                            <span class="text-xs text-slate-400 block mb-1">CPL Máximo Tolerável (Custo por Lead)</span>
-                            <span id="res-cpl-maximo" class="text-xl font-bold text-emerald-400 font-mono">R$ 1,98</span>
-                          </div>
-                          <div class="p-4 bg-slate-950/80 border border-rose-500/30 rounded-xl">
-                            <span class="text-xs text-slate-400 block mb-1">CPA de Equilíbrio (Breakeven Máximo)</span>
-                            <span id="res-cpa-breakeven" class="text-xl font-bold text-rose-400 font-mono">R$ 297,00</span>
-                          </div>
-                          <div class="p-4 bg-slate-950/80 border border-cyan-500/30 rounded-xl">
-                            <span class="text-xs text-slate-400 block mb-1">Faturamento Estimado / Dia (na Meta)</span>
-                            <span id="res-faturamento-estimado" class="text-xl font-bold text-cyan-400 font-mono">R$ 300,00</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- CARD 2: GERADOR PADRONIZADO DE UTMS -->
-                    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm mb-6 transition-all duration-300">
-                      <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleUtmGeneratorTool()">
-                        <div class="flex items-center gap-3">
-                          <span class="text-xl">🔗</span>
-                          <div>
-                            <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                              Gerador Padronizado de UTMs & Rastreio
-                              <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Analytics Guard</span>
-                            </h3>
-                            <p class="text-xs text-slate-400">Padronização blindada de parâmetros de campanha para GA4, CRM e Meta/Google Ads.</p>
-                          </div>
-                        </div>
-                        <button id="btn-toggle-utm-gen" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                          ▼ Expandir Ferramenta
-                        </button>
-                      </div>
-
-                      <div id="utm-gen-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
-                        <div>
-                          <label class="block text-xs font-semibold text-slate-300 mb-1.5">URL de Destino da Página / Oferta *</label>
-                          <input type="url" id="utm-base-url" placeholder="https://seudominio.com.br/oferta" oninput="window.atualizarUtmGerada()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Origem (utm_source) *</label>
-                            <select id="utm-source-select" onchange="window.atualizarUtmGerada()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
-                              <option value="meta_ads">Meta Ads (Instagram / Facebook)</option>
-                              <option value="google_ads">Google Ads</option>
-                              <option value="tiktok_ads">TikTok Ads</option>
-                              <option value="instagram_bio">Instagram Bio (Orgânico)</option>
-                              <option value="whatsapp">WhatsApp Direto</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Mídia (utm_medium) *</label>
-                            <select id="utm-medium-select" onchange="window.atualizarUtmGerada()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
-                              <option value="cpc">CPC (Pago por Clique)</option>
-                              <option value="cpm">CPM (Tráfego / Alcance)</option>
-                              <option value="stories">Stories / Reels</option>
-                              <option value="organico">Orgânico</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Campanha (utm_campaign) *</label>
-                            <input type="text" id="utm-campaign-input" placeholder="ex: lancamento_rinoplastia" oninput="window.atualizarUtmGerada()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                          <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Conteúdo / Criativo (utm_content)</label>
-                            <input type="text" id="utm-content-input" placeholder="ex: v1_dr_lucas_video" oninput="window.atualizarUtmGerada()" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 font-mono">
-                          </div>
-                        </div>
-
-                        <!-- Preview e Ação de Cópia da URL Montada -->
-                        <div class="mt-4 p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3">
-                          <div class="w-full overflow-hidden">
-                            <span class="text-[10px] text-slate-500 block uppercase tracking-wider font-semibold mb-1">URL Parametrizada Final</span>
-                            <code id="utm-result-url" class="text-xs text-emerald-400 font-mono truncate block">https://seudominio.com.br/oferta?utm_source=meta_ads&utm_medium=cpc</code>
-                          </div>
-                          <button onclick="window.copiarUtmFinal()" class="w-full md:w-auto shrink-0 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/40 cursor-pointer">
-                            📋 Copiar Link Parametrizado
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 4. COPYWRITING -->
-              <div id="wr-tab-copywriting" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="space-y-6">
-                  <!-- 1. Bloco Unificado de Entregáveis e Roteiros de Copy -->
-                  <div id="copy-deliverables-container" class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center gap-2.5">
-                        <span class="text-xl">✍️</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100">Copies de Anúncios, Páginas & VSLs</h3>
-                          <p class="text-xs text-slate-400">Headlines, ganchos e modelos persuasivos gerados pela inteligência.</p>
-                        </div>
-                      </div>
-                      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis Estratégicos</span>
-                    </div>
-                    
-                    <div id="copy-deliverables-list" class="space-y-4">
-                      <div class="text-center py-12 border-2 border-dashed border-slate-800 rounded-xl">
-                        <span class="text-2xl block mb-2">✍️</span>
-                        <p class="text-xs text-slate-400 font-medium">Nenhum entregável de copy despachado para esta equipe ainda.</p>
-                        <p class="text-[11px] text-slate-600 mt-1">Gere uma nova estratégia no Chat Estratégico para despachar copies para cá.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 2. Visão Computacional / Quality Gate -->
-                  <div id="container-inspector-copy"></div>
-
-                  <!-- 3. Card Retrátil: Auditor de Políticas & Anti-Ban (Meta/Google Ads & CFM) -->
-                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleAntiBanTool()">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xl">🛡️</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                            Auditor de Políticas & Anti-Ban
-                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Meta & Google Ads Compliance</span>
-                          </h3>
-                          <p class="text-xs text-slate-400">Escaneie palavras sensíveis, promessas excessivas e regras do CFM/Conselhos antes de veicular.</p>
-                        </div>
-                      </div>
-                      <button id="btn-toggle-antiban" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                        ▼ Expandir Ferramenta
-                      </button>
-                    </div>
-
-                    <div id="antiban-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
-                      <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Texto do Anúncio / Legenda / Roteiro *</label>
-                        <textarea id="antiban-input-text" rows="4" oninput="window.atualizarContadoresCopy()" placeholder="Cole o texto da copy aqui para auditar... Ex: Perca 10kg em 1 semana garantido ou recupere seu dinheiro sem esforço!" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 font-sans resize-y"></textarea>
-                      </div>
-
-                      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div class="flex items-center gap-4 text-xs text-slate-500 font-mono">
-                          <span>Caracteres: <strong id="copy-char-count" class="text-slate-300">0</strong></span>
-                          <span>Palavras: <strong id="copy-word-count" class="text-slate-300">0</strong></span>
-                        </div>
-                        <button onclick="window.analisarPoliticasCopy()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer">
-                          🛡️ Analisar Risco de Bloqueio
-                        </button>
-                      </div>
-
-                      <!-- Área de Diagnóstico do Scanner Anti-Ban -->
-                      <div id="antiban-result-area" class="hidden mt-4 p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-                        <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                          <div class="flex items-center gap-2">
-                            <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Índice de Segurança:</span>
-                            <span id="antiban-score-badge" class="px-2.5 py-0.5 rounded text-xs font-bold font-mono">100% Seguro</span>
-                          </div>
-                          <span id="antiban-status-text" class="text-xs text-slate-400 font-medium">Nenhum termo proibido detectado.</span>
-                        </div>
-                        <div id="antiban-terms-container" class="space-y-2"></div>
-                        <div id="antiban-sanitized-box" class="hidden pt-2 border-t border-slate-800/80">
-                          <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[11px] font-semibold text-emerald-400">Sugestão de Copy Blindada (Zero Risco):</span>
-                            <button onclick="window.copiarCopyBlindada()" class="text-[10px] text-slate-400 hover:text-emerald-400 underline cursor-pointer">Copiar Versão Blindada</button>
-                          </div>
-                          <p id="antiban-sanitized-text" class="text-xs text-slate-200 bg-slate-900/80 p-3 rounded-lg border border-slate-800 font-mono"></p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 4. Card Retrátil: Matriz de Ângulos por Nível de Consciência -->
-                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleMatrizAngulosTool()">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xl">🔀</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                            Matriz de Ângulos por Nível de Consciência
-                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Funil Schwartz</span>
-                          </h3>
-                          <p class="text-xs text-slate-400">Gere e adapte copies instantâneas para públicos Frio, Morno e Quente.</p>
-                        </div>
-                      </div>
-                      <button id="btn-toggle-matriz" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                        ▼ Expandir Ferramenta
-                      </button>
-                    </div>
-
-                    <div id="matriz-angulos-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
-                      <!-- Seletor de Temperatura do Público -->
-                      <div class="flex flex-wrap items-center gap-2 p-1.5 bg-slate-950 border border-slate-800 rounded-xl">
-                        <button onclick="window.selecionarNivelConsciencia('frio')" id="btn-nivel-frio" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 shadow-sm cursor-pointer">
-                          ❄️ Frio (Inconsciente)
-                        </button>
-                        <button onclick="window.selecionarNivelConsciencia('morno')" id="btn-nivel-morno" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                          🔥 Morno (Problema/Solução)
-                        </button>
-                        <button onclick="window.selecionarNivelConsciencia('quente')" id="btn-nivel-quente" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 border border-transparent cursor-pointer">
-                          ⚡ Quente (Oferta Direta)
-                        </button>
-                      </div>
-
-                      <!-- Preview do Modelo de Copy por Nível -->
-                      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-                        <div class="flex items-center justify-between">
-                          <span id="matriz-nivel-titulo" class="text-xs font-bold text-slate-200 uppercase tracking-wider">❄️ Ângulo para Público Frio</span>
-                          <button onclick="window.copiarModeloAngulo()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-[11px] px-3 py-1 rounded transition-colors flex items-center gap-1 shadow cursor-pointer">
-                            📋 Copiar Modelo
-                          </button>
-                        </div>
-                        <div id="matriz-nivel-preview" class="p-3.5 bg-slate-900/90 rounded-lg border border-slate-800/90 text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">"Você sente que a respiração pesada ou a estética do nariz afetam sua confiança, mas sempre teve receio de procedimentos invasivos?
-
-O verdadeiro problema não é a cirurgia em si, mas a falta de clareza sobre técnicas modernas e preservadoras. Toque no link e entenda como funciona cada etapa antes de decidir."</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 5. COMERCIAL -->
-              <div id="wr-tab-comercial" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="space-y-6">
-                  <!-- 1. Bloco Unificado de Entregáveis e Playbooks Comerciais -->
-                  <div id="comercial-deliverables-container" class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center gap-2.5">
-                        <span class="text-xl">🤝</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100">Scripts Comerciais, Objeções & Playbook</h3>
-                          <p class="text-xs text-slate-400">Playbooks de pré-atendimento, matrizes de fechamento e mensagens de WhatsApp.</p>
-                        </div>
-                      </div>
-                      <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis Estratégicos</span>
-                    </div>
-                    
-                    <div id="comercial-deliverables-list" class="space-y-4">
-                      <div class="text-center py-12 border-2 border-dashed border-slate-800 rounded-xl">
-                        <span class="text-2xl block mb-2">🤝</span>
-                        <p class="text-xs text-slate-400 font-medium">Nenhum script ou playbook despachado para esta equipe ainda.</p>
-                        <p class="text-[11px] text-slate-600 mt-1">Gere uma nova estratégia no Chat Estratégico para despachar roteiros comerciais para cá.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 2. Card Retrátil: Battlecards de Objeções (Validar > Isolar > Reverter) -->
-                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleBattlecardsTool()">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xl">🥊</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                            Battlecards de Objeções & Reversão Rápida
-                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Sales Enablement</span>
-                          </h3>
-                          <p class="text-xs text-slate-400">Scripts táticos estruturados na metodologia Validar → Isolar → Reverter para WhatsApp e ligação.</p>
-                        </div>
-                      </div>
-                      <button id="btn-toggle-battlecards" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                        ▼ Expandir Ferramenta
-                      </button>
-                    </div>
-
-                    <div id="battlecards-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
-                      <!-- Seletor de Objeção -->
-                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button onclick="window.selecionarBattlecard('caro')" id="btn-obj-caro" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 text-center cursor-pointer">
-                          💸 "Está muito caro"
-                        </button>
-                        <button onclick="window.selecionarBattlecard('pensar')" id="btn-obj-pensar" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
-                          ⏳ "Vou pensar / retorno"
-                        </button>
-                        <button onclick="window.selecionarBattlecard('socio')" id="btn-obj-socio" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
-                          👥 "Falar com cônjuge/sócio"
-                        </button>
-                        <button onclick="window.selecionarBattlecard('preco_direto')" id="btn-obj-preco_direto" class="py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-slate-200 border border-slate-800 text-center cursor-pointer">
-                          🏷️ "Me passa só o preço"
-                        </button>
-                      </div>
-
-                      <!-- Estrutura do Script em 3 Fases -->
-                      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4">
-                        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                          <span id="battlecard-titulo" class="text-xs font-bold text-slate-200 uppercase tracking-wider">Metodologia de Reversão: "Está muito caro"</span>
-                          <button onclick="window.copiarScriptBattlecard()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow cursor-pointer">
-                            📋 Copiar Script WhatsApp
-                          </button>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
-                            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">1. Validar (Empatia)</span>
-                            <p id="battlecard-fase-validar" class="text-slate-300 leading-snug">"Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança financeira é prioridade."</p>
-                          </div>
-                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
-                            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">2. Isolar (Checagem Real)</span>
-                            <p id="battlecard-fase-isolar" class="text-slate-300 leading-snug">"Além da questão do investimento, o protocolo e os resultados apresentados fazem 100% de sentido para o seu caso?"</p>
-                          </div>
-                          <div class="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
-                            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">3. Reverter (CTA / Fechamento)</span>
-                            <p id="battlecard-fase-reverter" class="text-slate-300 leading-snug">"Se nós conseguirmos flexibilizar as condições no cartão ou parcelamento direto, conseguimos dar o próximo passo hoje?"</p>
-                          </div>
-                        </div>
-
-                        <div class="p-3 bg-slate-900 border border-slate-800 rounded-lg">
-                          <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block mb-1">Mensagem Pronta para Envio:</span>
-                          <p id="battlecard-msg-completa" class="text-xs text-emerald-300 font-mono whitespace-pre-line leading-relaxed">Entendo perfeitamente, [Nome]. Cuidar do orçamento e ter segurança é prioridade.
-Além da questão do investimento, o protocolo e os resultados apresentados fazem sentido para você?
-Se nós flexibilizarmos as opções de pagamento, conseguimos reservar seu horário para esta semana?</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 3. Card Retrátil: Qualificador de Lead BANT & Temperatura de Fechamento -->
-                  <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm transition-all duration-300">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="window.toggleBantTool()">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xl">🌡️</span>
-                        <div>
-                          <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
-                            Qualificador de Lead (Framework BANT)
-                            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Lead Scoring</span>
-                          </h3>
-                          <p class="text-xs text-slate-400">Classifique a temperatura e o potencial de compra do lead em 4 perguntas objetivas.</p>
-                        </div>
-                      </div>
-                      <button id="btn-toggle-bant" class="text-xs text-slate-400 hover:text-emerald-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5">
-                        ▼ Expandir Ferramenta
-                      </button>
-                    </div>
-
-                    <div id="bant-tool-content" class="hidden mt-6 pt-6 border-t border-slate-800/80 space-y-4">
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
-                          <input type="checkbox" id="bant-budget" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-                          <div>
-                            <strong class="text-xs text-slate-200 block font-semibold">[B] Budget (Orçamento)</strong>
-                            <span class="text-[11px] text-slate-400">Possui capacidade financeira ou limite no cartão para o investimento.</span>
-                          </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
-                          <input type="checkbox" id="bant-authority" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-                          <div>
-                            <strong class="text-xs text-slate-200 block font-semibold">[A] Authority (Decisor)</strong>
-                            <span class="text-[11px] text-slate-400">É o próprio tomador de decisão final (não depende de aprovação de terceiros).</span>
-                          </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
-                          <input type="checkbox" id="bant-need" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-                          <div>
-                            <strong class="text-xs text-slate-200 block font-semibold">[N] Need (Necessidade Real)</strong>
-                            <span class="text-[11px] text-slate-400">Possui dor ou desejo latente que a solução do cliente resolve diretamente.</span>
-                          </div>
-                        </label>
-
-                        <label class="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition-colors">
-                          <input type="checkbox" id="bant-timeframe" onchange="window.calcularScoreBant()" class="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-                          <div>
-                            <strong class="text-xs text-slate-200 block font-semibold">[T] Timeframe (Urgência)</strong>
-                            <span class="text-[11px] text-slate-400">Pretende iniciar ou fechar nos próximos 7 a 15 dias.</span>
-                          </div>
-                        </label>
-                      </div>
-
-                      <!-- Barra de Temperatura Dinâmica -->
-                      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-                        <div class="flex items-center justify-between text-xs">
-                          <span class="text-slate-400 font-semibold uppercase tracking-wider">Classificação de Temperatura CRM:</span>
-                          <span id="bant-temp-badge" class="font-bold px-2.5 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-400 border border-slate-700">❄️ Frio (0%)</span>
-                        </div>
-
-                        <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
-                          <div id="bant-progress-bar" class="bg-slate-700 h-full transition-all duration-300 w-0"></div>
-                        </div>
-
-                        <div class="p-3 bg-slate-900/70 border border-slate-800/80 rounded-lg flex items-center justify-between gap-3">
-                          <span id="bant-recomendacao-texto" class="text-xs text-slate-300 leading-snug">
-                            📌 <strong>Ação Recomendada:</strong> Nutrir com conteúdos de autoridade e casos de sucesso antes de forçar fechamento.
-                          </span>
-                          <button onclick="window.resetarBant()" class="text-[11px] text-slate-500 hover:text-slate-300 underline shrink-0 cursor-pointer">Resetar</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+</div>
           </div>
         </section>
 

@@ -10204,3 +10204,45 @@ window.carregarMetricasBI = async function(forcedClientId) {
     window.carregarOtimizacaoOrcamentoSalva(forcedClientId);
   }
 };
+
+window.trocarSubAbaWarRoom = function(targetKey, btnEl) {
+  // 1. Atualizar Botões (Visual)
+  const botoes = document.querySelectorAll('.wr-tab-btn');
+  botoes.forEach(b => {
+    b.classList.remove('active', 'bg-[#10B981]', 'text-black');
+    b.classList.add('bg-[#0B1514]', 'text-slate-400');
+  });
+
+  if (btnEl) {
+    btnEl.classList.remove('bg-[#0B1514]', 'text-slate-400');
+    btnEl.classList.add('active', 'bg-[#10B981]', 'text-black');
+  }
+
+  // 2. Alternar Paineis (DOM Preservado via display hidden)
+  const paineis = document.querySelectorAll('.wr-panel');
+  paineis.forEach(p => p.classList.add('hidden'));
+
+  const alvo = document.getElementById(`wr-panel-${targetKey}`);
+  if (alvo) alvo.classList.remove('hidden');
+};
+
+window.toggleToolSection = function(contentId, headerEl) {
+  const content = document.getElementById(contentId);
+  if (!content) return;
+
+  const isHidden = content.classList.contains('hidden');
+  
+  if (isHidden) {
+    content.classList.remove('hidden');
+    if (headerEl) {
+      const icon = headerEl.querySelector('span:last-child');
+      if (icon) icon.innerText = '▲ Recolher';
+    }
+  } else {
+    content.classList.add('hidden');
+    if (headerEl) {
+      const icon = headerEl.querySelector('span:last-child');
+      if (icon) icon.innerText = '▼ Expandir';
+    }
+  }
+};
