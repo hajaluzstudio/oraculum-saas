@@ -2855,6 +2855,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
   window.switchWarRoomTab = function(tabKey) {
+    // 1. Sanitização e Fallback Seguro contra null/undefined
+    const rawKey = (typeof tabKey === 'string' && tabKey.trim().length > 0) 
+      ? tabKey.trim().toLowerCase() 
+      : 'video';
+  
     const map = {
       'video': 'wr-tab-video',
       'design': 'wr-tab-design',
@@ -2865,61 +2870,30 @@ document.addEventListener('DOMContentLoaded', () => {
       'comercial': 'wr-tab-comercial',
       'sales': 'wr-tab-comercial'
     };
-
-    const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
-
-    // Oculta todos os painéis de sub-aba e remove active
+  
+    // 2. Determinação segura do ID alvo
+    let targetId = map[rawKey];
+    if (!targetId) {
+      targetId = rawKey.startsWith('wr-') ? rawKey : `wr-tab-${rawKey}`;
+    }
+  
+    // 3. Oculta todos os painéis com tolerância de seletores
     document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
       el.style.display = 'none';
       el.classList.add('hidden');
-      el.classList.remove('active');
     });
-
-    // Remove active dos botões de navegação
-    const navBtns = document.querySelectorAll('.wr-tab-btn');
-    navBtns.forEach(b => b.classList.remove('active'));
-
-    // Exibe a sub-aba alvo e adiciona active
-    const targetEl = document.getElementById(targetId);
+  
+    // 4. Exibe o painel correspondente
+    const targetEl = document.getElementById(targetId) || document.getElementById(`wr-panel-${rawKey}`);
     if (targetEl) {
       targetEl.style.display = 'block';
       targetEl.classList.remove('hidden');
-      targetEl.classList.add('active');
-
-      // Adiciona active no botão correspondente
-      const activeBtn = Array.from(navBtns).find(btn => 
-        btn.getAttribute('data-wr-target') === targetId || 
-        btn.getAttribute('data-wr-tab') === tabKey.replace('wr-tab-', '') ||
-        btn.getAttribute('data-wr-target') === tabKey
-      );
-      if (activeBtn) activeBtn.classList.add('active');
-
-      if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
-        window.carregarAtivosEntreguesTrafego();
-      } else if (targetId === 'wr-tab-design') {
-        const designList = document.getElementById('design-deliverables-list');
-        if (designList && typeof window.renderWarRoomTasks === 'function') {
-          // This will be handled by the global renderWarRoomData or could be triggered here
-          // As per directive: "alimente #design-deliverables-list com as tarefas de categoria 'design'"
-          // However, we can simply rely on the existing rendering flow if it already outputs to design-deliverables-list
-          // Let's at least clear the empty state if there are tasks
-          const activeClientId = window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id');
-          const storageKey = `kanban_tasks_${activeClientId}`;
-          try {
-            const kanbanTasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            const designTasks = kanbanTasks.filter(t => t.category === 'design');
-            if (designTasks.length > 0) {
-              designList.innerHTML = designTasks.map(t => `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><h4 class="text-sm font-bold text-slate-200">${t.title}</h4><p class="text-xs text-slate-400 mt-1">${t.description || ''}</p></div>`).join('');
-            }
-          } catch(e) {}
-        }
-      }
     }
-
-    // Atualiza os estilos dos botões de navegação da sub-aba
-    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
-      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target');
-      if (key === tabKey || key === targetId || map[key] === targetId) {
+  
+    // 5. Atualiza o estado visual dos botões de navegação
+    document.querySelectorAll('.war-room-nav .wr-tab-btn, #war-room-subtabs-nav button, [data-wr-tab]').forEach(btn => {
+      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target') || '';
+      if (key === rawKey || key === targetId || map[key] === targetId) {
         btn.classList.add('active');
         btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
         btn.style.color = '#10B981';
@@ -2929,6 +2903,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.style.color = '#94A3B8';
       }
     });
+  
+    // 6. Gatilhos de hidratação sob demanda
+    if ((rawKey === 'traffic' || rawKey === 'trafego') && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+      window.carregarAtivosEntreguesTrafego();
+    }
   };
 
   function vincularAbasEstaticasWarRoom() {
