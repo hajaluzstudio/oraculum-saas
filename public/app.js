@@ -8898,14 +8898,39 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
     window.fecharModalLancarBI();
 
-    // Persiste no Supabase em segundo plano
+    // Persiste no Supabase e Backend com tolerância total a schemas legados
     try {
+      // 1. Tenta API backend unificada
+      fetch(`/api/bi/metrics/${clientId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+
+      // 2. Tenta Supabase direto
       const supa = getSupabaseBI();
       if (supa && supa.from) {
-        await supa.from('bi_analytics_data').insert([payload]);
+        // Tenta payload completo
+        const { error: err1 } = await supa.from('bi_analytics_data').insert([payload]);
+        if (err1) {
+          console.warn('[BI] Tentando schema sanitizado bi_analytics_data:', err1.message);
+          // Fallback para colunas essenciais
+          const payloadSanitizado = {
+            client_id: String(clientId),
+            reference_date: payload.reference_date,
+            faturamento_total: faturamento,
+            gasto_trafego: gasto,
+            lucro_liquido: lucro,
+            vendas_fechadas: vendas,
+            leads_gerados: leads,
+            cliques: cliques,
+            updated_at: payload.updated_at
+          };
+          await supa.from('bi_analytics_data').insert([payloadSanitizado]);
+        }
       }
     } catch (err) {
-      console.warn('[BI] Erro ao gravar no Supabase:', err);
+      console.warn('[BI] Erro tolerado ao gravar no Supabase:', err);
     }
 
     alert('✅ Métricas de BI salvas e aplicadas na tela com sucesso!');
