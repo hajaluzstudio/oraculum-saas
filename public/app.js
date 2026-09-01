@@ -2855,55 +2855,47 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(targetKey, btnEl) {
-    if (!targetKey) targetKey = 'video';
-    const key = String(targetKey).toLowerCase().trim();
+  window.switchWarRoomTab = function(tabKey) {
+    const map = {
+      'video': 'wr-tab-video',
+      'design': 'wr-tab-design',
+      'traffic': 'wr-tab-traffic',
+      'trafego': 'wr-tab-traffic',
+      'copy': 'wr-tab-copywriting',
+      'copywriting': 'wr-tab-copywriting',
+      'comercial': 'wr-tab-comercial',
+      'sales': 'wr-tab-comercial'
+    };
 
-    // 1. Oculta todos os painéis dentro da War Room (escopo restrito para não afetar outros elementos)
-    document.querySelectorAll('#tab-war-room .wr-panel, #tab-war-room .wr-subtab-content, #tab-war-room [id^="wr-tab-"]').forEach(el => {
+    const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
+
+    // Oculta todos os painéis de sub-aba
+    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
+      el.style.display = 'none';
       el.classList.add('hidden');
-      el.style.setProperty('display', 'none', 'important');
     });
 
-    // 2. Mapeamento direto para os IDs reais comprovados no DOM
-    let targetId = 'wr-tab-video';
-    if (key.includes('design'))                               targetId = 'wr-tab-design';
-    else if (key.includes('trafeg') || key.includes('traffic')) targetId = 'wr-tab-traffic';
-    else if (key.includes('copy'))                            targetId = 'wr-tab-copywriting';
-    else if (key.includes('comerc') || key.includes('sale')) targetId = 'wr-tab-comercial';
-
-    // 3. Fallback inteligente para variações de ID
-    const target = document.getElementById(targetId) ||
-                   document.getElementById(targetId.replace('traffic', 'trafego')) ||
-                   document.getElementById(`wr-panel-${key}`);
-
-    if (target) {
-      target.classList.remove('hidden');
-      target.style.setProperty('display', 'block', 'important');
-      target.style.setProperty('visibility', 'visible', 'important');
+    // Exibe a sub-aba alvo
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.style.display = 'block';
+      targetEl.classList.remove('hidden');
     }
 
-    // 4. Atualiza estado visual dos botões
-    document.querySelectorAll('#war-room-subtabs-nav button, .war-room-nav button, .wr-tab-btn, [data-subtab], [data-wr-tab]').forEach(b => {
-      const txt = (b.textContent || '').toLowerCase();
-      const sub = (b.getAttribute('data-subtab') || b.getAttribute('data-wr-tab') || '').toLowerCase();
-
-      if (sub.includes(key) || txt.includes(key) || (key.includes('trafeg') && (txt.includes('tráfego') || txt.includes('trafego')))) {
-        b.classList.add('active', 'bg-[#10B981]', 'text-black');
-        b.classList.remove('bg-[#0B1514]', 'text-slate-400');
+    // Atualiza os estilos dos botões de navegação da sub-aba
+    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
+      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target');
+      if (key === tabKey || key === targetId || map[key] === targetId) {
+        btn.classList.add('active');
+        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10B981';
       } else {
-        b.classList.remove('active', 'bg-[#10B981]', 'text-black');
-        b.classList.add('bg-[#0B1514]', 'text-slate-400');
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = '#94A3B8';
       }
     });
-
-    // 5. Hidratação da gaveta de Tráfego se aplicável
-    if ((key.includes('trafeg') || key.includes('traffic')) && typeof window.carregarAtivosEntreguesTrafego === 'function') {
-      window.carregarAtivosEntreguesTrafego();
-    }
   };
-
-  window.trocarSubAbaWarRoom = window.switchWarRoomTab;
 
   function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
@@ -2913,24 +2905,15 @@ document.addEventListener('DOMContentLoaded', () => {
     navButtons.forEach(btn => {
       btn.onclick = (e) => {
         if (e) e.preventDefault();
-        // Salva a escolha do usuário para não ser sobrescrita por recargas
         const targetId = btn.getAttribute('data-wr-target') || btn.getAttribute('data-wr-tab');
-        window.__WAR_ROOM_ACTIVE_TAB__ = targetId;
         window.switchWarRoomTab(targetId);
       };
     });
 
-    // Só ativa aba padrão (vídeo) se o usuário ainda não escolheu uma aba diferente
-    const userSelectedTab = window.__WAR_ROOM_ACTIVE_TAB__;
-    if (userSelectedTab) {
-      // Respeita a seleção atual do usuário — apenas re-vincula sem trocar de aba
-      return;
-    }
-    // Primeira carga: ativa o botão marcado como 'active' no HTML (vídeo por padrão)
+    // Ativa Vídeo por padrão se nenhum ativo
     const activeBtn = Array.from(navButtons).find(b => b.classList.contains('active')) || navButtons[0];
     if (activeBtn) {
       const targetId = activeBtn.getAttribute('data-wr-target') || activeBtn.getAttribute('data-wr-tab');
-      window.__WAR_ROOM_ACTIVE_TAB__ = targetId;
       window.switchWarRoomTab(targetId);
     }
   }
