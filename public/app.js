@@ -4590,12 +4590,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const deliveryStamp = `\n\n[ ENTREGUE EM ${new Date().toLocaleDateString('pt-BR')} para ${team} ]\nLink do Ativo: ${link}\nMensagem: ${msg || 'Sem observações'}`;
         const newDesc = currentDesc + deliveryStamp;
 
-        // 2. Atualiza status no Kanban para "entregues"
+        // 2. Atualiza status no Kanban para "entregues" de forma segura (sem colunas inexistentes)
         const { data: updatedTaskArray, error } = await window.supabaseClient.from('kanban_tasks').update({ 
           status: 'entregues',
           description: newDesc,
-          asset_url: link,
-          delivered_to: team
+          updated_at: new Date().toISOString()
         }).eq('id', taskId).select();
         
         if (error) throw error;
