@@ -8887,12 +8887,27 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     const elMargem = document.getElementById('bi-val-margem-liq');
     if (elMargem) elMargem.innerText = `${margemPct}% Margem Líquida`;
 
-    // Injeção no Funil de 5 Etapas
-    setTxt('bi-funil-impressoes', Number(cliques * 25).toLocaleString('pt-BR'));
+    // Injeção Unificada no Funil de Conversão Comercial
+    const impressoes = cliques * 25;
+    const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
+    const ctr = impressoes > 0 ? ((cliques / impressoes) * 100).toFixed(1) + '%' : '0.0%';
+    const txLead = cliques > 0 ? ((leads / cliques) * 100).toFixed(1) + '%' : '0.0%';
+    const txAgend = leads > 0 ? ((agendamentos / leads) * 100).toFixed(1) + '%' : '0.0%';
+    const txVenda = agendamentos > 0 ? ((vendas / agendamentos) * 100).toFixed(1) + '%' : '0.0%';
+  
+    // Atualiza IDs padrão bi-funil-*
+    setTxt('bi-funil-impressoes', Number(impressoes).toLocaleString('pt-BR'));
     setTxt('bi-funil-cliques', Number(cliques).toLocaleString('pt-BR'));
     setTxt('bi-funil-leads', Number(leads).toLocaleString('pt-BR'));
-    setTxt('bi-funil-agendamentos', Number(Math.max(vendas, Math.round(leads * 0.35))).toLocaleString('pt-BR'));
+    setTxt('bi-funil-agendamentos', Number(agendamentos).toLocaleString('pt-BR'));
     setTxt('bi-funil-vendas', `${Number(vendas).toLocaleString('pt-BR')} Vendas Fechadas`);
+  
+    // Atualiza IDs padrão funnel-val-*
+    setTxt('funnel-val-impressions', Number(impressoes).toLocaleString('pt-BR'));
+    setTxt('funnel-val-clicks', Number(cliques).toLocaleString('pt-BR'));
+    setTxt('funnel-val-leads', Number(leads).toLocaleString('pt-BR'));
+    setTxt('funnel-val-meetings', Number(agendamentos).toLocaleString('pt-BR'));
+    setTxt('funnel-val-sales', `${Number(vendas).toLocaleString('pt-BR')} Vendas`);
 
     // Atualização do card de Ticket Médio seguro
     try {
