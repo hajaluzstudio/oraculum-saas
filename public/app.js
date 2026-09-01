@@ -10,8 +10,8 @@ if ('serviceWorker' in navigator) {
 }
 
 // [ANTI-CRASH GLOBAL]: Declarações antecipadas para evitar TypeErrors durante o parsing
-window.carregarUltimoBIDoCliente = function(clientId) {
-  if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId);
+window.carregarUltimoBIDoCliente = function(clientId, clientData) {
+  if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId, clientData);
 };
 window.loadClientBiMetrics = window.carregarUltimoBIDoCliente;
 window.abrirModalLancarBI = window.abrirModalLancarBI || function() {};
@@ -8343,7 +8343,7 @@ window.addEventListener('clientChanged', (e) => {
   if (biTitle) biTitle.textContent = newClient.name || 'Cliente Ativo';
 
   if (typeof window.loadClientBiMetrics === 'function') {
-    window.loadClientBiMetrics(newClient.id);
+    window.loadClientBiMetrics(newClient.id, newClient);
   }
 
   // 2. Sala de Operação (War Room) & Tráfego
@@ -8552,11 +8552,26 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       try {
         const { data: client, error: errClient } = await window.supabaseClient
           .from('clients')
-          .select('name, niche, ticket, meta_faturamento, dossier_data')
+          .select('name, niche, ticket, avg_ticket, meta_faturamento, dossier_data')
           .eq('id', activeClientId)
           .maybeSingle();
 
         if (errClient) console.warn('[Feedback Loop] Aviso Supabase Clients:', errClient);
+
+        // Resolução defensiva do Ticket Médio do Cliente
+        let ticketMedioFormatado = 'Não informado';
+        try {
+          if (client) {
+            const rawT = client.ticket || client.avg_ticket || client.dossier_data?.budgetPricingStrategy?.suggestedAverageTicket;
+            if (rawT !== null && rawT !== undefined && rawT !== '') {
+              if (typeof rawT === 'number' && !isNaN(rawT) && rawT > 0) {
+                ticketMedioFormatado = Number(rawT).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+              } else if (typeof rawT === 'string' && rawT.trim() !== '') {
+                ticketMedioFormatado = rawT.trim();
+              }
+            }
+          }
+        } catch (_) {}
 
         const { data: biData, error: errBi } = await window.supabaseClient
           .from('bi_analytics_data')
@@ -8569,7 +8584,10 @@ window.recalcularFeedbackLoop = async function(btnElement) {
         if (errBi) console.warn('[Feedback Loop] Aviso Supabase BI:', errBi);
 
         clientContext = {
-          cliente: client || { name: 'Cliente Ativo', niche: 'Geral' },
+          cliente: {
+            ...(client || { name: 'Cliente Ativo', niche: 'Geral' }),
+            ticket_medio_ficha: ticketMedioFormatado
+          },
           metricas: biData || { status: 'Sem métricas cadastradas' }
         };
       } catch (dbErr) {
@@ -8755,8 +8773,82 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     }
   };
 
+  // Helper seguro e defensivo para ler o Ticket Médio da ficha do cliente
+  window.obterTicketMedioClienteSeguro = function (clientData, dataBI) {
+    try {
+      // 1. Tenta obter do objeto do cliente passado ou do cache global
+      const client = clientData || window.currentClientData || null;
+      let rawTicket = null;
+      let fonte = 'Ficha do Cliente';
+
+      if (client && typeof client === 'object') {
+        rawTicket = client.ticket ?? client.avg_ticket ?? client.average_ticket ?? client.ticket_medio;
+
+        // Se não achou na raiz, tenta no dossiê estratégico acoplado ao cliente
+        if ((rawTicket === null || rawTicket === undefined || rawTicket === '') && client.dossier_data) {
+          rawTicket = client.dossier_data?.budgetPricingStrategy?.suggestedAverageTicket;
+          if (rawTicket) fonte = 'Dossiê Estratégico';
+        }
+      }
+
+      // 2. Se não veio no cliente, tenta no payload do próprio BI
+      if ((rawTicket === null || rawTicket === undefined || rawTicket === '') && dataBI && typeof dataBI === 'object') {
+        rawTicket = dataBI.ticket ?? dataBI.avg_ticket ?? dataBI.averageTicket;
+        if (rawTicket) fonte = 'Métricas BI';
+      }
+
+      // 3. Fallback: tenta buscar na lista global de clientes em memória
+      if (rawTicket === null || rawTicket === undefined || rawTicket === '') {
+        const activeId = window.activeClientId || window.currentClientId || localStorage.getItem('active_client_id');
+        if (activeId && Array.isArray(window.clientsList)) {
+          const found = window.clientsList.find(c => c && String(c.id) === String(activeId));
+          if (found) {
+            rawTicket = found.ticket ?? found.avg_ticket ?? found.dossier_data?.budgetPricingStrategy?.suggestedAverageTicket;
+          }
+        }
+      }
+
+      // 4. Formatação Defensiva com verificação de nulidade e tipos
+      if (rawTicket !== null && rawTicket !== undefined && rawTicket !== '') {
+        if (typeof rawTicket === 'number' && !isNaN(rawTicket)) {
+          return {
+            valorFormatado: Number(rawTicket).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            valorNumerico: Number(rawTicket),
+            fonte: fonte
+          };
+        }
+
+        if (typeof rawTicket === 'string' && rawTicket.trim().length > 0) {
+          const strVal = rawTicket.trim();
+          // Se já for uma string formatada (ex: 'R$ 15.000,00' ou '15000')
+          if (strVal.includes('R$')) {
+            return { valorFormatado: strVal, valorNumerico: 0, fonte: fonte };
+          }
+          const numParsed = parseFloat(strVal.replace(/[^\d.,]/g, '').replace(',', '.'));
+          if (!isNaN(numParsed) && numParsed > 0) {
+            return {
+              valorFormatado: Number(numParsed).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+              valorNumerico: numParsed,
+              fonte: fonte
+            };
+          }
+          return { valorFormatado: strVal, valorNumerico: 0, fonte: fonte };
+        }
+      }
+    } catch (errSafe) {
+      console.warn('[BI] Leitura segura do Ticket Médio utilizou fallback:', errSafe);
+    }
+
+    // Retorno padrão absoluto em caso de nulo, vazio ou erro
+    return {
+      valorFormatado: 'R$ 0,00',
+      valorNumerico: 0,
+      fonte: 'Não informado'
+    };
+  };
+
   // 4. Renderizador do Painel (Cards, Gráficos e Funil)
-  window.renderizarPainelBINAInterface = function (data) {
+  window.renderizarPainelBINAInterface = function (data, clientOverride) {
     if (!data) return;
 
     const faturamento = Number(data.faturamento_total || data.revenue || 25900);
@@ -8779,6 +8871,23 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     setTxt('bi-val-ltv-cac', ltvCac);
     setTxt('bi-val-taxa-conv', taxaConv);
     setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
+
+    // Renderização do Ticket Médio da Ficha do Cliente de forma 100% segura
+    try {
+      const infoTicket = window.obterTicketMedioClienteSeguro(clientOverride || window.currentClientData, data);
+      const elTicket = document.getElementById('bi-val-ticket-medio');
+      const elFonte = document.getElementById('bi-val-ticket-fonte');
+      if (elTicket) {
+        elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
+      }
+      if (elFonte && infoTicket.fonte) {
+        elFonte.innerText = infoTicket.fonte;
+      }
+    } catch (eTicket) {
+      console.warn('[BI] Falha não impeditiva ao atualizar Ticket Médio na UI:', eTicket);
+      const elTicket = document.getElementById('bi-val-ticket-medio');
+      if (elTicket) elTicket.innerText = 'R$ 0,00';
+    }
 
     const elLucro = document.getElementById('bi-val-lucro');
     if (elLucro) {
@@ -8866,20 +8975,54 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   };
 
   // 5. Carregamento Automático por Cliente
-  window.carregarMetricasBI = async function (clientId) {
+  window.carregarMetricasBI = async function (clientId, clientDataOverride) {
     if (!clientId) clientId = window.obterClienteAtivoBI();
 
     const titleEl = document.getElementById('bi-active-client-title');
     const headerTitle = document.getElementById('dropdown-active-client-name') || document.querySelector('[data-active-client-name]');
     if (titleEl) {
-      titleEl.innerText = headerTitle?.innerText?.trim() || 'Cliente Selecionado';
+      titleEl.innerText = clientDataOverride?.name || headerTitle?.innerText?.trim() || 'Cliente Selecionado';
+    }
+
+    // Atualiza imediatamente o card de Ticket Médio com o cliente disponível
+    try {
+      const currentClient = clientDataOverride || window.currentClientData || null;
+      const infoTicket = window.obterTicketMedioClienteSeguro(currentClient);
+      const elTicket = document.getElementById('bi-val-ticket-medio');
+      const elFonte = document.getElementById('bi-val-ticket-fonte');
+      if (elTicket) elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
+      if (elFonte && infoTicket.fonte) elFonte.innerText = infoTicket.fonte;
+    } catch (_) {}
+
+    // Busca dados adicionais do cliente no Supabase se não fornecido no override
+    let resolvedClient = clientDataOverride || window.currentClientData || null;
+    if ((!resolvedClient || !resolvedClient.ticket) && window.supabaseClient && clientId) {
+      try {
+        const { data: dbClient } = await window.supabaseClient
+          .from('clients')
+          .select('id, name, niche, ticket, avg_ticket, dossier_data')
+          .eq('id', clientId)
+          .maybeSingle();
+        if (dbClient) {
+          resolvedClient = { ...(resolvedClient || {}), ...dbClient };
+          window.currentClientData = resolvedClient;
+          // Re-atualiza o card de ticket médio com os dados enriquecidos
+          const infoTicket = window.obterTicketMedioClienteSeguro(resolvedClient);
+          const elTicket = document.getElementById('bi-val-ticket-medio');
+          const elFonte = document.getElementById('bi-val-ticket-fonte');
+          if (elTicket) elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
+          if (elFonte && infoTicket.fonte) elFonte.innerText = infoTicket.fonte;
+        }
+      } catch (errSupabaseClient) {
+        console.warn('[BI] Supabase fallback para ficha do cliente:', errSupabaseClient);
+      }
     }
 
     try {
       const res = await fetch(`/api/bi/metrics/${clientId}`);
       const json = await res.json();
       if (json && json.data && (json.data.faturamento_total || json.data.revenue)) {
-        window.renderizarPainelBINAInterface(json.data);
+        window.renderizarPainelBINAInterface(json.data, resolvedClient);
       } else {
         window.renderizarPainelBINAInterface({
           faturamento_total: 25900,
@@ -8887,7 +9030,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
           vendas_fechadas: 14,
           leads_gerados: 184,
           cliques: 1420
-        });
+        }, resolvedClient);
       }
     } catch (err) {
       console.warn('[BI MOTOR] Usando baseline de fallback:', err);
@@ -8897,7 +9040,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
         vendas_fechadas: 14,
         leads_gerados: 184,
         cliques: 1420
-      });
+      }, resolvedClient);
     }
   };
 
