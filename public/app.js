@@ -8804,7 +8804,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       btnSubmit.innerText = 'Gravando no Banco...';
     }
 
-    const payload = {
+    const payloadDb = {
       client_id: String(clientId),
       reference_date: new Date().toISOString().split('T')[0],
       faturamento_total: faturamento,
@@ -8813,16 +8813,14 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       vendas_fechadas: vendas,
       leads_gerados: leads,
       cliques: cliques,
-      revenue: faturamento,
-      ad_spend: gasto,
-      sales: vendas,
-      leads: leads,
       clicks: cliques,
+      ad_spend: gasto,
+      revenue: faturamento,
       updated_at: new Date().toISOString()
     };
 
     // Salva no LocalStorage como cache imediato
-    localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
+    localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payloadDb));
 
     // Grava obrigatoriamente no Supabase
     const supa = getSupabaseBI();
@@ -8830,14 +8828,19 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       try {
         const { data, error } = await supa
           .from('bi_analytics_data')
-          .insert([payload])
+          .insert([payloadDb])
           .select();
 
         if (error) {
           console.error('[BI-SUPABASE ERROR]:', error);
           alert(`❌ Erro do Banco ao salvar: ${error.message}`);
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = 'Salvar Métricas';
+          }
+          return;
         } else {
-          console.log('[BI-SUPABASE SUCESSO]: Gravado com ID:', data);
+          console.log('[BI-SUPABASE SUCESSO]: Gravado com sucesso:', data);
         }
       } catch (err) {
         console.error('[BI-SUPABASE CATCH]:', err);
