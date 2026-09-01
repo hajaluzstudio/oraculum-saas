@@ -1612,7 +1612,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      const cleanReplyText = extrairTextoLimpo(data);
+      const cleanReplyText = extrairTextoLimpoChat(data);
       let formattedHtml = cleanReplyText;
       if (typeof marked !== 'undefined') {
         formattedHtml = marked.parse(cleanReplyText);
