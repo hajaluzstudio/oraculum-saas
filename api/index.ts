@@ -30,12 +30,13 @@ import { checkAgencyStatus, getMaintenanceModeState, setMaintenanceModeState } f
 
 // Lista de contingência com base nos limites ativos do painel do usuário
 const GEMINI_MODELS_CASCADE = [
-  "gemini-3.7-flash",      // 1ª Opção: Inteligência máxima (Raciocínio de topo)
-  "gemini-3.6-flash",      // 2ª Opção: Alta performance e resposta rápida
-  "gemini-3.5-flash-lite", // 3ª Opção: Assume com 500 req/dia livres e altíssima velocidade
-  "gemini-3.5-flash",      // 4ª Opção: Resposta padrão de alta capacidade
-  "gemma-4-26b",           // 5ª Opção: Retaguarda massiva (14.400 req/dia)
-  "gemma-4-31b"            // 6ª Opção: Contingência avançada (14.400 req/dia)
+  "gemini-3.5-flash-lite", // 1ª Opção: Ultra-rápido (500 RPD livres) -> Resposta em ~1s
+  "gemini-3.1-flash-lite", // 2ª Opção: Ultra-rápido (500 RPD livres)
+  "gemini-3.5-flash",      // 3ª Opção: Resposta padrão ágil
+  "gemini-2.5-flash",      // 4ª Opção: Flash rápido
+  "gemini-2.5-flash-lite", // 5ª Opção: Flash Lite
+  "gemini-3.7-flash",      // 6ª Opção: Alta fidelidade (com thinkingBudget: 0)
+  "gemini-3.6-flash"       // 7ª Opção: Contingência
 ];
 
 /**
@@ -51,10 +52,10 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
 
       let config: any = {
         temperature: 0.7,
-        maxOutputTokens: 2000
+        maxOutputTokens: 1200
       };
 
-      // thinkingConfig zero-delay exclusivo para Gemini 3.7 (parâmetro inválido em 3.5/Gemma)
+      // Desativa latência de raciocínio se for modelo 3.7
       if (modelName.includes('3.7')) {
         config.thinkingConfig = { thinkingBudget: 0 };
       }
@@ -75,7 +76,10 @@ async function executarIAComFallback(genAI: any, systemInstruction: string, prom
       };
 
       if (promptOuConteudo?.contents) {
-        requestOptions.contents = promptOuConteudo.contents;
+        // Limita histórico a 3 mensagens para resposta instantânea
+        requestOptions.contents = Array.isArray(promptOuConteudo.contents) 
+          ? promptOuConteudo.contents.slice(-3) 
+          : promptOuConteudo.contents;
       } else {
         requestOptions.contents = [{ role: 'user', parts: [{ text: promptOuConteudo }] }];
       }
