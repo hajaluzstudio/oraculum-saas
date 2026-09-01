@@ -1527,18 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     return str.trim();
   }
-      }
-    }
 
-    if (tasks.length > 0) {
-      window.currentPendingTasks = tasks;
-    }
-
-    return String(texto)
-      .replace(/\\n/g, '\n')
-      .replace(/^["']|["']$/g, '')
-      .trim();
-  }
 
   // Envia prompt para a API do backend
   window.handleSendChatMessage = async function handleSendChatMessage() {
