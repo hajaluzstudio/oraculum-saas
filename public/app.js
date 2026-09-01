@@ -1946,8 +1946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: String(t.category || 'geral'),
             title: String(t.title || `[${(t.category || 'GERAL').toUpperCase()}] Pauta Estratégica`),
             content: sanitizedContent,
-            status: 'pending',
-            origin_source: 'chat_estrategico'
+            status: 'pending'
           };
           const { error } = await supabase.from('war_room_tasks').insert([supabasePayload]);
           if (error) console.error('[Supabase Insert Error]:', error);
