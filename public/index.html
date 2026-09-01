@@ -2081,38 +2081,17 @@
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <input type="number" id="budget-input-total" placeholder="Orçamento (R$)" value="10000" style="width: 130px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #06B6D4; font-weight: bold; padding: 6px 10px; border-radius: 6px; font-size: 12px;">
-                <button type="button" class="btn-primary sm" id="btn-run-budget-optimizer" style="font-size: 11px; padding: 6px 14px;">
+                <button type="button" class="btn-primary sm" id="btn-run-budget-optimizer" onclick="window.calcularAlocacaoOtimaIA()" style="font-size: 11px; padding: 6px 14px;">
                   <i class="fa-solid fa-chart-pie"></i> Calcular Alocação Ótima
                 </button>
               </div>
             </div>
-
             <div id="budget-optimizer-output" style="margin-top: 16px;">
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px;" id="budget-channels-grid">
-                <div style="background: rgba(24, 119, 242, 0.08); border: 1px solid rgba(24, 119, 242, 0.25); padding: 12px; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #60A5FA; font-weight: bold;">Meta Ads (Reels / VSL)</span>
-                  <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">45% <span style="font-size: 12px; color: #94A3B8;">(R$ 4.500)</span></h3>
-                  <span style="font-size: 10px; color: #00F5A0;">CAC Projetado: R$ 850,00</span>
-                </div>
-                <div style="background: rgba(234, 67, 53, 0.08); border: 1px solid rgba(234, 67, 53, 0.25); padding: 12px; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #F87171; font-weight: bold;">Google Ads (Search)</span>
-                  <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">30% <span style="font-size: 12px; color: #94A3B8;">(R$ 3.000)</span></h3>
-                  <span style="font-size: 10px; color: #00F5A0;">CAC Projetado: R$ 620,00</span>
-                </div>
-                <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.25); padding: 12px; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #FDE047; font-weight: bold;">Mídias Tradicionais / OOH</span>
-                  <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">10% <span style="font-size: 12px; color: #94A3B8;">(R$ 1.000)</span></h3>
-                  <span style="font-size: 10px; color: #FDE047;">Ancoragem de Marca</span>
-                </div>
-                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); padding: 12px; border-radius: 8px;">
-                  <span style="font-size: 11px; color: #34D399; font-weight: bold;">Eventos & Podcasts VIP</span>
-                  <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">15% <span style="font-size: 12px; color: #94A3B8;">(R$ 1.500)</span></h3>
-                  <span style="font-size: 10px; color: #00F5A0;">Autoridade Máxima</span>
-                </div>
+                <!-- Injetado dinamicamente pela IA -->
               </div>
-
               <div id="budget-rationale-box" style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); padding: 12px; border-radius: 8px; font-size: 12px; color: #CBD5E1;">
-                <strong>Justificativa da IA:</strong> Realocação de 10% da verba estática para Google Search e VSLs de 3s aprovadas no Dossiê, estimando elevação de +51.1% no Lucro Líquido.
+                <strong>Justificativa da IA:</strong> Clique em "Calcular Alocação Ótima" para a IA analisar o segmento e traçar a rota de escala.
               </div>
             </div>
           </div>
