@@ -9676,19 +9676,22 @@ window.salvarConfigSLA = async function(e) {
 };
 
 window.atualizarVisualSLAComercial = async function(forcedClientId, metricsData = null) {
-  // Identifica o client_id ativo de forma universal
   const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
   const targetId = forcedClientId 
                 || window.currentClientId 
                 || window.activeClientId 
+                || window.currentActiveClientId
                 || (selectEl ? selectEl.value : null) 
                 || localStorage.getItem('oraculum_active_client_id')
                 || 'client_1787406730';
 
-  console.log('[SLA AUDITOR] Consultando logs para o cliente:', targetId);
+  const cleanId = String(targetId).replace('client_', '');
+  const idVariations = [String(targetId), cleanId, `client_${cleanId}`];
+
+  console.log('[SLA AUDITOR] Consultando logs para variações de ID:', idVariations);
 
   let config = { tempo_alvo: 15, tempo_critico: 60 };
-  const rawConfig = localStorage.getItem(`oraculum_sla_config_${targetId}`);
+  const rawConfig = localStorage.getItem(`oraculum_sla_config_${targetId}`) || localStorage.getItem(`oraculum_sla_config_${cleanId}`);
   if (rawConfig) {
     try { config = JSON.parse(rawConfig); } catch(e) {}
   }
@@ -9698,36 +9701,45 @@ window.atualizarVisualSLAComercial = async function(forcedClientId, metricsData 
   let leadsPerdidos = 0;
   let leadsContatados = 0;
 
-  const supa = typeof supabase !== 'undefined' ? supabase : (window.supabaseClient || window.supabase);
+  // Obter instância ativa do Supabase
+  const supa = (typeof getSupabaseClient === 'function' ? getSupabaseClient() : null)
+            || (typeof getSupabaseBI === 'function' ? getSupabaseBI() : null)
+            || (typeof supabase !== 'undefined' && supabase.from ? supabase : null)
+            || window.supabaseClient 
+            || window.supabase;
+
   if (supa && supa.from) {
     try {
-      // Consulta buscando tanto pelo ID exato quanto pela string limpa
       const { data: logs, error } = await supa
         .from('commercial_lead_logs')
         .select('*')
-        .or(`client_id.eq.${String(targetId)},client_id.eq.${String(targetId).replace('client_', '')}`)
+        .in('client_id', idVariations)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[SLA Supabase Error]:', error);
+        console.error('[SLA Supabase Error]:', error.message || error);
       } else if (logs && logs.length > 0) {
         totalLogs = logs.length;
         leadsContatados = logs.filter(l => l.status_atendimento !== 'sem_resposta').length;
         const somaTempo = logs.reduce((acc, l) => acc + (Number(l.response_time_minutes) || 0), 0);
         tempoMedio = Math.round(somaTempo / totalLogs);
         leadsPerdidos = logs.filter(l => (Number(l.response_time_minutes) || 0) > config.tempo_alvo).length;
-        console.log(`[SLA SUCESSO] ${totalLogs} logs carregados do Supabase. Média: ${tempoMedio} min.`);
+        console.log(`%c[SLA SUCESSO] ${totalLogs} logs carregados do Supabase! Média: ${tempoMedio} min.`, 'color: #10b981; font-weight: bold;');
+      } else {
+        console.warn('[SLA AUDITOR] Nenhum log retornado pelo Supabase para:', idVariations);
       }
     } catch (err) {
-      console.warn('[SLA Real Data] Catch:', err);
+      console.error('[SLA AUDITOR] Exceção na consulta:', err);
     }
+  } else {
+    console.warn('[SLA AUDITOR] Cliente Supabase não encontrado no escopo global.');
   }
 
   const taxaContato = totalLogs > 0 ? ((leadsContatados / totalLogs) * 100).toFixed(1) + '%' : '100.0%';
-  
-  // Cálculo do Ticket Médio para perda estimada
+
+  // Cálculo do impacto financeiro
   let ticketMedio = 38000;
-  const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
+  const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`) || localStorage.getItem(`oraculum_bi_metrics_${cleanId}`);
   if (rawBI) {
     try {
       const bi = JSON.parse(rawBI);
