@@ -4203,17 +4203,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const isPub = task.status === 'pronto';
     const isDelivered = task.status === 'entregue';
     const isRiscoPreditivo = task.title && task.title.includes('[Risco Preditivo]');
-    const isOraculumLive = task.title && task.title.includes('[Oraculum Live]');
+    const isOraculumLive = (task.origin_source === 'oraculum_live') || 
+                           (task.tags && task.tags.some(t => ['Oraculum Live', 'BI Live', 'emerald'].includes(t))) || 
+                           (task.tag && ['Oraculum Live', 'BI Live', 'emerald'].includes(task.tag)) ||
+                           (task.title && task.title.includes('[Oraculum Live]'));
     
     let borderColor = isNeedsAdj ? 'rgba(239,68,68,0.3)' : isDelivered ? 'rgba(139,92,246,0.3)' : isPub ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)';
     let bgColor = '#111726';
+    let badgeHtml = '';
     
     if (isRiscoPreditivo) {
       borderColor = 'rgba(239,68,68,0.6)';
       bgColor = 'rgba(239,68,68,0.1)'; // Fundo levemente vermelho
     } else if (isOraculumLive) {
-      borderColor = 'rgba(99,102,241,0.6)';
-      bgColor = 'rgba(99,102,241,0.1)'; // Fundo levemente indigo/roxo
+      borderColor = 'rgba(16,185,129,0.6)'; // emerald-500/60
+      bgColor = 'linear-gradient(to bottom right, rgba(2,44,34,0.6), rgba(15,23,42,0.9))'; // from-emerald-950/60 to-slate-900/90
+      badgeHtml = `<div style="margin-bottom: 6px;"><span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">🟢 ORACULUM LIVE (BI)</span></div>`;
     }
 
     const tag = (task.tags && task.tags[0]) || task.tag || 'Geral';
@@ -4226,7 +4231,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return `
       <div class="kanban-card" style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : isOraculumLive ? '#818CF8' : '#F1F5F9'}; position: relative; padding-right: 20px;">
+        ${badgeHtml}
+        <div style="font-size: 12px; font-weight: 600; color: ${isRiscoPreditivo ? '#F87171' : isOraculumLive ? '#6ee7b7' : '#F1F5F9'}; position: relative; padding-right: 20px;">
           ${task.title || 'Tarefa sem Título'}
           ${isAdmin ? `<button type="button" onclick="window.confirmDeleteKanbanTask('${task.id}')" style="position: absolute; right: -4px; top: -4px; color: #EF4444; background: rgba(239,68,68,0.1); border: none; border-radius: 4px; padding: 4px 6px; cursor: pointer;" title="Excluir Tarefa"><i class="fa-solid fa-trash"></i></button>` : ''}
         </div>

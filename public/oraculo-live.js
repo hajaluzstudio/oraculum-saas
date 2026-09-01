@@ -276,15 +276,22 @@
                 try {
                   const { clientId, tenantId } = obterContextoAtivo();
                   if (window.supabaseClient && clientId) {
-                    await window.supabaseClient.from('war_room_tasks').insert([{
+                    const taskData = {
                       client_id: clientId,
                       tenant_id: tenantId,
                       origin_source: 'oraculum_live',
-                      title: 'Diretriz de Reunião BI: Redução de SLA Comercial',
+                      title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
                       description: msg,
                       status: 'backlog',
-                      tags: ['BI Live', 'Comercial', 'SLA']
-                    }]);
+                      tags: ['Oraculum Live', 'BI Live', 'Comercial'],
+                      color: 'emerald'
+                    };
+                    await window.supabaseClient.from('war_room_tasks').insert([taskData]);
+                    await window.supabaseClient.from('kanban_tasks').insert([taskData]);
+                    
+                    if (typeof window.loadClientKanbanCards === 'function') {
+                      window.loadClientKanbanCards();
+                    }
                   }
                   btnEl.style.background = '#064e3b';
                   btnEl.style.color = '#34d399';
@@ -373,15 +380,22 @@
             try {
               const { clientId, tenantId } = obterContextoAtivo();
               if (window.supabaseClient && clientId) {
-                await window.supabaseClient.from('war_room_tasks').insert([{
+                const taskData = {
                   client_id: clientId,
                   tenant_id: tenantId,
                   origin_source: 'oraculum_live',
-                  title: 'Diretriz de Reunião BI: Redução de SLA Comercial',
+                  title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
                   description: respostaIA,
                   status: 'backlog',
-                  tags: ['BI Live', 'Comercial', 'SLA']
-                }]);
+                  tags: ['Oraculum Live', 'BI Live', 'Comercial'],
+                  color: 'emerald'
+                };
+                await window.supabaseClient.from('war_room_tasks').insert([taskData]);
+                await window.supabaseClient.from('kanban_tasks').insert([taskData]);
+                
+                if (typeof window.loadClientKanbanCards === 'function') {
+                  window.loadClientKanbanCards();
+                }
               }
               btnEl.style.background = '#064e3b';
               btnEl.style.color = '#34d399';
