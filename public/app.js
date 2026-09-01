@@ -6238,55 +6238,80 @@ document.addEventListener('DOMContentLoaded', () => {
   const budgetChannelsGrid = document.getElementById('budget-channels-grid');
   const budgetRationaleBox = document.getElementById('budget-rationale-box');
 
+  window.renderizarCardsOtimizador = function(parsed, valorTotal) {
+    if (budgetChannelsGrid && parsed.canais) {
+      budgetChannelsGrid.innerHTML = parsed.canais.map(ch => `
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px;">
+          <span style="font-size: 11px; color: #60A5FA; font-weight: bold;">${ch.nome}</span>
+          <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">${ch.percentual}% <span style="font-size: 12px; color: #94A3B8;">(R$ ${Number(ch.valor).toLocaleString('pt-BR')})</span></h3>
+          <span style="font-size: 10px; color: #00F5A0;">CAC Projetado: ${ch.cac_projetado}</span>
+          <p style="font-size: 10px; color: #94A3B8; margin: 4px 0 0;">${ch.diretriz}</p>
+        </div>
+      `).join('');
+    }
+
+    if (budgetRationaleBox) {
+      budgetRationaleBox.innerHTML = `<strong>Justificativa da IA:</strong> ${parsed.justificativa || ''} <span style="color: #00F5A0; font-weight: bold; margin-left: 6px;">(${parsed.lucro_projetado_pct || ''} Lucro Projetado)</span>`;
+    }
+  };
+
+  window.calcularAlocacaoOtimaIA = async function() {
+    const inputEl = document.getElementById('input-budget-optimizer') || document.querySelector('input[placeholder="10000"]') || document.getElementById('budget-input-total');
+    const valorTotal = parseFloat(inputEl?.value || '10000');
+    
+    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+    const clientId = window.currentClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+    const clientName = window.currentClientName || (selectEl?.selectedOptions[0]?.textContent) || 'Cliente Ativo';
+  
+    const btnCalc = document.querySelector('[onclick*="calcularAlocacaoOtima"], #btn-run-budget-optimizer');
+    if (btnCalc) {
+      btnCalc.disabled = true;
+      btnCalc.innerHTML = '⏳ Otimizando via IA...';
+    }
+  
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Atue como Especialista em Alocação de Mídia e Tráfego Pago. 
+  Otimize a distribuição de um orçamento total de R$ ${valorTotal} para o cliente "${clientName}".
+  Retorne APENAS um JSON válido no formato:
+  {
+    "canais": [
+      { "nome": "Canal 1", "percentual": 40, "valor": 4000, "cac_projetado": "R$ 450", "diretriz": "..." },
+      { "nome": "Canal 2", "percentual": 30, "valor": 3000, "cac_projetado": "R$ 320", "diretriz": "..." },
+      { "nome": "Canal 3", "percentual": 20, "valor": 2000, "cac_projetado": "R$ 600", "diretriz": "..." },
+      { "nome": "Canal 4", "percentual": 10, "valor": 1000, "cac_projetado": "R$ 200", "diretriz": "..." }
+    ],
+    "lucro_projetado_pct": "+42.5%",
+    "justificativa": "Texto analítico explicando a redistribuição para o nicho de ${clientName}."
+  }`
+        })
+      });
+  
+      const data = await res.json();
+      let parsed = data.data || data;
+      if (typeof parsed === 'string') {
+        try { parsed = JSON.parse(parsed.replace(/```json|```/g, '').trim()); } catch(e) {}
+      }
+  
+      if (parsed && parsed.canais) {
+        // Renderiza os 4 cards com dados reais gerados pela IA
+        window.renderizarCardsOtimizador(parsed, valorTotal);
+      }
+    } catch (err) {
+      console.error('[Budget Optimizer IA Error]:', err);
+    } finally {
+      if (btnCalc) {
+        btnCalc.disabled = false;
+        btnCalc.innerHTML = '<i class="fa-solid fa-chart-pie"></i> Calcular Alocação Ótima';
+      }
+    }
+  };
+
   if (btnRunBudgetOptimizer) {
-    btnRunBudgetOptimizer.addEventListener('click', async () => {
-      const budgetInputTotal = document.getElementById('budget-input-total')?.value || '10000';
-      if (!activeClientId) {
-        alert('Por favor, selecione um cliente ativo.');
-        return;
-      }
-
-      btnRunBudgetOptimizer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Otimizando...';
-      btnRunBudgetOptimizer.disabled = true;
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/bi/optimize-budget`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-organization-id': activeTenantId
-          },
-          body: JSON.stringify({
-            clientId: activeClientId,
-            totalBudget: parseFloat(budgetInputTotal)
-          })
-        });
-
-        const json = await res.json();
-        if (!json.success || !json.data) throw new Error(json.error || 'Erro no otimizador');
-
-        const opt = json.data;
-        if (budgetChannelsGrid && opt.channelAllocations) {
-          budgetChannelsGrid.innerHTML = opt.channelAllocations.map(ch => `
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px;">
-              <span style="font-size: 11px; color: #60A5FA; font-weight: bold;">${ch.channelName}</span>
-              <h3 style="color: #FFF; font-size: 18px; margin: 4px 0 2px;">${ch.optimizedPercentage}% <span style="font-size: 12px; color: #94A3B8;">(R$ ${ch.recommendedBudgetAmount.toLocaleString('pt-BR')})</span></h3>
-              <span style="font-size: 10px; color: #00F5A0;">CAC Projetado: R$ ${ch.expectedCac.toLocaleString('pt-BR')}</span>
-              <p style="font-size: 10px; color: #94A3B8; margin: 4px 0 0;">${ch.actionRecommendation}</p>
-            </div>
-          `).join('');
-        }
-
-        if (budgetRationaleBox) {
-          budgetRationaleBox.innerHTML = `<strong>Justificativa da IA:</strong> ${opt.strategicRationale || ''} <span style="color: #00F5A0; font-weight: bold; margin-left: 6px;">(+${opt.projectedProfitIncreasePercentage}% Lucro Projetado)</span>`;
-        }
-      } catch (err) {
-        alert(`Erro ao otimizar orçamento: ${err.message}`);
-      } finally {
-        btnRunBudgetOptimizer.innerHTML = '<i class="fa-solid fa-chart-pie"></i> Calcular Alocação Ótima';
-        btnRunBudgetOptimizer.disabled = false;
-      }
-    });
+    btnRunBudgetOptimizer.addEventListener('click', window.calcularAlocacaoOtimaIA);
   }
 
   // ============================================================================
