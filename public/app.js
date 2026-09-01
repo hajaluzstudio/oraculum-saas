@@ -2879,6 +2879,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetEl) {
       targetEl.style.display = 'block';
       targetEl.classList.remove('hidden');
+
+      if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+        window.carregarAtivosEntreguesTrafego();
+      } else if (targetId === 'wr-tab-design') {
+        const designList = document.getElementById('design-deliverables-list');
+        if (designList && typeof window.renderWarRoomTasks === 'function') {
+          // This will be handled by the global renderWarRoomData or could be triggered here
+          // As per directive: "alimente #design-deliverables-list com as tarefas de categoria 'design'"
+          // However, we can simply rely on the existing rendering flow if it already outputs to design-deliverables-list
+          // Let's at least clear the empty state if there are tasks
+          const activeClientId = window.currentActiveClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id');
+          const storageKey = `kanban_tasks_${activeClientId}`;
+          try {
+            const kanbanTasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const designTasks = kanbanTasks.filter(t => t.category === 'design');
+            if (designTasks.length > 0) {
+              designList.innerHTML = designTasks.map(t => `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800"><h4 class="text-sm font-bold text-slate-200">${t.title}</h4><p class="text-xs text-slate-400 mt-1">${t.description || ''}</p></div>`).join('');
+            }
+          } catch(e) {}
+        }
+      }
     }
 
     // Atualiza os estilos dos botões de navegação da sub-aba

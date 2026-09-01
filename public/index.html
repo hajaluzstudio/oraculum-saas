@@ -2302,11 +2302,25 @@
               </div>
 
               <!-- 2. DESIGN -->
-              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="card-glass">
-                  <div class="card-header">
-                    <h3><i class="fa-solid fa-palette"></i> Briefings Visuais e Landing Pages</h3>
+              <div id="wr-tab-design" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                      <span class="text-xl">🎨</span>
+                      <div>
+                        <h3 class="text-base font-semibold text-slate-100">Criativos Visuais, Carrosséis & Web</h3>
+                        <p class="text-xs text-slate-400">Artes estáticas, briefings visuais e carrosséis gerados pela inteligência.</p>
+                      </div>
+                    </div>
+                    <span class="text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-700/60">Entregáveis de Design</span>
                   </div>
+                  
+                  <div id="design-deliverables-list" class="space-y-4">
+                    <div class="text-center py-10 border-2 border-dashed border-slate-800 rounded-xl">
+                      <p class="text-xs text-slate-500">Nenhum criativo visual despachado para esta equipe no momento. Gere pautas no Chat Estratégico.</p>
+                    </div>
+                  </div>
+                </div>
                   <!-- Feed de Gavetas de Design -->
                   <div id="feed-gavetas-design" class="space-y-4 mt-0 mb-4"></div>
                   <!-- Ferramenta Inspecionar Criativo Modular (Design) -->
@@ -2532,33 +2546,47 @@
               </div>
 
               <!-- 3. TRÁFEGO -->
-              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden" style="display: none;">
-                <div class="card-glass">
-                  <div class="card-header">
-                    <h3><i class="fa-solid fa-bullseye"></i> Parâmetros de Campanha (Meta/Google Ads)</h3>
+              <div id="wr-tab-traffic" class="wr-panel wr-subtab-content hidden space-y-6" style="display: none;">
+                <!-- Bloco 1: Parâmetros de Campanha -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="text-emerald-400 font-bold">🎯</span>
+                    <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Parâmetros de Campanha (Meta/Google Ads)</h3>
                   </div>
+                  <div id="traffic-params-content" class="text-xs text-slate-300 leading-relaxed grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Estratégia de Fundo de Funil</span>
+                      <span class="text-emerald-400 font-bold text-sm">Conversão / Leads Qualificados</span>
+                    </div>
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Canais Recomendados</span>
+                      <span class="text-slate-200 font-semibold text-sm">Instagram Reels & Google Search</span>
+                    </div>
+                    <div class="p-3 bg-black/40 border border-slate-800 rounded-xl">
+                      <span class="text-slate-400 block text-[11px] mb-1">Otimização de Lance</span>
+                      <span class="text-sky-400 font-bold text-sm">CPA Desejado / Max. Conversões</span>
+                    </div>
+                  </div>
+                </div>
 
-                  <!-- Gaveta Mestra de Criativos Entregues -->
-                  <div id="container-traffic-delivered-assets" class="p-5 bg-[#071311] border border-emerald-500/30 rounded-2xl shadow-xl space-y-4 my-4">
-                    <div class="flex items-center justify-between border-b border-emerald-950/80 pb-3">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 text-sm">
-                          <i class="fa-solid fa-bullhorn"></i>
-                        </div>
-                        <div>
-                          <h4 class="text-sm font-bold text-white tracking-wide">📦 Criativos & Materiais Prontos para Veiculação</h4>
-                          <span class="text-[10px] text-slate-400 font-mono">Prontos para subir no Gerenciador de Anúncios / Postagem</span>
-                        </div>
+                <!-- Bloco 2: Gaveta de Criativos Prontos para Veiculação -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                      <span class="text-emerald-400 font-bold">📦</span>
+                      <div>
+                        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wide">Criativos & Materiais Prontos para Veiculação</h3>
+                        <p class="text-[11px] text-slate-400">Prontos para subir no Gerenciador de Anúncios / Postagem</p>
                       </div>
-                      <button type="button" onclick="window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
-                        <i class="fa-solid fa-rotate text-[11px]"></i> Atualizar Lista
-                      </button>
                     </div>
-                    
-                    <div id="traffic-creatives-list" class="space-y-3">
-                      <!-- Cards injetados dinamicamente -->
-                    </div>
+                    <button onclick="if(typeof window.carregarAtivosEntreguesTrafego==='function') window.carregarAtivosEntreguesTrafego()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                      🔄 Atualizar Lista
+                    </button>
                   </div>
+                  <div id="traffic-creatives-list" class="space-y-3">
+                    <!-- Injetado dinamicamente via JS -->
+                  </div>
+                </div>
 
                   <!-- Feed de Gavetas de Tráfego -->
                   <div id="feed-gavetas-trafego" class="space-y-4 mt-0 mb-4"></div>
@@ -4505,7 +4533,7 @@ window.atualizarCardUsuarioLogado = function(providedSession = null) {
     });
   }
 </script>
-<script src="/app.js?v=2026.260.0"></script>
+<script src="/app.js?v=2026.310.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selector = document.getElementById('tp-drawer-selector');
