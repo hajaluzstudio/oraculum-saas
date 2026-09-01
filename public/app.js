@@ -1094,12 +1094,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.descartarSugestaoChat = function(msgId) {
+  window.descartarSugestaoChat = async function(msgId, dbId) {
     const el = document.getElementById(msgId);
-    if (el) {
-      const actions = el.querySelector('.briefing-actions') || el.querySelector('.mt-4.pt-3');
-      if (actions) {
-        actions.style.display = 'none';
+    if (el) el.remove();
+
+    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+    if (window.supabaseClient && clientId) {
+      try {
+        if (dbId) {
+          await window.supabaseClient.from('chat_history').delete().eq('id', dbId);
+        } else {
+          // Remove a última mensagem do assistente caso não tenha dbId específico
+          await window.supabaseClient
+            .from('chat_history')
+            .delete()
+            .eq('client_id', String(clientId))
+            .eq('role', 'model');
+        }
+      } catch(e) {
+        console.warn('[Chat] Erro ao deletar mensagem descartada:', e);
       }
     }
   };
@@ -1280,12 +1293,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.descartarSugestaoChat = function(msgId) {
+  window.descartarSugestaoChat = async function(msgId, dbId) {
     const el = document.getElementById(msgId);
-    if (el) {
-      const actions = el.querySelector('.briefing-actions') || el.querySelector('.mt-4.pt-3');
-      if (actions) {
-        actions.style.display = 'none';
+    if (el) el.remove();
+
+    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+    if (window.supabaseClient && clientId) {
+      try {
+        if (dbId) {
+          await window.supabaseClient.from('chat_history').delete().eq('id', dbId);
+        } else {
+          // Remove a última mensagem do assistente caso não tenha dbId específico
+          await window.supabaseClient
+            .from('chat_history')
+            .delete()
+            .eq('client_id', String(clientId))
+            .eq('role', 'model');
+        }
+      } catch(e) {
+        console.warn('[Chat] Erro ao deletar mensagem descartada:', e);
       }
     }
   };
