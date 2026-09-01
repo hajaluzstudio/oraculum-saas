@@ -2031,6 +2031,13 @@
                     <label class="block text-[11px] text-slate-400 mb-1">Responsável / Equipe Comercial</label>
                     <input type="text" id="sla-input-responsavel" placeholder="Ex: Recepção / Comercial Interno" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-amber-400 outline-none">
                   </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">URL de Integração do Webhook (Copiar para o CRM)</label>
+                    <div class="flex gap-2">
+                      <input type="text" id="sla-webhook-url-display" readonly class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono select-all outline-none" value="https://oraculum-saas.vercel.app/api/webhooks/crm-sla">
+                      <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('sla-webhook-url-display').value); alert('URL copiada!')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs cursor-pointer">Copiar</button>
+                    </div>
+                  </div>
                   <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
                     <button type="button" onclick="window.fecharModalConfigSLA()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer">Cancelar</button>
                     <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer">Salvar Configuração</button>
