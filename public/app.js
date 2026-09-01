@@ -3572,6 +3572,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================================
   window.safeZoneMockupState = 1; // Inicia exibindo a interface nativa por padrão
 
+  window.toggleToolSection = function(contentId, headerEl) {
+    const content = document.getElementById(contentId);
+    if (!content) return;
+    
+    // Find the toggle text span (usually the last child or a span containing "▼ Expandir" / "▲ Recolher")
+    const toggleSpan = headerEl ? headerEl.querySelector('span:last-child') : null;
+    
+    if (content.classList.contains('hidden')) {
+      content.classList.remove('hidden');
+      if (toggleSpan) toggleSpan.textContent = '▲ Recolher Ferramenta';
+      if (headerEl) headerEl.classList.add('text-emerald-400');
+    } else {
+      content.classList.add('hidden');
+      if (toggleSpan) toggleSpan.textContent = '▼ Expandir Ferramenta';
+      if (headerEl) headerEl.classList.remove('text-emerald-400');
+    }
+  };
+
   window.toggleSafeZoneMockupTool = function() {
     const content = document.getElementById('safezone-mockup-content');
     const btn = document.getElementById('btn-toggle-safezone');
