@@ -280,12 +280,8 @@
                     client_id: String(activeClientId),
                     title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
                     description: msg,
-                    content: msg,
                     status: 'backlog',
-                    stage: 'backlog',
-                    category: 'comercial',
-                    type: 'oraculum_live',
-                    created_at: new Date().toISOString()
+                    tags: ['Oraculum Live']
                   };
 
                   if (window.supabaseClient) {
@@ -296,7 +292,7 @@
                         await window.supabaseClient.from('war_room_tasks').insert([{
                           client_id: String(activeClientId),
                           title: payloadKanban.title,
-                          content: payloadKanban.content,
+                          content: payloadKanban.description,
                           category: 'comercial',
                           status: 'pending'
                         }]);
@@ -407,12 +403,8 @@
                 client_id: String(activeClientId),
                 title: 'Diretriz de Reunião BI: Redução de SLA & Triagem',
                 description: respostaIA,
-                content: respostaIA,
                 status: 'backlog',
-                stage: 'backlog',
-                category: 'comercial',
-                type: 'oraculum_live',
-                created_at: new Date().toISOString()
+                tags: ['Oraculum Live']
               };
 
               if (window.supabaseClient) {
@@ -423,7 +415,7 @@
                     await window.supabaseClient.from('war_room_tasks').insert([{
                       client_id: String(activeClientId),
                       title: payloadKanban.title,
-                      content: payloadKanban.content,
+                      content: payloadKanban.description,
                       category: 'comercial',
                       status: 'pending'
                     }]);
