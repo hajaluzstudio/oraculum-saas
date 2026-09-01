@@ -1612,12 +1612,40 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
-      const cleanReplyText = extrairTextoLimpoChat(data);
-      let formattedHtml = cleanReplyText;
+      
+      let textoExibicao = data;
+      let pendingTasks = [];
+
+      if (typeof data === 'object' && data !== null) {
+        textoExibicao = data.replyText || data.message || JSON.stringify(data);
+        pendingTasks = data.tasks || [];
+      } else if (typeof data === 'string') {
+        const trimmed = data.trim();
+        if (trimmed.startsWith('{') && trimmed.includes('replyText')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            textoExibicao = parsed.replyText || trimmed;
+            pendingTasks = parsed.tasks || [];
+          } catch(e) {
+            const match = trimmed.match(/"replyText"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+            if (match && match[1]) {
+              textoExibicao = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            }
+          }
+        }
+      }
+
+      if (typeof textoExibicao === 'string') {
+        textoExibicao = textoExibicao.replace(/Atue como Estrategista Chefe.*?(?=(\n\n|\{|$))/gs, '');
+        textoExibicao = textoExibicao.replace(/Extraia as tarefas e demandas.*?(?=(\n\n|\{|$))/gs, '');
+        textoExibicao = textoExibicao.replace(/\{"replyText":/g, '').replace(/,"tasks":\[.*\]\}/gs, '').trim();
+      }
+
+      let formattedHtml = textoExibicao;
       if (typeof marked !== 'undefined') {
-        formattedHtml = marked.parse(cleanReplyText);
+        formattedHtml = marked.parse(textoExibicao);
       } else {
-        formattedHtml = cleanReplyText.replace(/\n/g, '<br>');
+        formattedHtml = typeof textoExibicao === 'string' ? textoExibicao.replace(/\n/g, '<br>') : textoExibicao;
       }
 
       // 4. Renderiza a resposta da IA com o card de aprovação
@@ -1635,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="btn-aprovar-despacho px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-950">
               ✓ Aprovar & Enviar para Sala de Operação
             </button>
-            <button type="button" onclick="this.closest('.flex-col').remove()" class="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 text-xs rounded-lg transition-colors">
+            <button type="button" onclick="window.recusarSugestaoChat(this, null)" class="px-3 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 text-xs rounded-lg transition-colors">
               🗑 Recusar
             </button>
           </div>
@@ -1651,12 +1679,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const activeClientId = window.currentActiveClientId || window.activeClientId || (window.activeClient && window.activeClient.id) || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-          const tasksParaSalvar = (window.currentPendingTasks && window.currentPendingTasks.length > 0) 
-            ? window.currentPendingTasks.map(t => ({ ...t, client_id: activeClientId, created_at: t.created_at || new Date().toISOString() }))
-            : cleanReplyText;
+          const tasksToSave = pendingTasks.length > 0 ? pendingTasks : (window.currentPendingTasks && window.currentPendingTasks.length > 0 ? window.currentPendingTasks : textoExibicao);
+
+          const tasksParaSalvar = (Array.isArray(tasksToSave) ? tasksToSave : []).map(t => ({ 
+            ...t, 
+            client_id: activeClientId, 
+            created_at: t.created_at || new Date().toISOString() 
+          }));
 
           if (typeof window.dispatchBriefingToWarRoom === 'function') {
-            await window.dispatchBriefingToWarRoom('all', tasksParaSalvar);
+            await window.dispatchBriefingToWarRoom('all', tasksParaSalvar.length > 0 ? tasksParaSalvar : tasksToSave);
             window.currentPendingTasks = null;
           }
 
