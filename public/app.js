@@ -2855,57 +2855,68 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(targetKey, btnEl) {
-    if (!targetKey) targetKey = 'video';
-    const key = String(targetKey).toLowerCase().trim();
+  window.switchWarRoomTab = function(tabKey) {
+    if (!tabKey) tabKey = 'video';
+    const key = String(tabKey).toLowerCase().trim();
 
-    // Mapeamento abrangente de IDs
-    const targetMap = {
-      'video': ['wr-tab-video', 'wr-panel-video', 'video-pane'],
-      'design': ['wr-tab-design', 'wr-panel-design', 'design-pane'],
-      'trafego': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane'],
-      'traffic': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane'],
-      'copy': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane'],
-      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane'],
-      'comercial': ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane'],
-      'sales': ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane']
+    // Mapeamento semântico → lista de IDs a tentar em ordem
+    const idFallbacks = {
+      'video':       ['wr-tab-video', 'wr-panel-video'],
+      'wr-tab-video': ['wr-tab-video', 'wr-panel-video'],
+      'design':      ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
+      'web':         ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
+      'wr-tab-design': ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
+      'traffic':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
+      'trafego':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
+      'wr-tab-traffic': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
+      'copy':        ['wr-tab-copywriting', 'wr-panel-copywriting'],
+      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting'],
+      'wr-tab-copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting'],
+      'comercial':   ['wr-tab-comercial', 'wr-panel-comercial'],
+      'sales':       ['wr-tab-comercial', 'wr-panel-comercial'],
+      'wr-tab-comercial': ['wr-tab-comercial', 'wr-panel-comercial']
     };
 
-    // 1. Oculta todos os painéis existentes
-    document.querySelectorAll('.wr-subtab-content, .wr-panel, [id^="wr-tab-"], [id^="wr-panel-"]').forEach(el => {
-      el.classList.add('hidden');
+    const possibleIds = idFallbacks[key] || (key.startsWith('wr-') ? [key] : [`wr-tab-${key}`]);
+
+    // 1. Oculta todos os painéis de sub-aba
+    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
       el.style.display = 'none';
+      el.classList.add('hidden');
     });
 
-    // 2. Localiza e exibe o container correto
-    const possibleIds = targetMap[key] || [`wr-tab-${key}`, `wr-panel-${key}`];
-    let found = false;
+    // 2. Exibe o painel alvo — tenta cada ID até encontrar
+    let targetEl = null;
     for (const id of possibleIds) {
-      const el = document.getElementById(id);
-      if (el) {
-        el.classList.remove('hidden');
-        el.style.display = 'block';
-        found = true;
-        break;
-      }
+      targetEl = document.getElementById(id);
+      if (targetEl) break;
+    }
+    if (targetEl) {
+      targetEl.classList.remove('hidden');
+      targetEl.style.display = 'block';
     }
 
-    // 3. Atualiza os botões visuais
-    document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn, [data-subtab], [data-wr-tab]').forEach(b => {
-      b.classList.remove('active', 'bg-[#10B981]', 'text-black');
-      b.classList.add('bg-[#0B1514]', 'text-slate-400');
-    });
-
-    const activeBtn = btnEl || document.querySelector(`button[data-subtab="${key}"], button[data-wr-tab="${key}"]`);
-    if (activeBtn) {
-      activeBtn.classList.add('active', 'bg-[#10B981]', 'text-black');
-      activeBtn.classList.remove('bg-[#0B1514]', 'text-slate-400');
-    }
-
-    // 4. Se for tráfego, atualiza a lista de criativos prontos
-    if ((key === 'trafego' || key === 'traffic') && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+    // 3. Hidratação sob demanda: tráfego
+    if ((key === 'traffic' || key === 'trafego' || key === 'wr-tab-traffic') &&
+        typeof window.carregarAtivosEntreguesTrafego === 'function') {
       window.carregarAtivosEntreguesTrafego();
     }
+
+    // 4. Atualiza os estilos dos botões de navegação da sub-aba
+    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
+      const btnKey = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target') || '';
+      const btnIds = idFallbacks[btnKey] || [`wr-tab-${btnKey}`];
+      const isActive = (btnKey === key) || (targetEl && btnIds.includes(targetEl.id));
+      if (isActive) {
+        btn.classList.add('active');
+        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10B981';
+      } else {
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = '#94A3B8';
+      }
+    });
   };
 
   window.trocarSubAbaWarRoom = window.switchWarRoomTab;
