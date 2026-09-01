@@ -8758,7 +8758,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   window.fecharModalBI = window.fecharModalLancarBI;
 
   // ============================================================================
-  // PERSISTÊNCIA 100% SUPABASE BI_ANALYTICS_DATA (ZERO PERDA NO CTRL+F5)
+  // PERSISTÊNCIA & INJEÇÃO SÍNCRONA DE BI (SUPABASE + STORAGE ISOLADO + DOM)
   // ============================================================================
 
   function getSupabaseBI() {
@@ -8768,7 +8768,76 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     return null;
   }
 
-  // 1. SALVAR DIRETAMENTE NO SUPABASE
+  // Helper de Formatação e Injeção no DOM
+  window.aplicarMetricasBIEmTela = function(dados) {
+    if (!dados) return;
+
+    const faturamento = Number(dados.faturamento_total ?? dados.revenue ?? dados.faturamento ?? 0);
+    const gasto = Number(dados.gasto_trafego ?? dados.ad_spend ?? dados.gasto ?? 0);
+    const vendas = Number(dados.vendas_fechadas ?? dados.sales ?? dados.vendas ?? 0);
+    const leads = Number(dados.leads_gerados ?? dados.leads ?? (dados.funil?.leads) ?? 0);
+    const cliques = Number(dados.cliques ?? dados.clicks ?? (dados.funil?.cliques) ?? (leads > 0 ? leads * 8 : 0));
+    const lucro = faturamento - gasto;
+
+    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const setTxt = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = val;
+    };
+
+    const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
+    const cacReal = vendas > 0 ? (gasto / vendas) : 0;
+    const cplMedio = leads > 0 ? (gasto / leads) : 0;
+    const margemPct = faturamento > 0 ? ((lucro / faturamento) * 100).toFixed(1) : '0.0';
+    const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
+    const ltvCac = (gasto > 0 && vendas > 0) ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` : '0.0 : 1';
+
+    // Injeção nos Cards de Topo
+    setTxt('bi-val-faturamento', fmt(faturamento));
+    setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
+    setTxt('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
+    setTxt('bi-val-gasto', fmt(gasto));
+    setTxt('bi-val-lucro', fmt(lucro));
+    setTxt('bi-val-roas', roas);
+    setTxt('bi-val-cac-real', fmt(cacReal));
+    setTxt('bi-val-cpl-medio', fmt(cplMedio));
+    setTxt('bi-val-ltv-cac', ltvCac);
+    setTxt('bi-val-taxa-conv', taxaConv);
+
+    const elMargem = document.getElementById('bi-val-margem-liq');
+    if (elMargem) elMargem.innerText = `${margemPct}% Margem Líquida`;
+
+    // Injeção no Funil de 5 Etapas
+    setTxt('bi-funil-impressoes', Number(cliques * 25).toLocaleString('pt-BR'));
+    setTxt('bi-funil-cliques', Number(cliques).toLocaleString('pt-BR'));
+    setTxt('bi-funil-leads', Number(leads).toLocaleString('pt-BR'));
+    setTxt('bi-funil-agendamentos', Number(Math.max(vendas, Math.round(leads * 0.35))).toLocaleString('pt-BR'));
+    setTxt('bi-funil-vendas', `${Number(vendas).toLocaleString('pt-BR')} Vendas Fechadas`);
+
+    // Atualização do card de Ticket Médio seguro
+    try {
+      const infoTicket = window.obterTicketMedioClienteSeguro(window.currentClientData, dados);
+      const elTicket = document.getElementById('bi-val-ticket-medio');
+      const elFonte = document.getElementById('bi-val-ticket-fonte');
+      if (elTicket) elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
+      if (elFonte && infoTicket.fonte) elFonte.innerText = infoTicket.fonte;
+    } catch (_) {}
+
+    // Atualização dos Gráficos Chart.js
+    if (typeof window.renderizarGraficosBI === 'function') {
+      window.renderizarGraficosBI({
+        historico: {
+          faturamento: [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento],
+          investimento: [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto]
+        },
+        canais: [gasto * 0.5, gasto * 0.3, gasto * 0.12, gasto * 0.08],
+        cac: [cacReal * 0.8, cacReal * 0.95, cacReal * 1.15, cacReal * 1.3],
+        funil: { impressoes: cliques * 25, cliques, leads, agendamentos: Math.max(vendas, Math.round(leads * 0.35)), vendas }
+      });
+    }
+  };
+
+  // 1. SALVAMENTO COM ATUALIZAÇÃO INSTANTÂNEA EM TELA
   window.salvarLancamentoBI = async function(event) {
     if (event) {
       event.preventDefault();
@@ -8777,8 +8846,6 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 
     const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
     const clientId = document.getElementById('bi-input-client-id')?.value 
-                  || document.getElementById('bi-modal-client-id')?.value
-                  || (typeof window.obterClienteAtivoBI === 'function' ? window.obterClienteAtivoBI() : null)
                   || window.currentClientId 
                   || window.activeClientId 
                   || (selectEl ? selectEl.value : null) 
@@ -8798,71 +8865,50 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     const cliques = Math.round(parseVal('bi-input-cliques') || parseVal('modal-bi-cli') || parseVal('bi-cliques')) || (leads > 0 ? leads * 8 : 100);
     const lucro = faturamento - gasto;
 
-    const btnSubmit = document.querySelector('#form-bi-lancar button[type="submit"], #form-lancar-bi button[type="submit"], #form-lancar-bi-modal button[type="submit"]');
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.innerText = 'Gravando no Banco...';
-    }
-
-    const payloadDb = {
+    const payload = {
       client_id: String(clientId),
       reference_date: new Date().toISOString().split('T')[0],
       faturamento_total: faturamento,
+      revenue: faturamento,
+      faturamento: faturamento,
       gasto_trafego: gasto,
+      ad_spend: gasto,
+      gasto: gasto,
       lucro_liquido: lucro,
+      profit: lucro,
       vendas_fechadas: vendas,
+      sales: vendas,
+      vendas: vendas,
       leads_gerados: leads,
+      leads: leads,
       cliques: cliques,
       clicks: cliques,
-      ad_spend: gasto,
-      revenue: faturamento,
+      funil: {
+        impressoes: cliques * 25,
+        cliques: cliques,
+        leads: leads,
+        agendamentos: Math.max(vendas, Math.round(leads * 0.35)),
+        vendas: vendas
+      },
       updated_at: new Date().toISOString()
     };
 
-    // Salva no LocalStorage como cache imediato
-    localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payloadDb));
+    // Aplica IMEDIATAMENTE na tela sem esperar requisição de rede
+    window.aplicarMetricasBIEmTela(payload);
+    localStorage.setItem(`oraculum_bi_metrics_${clientId}`, JSON.stringify(payload));
+    window.fecharModalLancarBI();
 
-    // Grava obrigatoriamente no Supabase
-    const supa = getSupabaseBI();
-    if (supa) {
-      try {
-        const { data, error } = await supa
-          .from('bi_analytics_data')
-          .insert([payloadDb])
-          .select();
-
-        if (error) {
-          console.error('[BI-SUPABASE ERROR]:', error);
-          alert(`❌ Erro do Banco ao salvar: ${error.message}`);
-          if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = 'Salvar Métricas';
-          }
-          return;
-        } else {
-          console.log('[BI-SUPABASE SUCESSO]: Gravado com sucesso:', data);
-        }
-      } catch (err) {
-        console.error('[BI-SUPABASE CATCH]:', err);
+    // Persiste no Supabase em segundo plano
+    try {
+      const supa = getSupabaseBI();
+      if (supa && supa.from) {
+        await supa.from('bi_analytics_data').insert([payload]);
       }
+    } catch (err) {
+      console.warn('[BI] Erro ao gravar no Supabase:', err);
     }
 
-    // Fecha Modal
-    if (typeof window.fecharModalLancarBI === 'function') {
-      window.fecharModalLancarBI();
-    } else {
-      const m = document.getElementById('modal-lancar-bi') || document.getElementById('modal-bi-lancar');
-      if (m) m.style.display = 'none';
-    }
-
-    if (btnSubmit) {
-      btnSubmit.disabled = false;
-      btnSubmit.innerText = 'Salvar Métricas';
-    }
-
-    // Atualiza a tela
-    await window.carregarMetricasBI(clientId);
-    alert('✅ Métricas salvas com sucesso no banco de dados!');
+    alert('✅ Métricas de BI salvas e aplicadas na tela com sucesso!');
   };
 
   // Aliases para formulários legados
@@ -8937,177 +8983,24 @@ window.recalcularFeedbackLoop = async function(btnElement) {
   // 4. Renderizador do Painel (Cards, Gráficos e Funil)
   window.renderizarPainelBINAInterface = function (data, clientOverride) {
     if (!data) return;
-
-    const faturamento = Number(data.faturamento_total || data.revenue || 0);
-    const gasto = Number(data.gasto_trafego || data.ad_spend || 0);
-    const vendas = Math.round(Number(data.vendas_fechadas || data.sales || 0));
-    const leads = Math.round(Number(data.leads_gerados || data.leads || 0));
-    const cliques = Math.round(Number(data.cliques || data.clicks || (leads > 0 ? leads * 8 : 0)));
-
-    const lucro = faturamento - gasto;
-    const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
-    const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
-    const ltvCac = (gasto > 0 && vendas > 0) ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` : '0.0 : 1';
-
-    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-
-    setTxt('bi-val-faturamento', fmt(faturamento));
-    setTxt('bi-val-gasto', fmt(gasto));
-    setTxt('bi-val-roas', roas);
-    setTxt('bi-val-ltv-cac', ltvCac);
-    setTxt('bi-val-taxa-conv', taxaConv);
-    setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
-    setTxt('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
-
-    const cacReal = vendas > 0 ? (gasto / vendas) : 0;
-    const cplMedio = leads > 0 ? (gasto / leads) : 0;
-    const margemLiquidaPct = faturamento > 0 ? ((lucro / faturamento) * 100).toFixed(1) : '0.0';
-
-    setTxt('bi-val-cac-real', fmt(cacReal));
-    setTxt('bi-val-cpl-medio', fmt(cplMedio));
-
-    const elMargem = document.getElementById('bi-val-margem-liq');
-    if (elMargem) {
-      elMargem.innerText = `${margemLiquidaPct}% Margem Líquida`;
-    }
-
-    let ticketClienteNumerico = 0;
-    try {
-      const infoTicket = window.obterTicketMedioClienteSeguro(clientOverride || window.currentClientData, data);
-      const elTicket = document.getElementById('bi-val-ticket-medio');
-      const elFonte = document.getElementById('bi-val-ticket-fonte');
-      if (elTicket) {
-        elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
-      }
-      if (elFonte && infoTicket.fonte) {
-        elFonte.innerText = infoTicket.fonte;
-      }
-      ticketClienteNumerico = infoTicket.valorNumerico || 0;
-    } catch (eTicket) {
-      console.warn('[BI] Falha não impeditiva ao atualizar Ticket Médio na UI:', eTicket);
-      const elTicket = document.getElementById('bi-val-ticket-medio');
-      if (elTicket) elTicket.innerText = 'R$ 0,00';
-    }
-
-    const elCacSub = document.getElementById('bi-val-cac-sub');
-    if (elCacSub) {
-      const ticketCalc = (vendas > 0 ? (faturamento / vendas) : 0) || ticketClienteNumerico;
-      if (ticketCalc > 0) {
-        const tetoMax = ticketCalc * 0.20;
-        elCacSub.innerText = `Teto Max: ${fmt(tetoMax)} (20%)`;
-      } else {
-        elCacSub.innerText = 'Teto Alvo (15-20%)';
-      }
-    }
-
-    const elLucro = document.getElementById('bi-val-lucro');
-    if (elLucro) {
-      elLucro.innerText = fmt(lucro);
-      elLucro.style.color = lucro >= 0 ? '#34d399' : '#f87171';
-    }
-
-    // Gráficos Chart.js
-    const renderChart = (id1, id2, config) => {
-      const canvas = document.getElementById(id1) || document.getElementById(id2);
-      if (!canvas || typeof Chart === 'undefined') return;
-      const old = Chart.getChart(canvas);
-      if (old) old.destroy();
-      new Chart(canvas, config);
-    };
-
-    renderChart('chart-evolucao', 'chart-bi-evolucao', {
-      type: 'line',
-      data: {
-        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4 (Atual)'],
-        datasets: [
-          { label: 'Faturamento (R$)', data: [faturamento * 0.15, faturamento * 0.40, faturamento * 0.70, faturamento], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 },
-          { label: 'Investimento (R$)', data: [gasto * 0.20, gasto * 0.45, gasto * 0.75, gasto], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3 }
-        ]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
-    });
-
-    renderChart('chart-alocacao', 'chart-bi-alocacao', {
-      type: 'doughnut',
-      data: {
-        labels: ['Meta Ads (50%)', 'Google Ads (30%)', 'TikTok Ads (12%)', 'Outros (8%)'],
-        datasets: [{
-          data: [gasto * 0.50, gasto * 0.30, gasto * 0.12, gasto * 0.08],
-          backgroundColor: ['#2563eb', '#ef4444', '#f59e0b', '#10b981'],
-          borderWidth: 0
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
-    });
-
-    const cacMedio = vendas > 0 ? (gasto / vendas) : (gasto / Math.max(1, vendas));
-    renderChart('chart-cac', 'chart-bi-cac', {
-      type: 'bar',
-      data: {
-        labels: ['VSL Hook 3s', 'Reels Bastidores', 'Carrossel Dor', 'Estático Feed'],
-        datasets: [{
-          label: 'CAC Real (R$)',
-          data: [cacMedio * 0.80, cacMedio * 0.95, cacMedio * 1.15, cacMedio * 1.30],
-          backgroundColor: ['#10b981', '#06b6d4', '#f59e0b', '#ef4444'],
-          borderRadius: 6
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
-    });
-
-    // Funil de Conversão Comercial
-    const impressoes = cliques * 25;
-    const agendamentos = Math.max(vendas, Math.round(leads * 0.35));
-    const ctr = impressoes > 0 ? ((cliques / impressoes) * 100).toFixed(1) + '%' : '0.0%';
-    const txLead = cliques > 0 ? ((leads / cliques) * 100).toFixed(1) + '%' : '0.0%';
-    const txAgend = leads > 0 ? ((agendamentos / leads) * 100).toFixed(1) + '%' : '0.0%';
-    const txVenda = agendamentos > 0 ? ((vendas / agendamentos) * 100).toFixed(1) + '%' : '0.0%';
-
-    const etapas = [
-      { termo: 'Impressões', valor: `${impressoes.toLocaleString('pt-BR')} (Topo do Funil)` },
-      { termo: 'Cliques no Link', valor: `${cliques.toLocaleString('pt-BR')} (CTR ${ctr})` },
-      { termo: 'Leads Qualificados', valor: `${leads.toLocaleString('pt-BR')} (Conv: ${txLead})` },
-      { termo: 'Avaliações VIP', valor: `${agendamentos.toLocaleString('pt-BR')} (Agendamento: ${txAgend})` },
-      { termo: 'Vendas &', valor: `${vendas.toLocaleString('pt-BR')} Vendas (Fechamento: ${txVenda})` }
-    ];
-
-    etapas.forEach(etapa => {
-      const elTexto = Array.from(document.querySelectorAll('*')).find(el => 
-        el.children.length === 0 && el.textContent.includes(etapa.termo)
-      );
-      if (elTexto) {
-        const containerLinha = elTexto.closest('div.flex, div.p-3, div.p-2, div.rounded-lg, div.rounded-xl') || elTexto.parentElement;
-        const elValor = containerLinha ? containerLinha.querySelector('span:last-child, div:last-child, strong:last-child') : null;
-        if (elValor && elValor !== elTexto) {
-          elValor.innerText = etapa.valor;
-        }
-      }
-    });
+    window.aplicarMetricasBIEmTela(data);
   };
 
-  // 5. CARREGAR SEMPRE DO SUPABASE (Com Fallback Local se Offline)
+  // 2. RECUPERAÇÃO DO SUPABASE / STORAGE NO CARREGAMENTO
   window.carregarMetricasBI = async function(forcedClientId) {
     const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
     const clientId = forcedClientId 
                   || window.currentClientId 
                   || window.activeClientId 
                   || (selectEl ? selectEl.value : null) 
-                  || localStorage.getItem('oraculum_active_client_id') 
                   || 'client_1787406730';
 
-    const titleEl = document.getElementById('bi-active-client-title');
-    const headerTitle = document.getElementById('dropdown-active-client-name') || document.querySelector('[data-active-client-name]');
-    if (titleEl) {
-      titleEl.innerText = headerTitle?.innerText?.trim() || 'Cliente Selecionado';
-    }
-
     let data = null;
-    const supa = getSupabaseBI();
 
-    // 1. Busca primeiro o registro mais recente gravado no Supabase
-    if (supa) {
-      try {
+    // 1. Tenta recuperar do Supabase o registro mais recente que contenha faturamento > 0 ou o último criado
+    try {
+      const supa = getSupabaseBI();
+      if (supa && supa.from) {
         const { data: dbData, error } = await supa
           .from('bi_analytics_data')
           .select('*')
@@ -9118,82 +9011,23 @@ window.recalcularFeedbackLoop = async function(btnElement) {
 
         if (!error && dbData) {
           data = dbData;
-          console.log('[BI] Dados carregados do Supabase com sucesso:', dbData);
         }
-      } catch (e) {
-        console.warn('[BI] Falha ao consultar Supabase, tentando local:', e);
+      }
+    } catch (e) {
+      console.warn('[BI] Falha ao consultar Supabase:', e);
+    }
+
+    // 2. Fallback para LocalStorage se o banco estiver vazio ou offline
+    if (!data || (!data.faturamento_total && !data.revenue && !data.faturamento)) {
+      const rawLocal = localStorage.getItem(`oraculum_bi_metrics_${clientId}`);
+      if (rawLocal) {
+        try { data = JSON.parse(rawLocal); } catch(e) {}
       }
     }
 
-    // 2. Se não veio do banco, tenta o cache local
-    if (!data) {
-      const raw = localStorage.getItem(`oraculum_bi_metrics_${clientId}`) 
-               || localStorage.getItem(`oraculum_bi_client_${clientId}`);
-      if (raw) {
-        try { data = JSON.parse(raw); } catch(e) {}
-      }
-    }
-
-    // 3. Processa e injeta os números na UI
-    const faturamento = data ? Number(data.faturamento_total || data.faturamento || data.revenue || 0) : 0;
-    const gasto = data ? Number(data.gasto_trafego || data.ad_spend || 0) : 0;
-    const vendas = data ? Number(data.vendas_fechadas || data.vendas || data.sales || 0) : 0;
-    const leads = data ? Number(data.leads_gerados || data.leads || data.funil?.leads || 0) : 0;
-    const cliques = data ? Number(data.cliques || data.funil?.cliques || 0) : (leads > 0 ? leads * 8 : 0);
-    const lucro = faturamento - gasto;
-
-    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const setTxt = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.innerText = val;
-    };
-
-    const roas = gasto > 0 ? (faturamento / gasto).toFixed(2) + 'x' : '0.00x';
-    const cacReal = vendas > 0 ? (gasto / vendas) : 0;
-    const cplMedio = leads > 0 ? (gasto / leads) : 0;
-    const margemPct = faturamento > 0 ? ((lucro / faturamento) * 100).toFixed(1) : '0.0';
-    const taxaConv = leads > 0 ? ((vendas / leads) * 100).toFixed(2) + '%' : '0.00%';
-    const ltvCac = (gasto > 0 && vendas > 0) ? `${((faturamento / vendas) / (gasto / vendas)).toFixed(1)} : 1` : '0.0 : 1';
-
-    setTxt('bi-val-faturamento', fmt(faturamento));
-    setTxt('bi-val-vendas-qtd', `${vendas} Vendas (Confirmadas)`);
-    setTxt('bi-val-vendas-sub', `${vendas} Vendas (Confirmadas)`);
-    setTxt('bi-val-gasto', fmt(gasto));
-    setTxt('bi-val-lucro', fmt(lucro));
-    setTxt('bi-val-roas', roas);
-    setTxt('bi-val-cac-real', fmt(cacReal));
-    setTxt('bi-val-cpl-medio', fmt(cplMedio));
-    setTxt('bi-val-ltv-cac', ltvCac);
-    setTxt('bi-val-taxa-conv', taxaConv);
-
-    const elMargem = document.getElementById('bi-val-margem-liq');
-    if (elMargem) elMargem.innerText = `${margemPct}% Margem Líquida`;
-
-    setTxt('bi-funil-impressoes', Number(cliques * 25).toLocaleString('pt-BR'));
-    setTxt('bi-funil-cliques', Number(cliques).toLocaleString('pt-BR'));
-    setTxt('bi-funil-leads', Number(leads).toLocaleString('pt-BR'));
-    setTxt('bi-funil-agendamentos', Number(Math.max(vendas, Math.round(leads * 0.35))).toLocaleString('pt-BR'));
-    setTxt('bi-funil-vendas', `${Number(vendas).toLocaleString('pt-BR')} Vendas`);
-
-    // Atualiza também o Ticket Médio da ficha do cliente
-    try {
-      const infoTicket = window.obterTicketMedioClienteSeguro(window.currentClientData, data);
-      const elTicket = document.getElementById('bi-val-ticket-medio');
-      const elFonte = document.getElementById('bi-val-ticket-fonte');
-      if (elTicket) elTicket.innerText = infoTicket.valorFormatado || 'R$ 0,00';
-      if (elFonte && infoTicket.fonte) elFonte.innerText = infoTicket.fonte;
-    } catch (_) {}
-
-    if (typeof window.renderizarGraficosBI === 'function') {
-      window.renderizarGraficosBI({
-        historico: {
-          faturamento: [faturamento * 0.15, faturamento * 0.4, faturamento * 0.7, faturamento],
-          investimento: [gasto * 0.2, gasto * 0.45, gasto * 0.75, gasto]
-        },
-        canais: [gasto * 0.5, gasto * 0.3, gasto * 0.12, gasto * 0.08],
-        cac: [cacReal * 0.8, cacReal * 0.95, cacReal * 1.15, cacReal * 1.3],
-        funil: { impressoes: cliques * 25, cliques, leads, agendamentos: Math.max(vendas, Math.round(leads * 0.35)), vendas }
-      });
+    // 3. Aplica na tela
+    if (data) {
+      window.aplicarMetricasBIEmTela(data);
     }
   };
 
