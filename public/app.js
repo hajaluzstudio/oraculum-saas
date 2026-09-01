@@ -1709,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Salva no histórico em memória
       if (!window.currentChatHistory) window.currentChatHistory = [];
       window.currentChatHistory.push({ role: 'user', content: message });
-      window.currentChatHistory.push({ role: 'assistant', content: typeof textoExibicao === 'string' ? textoExibicao : JSON.stringify(textoExibicao) });
+      window.currentChatHistory.push({ role: 'assistant', content: cleanReplyText });
 
     } catch (err) {
       console.error('[Chat Error]:', err);
@@ -1946,7 +1946,8 @@ document.addEventListener('DOMContentLoaded', () => {
             category: String(t.category || 'geral'),
             title: String(t.title || `[${(t.category || 'GERAL').toUpperCase()}] Pauta Estratégica`),
             content: sanitizedContent,
-            status: 'pending'
+            status: 'pending',
+            origin_source: 'chat_estrategico'
           };
           const { error } = await supabase.from('war_room_tasks').insert([supabasePayload]);
           if (error) console.error('[Supabase Insert Error]:', error);
@@ -2854,107 +2855,47 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-// Alternador Universal de Sub-Abas da War Room
-window.switchWarRoomTab = function(targetKey, btnEl) {
-  let key = (typeof targetKey === 'string' && targetKey.trim().length > 0)
-    ? targetKey.trim().toLowerCase()
-    : 'video';
+  window.switchWarRoomTab = function(tabKey) {
+    const map = {
+      'video': 'wr-tab-video',
+      'design': 'wr-tab-design',
+      'traffic': 'wr-tab-traffic',
+      'trafego': 'wr-tab-traffic',
+      'copy': 'wr-tab-copywriting',
+      'copywriting': 'wr-tab-copywriting',
+      'comercial': 'wr-tab-comercial',
+      'sales': 'wr-tab-comercial'
+    };
 
-  if (key === 'traffic') key = 'trafego';
-  if (key === 'copy') key = 'copywriting';
-  if (key === 'sales') key = 'comercial';
+    const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
 
-  // 1. Atualiza botões visuais do topo
-  document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn').forEach(b => {
-    b.className = 'wr-tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B1514] text-slate-400 border border-[#1B3B36] transition-colors';
-  });
+    // Oculta todos os painéis de sub-aba
+    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
+      el.style.display = 'none';
+      el.classList.add('hidden');
+    });
 
-  const activeBtn = btnEl || document.querySelector(`#war-room-subtabs-nav button[data-subtab="${key}"]`);
-  if (activeBtn) {
-    activeBtn.className = 'wr-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold bg-[#10B981] text-black transition-colors';
-  }
-
-  // 2. Alterna painéis físicos sem apagar DOM
-  document.querySelectorAll('.wr-panel').forEach(p => {
-    p.classList.add('hidden');
-    p.style.display = 'none';
-  });
-
-  const targetPanel = document.getElementById(`wr-panel-${key}`);
-  if (targetPanel) {
-    targetPanel.classList.remove('hidden');
-    targetPanel.style.display = 'block';
-  }
-
-  // 3. Hidratação sob demanda
-  if (key === 'trafego' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
-    window.carregarAtivosEntreguesTrafego();
-  }
-  if (typeof window.renderWarRoomTasksByCategory === 'function') {
-    window.renderWarRoomTasksByCategory(key);
-  }
-};
-
-window.trocarSubAbaWarRoom = window.switchWarRoomTab;
-
-// Expansor/Recolhedor de Ferramentas Retráteis
-window.toggleToolSection = function(contentId, headerEl) {
-  const content = document.getElementById(contentId);
-  if (!content) return;
-  content.classList.toggle('hidden');
-  const span = headerEl ? headerEl.querySelector('span:last-child') : null;
-  if (span) {
-    span.textContent = content.classList.contains('hidden') ? '▼ Expandir Ferramenta' : '▲ Recolher Ferramenta';
-  }
-};
-
-// Renderização dinâmica de tarefas por categoria na Sala de Operação
-window.renderWarRoomTasksByCategory = function(category) {
-  const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
-  const listIdMap = {
-    'video': 'video-deliverables-list',
-    'design': 'design-deliverables-list',
-    'copywriting': 'copywriting-deliverables-list',
-    'comercial': 'comercial-deliverables-list'
-  };
-
-  const containerId = listIdMap[category];
-  if (!containerId) return;
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const storageKey = `war_room_all_tasks_${clientId}`;
-  let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  const filtered = tasks.filter(t => (t.category || '').toLowerCase() === category);
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-6 border-2 border-dashed border-slate-800 rounded-xl">
-        <p class="text-xs text-slate-500">Nenhum entregável despachado para esta equipe no momento. Gere e aprove pautas no Chat Estratégico.</p>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = filtered.map(t => `
-    <div class="p-4 bg-[#071311] border border-[#1B3B36] rounded-xl text-slate-200 shadow-md space-y-2">
-      <div class="flex items-center justify-between border-b border-[#1B3B36] pb-2">
-        <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 rounded uppercase">${t.theme || t.title || category.toUpperCase()}</span>
-        <span class="text-[11px] text-slate-400">${new Date(t.created_at || Date.now()).toLocaleTimeString()}</span>
-      </div>
-      <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">${t.content}</div>
-    </div>
-  `).join('');
-};
-
-// Auto-ativação ao navegar para a Sala de Operação
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (typeof window.switchWarRoomTab === 'function') {
-      window.switchWarRoomTab('video');
+    // Exibe a sub-aba alvo
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.style.display = 'block';
+      targetEl.classList.remove('hidden');
     }
-  }, 100);
-});
+
+    // Atualiza os estilos dos botões de navegação da sub-aba
+    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
+      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target');
+      if (key === tabKey || key === targetId || map[key] === targetId) {
+        btn.classList.add('active');
+        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10B981';
+      } else {
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = '#94A3B8';
+      }
+    });
+  };
 
   function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
@@ -3610,24 +3551,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 7. SIMULADOR DE MOCKUP & SAFE ZONES (DESIGN & WEB)
   // ============================================================================
   window.safeZoneMockupState = 1; // Inicia exibindo a interface nativa por padrão
-
-  window.toggleToolSection = function(contentId, headerEl) {
-    const content = document.getElementById(contentId);
-    if (!content) return;
-    
-    // Find the toggle text span (usually the last child or a span containing "▼ Expandir" / "▲ Recolher")
-    const toggleSpan = headerEl ? headerEl.querySelector('span:last-child') : null;
-    
-    if (content.classList.contains('hidden')) {
-      content.classList.remove('hidden');
-      if (toggleSpan) toggleSpan.textContent = '▲ Recolher Ferramenta';
-      if (headerEl) headerEl.classList.add('text-emerald-400');
-    } else {
-      content.classList.add('hidden');
-      if (toggleSpan) toggleSpan.textContent = '▼ Expandir Ferramenta';
-      if (headerEl) headerEl.classList.remove('text-emerald-400');
-    }
-  };
 
   window.toggleSafeZoneMockupTool = function() {
     const content = document.getElementById('safezone-mockup-content');
@@ -8296,9 +8219,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const wrPanels = document.querySelectorAll('.wr-panel');
   wrTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      // Remove active de todos os botões e painéis
+      wrTabBtns.forEach(b => b.classList.remove('active'));
+      wrPanels.forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+      });
+      // Adiciona active no clicado
+      btn.classList.add('active');
       const targetId = btn.getAttribute('data-wr-target');
-      if (typeof window.switchWarRoomTab === 'function') {
-        window.switchWarRoomTab(targetId);
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+        targetPanel.style.display = 'block';
+        
+        // Gatilho para carregar ativos de tráfego ao clicar na aba
+        if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+          window.carregarAtivosEntreguesTrafego();
+        }
       }
     });
   });
@@ -10229,7 +10167,3 @@ window.carregarMetricasBI = async function(forcedClientId) {
     window.carregarOtimizacaoOrcamentoSalva(forcedClientId);
   }
 };
-
-window.trocarSubAbaWarRoom = window.switchWarRoomTab;
-
-
