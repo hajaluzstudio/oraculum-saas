@@ -6485,23 +6485,24 @@ document.addEventListener('DOMContentLoaded', () => {
   window.carregarOtimizacaoOrcamentoSalva = async function(forcedClientId) {
     const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
     const clientId = forcedClientId || window.activeClientId || window.currentClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
-    
     const inputEl = document.getElementById('budget-input-total') || document.getElementById('input-budget-optimizer');
 
-    // 1. Tenta carregar do localStorage imediatamente (0ms)
+    // 1. Tenta restaurar do localStorage primeiro (0ms)
     const localDataStr = localStorage.getItem(`oraculum_budget_opt_${clientId}`);
     if (localDataStr) {
       try {
         const localObj = JSON.parse(localDataStr);
         if (localObj && localObj.data && localObj.data.canais) {
           if (inputEl && localObj.valorTotal) inputEl.value = localObj.valorTotal;
-          window.renderizarCardsOtimizador(localObj.data, localObj.valorTotal || 10000);
+          if (typeof window.renderizarCardsOtimizador === 'function') {
+            window.renderizarCardsOtimizador(localObj.data, localObj.valorTotal || 10000);
+          }
           return;
         }
       } catch(e) {}
     }
 
-    // 2. Se não houver no local, tenta carregar do Supabase
+    // 2. Consulta resiliente ao Supabase
     if (window.supabaseClient && clientId) {
       try {
         const { data, error } = await window.supabaseClient
@@ -6512,14 +6513,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!error && data && data.budget_optimizer_data) {
           if (inputEl && data.last_budget_total) inputEl.value = data.last_budget_total;
-          window.renderizarCardsOtimizador(data.budget_optimizer_data, data.last_budget_total || 10000);
-          localStorage.setItem(`oraculum_budget_opt_${clientId}`, JSON.stringify({
-            valorTotal: data.last_budget_total || 10000,
-            data: data.budget_optimizer_data
-          }));
+          if (typeof window.renderizarCardsOtimizador === 'function') {
+            window.renderizarCardsOtimizador(data.budget_optimizer_data, data.last_budget_total || 10000);
+          }
         }
       } catch(err) {
-        console.warn('[Budget Optimizer Load Error]:', err);
+        // Ignora silenciosamente se o schema ainda não tiver a coluna
       }
     }
   };
