@@ -2868,17 +2868,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
 
-    // Oculta todos os painéis de sub-aba
+    // Oculta todos os painéis de sub-aba e remove active
     document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
       el.style.display = 'none';
       el.classList.add('hidden');
+      el.classList.remove('active');
     });
 
-    // Exibe a sub-aba alvo
+    // Remove active dos botões de navegação
+    const navBtns = document.querySelectorAll('.wr-tab-btn');
+    navBtns.forEach(b => b.classList.remove('active'));
+
+    // Exibe a sub-aba alvo e adiciona active
     const targetEl = document.getElementById(targetId);
     if (targetEl) {
       targetEl.style.display = 'block';
       targetEl.classList.remove('hidden');
+      targetEl.classList.add('active');
+
+      // Adiciona active no botão correspondente
+      const activeBtn = Array.from(navBtns).find(btn => 
+        btn.getAttribute('data-wr-target') === targetId || 
+        btn.getAttribute('data-wr-tab') === tabKey.replace('wr-tab-', '') ||
+        btn.getAttribute('data-wr-target') === tabKey
+      );
+      if (activeBtn) activeBtn.classList.add('active');
 
       if (targetId === 'wr-tab-traffic' && typeof window.carregarAtivosEntreguesTrafego === 'function') {
         window.carregarAtivosEntreguesTrafego();
