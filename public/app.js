@@ -2855,47 +2855,60 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(tabKey) {
-    const map = {
-      'video': 'wr-tab-video',
-      'design': 'wr-tab-design',
-      'traffic': 'wr-tab-traffic',
-      'trafego': 'wr-tab-traffic',
-      'copy': 'wr-tab-copywriting',
-      'copywriting': 'wr-tab-copywriting',
-      'comercial': 'wr-tab-comercial',
-      'sales': 'wr-tab-comercial'
+  window.switchWarRoomTab = function(targetKey, btnEl) {
+    if (!targetKey) targetKey = 'video';
+    const key = String(targetKey).toLowerCase().trim();
+
+    // Mapeamento abrangente de IDs
+    const targetMap = {
+      'video': ['wr-tab-video', 'wr-panel-video', 'video-pane'],
+      'design': ['wr-tab-design', 'wr-panel-design', 'design-pane'],
+      'trafego': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane'],
+      'traffic': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane'],
+      'copy': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane'],
+      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane'],
+      'comercial': ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane'],
+      'sales': ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane']
     };
 
-    const targetId = map[tabKey] || (tabKey.startsWith('wr-') ? tabKey : `wr-tab-${tabKey}`);
-
-    // Oculta todos os painéis de sub-aba
-    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
-      el.style.display = 'none';
+    // 1. Oculta todos os painéis existentes
+    document.querySelectorAll('.wr-subtab-content, .wr-panel, [id^="wr-tab-"], [id^="wr-panel-"]').forEach(el => {
       el.classList.add('hidden');
+      el.style.display = 'none';
     });
 
-    // Exibe a sub-aba alvo
-    const targetEl = document.getElementById(targetId);
-    if (targetEl) {
-      targetEl.style.display = 'block';
-      targetEl.classList.remove('hidden');
+    // 2. Localiza e exibe o container correto
+    const possibleIds = targetMap[key] || [`wr-tab-${key}`, `wr-panel-${key}`];
+    let found = false;
+    for (const id of possibleIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.style.display = 'block';
+        found = true;
+        break;
+      }
     }
 
-    // Atualiza os estilos dos botões de navegação da sub-aba
-    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
-      const key = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target');
-      if (key === tabKey || key === targetId || map[key] === targetId) {
-        btn.classList.add('active');
-        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        btn.style.color = '#10B981';
-      } else {
-        btn.classList.remove('active');
-        btn.style.backgroundColor = 'transparent';
-        btn.style.color = '#94A3B8';
-      }
+    // 3. Atualiza os botões visuais
+    document.querySelectorAll('#war-room-subtabs-nav button, .wr-tab-btn, [data-subtab], [data-wr-tab]').forEach(b => {
+      b.classList.remove('active', 'bg-[#10B981]', 'text-black');
+      b.classList.add('bg-[#0B1514]', 'text-slate-400');
     });
+
+    const activeBtn = btnEl || document.querySelector(`button[data-subtab="${key}"], button[data-wr-tab="${key}"]`);
+    if (activeBtn) {
+      activeBtn.classList.add('active', 'bg-[#10B981]', 'text-black');
+      activeBtn.classList.remove('bg-[#0B1514]', 'text-slate-400');
+    }
+
+    // 4. Se for tráfego, atualiza a lista de criativos prontos
+    if ((key === 'trafego' || key === 'traffic') && typeof window.carregarAtivosEntreguesTrafego === 'function') {
+      window.carregarAtivosEntreguesTrafego();
+    }
   };
+
+  window.trocarSubAbaWarRoom = window.switchWarRoomTab;
 
   function vincularAbasEstaticasWarRoom() {
     const warRoom = document.getElementById('tab-war-room');
