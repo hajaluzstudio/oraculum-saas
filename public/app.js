@@ -650,7 +650,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (activeClientSelect) {
     activeClientSelect.addEventListener('change', (e) => {
-      selectActiveClient(e.target.value);
+      const selectedId = e.target.value;
+      selectActiveClient(selectedId);
+      if (typeof window.carregarOtimizacaoOrcamentoSalva === 'function') {
+        window.carregarOtimizacaoOrcamentoSalva(selectedId);
+      }
     });
   }
 
@@ -6380,7 +6384,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   
       // 2. Se a IA retornou o objeto canais com sucesso
+      let dadosFinal = null;
       if (parsed && Array.isArray(parsed.canais) && parsed.canais.length > 0) {
+        dadosFinal = parsed;
         window.renderizarCardsOtimizador(parsed, valorTotal);
       } else {
         // 3. Fallback Preditivo Dinâmico (calcula proporcional sem quebrar a UI se o Gemini oscilar)
@@ -6394,7 +6400,34 @@ document.addEventListener('DOMContentLoaded', () => {
           lucro_projetado_pct: "+44.0%",
           justificativa: `Alocação otimizada para o segmento de ${clientName}, priorizando canais de tração com menor CPL e maximização do Lucro Líquido.`
         };
+        };
+        dadosFinal = fallbackData;
         window.renderizarCardsOtimizador(fallbackData, valorTotal);
+      }
+
+      // Persistência
+      if (dadosFinal) {
+        const storageKey = `oraculum_budget_opt_${clientId}`;
+        localStorage.setItem(storageKey, JSON.stringify({
+          valorTotal: valorTotal,
+          data: dadosFinal,
+          updated_at: new Date().toISOString()
+        }));
+
+        if (window.supabaseClient && clientId) {
+          try {
+            await window.supabaseClient
+              .from('clients')
+              .update({
+                budget_optimizer_data: dadosFinal,
+                last_budget_total: valorTotal,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', String(clientId));
+          } catch (errSupabase) {
+            console.warn('[Budget Optimizer] Falha ao persistir no clients:', errSupabase);
+          }
+        }
       }
     } catch (err) {
       console.error('[Budget Optimizer Error]:', err);
@@ -6409,7 +6442,31 @@ document.addEventListener('DOMContentLoaded', () => {
         lucro_projetado_pct: "+38.5%",
         justificativa: `Redistribuição adaptativa calculada para ${clientName} visando aceleração de ROI.`
       };
+      };
       window.renderizarCardsOtimizador(fallbackData, valorTotal);
+
+      // Persistência do Fallback
+      const storageKey = `oraculum_budget_opt_${clientId}`;
+      localStorage.setItem(storageKey, JSON.stringify({
+        valorTotal: valorTotal,
+        data: fallbackData,
+        updated_at: new Date().toISOString()
+      }));
+
+      if (window.supabaseClient && clientId) {
+        try {
+          await window.supabaseClient
+            .from('clients')
+            .update({
+              budget_optimizer_data: fallbackData,
+              last_budget_total: valorTotal,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', String(clientId));
+        } catch (errSupabase) {
+          console.warn('[Budget Optimizer] Falha ao persistir no clients:', errSupabase);
+        }
+      }
     } finally {
       if (btnCalc) {
         btnCalc.disabled = false;
@@ -6426,6 +6483,48 @@ document.addEventListener('DOMContentLoaded', () => {
       window.calcularAlocacaoOtimaIA();
     }
   });
+
+  window.carregarOtimizacaoOrcamentoSalva = async function(forcedClientId) {
+    const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+    const clientId = forcedClientId || window.activeClientId || window.currentClientId || (selectEl ? selectEl.value : null) || 'client_1787406730';
+    
+    const inputEl = document.getElementById('budget-input-total') || document.getElementById('input-budget-optimizer');
+
+    // 1. Tenta carregar do localStorage imediatamente (0ms)
+    const localDataStr = localStorage.getItem(`oraculum_budget_opt_${clientId}`);
+    if (localDataStr) {
+      try {
+        const localObj = JSON.parse(localDataStr);
+        if (localObj && localObj.data && localObj.data.canais) {
+          if (inputEl && localObj.valorTotal) inputEl.value = localObj.valorTotal;
+          window.renderizarCardsOtimizador(localObj.data, localObj.valorTotal || 10000);
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // 2. Se não houver no local, tenta carregar do Supabase
+    if (window.supabaseClient && clientId) {
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('clients')
+          .select('budget_optimizer_data, last_budget_total')
+          .eq('id', String(clientId))
+          .maybeSingle();
+
+        if (!error && data && data.budget_optimizer_data) {
+          if (inputEl && data.last_budget_total) inputEl.value = data.last_budget_total;
+          window.renderizarCardsOtimizador(data.budget_optimizer_data, data.last_budget_total || 10000);
+          localStorage.setItem(`oraculum_budget_opt_${clientId}`, JSON.stringify({
+            valorTotal: data.last_budget_total || 10000,
+            data: data.budget_optimizer_data
+          }));
+        }
+      } catch(err) {
+        console.warn('[Budget Optimizer Load Error]:', err);
+      }
+    }
+  };
 
   // ============================================================================
   // ETAPA 4: 👥 PAINEL DE PERMISSÕES & MODO WHITE-LABEL
@@ -9950,4 +10049,8 @@ window.carregarMetricasBI = async function(forcedClientId) {
     await originalCarregarMetricasBI(forcedClientId);
   }
   window.atualizarVisualSLAComercial(forcedClientId);
+  
+  if (typeof window.carregarOtimizacaoOrcamentoSalva === 'function') {
+    window.carregarOtimizacaoOrcamentoSalva(forcedClientId);
+  }
 };
