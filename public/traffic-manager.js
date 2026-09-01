@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       let query = window.supabaseClient
-        .from('kanban_cards')
+        .from('kanban_tasks')
         .select('*')
-        .eq('status', 'archived_traffic');
+        .in('status', ['entregues', 'completed']);
 
       if (window.currentClientId) {
         query = query.eq('client_id', window.currentClientId);
@@ -86,19 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      container.innerHTML = data.map(c => `
-        <div class="card-glass p-4 rounded-lg flex justify-between items-center border border-emerald-500/30 mb-3 bg-black/40">
-          <div>
-            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : '🎬 VÍDEO'}</span>
-            <h4 class="text-sm font-semibold text-white mt-1.5">${c.title || 'Sem título'}</h4>
-            <p class="text-xs text-gray-300 mt-1 max-w-xl line-clamp-3">${c.description || ''}</p>
+      container.innerHTML = data.map(c => {
+        const driveLink = c.delivery_url || c.link || '';
+        const hasLink = driveLink && driveLink.startsWith('http');
+        
+        return `
+        <div class="card-glass p-4 rounded-lg flex flex-col gap-3 border border-emerald-500/30 mb-3 bg-black/40 relative">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold tracking-wide uppercase">${c.type === 'design' ? '🎨 DESIGN' : (c.type === 'copy' ? '✍️ COPY' : '🎬 VÍDEO')}</span>
+              <h4 class="text-sm font-semibold text-white mt-1.5">${c.title || 'Sem título'}</h4>
+            </div>
+            <span class="text-[10px] text-gray-500 font-mono">ID: ${c.id.substring(0, 6)}</span>
           </div>
-          <div class="flex gap-2 shrink-0">
-            <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('Copy copiada!');" class="btn-xs btn-secondary">📋 Copiar Copy</button>
-            <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary">✅ Marcar Veiculado</button>
+          
+          <div class="text-xs text-gray-300 bg-gray-900/50 p-3 rounded-md border border-gray-800 line-clamp-3">
+            <div class="text-[10px] text-emerald-500/70 uppercase font-bold mb-1">Headline / Legenda / Copy</div>
+            ${c.description || 'Nenhuma copy descrita.'}
+          </div>
+          
+          <div class="flex flex-wrap gap-2 shrink-0 justify-end mt-1">
+            <button onclick="navigator.clipboard.writeText('${(c.description || '').replace(/'/g, "\\'")}'); alert('✅ Copy copiada com sucesso!');" class="btn-xs btn-secondary border-blue-500/30 text-blue-400 hover:bg-blue-500/10">📋 Copiar Texto do Anúncio</button>
+            
+            ${hasLink ? `<a href="${driveLink}" target="_blank" class="btn-xs btn-secondary border-amber-500/30 text-amber-400 hover:bg-amber-500/10 flex items-center gap-1 no-underline"><i class="fa-brands fa-google-drive"></i> Abrir Arquivo no Google Drive</a>` : ''}
+            
+            <button onclick="window.markTrafficCardPublished('${c.id}')" class="btn-xs btn-primary shadow-lg shadow-emerald-500/20">✅ Marcar como Veiculado no Gerenciador</button>
           </div>
         </div>
-      `).join('');
+        `;
+      }).join('');
 
     } catch (err) {
       console.error("[Traffic Catch Exception]:", err);
@@ -109,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.markTrafficCardPublished = async function(cardId) {
     if (!window.supabaseClient) return;
     const { error } = await window.supabaseClient
-      .from('kanban_cards')
+      .from('kanban_tasks')
       .update({ status: 'published', updated_at: new Date().toISOString() })
       .eq('id', cardId);
 

@@ -4352,7 +4352,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ? `<button type="button" onclick="window.showRiscoPreditivoDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Ver Detalhes do Risco</button>`
               : isOraculumLive
               ? `<button type="button" onclick="window.showOraculumLiveDetails('${safeTitle}', '${safeDesc}')" style="font-size: 9px; background: rgba(99,102,241,0.15); color: #818CF8; border: 1px solid rgba(99,102,241,0.4); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-robot"></i> Ler Demanda da Reunião</button>`
-              : `<button type="button" onclick="window.showKanbanTaskDetails('${safeTitle}', '${safeDesc}', '${tag}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-book-open"></i> Ler Demanda / Detalhes</button>`
+              : `<button type="button" onclick="window.showKanbanTaskDetails('${safeTitle}', '${safeDesc}', '${tag}', '${task.delivery_url || task.link || ''}')" style="font-size: 9px; background: rgba(16,185,129,0.1); color: #10B981; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 4px 6px; cursor: pointer; flex: 1; font-weight: 600;"><i class="fa-solid fa-book-open"></i> Ler Demanda / Detalhes</button>`
            }
         </div>
 
@@ -4369,7 +4369,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  window.showKanbanTaskDetails = function(title, desc, tag) {
+  window.showKanbanTaskDetails = function(title, desc, tag, link) {
     const modal = document.getElementById('modal-kanban-task-details') || document.getElementById('modal-oraculum-live-details');
     const titleEl = document.getElementById('kanban-task-details-title') || document.getElementById('oraculum-live-details-title');
     const descEl = document.getElementById('kanban-task-details-desc') || document.getElementById('oraculum-live-details-desc');
@@ -4380,7 +4380,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tagEl) tagEl.textContent = tag || 'Geral';
         if (descEl) {
             const finalDesc = desc && desc.trim() !== '' && desc !== 'undefined' ? desc : 'Nenhuma descrição detalhada informada para esta demanda.';
-            descEl.innerHTML = finalDesc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            let htmlDesc = finalDesc.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            
+            if (link && link.startsWith('http')) {
+                htmlDesc += `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(16,185,129,0.2); display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 11px; color: #10B981; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Ativo Entregue</span>
+                    <a href="${link}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16,185,129,0.15); color: #10B981; padding: 10px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid rgba(16,185,129,0.3); width: fit-content; transition: all 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.25)'" onmouseout="this.style.background='rgba(16,185,129,0.15)'">
+                        <i class="fa-brands fa-google-drive"></i> Abrir Arquivo no Google Drive
+                    </a>
+                </div>`;
+            }
+            descEl.innerHTML = htmlDesc;
         }
         
         modal.classList.remove('hidden');
@@ -4669,6 +4679,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (error) throw error;
       
+      // EXPURGO DA SALA DE OPERAÇÃO AO MOVER PARA ENTREGUES
+      if (novoStatus === 'entregues' || novoStatus === 'completed') {
+        const { data: updatedTask } = await window.supabaseClient.from('kanban_tasks').select('title').eq('id', taskId).single();
+        if (updatedTask) {
+          const cardTitle = updatedTask.title || '';
+          const activeClientId = window.currentClientId || window.activeClientId || localStorage.getItem('oraculum_active_client_id');
+
+          if (window.supabaseClient && activeClientId) {
+            // 1. Arquiva na tabela war_room_tasks para sumir da Sala de Operação
+            await window.supabaseClient
+              .from('war_room_tasks')
+              .update({ status: 'archived', completed_at: new Date().toISOString() })
+              .eq('client_id', String(activeClientId))
+              .ilike('title', `%${cardTitle.trim()}%`);
+          }
+
+          // 2. Remove da memória local da Sala de Operação
+          const warRoomKey = `oraculum_war_room_${activeClientId}`;
+          const localWar = JSON.parse(localStorage.getItem(warRoomKey) || '[]');
+          const warAtualizado = localWar.filter(t => !t.title.includes(cardTitle.trim()));
+          localStorage.setItem(warRoomKey, JSON.stringify(warAtualizado));
+
+          // 3. Atualiza a exibição da Sala de Operação imediatamente (0ms)
+          if (typeof window.carregarSalaOperacaoCompleta === 'function') {
+            window.carregarSalaOperacaoCompleta(activeClientId);
+          }
+          if (typeof window.carregarTarefasWarRoom === 'function') {
+            window.carregarTarefasWarRoom(activeClientId);
+          }
+        }
+      }
+
       // Recarrega os cards visualmente
       loadClientKanbanCards(window.currentClientId || activeClientId);
     } catch (e) {
