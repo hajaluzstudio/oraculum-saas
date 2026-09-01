@@ -8893,7 +8893,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     const ctr = impressoes > 0 ? ((cliques / impressoes) * 100).toFixed(1) + '%' : '0.0%';
     const txLead = cliques > 0 ? ((leads / cliques) * 100).toFixed(1) + '%' : '0.0%';
     const txAgend = leads > 0 ? ((agendamentos / leads) * 100).toFixed(1) + '%' : '0.0%';
-    const txVenda = agendamentos > 0 ? ((vendas / agendamentos) * 100).toFixed(1) + '%' : '0.0%';
+    const txVenda = agendamentos > 0 ? ((vendas / agendamentos) * 100).toFixed(1) + '%' : (leads > 0 ? ((vendas / leads) * 100).toFixed(1) + '%' : '0.0%');
   
     // Atualiza IDs padrão bi-funil-*
     setTxt('bi-funil-impressoes', Number(impressoes).toLocaleString('pt-BR'));
@@ -8906,8 +8906,8 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     setTxt('funnel-val-impressions', Number(impressoes).toLocaleString('pt-BR'));
     setTxt('funnel-val-clicks', Number(cliques).toLocaleString('pt-BR'));
     setTxt('funnel-val-leads', Number(leads).toLocaleString('pt-BR'));
-    setTxt('funnel-val-meetings', Number(agendamentos).toLocaleString('pt-BR'));
-    setTxt('funnel-val-sales', `${Number(vendas).toLocaleString('pt-BR')} Vendas`);
+    setTxt('funnel-val-meetings', `${Number(agendamentos).toLocaleString('pt-BR')} (Agendamento: ${txAgend})`);
+    setTxt('funnel-val-sales', `${Number(vendas).toLocaleString('pt-BR')} Vendas (Fechamento: ${txVenda})`);
 
     // Atualização do card de Ticket Médio seguro
     try {
