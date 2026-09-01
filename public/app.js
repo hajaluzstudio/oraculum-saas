@@ -6400,7 +6400,6 @@ document.addEventListener('DOMContentLoaded', () => {
           lucro_projetado_pct: "+44.0%",
           justificativa: `Alocação otimizada para o segmento de ${clientName}, priorizando canais de tração com menor CPL e maximização do Lucro Líquido.`
         };
-        };
         dadosFinal = fallbackData;
         window.renderizarCardsOtimizador(fallbackData, valorTotal);
       }
@@ -6441,7 +6440,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         lucro_projetado_pct: "+38.5%",
         justificativa: `Redistribuição adaptativa calculada para ${clientName} visando aceleração de ROI.`
-      };
       };
       window.renderizarCardsOtimizador(fallbackData, valorTotal);
 
