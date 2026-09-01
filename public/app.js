@@ -9,6 +9,84 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// INTERCEPTADOR GLOBAL DE ALERTAS DO NAVEGADOR
+window.alert = function(mensagem) {
+  // Remove alerta anterior se houver
+  const modalAntigo = document.getElementById('oraculum-custom-alert-modal');
+  if (modalAntigo) modalAntigo.remove();
+
+  let titulo = 'Aviso do Sistema';
+  let icone = 'fa-circle-exclamation';
+  let corBorda = 'border-emerald-500/50';
+  let corIcone = 'text-emerald-400';
+
+  if (typeof mensagem === 'string') {
+    if (mensagem.includes('QUALITY GATE') || mensagem.includes('NEGADO') || mensagem.includes('Erro') || mensagem.includes('❌')) {
+      titulo = 'Quality Gate / Alerta de Bloqueio';
+      icone = 'fa-triangle-exclamation';
+      corBorda = 'border-rose-500/60';
+      corIcone = 'text-rose-400';
+    } else if (mensagem.includes('Sucesso') || mensagem.includes('✅') || mensagem.includes('Aprovado')) {
+      titulo = 'Confirmação';
+      icone = 'fa-circle-check';
+      corBorda = 'border-emerald-500/60';
+      corIcone = 'text-emerald-400';
+    }
+  }
+
+  const modalHtml = `
+    <div id="oraculum-custom-alert-modal" class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div class="bg-[#0b1320] border ${corBorda} rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-black relative text-slate-100 flex flex-col gap-4">
+        
+        <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+          <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/60 flex items-center justify-center ${corIcone} text-base flex-shrink-0">
+            <i class="fa-solid ${icone}"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white tracking-wide">${titulo}</h3>
+            <span class="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Oraculum Governance Engine</span>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-300 leading-relaxed max-h-60 overflow-y-auto whitespace-pre-line pr-1">
+          ${mensagem}
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button 
+            id="btn-close-custom-alert" 
+            type="button" 
+            class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const btnClose = document.getElementById('btn-close-custom-alert');
+  if (btnClose) {
+    btnClose.focus();
+    btnClose.onclick = () => {
+      const modal = document.getElementById('oraculum-custom-alert-modal');
+      if (modal) modal.remove();
+    };
+  }
+
+  // Permite fechar com Enter ou Esc
+  const keyHandler = (e) => {
+    if (e.key === 'Escape' || e.key === 'Enter') {
+      const modal = document.getElementById('oraculum-custom-alert-modal');
+      if (modal) modal.remove();
+      window.removeEventListener('keydown', keyHandler);
+    }
+  };
+  window.addEventListener('keydown', keyHandler);
+};
+
 // [ANTI-CRASH GLOBAL]: Declarações antecipadas para evitar TypeErrors durante o parsing
 window.carregarUltimoBIDoCliente = function(clientId, clientData) {
   if (typeof window.carregarMetricasBI === 'function') window.carregarMetricasBI(clientId, clientData);
