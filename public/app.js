@@ -202,7 +202,7 @@ window.testarConexaoSupabaseChat = async function () {
   } else {
     console.log('[SUPABASE TEST SUCESSO]:', data);
     alert(`✅ SUCESSO! Conexão ativa com o Supabase.\nRegistro criado com ID: ${data[0]?.id || 'OK'}\nO banco está gravando perfeitamente.`);
-    carregarHistoricoChat();
+    if(window.carregarHistoricoChatEstrategico) window.carregarHistoricoChatEstrategico(window.activeClientId || "client_1787406730");
   }
 };
 
@@ -1677,7 +1677,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Inicia o carregamento direto do banco no carregamento da tela e na troca de cliente
-  window.carregarHistoricoChat = carregarHistoricoChat;
+  
   window.handleSendChatMessage = handleSendChatMessage;
 
   // Vinculação de evento direta por ID e delegação no clique do botão
@@ -9690,7 +9690,7 @@ window.sincronizarApisBI = async function() {
 // 3. Inicializa��o no carregamento da p�gina
 document.addEventListener('DOMContentLoaded', () => {
   const activeClient = localStorage.getItem('active_client_id') || 'client_1707406730';
-  if (typeof window.carregarHistoricoChat === 'function') window.carregarHistoricoChat(activeClient);
+  if (typeof window.carregarHistoricoChatEstrategico === 'function') window.carregarHistoricoChatEstrategico(activeClient);
   if (typeof window.carregarSalaOperacaoCompleta === 'function') window.carregarSalaOperacaoCompleta();
 });
 // Listener universal para captura segura de cliques nas gavetas e botões do Estúdio
