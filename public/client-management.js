@@ -50,27 +50,118 @@ window.abrirModalNovoCliente = function(clientId = null) {
     modal.innerHTML = `
       <div style="max-height: 90vh; overflow-y: auto;" class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 text-white custom-scrollbar">
         <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-          <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400 text-lg font-bold">📋</span>
+            <h3 id="modal-client-title" class="text-lg font-bold text-white">Cadastrar Novo Cliente</h3>
+          </div>
           <button type="button" onclick="window.fecharModalNovoCliente()" class="text-slate-400 hover:text-white text-2xl p-1">&times;</button>
         </div>
-        <form id="form-client-crud" onsubmit="window.salvarCliente(event)" class="space-y-3">
+        <form id="form-client-crud" onsubmit="window.salvarCliente(event)" class="space-y-4">
           <input type="hidden" id="client-modal-id">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" id="client-modal-name" required placeholder="Nome / Razão Social *" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
-            <input type="text" id="client-modal-niche" required placeholder="Nicho / Especialidade *" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
+
+          <!-- SEÇÃO A: IDENTIFICAÇÃO -->
+          <div class="space-y-2">
+            <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-800/80">
+              <span>👤</span> Seção A: Identificação Cadastral
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Nome / Razão Social *</label>
+                <input type="text" id="client-modal-name" required placeholder="Ex: Clínica Alfa Prime" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Nicho / Especialidade *</label>
+                <input type="text" id="client-modal-niche" required placeholder="Ex: Dermatologia & Estética" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Nome do Responsável</label>
+                <input type="text" id="client-modal-contact-name" placeholder="Ex: Dra. Mariana Lima" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Telefone / WhatsApp</label>
+                <input type="text" id="client-modal-phone" placeholder="Ex: (11) 98765-4321" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Site Oficial</label>
+                <input type="text" id="client-modal-website" placeholder="https://clinicaluxe.com.br" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Instagram (@perfil)</label>
+                <input type="text" id="client-modal-instagram" placeholder="@clinicaluxeprime" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+            </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" id="client-modal-contact-name" placeholder="Responsável" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
-            <input type="text" id="client-modal-phone" placeholder="Telefone" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
+
+          <!-- SEÇÃO B: ESTRATÉGICA & UNIT ECONOMICS -->
+          <div class="space-y-2 pt-2">
+            <div class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-800/80">
+              <span>💰</span> Seção B: Estratégica & Unit Economics
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Ticket Médio Real (R$)</label>
+                <input type="text" id="client-modal-avg-ticket" placeholder="Ex: 15.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Meta de Faturamento Mensal (R$)</label>
+                <input type="text" id="client-modal-target-revenue" placeholder="Ex: 100.000,00" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="md:col-span-1">
+                <label class="text-[11px] text-slate-400 mb-1 block">Produto / Serviço Carro-Chefe</label>
+                <input type="text" id="client-modal-main-service" placeholder="Ex: Harmonização Facial VIP" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Modelo de Cobrança</label>
+                <select id="client-modal-billing-model" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                  <option value="unico">Pagamento Único / Avulso</option>
+                  <option value="recorrente">Mensalidade / Recorrente</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Ciclo de Venda</label>
+                <select id="client-modal-sales-cycle" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                  <option value="imediato">Imediato (1 a 3 dias)</option>
+                  <option value="curto">Curto (7 a 15 dias)</option>
+                  <option value="longo">Longo (30 a 90 dias)</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="text" id="client-modal-avg-ticket" placeholder="Ticket Médio (Ex: 1500)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
-            <input type="text" id="client-modal-target-revenue" placeholder="Meta de Faturamento" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500">
+
+          <!-- SEÇÃO C: TRÁFEGO & TRACKING -->
+          <div class="space-y-2 pt-2">
+            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-slate-800/80">
+              <span>🎯</span> Seção C: Tráfego, Tracking & Observações
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">ID Conta Meta Ads</label>
+                <input type="text" id="client-modal-meta-account" placeholder="act_123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Meta Pixel ID</label>
+                <input type="text" id="client-modal-meta-pixel" placeholder="123456789012345" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 mb-1 block">Google Ads Customer ID</label>
+                <input type="text" id="client-modal-google-customer" placeholder="123-456-7890" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-400 mb-1 block">Notas, Histórico & Diretrizes da Agência</label>
+              <textarea id="client-modal-notes" rows="2" placeholder="Histórico, objeções mapeadas, tom de voz ou peculiaridades do cliente..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-emerald-500 focus:outline-none"></textarea>
+            </div>
           </div>
-          <textarea id="client-modal-notes" rows="2" placeholder="Notas & Histórico..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm focus:border-emerald-500"></textarea>
-          <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" onclick="window.fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-xl text-slate-300 text-sm">Cancelar</button>
-            <button type="submit" id="btn-save-client-crud" class="px-5 py-2 bg-[#10B981] hover:bg-[#059669] text-slate-950 font-bold rounded-xl text-sm">Salvar</button>
+
+          <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+            <button type="button" onclick="window.fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 text-sm font-medium transition-colors">Cancelar</button>
+            <button type="submit" id="btn-save-client-crud" class="px-6 py-2 bg-[#10B981] hover:bg-[#059669] text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Salvar Cliente</button>
           </div>
         </form>
       </div>
@@ -83,15 +174,23 @@ window.abrirModalNovoCliente = function(clientId = null) {
 
   if (clientId) {
     document.getElementById('modal-client-title').innerText = 'Editar Ficha do Cliente';
-    const client = window.clientesMock.find(c => String(c.id) === String(clientId));
+    const client = (window.clientesMock || window.clientsList || []).find(c => String(c.id) === String(clientId));
     if (client) {
-      document.getElementById('client-modal-id').value = client.id;
+      document.getElementById('client-modal-id').value = client.id || '';
       document.getElementById('client-modal-name').value = client.name || '';
       document.getElementById('client-modal-niche').value = client.niche || '';
       document.getElementById('client-modal-contact-name').value = client.contact_name || '';
       document.getElementById('client-modal-phone').value = client.phone || '';
-      document.getElementById('client-modal-avg-ticket').value = client.avg_ticket || '';
-      document.getElementById('client-modal-target-revenue').value = client.target_revenue || '';
+      document.getElementById('client-modal-website').value = client.website || '';
+      document.getElementById('client-modal-instagram').value = client.instagram || '';
+      document.getElementById('client-modal-avg-ticket').value = client.avg_ticket || client.ticket || '';
+      document.getElementById('client-modal-target-revenue').value = client.target_revenue || client.meta_faturamento || '';
+      document.getElementById('client-modal-main-service').value = client.main_service || '';
+      document.getElementById('client-modal-billing-model').value = client.billing_model || 'unico';
+      document.getElementById('client-modal-sales-cycle').value = client.sales_cycle || 'imediato';
+      document.getElementById('client-modal-meta-account').value = client.meta_ad_account_id || '';
+      document.getElementById('client-modal-meta-pixel').value = client.meta_pixel_id || '';
+      document.getElementById('client-modal-google-customer').value = client.google_customer_id || '';
       document.getElementById('client-modal-notes').value = sanitizeNotes(client.notes || client.previous_agency_notes);
     }
   } else {
@@ -111,7 +210,7 @@ window.fecharModalNovoCliente = function() {
   }
 };
 
-// 3. SALVAR CLIENTE
+// 3. SALVAR CLIENTE COM PARSE SEGURO E PERSISTÊNCIA ROBUSTA
 window.salvarCliente = async function(e) {
   if (e) e.preventDefault();
   const btn = document.getElementById('btn-save-client-crud');
@@ -127,18 +226,35 @@ window.salvarCliente = async function(e) {
       return;
     }
 
-    const payload = {
-      name: document.getElementById('client-modal-name').value,
-      niche: document.getElementById('client-modal-niche').value,
-      contact_name: document.getElementById('client-modal-contact-name').value,
-      phone: document.getElementById('client-modal-phone').value,
-      avg_ticket: parseFloat(document.getElementById('client-modal-avg-ticket').value) || 0,
-      target_revenue: parseFloat(document.getElementById('client-modal-target-revenue').value) || 0,
-      notes: document.getElementById('client-modal-notes').value,
-      agency_id: identidade.isMaster ? (identidade.agencyId || null) : identidade.agencyId,
+    const parseMoney = (val) => {
+      if (!val) return 0;
+      const clean = String(val).replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
     };
 
-    const id = document.getElementById('client-modal-id').value;
+    const payload = {
+      name: document.getElementById('client-modal-name')?.value.trim() || '',
+      niche: document.getElementById('client-modal-niche')?.value.trim() || '',
+      contact_name: document.getElementById('client-modal-contact-name')?.value.trim() || '',
+      phone: document.getElementById('client-modal-phone')?.value.trim() || '',
+      website: document.getElementById('client-modal-website')?.value.trim() || '',
+      instagram: document.getElementById('client-modal-instagram')?.value.trim() || '',
+      avg_ticket: parseMoney(document.getElementById('client-modal-avg-ticket')?.value),
+      ticket: parseMoney(document.getElementById('client-modal-avg-ticket')?.value), // compatibilidade bi
+      target_revenue: parseMoney(document.getElementById('client-modal-target-revenue')?.value),
+      meta_faturamento: parseMoney(document.getElementById('client-modal-target-revenue')?.value), // compatibilidade bi
+      main_service: document.getElementById('client-modal-main-service')?.value.trim() || '',
+      billing_model: document.getElementById('client-modal-billing-model')?.value || 'unico',
+      sales_cycle: document.getElementById('client-modal-sales-cycle')?.value || 'imediato',
+      meta_ad_account_id: document.getElementById('client-modal-meta-account')?.value.trim() || '',
+      meta_pixel_id: document.getElementById('client-modal-meta-pixel')?.value.trim() || '',
+      google_customer_id: document.getElementById('client-modal-google-customer')?.value.trim() || '',
+      notes: document.getElementById('client-modal-notes')?.value.trim() || '',
+      agency_id: identidade.isMaster ? (identidade.agencyId || null) : identidade.agencyId,
+      updated_at: new Date().toISOString()
+    };
+
+    const id = document.getElementById('client-modal-id')?.value;
     const { error } = id 
         ? await supaClient.from('clients').update(payload).eq('id', id) 
         : await supaClient.from('clients').insert([payload]);
@@ -167,7 +283,7 @@ window.salvarCliente = async function(e) {
       alert('❌ Erro ao salvar: ' + err.message);
     }
   } finally {
-    if (btn) { btn.innerText = 'Salvar'; btn.disabled = false; }
+    if (btn) { btn.innerText = 'Salvar Cliente'; btn.disabled = false; }
   }
 };
 
@@ -192,6 +308,44 @@ window.carregarDadosClienteNoOnboarding = function(clientId) {
   sessionStorage.setItem('oraculum_active_client_id', clientId);
   window.currentClientId = clientId;
   window.activeClientId = clientId;
+
+  const list = window.clientesMock || window.clientsList || [];
+  const client = list.find(c => String(c.id) === String(clientId));
+
+  if (client) {
+    // Preenche os campos do formulário de Onboarding
+    const elName = document.getElementById('client-name');
+    const elNiche = document.getElementById('client-niche');
+    const elWebsite = document.getElementById('client-website');
+    const elNotes = document.getElementById('previous-agency-notes');
+
+    if (elName) elName.value = client.name || '';
+    if (elNiche) elNiche.value = client.niche || '';
+    if (elWebsite) elWebsite.value = client.website || '';
+
+    if (elNotes) {
+      const ticketFormatado = client.avg_ticket || client.ticket 
+        ? `R$ ${Number(client.avg_ticket || client.ticket).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+        : 'Não informado';
+      const metaFormatada = client.target_revenue || client.meta_faturamento 
+        ? `R$ ${Number(client.target_revenue || client.meta_faturamento).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+        : 'Não informada';
+      const servicoPrincipal = client.main_service || 'Não especificado';
+      const modeloCobranca = client.billing_model === 'recorrente' ? 'Recorrente / Mensal' : 'Pagamento Único';
+      const cicloVenda = client.sales_cycle || 'Imediato';
+
+      let baseNotes = sanitizeNotes(client.notes || client.previous_agency_notes || '');
+      
+      // Constrói contextualização estratégica de alto valor para o prompt de IA
+      const headerEstrategico = `[DADOS CADASTRADOS DA FICHA DO CLIENTE]\n- Ticket Médio Real: ${ticketFormatado}\n- Meta de Faturamento Mensal: ${metaFormatada}\n- Serviço / Produto Carro-Chefe: ${servicoPrincipal}\n- Modelo de Cobrança: ${modeloCobranca}\n- Ciclo de Venda: ${cicloVenda}\n`;
+
+      if (!baseNotes.includes('[DADOS CADASTRADOS DA FICHA DO CLIENTE]')) {
+        elNotes.value = baseNotes ? `${headerEstrategico}\n[DIRETRIZES & HISTÓRICO]\n${baseNotes}` : headerEstrategico;
+      } else {
+        elNotes.value = baseNotes;
+      }
+    }
+  }
 
   const selectHeader = document.getElementById('active-client-select');
   if (selectHeader) {

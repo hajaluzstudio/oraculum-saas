@@ -582,21 +582,57 @@ app.get('/api/clients', async (req: Request, res: Response) => {
   }
 });
 
-// SCHEMA REAL clients: id, agency_id, organization_id, name, niche, website, previous_agency_notes, status, created_at, user_id, monthly_budget
+// SCHEMA REAL clients: id, agency_id, organization_id, name, niche, website, previous_agency_notes, status, created_at, user_id, monthly_budget, etc.
 app.post('/api/clients', async (req: Request, res: Response) => {
   try {
     const organizationId = (req as any).organizationId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104';
-    const { name, niche, sanitized_history, website, previous_agency_notes } = req.body;
+    const {
+      name,
+      niche,
+      contact_name,
+      phone,
+      website,
+      instagram,
+      avg_ticket,
+      target_revenue,
+      main_service,
+      billing_model,
+      sales_cycle,
+      meta_ad_account_id,
+      meta_pixel_id,
+      google_customer_id,
+      notes,
+      sanitized_history,
+      previous_agency_notes,
+      agency_id
+    } = req.body;
+
     if (!name || !niche) return res.status(400).json({ error: 'Nome e Nicho são obrigatórios.' });
 
-    // Payload alinhado 100% com o schema real do Supabase
+    // Payload alinhado 100% com o schema enriquecido do Supabase
     const clientPayload: Record<string, any> = {
       organization_id: organizationId,
+      agency_id: agency_id || organizationId,
       name,
       niche,
       status: 'active',
+      contact_name: contact_name || null,
+      phone: phone || null,
       website: website || null,
-      previous_agency_notes: sanitized_history || previous_agency_notes || null,
+      instagram: instagram || null,
+      avg_ticket: Number(avg_ticket) || 0,
+      ticket: Number(avg_ticket) || 0,
+      target_revenue: Number(target_revenue) || 0,
+      meta_faturamento: Number(target_revenue) || 0,
+      main_service: main_service || null,
+      billing_model: billing_model || 'unico',
+      sales_cycle: sales_cycle || 'imediato',
+      meta_ad_account_id: meta_ad_account_id || null,
+      meta_pixel_id: meta_pixel_id || null,
+      google_customer_id: google_customer_id || null,
+      notes: notes || sanitized_history || previous_agency_notes || null,
+      previous_agency_notes: sanitized_history || previous_agency_notes || notes || null,
+      updated_at: new Date().toISOString()
     };
 
     console.log('[API] Criando cliente com payload:', JSON.stringify(clientPayload));

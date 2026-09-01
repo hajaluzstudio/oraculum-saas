@@ -8886,18 +8886,8 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       elMargem.innerText = `${margemLiquidaPct}% Margem Líquida`;
     }
 
-    const elCacSub = document.getElementById('bi-val-cac-sub');
-    if (elCacSub) {
-      const ticketCalc = vendas > 0 ? (faturamento / vendas) : 0;
-      if (ticketCalc > 0) {
-        const tetoMax = ticketCalc * 0.20;
-        elCacSub.innerText = `Teto Max: ${fmt(tetoMax)} (20%)`;
-      } else {
-        elCacSub.innerText = 'Teto Alvo (15-20%)';
-      }
-    }
-
     // Renderização do Ticket Médio da Ficha do Cliente de forma 100% segura
+    let ticketClienteNumerico = 0;
     try {
       const infoTicket = window.obterTicketMedioClienteSeguro(clientOverride || window.currentClientData, data);
       const elTicket = document.getElementById('bi-val-ticket-medio');
@@ -8908,10 +8898,22 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       if (elFonte && infoTicket.fonte) {
         elFonte.innerText = infoTicket.fonte;
       }
+      ticketClienteNumerico = infoTicket.valorNumerico || 0;
     } catch (eTicket) {
       console.warn('[BI] Falha não impeditiva ao atualizar Ticket Médio na UI:', eTicket);
       const elTicket = document.getElementById('bi-val-ticket-medio');
       if (elTicket) elTicket.innerText = 'R$ 0,00';
+    }
+
+    const elCacSub = document.getElementById('bi-val-cac-sub');
+    if (elCacSub) {
+      const ticketCalc = (vendas > 0 ? (faturamento / vendas) : 0) || ticketClienteNumerico;
+      if (ticketCalc > 0) {
+        const tetoMax = ticketCalc * 0.20;
+        elCacSub.innerText = `Teto Max: ${fmt(tetoMax)} (20%)`;
+      } else {
+        elCacSub.innerText = 'Teto Alvo (15-20%)';
+      }
     }
 
     const elLucro = document.getElementById('bi-val-lucro');
