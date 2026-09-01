@@ -9676,7 +9676,13 @@ window.salvarConfigSLA = async function(e) {
 };
 
 window.atualizarVisualSLAComercial = async function(clientId, metricsData = null) {
-  const targetId = clientId || window.currentClientId || 'client_1787406730';
+  const selectEl = document.getElementById('active-client-select') || document.getElementById('select-active-client');
+  const targetId = clientId 
+                || window.currentClientId 
+                || window.activeClientId 
+                || (selectEl ? selectEl.value : null) 
+                || localStorage.getItem('oraculum_active_client_id')
+                || 'client_1787406730';
   
   let config = { tempo_alvo: 15, tempo_critico: 60 };
   const rawConfig = localStorage.getItem(`oraculum_sla_config_${targetId}`);
@@ -9688,30 +9694,35 @@ window.atualizarVisualSLAComercial = async function(clientId, metricsData = null
   let tempoMedio = 0;
   let leadsPerdidos = 0;
   let leadsContatados = 0;
+  let logsReaisEncontrados = false;
 
-  // 1. Tenta buscar logs reais na tabela commercial_lead_logs
+  // 1. Busca logs reais na tabela commercial_lead_logs do Supabase
   const supa = typeof supabase !== 'undefined' ? supabase : (window.supabaseClient || window.supabase);
   if (supa && supa.from) {
     try {
       const { data: logs, error } = await supa
         .from('commercial_lead_logs')
-        .select('response_time_minutes, status_atendimento')
-        .eq('client_id', String(targetId));
+        .select('*')
+        .eq('client_id', String(targetId))
+        .order('created_at', { ascending: false });
 
       if (!error && logs && logs.length > 0) {
+        logsReaisEncontrados = true;
         totalLogs = logs.length;
         leadsContatados = logs.filter(l => l.status_atendimento !== 'sem_resposta').length;
-        const somaTempo = logs.reduce((acc, curr) => acc + (Number(curr.response_time_minutes) || 0), 0);
+        
+        const somaTempo = logs.reduce((acc, l) => acc + (Number(l.response_time_minutes) || 0), 0);
         tempoMedio = Math.round(somaTempo / totalLogs);
         leadsPerdidos = logs.filter(l => (Number(l.response_time_minutes) || 0) > config.tempo_alvo).length;
+        console.log(`[SLA] Logs reais carregados para ${targetId}: ${totalLogs} registros, Média: ${tempoMedio} min`);
       }
     } catch (err) {
       console.warn('[SLA Real Data] Erro ao consultar logs:', err);
     }
   }
 
-  // 2. Se não houver logs de webhook registrados, utiliza fallback proporcional das métricas de tráfego
-  if (totalLogs === 0) {
+  // 2. Se não houver NENHUM log registrado via webhook, usa os dados do BI ativo
+  if (!logsReaisEncontrados) {
     let leads = Number(metricsData?.leads_gerados ?? metricsData?.leads ?? 0);
     if (!leads) {
       const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
@@ -9720,25 +9731,27 @@ window.atualizarVisualSLAComercial = async function(clientId, metricsData = null
       }
     }
     if (leads > 0) {
-      tempoMedio = leads > 50 ? 94 : 28;
+      tempoMedio = 0;
       totalLogs = leads;
-      leadsContatados = Math.round(leads * 0.75);
-      leadsPerdidos = Math.round(leads * 0.38);
+      leadsContatados = leads;
+      leadsPerdidos = 0;
     }
   }
 
-  const taxaContato = totalLogs > 0 ? ((leadsContatados / totalLogs) * 100).toFixed(1) + '%' : '--';
+  const taxaContato = totalLogs > 0 ? ((leadsContatados / totalLogs) * 100).toFixed(1) + '%' : '100.0%';
+  
+  // Cálculo do Ticket Médio Real para estimativa de perda
   const rawBI = localStorage.getItem(`oraculum_bi_metrics_${targetId}`);
-  let ticketMedio = 1500;
+  let ticketMedio = 38000;
   if (rawBI) {
     try {
       const bi = JSON.parse(rawBI);
-      const fat = Number(bi.faturamento_total || 0);
-      const ven = Number(bi.vendas_fechadas || 0);
+      const fat = Number(bi.faturamento_total || bi.revenue || 0);
+      const ven = Number(bi.vendas_fechadas || bi.sales || 0);
       if (fat > 0 && ven > 0) ticketMedio = fat / ven;
     } catch(e) {}
   }
-  const impactoFinanceiro = leadsPerdidos * (ticketMedio * 0.15);
+  const impactoFinanceiro = leadsPerdidos * (ticketMedio * 0.10); // 10% de conversão potencial perdida
 
   const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
