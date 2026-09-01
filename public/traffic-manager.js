@@ -7,34 +7,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('traffic-creatives-list');
     if (!container) return;
 
-    const clientId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+    const rawId = window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id') || 'client_1787406730';
+    const numericId = String(rawId).replace('client_', '');
+    const idComPrefixo = `client_${numericId}`;
+    const clientIds = [rawId, numericId, idComPrefixo];
+
     let cards = [];
 
-    // 1. Busca no Supabase por tarefas finalizadas
+    // 1. Busca no Supabase com suporte a stage, status e variações de ID
     if (window.supabaseClient) {
       try {
         const { data, error } = await window.supabaseClient
           .from('kanban_tasks')
           .select('*')
-          .eq('client_id', String(clientId))
-          .in('status', ['entregues', 'completed', 'delivered', 'archived_traffic'])
+          .in('client_id', clientIds)
+          .or('status.in.(entregues,completed,delivered,archived_traffic),stage.in.(entregues,completed,delivered,6),column_id.eq.6')
           .order('created_at', { ascending: false });
 
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           cards = data;
         }
       } catch(err) {
-        console.warn('[Traffic Manager] Erro ao buscar tarefas do Supabase:', err);
+        console.warn('[Traffic Manager] Erro na busca do Supabase:', err);
       }
     }
 
-    // 2. Fallback de localStorage
+    // 2. Fallback local abrangente
     if (!cards || cards.length === 0) {
-      const local = JSON.parse(localStorage.getItem(`kanban_tasks_${clientId}`) || '[]');
-      cards = local.filter(c => ['entregues', 'completed', 'delivered', 'archived_traffic'].includes(c.status));
+      const keysToCheck = [
+        `kanban_tasks_${rawId}`,
+        `kanban_tasks_${numericId}`,
+        `oraculum_kanban_cards_${rawId}`,
+        `oraculum_kanban_${rawId}`,
+        'oraculum_kanban_cards_client_1787406730'
+      ];
+      
+      for (const k of keysToCheck) {
+        const localStr = localStorage.getItem(k);
+        if (localStr) {
+          try {
+            const parsed = JSON.parse(localStr);
+            if (Array.isArray(parsed)) {
+              const entregues = parsed.filter(c => 
+                ['entregues', 'completed', 'delivered', 'archived_traffic', '6'].includes(String(c.status || c.stage || c.column_id))
+              );
+              if (entregues.length > 0) {
+                cards = entregues;
+                break;
+              }
+            }
+          } catch(e) {}
+        }
+      }
     }
 
-    if (cards.length === 0) {
+    // Se não encontrar nenhum card veiculável
+    if (!cards || cards.length === 0) {
       container.innerHTML = `
         <div class="p-6 text-center text-slate-400 bg-[#040c0b] border border-slate-800/80 rounded-xl text-xs">
           Nenhum criativo aguardando veiculação no momento. Conclua entregas na <strong class="text-emerald-400">Trilha de Equipe & Kanban</strong> para despachar materiais para cá.
@@ -43,8 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Renderiza os cards entregues
     container.innerHTML = cards.map(c => {
-      const driveLink = c.drive_url || c.asset_url || c.delivery_url || c.link || (c.description && c.description.match(/https:\/\/drive\.google\.com[^\s\n]+/)?.[0]) || '';
+      const driveLink = c.drive_url || c.asset_url || (c.description && c.description.match(/https:\/\/drive\.google\.com[^\s\n]+/)?.[0]) || '';
       const safeText = (c.description || c.content || c.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
       const tagNome = (c.tags && c.tags[0]) || (c.category || 'COPYWRITING').toUpperCase();
 
