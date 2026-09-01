@@ -135,6 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Escuta a troca de abas e evento do kanban
   window.addEventListener('cardSentToTraffic', window.carregarAtivosEntreguesTrafego);
   window.addEventListener('clientChanged', () => setTimeout(window.carregarAtivosEntreguesTrafego, 100));
+  window.addEventListener('oraculumTaskDelivered', () => {
+    if (typeof window.carregarAtivosEntreguesTrafego === 'function') {
+      window.carregarAtivosEntreguesTrafego();
+    }
+  });
 
   // Carrega na montagem
   setTimeout(window.carregarAtivosEntreguesTrafego, 500);

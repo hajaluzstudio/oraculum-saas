@@ -4590,13 +4590,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const deliveryStamp = `\n\n[ ENTREGUE EM ${new Date().toLocaleDateString('pt-BR')} para ${team} ]\nLink do Ativo: ${link}\nMensagem: ${msg || 'Sem observações'}`;
         const newDesc = currentDesc + deliveryStamp;
 
-        // 2. Atualiza status no Kanban para "entregue"
-        const { error } = await window.supabaseClient.from('kanban_tasks').update({ 
-          status: 'entregue',
-          description: newDesc
-        }).eq('id', taskId);
+        // 2. Atualiza status no Kanban para "entregues"
+        const { data: updatedTaskArray, error } = await window.supabaseClient.from('kanban_tasks').update({ 
+          status: 'entregues',
+          description: newDesc,
+          asset_url: link,
+          delivered_to: team
+        }).eq('id', taskId).select();
         
         if (error) throw error;
+
+        // Atualiza localStorage e dispara evento
+        const activeClientForEvent = window.activeClient?.id || window.activeClientId || window.currentClientId || localStorage.getItem('oraculum_active_client_id');
+        if (activeClientForEvent && updatedTaskArray && updatedTaskArray.length > 0) {
+          const lsKey = `kanban_tasks_${activeClientForEvent}`;
+          const lsData = JSON.parse(localStorage.getItem(lsKey) || '[]');
+          const tIdx = lsData.findIndex(t => t.id === taskId);
+          if (tIdx !== -1) {
+            lsData[tIdx] = { ...lsData[tIdx], ...updatedTaskArray[0] };
+            localStorage.setItem(lsKey, JSON.stringify(lsData));
+          }
+        }
+
+        window.dispatchEvent(new CustomEvent('oraculumTaskDelivered', { detail: { clientId: activeClientForEvent } }));
+        if (typeof window.carregarAtivosEntreguesTrafego === 'function') {
+          window.carregarAtivosEntreguesTrafego();
+        }
 
         // 3. Notificar WhatsApp para os membros cadastrados na equipe
         const zapMsg = `🚀 *ENTREGA DE MATERIAL FINALIZADO*\n\n*Tarefa:* ${title}\n*Para:* ${team}\n*Link:* ${link}\n*Obs:* ${msg || 'Sem observações'}`;
