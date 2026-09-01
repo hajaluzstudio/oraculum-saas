@@ -232,17 +232,18 @@ window.salvarCliente = async function(e) {
       return parseFloat(clean) || 0;
     };
 
-    const payload = {
+    const avgTicketVal = parseMoney(document.getElementById('client-modal-avg-ticket')?.value);
+    const targetRevVal = parseMoney(document.getElementById('client-modal-target-revenue')?.value);
+
+    let payload = {
       name: document.getElementById('client-modal-name')?.value.trim() || '',
       niche: document.getElementById('client-modal-niche')?.value.trim() || '',
       contact_name: document.getElementById('client-modal-contact-name')?.value.trim() || '',
       phone: document.getElementById('client-modal-phone')?.value.trim() || '',
       website: document.getElementById('client-modal-website')?.value.trim() || '',
       instagram: document.getElementById('client-modal-instagram')?.value.trim() || '',
-      avg_ticket: parseMoney(document.getElementById('client-modal-avg-ticket')?.value),
-      ticket: parseMoney(document.getElementById('client-modal-avg-ticket')?.value), // compatibilidade bi
-      target_revenue: parseMoney(document.getElementById('client-modal-target-revenue')?.value),
-      meta_faturamento: parseMoney(document.getElementById('client-modal-target-revenue')?.value), // compatibilidade bi
+      avg_ticket: avgTicketVal,
+      target_revenue: targetRevVal,
       main_service: document.getElementById('client-modal-main-service')?.value.trim() || '',
       billing_model: document.getElementById('client-modal-billing-model')?.value || 'unico',
       sales_cycle: document.getElementById('client-modal-sales-cycle')?.value || 'imediato',
@@ -255,11 +256,43 @@ window.salvarCliente = async function(e) {
     };
 
     const id = document.getElementById('client-modal-id')?.value;
-    const { error } = id 
-        ? await supaClient.from('clients').update(payload).eq('id', id) 
-        : await supaClient.from('clients').insert([payload]);
+    
+    // Função de execução com fallback automático caso colunas extras ainda não existam no Supabase
+    async function executarPersistencia(dados) {
+      if (id) {
+        return await supaClient.from('clients').update(dados).eq('id', id);
+      } else {
+        return await supaClient.from('clients').insert([dados]);
+      }
+    }
 
-    if (error) throw error;
+    let result = await executarPersistencia(payload);
+
+    // Se o banco remoto ainda não tiver todas as novas colunas migradas, faz fallback defensivo com colunas essenciais
+    if (result.error && result.error.message && result.error.message.includes('Could not find the')) {
+      console.warn('[Supabase] Schema remoto sem colunas estendidas. Aplicando fallback de compatibilidade...');
+      const match = result.error.message.match(/'([^']+)' column/);
+      if (match && match[1]) {
+        delete payload[match[1]];
+        result = await executarPersistencia(payload);
+      }
+      
+      // Se ainda houver erro com outra coluna ausente, usa payload essencial
+      if (result.error && result.error.message && result.error.message.includes('Could not find the')) {
+        const payloadEssencial = {
+          name: payload.name,
+          niche: payload.niche,
+          contact_name: payload.contact_name,
+          phone: payload.phone,
+          website: payload.website,
+          notes: payload.notes,
+          agency_id: payload.agency_id
+        };
+        result = await executarPersistencia(payloadEssencial);
+      }
+    }
+
+    if (result.error) throw result.error;
 
     window.fecharModalNovoCliente();
     await window.carregarClientesDoSupabase();

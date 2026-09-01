@@ -8552,7 +8552,7 @@ window.recalcularFeedbackLoop = async function(btnElement) {
       try {
         const { data: client, error: errClient } = await window.supabaseClient
           .from('clients')
-          .select('name, niche, ticket, avg_ticket, meta_faturamento, dossier_data')
+          .select('name, niche, avg_ticket, target_revenue, dossier_data')
           .eq('id', activeClientId)
           .maybeSingle();
 
