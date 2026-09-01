@@ -8928,6 +8928,107 @@ window.recalcularFeedbackLoop = async function(btnElement) {
     }
   };
 
+  // Função para renderizar/atualizar os gráficos visuais na tela
+  window.renderizarGraficosBI = function(dados) {
+    if (!window.Chart) return;
+
+    const corCyan = '#00f2fe';
+    const corRosa = '#fe0979';
+    const corCard = 'rgba(255, 255, 255, 0.05)';
+
+    // Gráfico de Evolução (Linha)
+    const ctxEvolucao = document.getElementById('chart-evolucao');
+    if (ctxEvolucao) {
+      if (window.chartRevenueSpend) window.chartRevenueSpend.destroy();
+      window.chartRevenueSpend = new Chart(ctxEvolucao, {
+        type: 'line',
+        data: {
+          labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+          datasets: [
+            {
+              label: 'Faturamento',
+              data: dados.historico.faturamento,
+              borderColor: corCyan,
+              backgroundColor: 'rgba(0, 242, 254, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Investimento',
+              data: dados.historico.investimento,
+              borderColor: corRosa,
+              backgroundColor: 'rgba(254, 9, 121, 0.1)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#fff' } } },
+          scales: {
+            y: { grid: { color: corCard }, ticks: { color: '#aaa' } },
+            x: { grid: { color: corCard }, ticks: { color: '#aaa' } }
+          }
+        }
+      });
+    }
+
+    // Gráfico de Alocação de Verba (Donut)
+    const ctxCanais = document.getElementById('chart-alocacao');
+    if (ctxCanais) {
+      if (window.chartChannelDonut) window.chartChannelDonut.destroy();
+      window.chartChannelDonut = new Chart(ctxCanais, {
+        type: 'doughnut',
+        data: {
+          labels: ['Meta Ads', 'Google Ads', 'TikTok', 'Outros'],
+          datasets: [{
+            data: dados.canais,
+            backgroundColor: [corCyan, corRosa, '#ffd700', '#6c757d'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#fff' } } },
+          cutout: '75%'
+        }
+      });
+    }
+
+    // Gráfico de CAC por Criativo (Barras)
+    const ctxCac = document.getElementById('chart-cac');
+    if (ctxCac) {
+      if (window.chartCacCreatives) window.chartCacCreatives.destroy();
+      window.chartCacCreatives = new Chart(ctxCac, {
+        type: 'bar',
+        data: {
+          labels: ['Criativo A', 'Criativo B', 'Criativo C', 'Criativo D'],
+          datasets: [{
+            label: 'CAC',
+            data: dados.cac,
+            backgroundColor: [corCyan, corRosa, '#ffd700', '#6c757d'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: corCard }, ticks: { color: '#aaa' } },
+            x: { grid: { display: false }, ticks: { color: '#aaa' } }
+          }
+        }
+      });
+    }
+  };
+
   // 1. SALVAMENTO COM ATUALIZAÇÃO INSTANTÂNEA EM TELA
   window.salvarLancamentoBI = async function(event) {
     let formEl = null;
