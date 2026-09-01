@@ -1709,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Salva no histórico em memória
       if (!window.currentChatHistory) window.currentChatHistory = [];
       window.currentChatHistory.push({ role: 'user', content: message });
-      window.currentChatHistory.push({ role: 'assistant', content: cleanReplyText });
+      window.currentChatHistory.push({ role: 'assistant', content: textoExibicao });
 
     } catch (err) {
       console.error('[Chat Error]:', err);
