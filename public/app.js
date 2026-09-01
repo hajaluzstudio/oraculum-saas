@@ -2855,68 +2855,112 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Mapeamento e navegação padronizada das sub-abas do War Room
-  window.switchWarRoomTab = function(tabKey) {
-    if (!tabKey) tabKey = 'video';
-    const key = String(tabKey).toLowerCase().trim();
+  window.switchWarRoomTab = function(targetKey, btnEl) {
+    if (!targetKey) targetKey = 'video';
+    const key = String(targetKey).toLowerCase().trim();
 
-    // Mapeamento semântico → lista de IDs a tentar em ordem
-    const idFallbacks = {
-      'video':       ['wr-tab-video', 'wr-panel-video'],
-      'wr-tab-video': ['wr-tab-video', 'wr-panel-video'],
-      'design':      ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
-      'web':         ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
-      'wr-tab-design': ['wr-tab-design', 'wr-panel-design', 'design-deliverables-container'],
-      'traffic':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
-      'trafego':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
-      'wr-tab-traffic': ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-deliverables-container'],
-      'copy':        ['wr-tab-copywriting', 'wr-panel-copywriting'],
-      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting'],
-      'wr-tab-copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting'],
-      'comercial':   ['wr-tab-comercial', 'wr-panel-comercial'],
-      'sales':       ['wr-tab-comercial', 'wr-panel-comercial'],
-      'wr-tab-comercial': ['wr-tab-comercial', 'wr-panel-comercial']
+    // Mapeamento abrangente de IDs para tolerar qualquer versão estrutural do HTML
+    const mapIds = {
+      'video':       ['wr-tab-video', 'wr-panel-video', 'video-pane', 'war-room-video-content'],
+      'design':      ['wr-tab-design', 'wr-panel-design', 'design-pane', 'wr-design-container', 'design-content'],
+      'trafego':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane', 'wr-traffic-container', 'traffic-content'],
+      'traffic':     ['wr-tab-traffic', 'wr-tab-trafego', 'wr-panel-trafego', 'traffic-pane', 'wr-traffic-container', 'traffic-content'],
+      'copy':        ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane', 'copywriting-content'],
+      'copywriting': ['wr-tab-copywriting', 'wr-panel-copywriting', 'copy-pane', 'copywriting-content'],
+      'comercial':   ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane', 'comercial-content'],
+      'sales':       ['wr-tab-comercial', 'wr-panel-comercial', 'comercial-pane', 'comercial-content']
     };
 
-    const possibleIds = idFallbacks[key] || (key.startsWith('wr-') ? [key] : [`wr-tab-${key}`]);
+    // Normalização da categoria limpa a partir de qualquer variante de key
+    let pureCategory = 'video';
+    if (key.includes('design'))                               pureCategory = 'design';
+    else if (key.includes('trafeg') || key.includes('traffic')) pureCategory = 'trafego';
+    else if (key.includes('copy'))                            pureCategory = 'copywriting';
+    else if (key.includes('comerc') || key.includes('sale')) pureCategory = 'comercial';
 
-    // 1. Oculta todos os painéis de sub-aba
-    document.querySelectorAll('.wr-panel, .wr-subtab-content').forEach(el => {
-      el.style.display = 'none';
+    // 1. Oculta todos os painéis e contêineres da War Room
+    document.querySelectorAll('.wr-subtab-content, .wr-panel, [id^="wr-tab-"], [id^="wr-panel-"]').forEach(el => {
       el.classList.add('hidden');
+      el.style.display = 'none';
     });
 
-    // 2. Exibe o painel alvo — tenta cada ID até encontrar
-    let targetEl = null;
-    for (const id of possibleIds) {
-      targetEl = document.getElementById(id);
-      if (targetEl) break;
-    }
-    if (targetEl) {
-      targetEl.classList.remove('hidden');
-      targetEl.style.display = 'block';
+    // Feed compartilhado de categorias (versão ce9ad1a)
+    const sharedFeed = document.getElementById('war-room-other-categories-feed') ||
+                       document.getElementById('war-room-nonvideo-feed');
+    const videoTools = document.querySelectorAll('#tab-war-room > div:not(#war-room-subtabs-nav):not(.war-room-nav):not(#war-room-other-categories-feed):not(#war-room-nonvideo-feed)');
+
+    // 2. Tenta exibir contêiner próprio por ID
+    let found = false;
+    const candidateIds = mapIds[pureCategory] || [];
+    for (const id of candidateIds) {
+      const target = document.getElementById(id);
+      if (target) {
+        target.classList.remove('hidden');
+        target.style.display = 'block';
+        found = true;
+        break;
+      }
     }
 
-    // 3. Hidratação sob demanda: tráfego
-    if ((key === 'traffic' || key === 'trafego' || key === 'wr-tab-traffic') &&
-        typeof window.carregarAtivosEntreguesTrafego === 'function') {
-      window.carregarAtivosEntreguesTrafego();
-    }
-
-    // 4. Atualiza os estilos dos botões de navegação da sub-aba
-    document.querySelectorAll('.war-room-nav .wr-tab-btn, [data-wr-tab]').forEach(btn => {
-      const btnKey = btn.getAttribute('data-wr-tab') || btn.getAttribute('data-wr-target') || '';
-      const btnIds = idFallbacks[btnKey] || [`wr-tab-${btnKey}`];
-      const isActive = (btnKey === key) || (targetEl && btnIds.includes(targetEl.id));
-      if (isActive) {
-        btn.classList.add('active');
-        btn.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        btn.style.color = '#10B981';
+    // 3. Fallback estrutural: feed compartilhado ou gerado dinamicamente
+    if (!found && sharedFeed) {
+      if (pureCategory === 'video') {
+        videoTools.forEach(el => el.style.display = '');
+        sharedFeed.style.display = 'none';
       } else {
-        btn.classList.remove('active');
-        btn.style.backgroundColor = 'transparent';
-        btn.style.color = '#94A3B8';
+        videoTools.forEach(el => el.style.display = 'none');
+        sharedFeed.style.display = 'grid';
+
+        const cards = sharedFeed.querySelectorAll('[data-category]');
+        let count = 0;
+        cards.forEach(c => {
+          const cat = (c.getAttribute('data-category') || '').toLowerCase();
+          if (cat === pureCategory || (pureCategory === 'trafego' && cat === 'traffic')) {
+            c.style.display = 'block';
+            count++;
+          } else {
+            c.style.display = 'none';
+          }
+        });
+
+        if (count === 0) {
+          sharedFeed.innerHTML = `
+            <div class="col-span-full p-8 text-center text-slate-400 bg-[#071311] border border-[#1B3B36] rounded-xl text-xs">
+              Nenhum entregável despachado para a equipe de <strong class="text-emerald-400">${pureCategory.toUpperCase()}</strong> no momento. Gere pautas no Chat Estratégico.
+            </div>
+          `;
+        }
+      }
+    }
+
+    // 4. Atualiza os botões visuais
+    document.querySelectorAll('#war-room-subtabs-nav button, .war-room-nav button, .wr-tab-btn, [data-subtab], [data-wr-tab]').forEach(b => {
+      const txt      = (b.textContent || '').toLowerCase();
+      const subAttr  = (b.getAttribute('data-subtab') || b.getAttribute('data-wr-tab') || '').toLowerCase();
+
+      const isActive = subAttr.includes(pureCategory) ||
+                       txt.includes(pureCategory) ||
+                       (pureCategory === 'trafego' && (txt.includes('tráfego') || txt.includes('trafego')));
+
+      if (isActive) {
+        b.classList.add('active');
+        b.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        b.style.color = '#10B981';
+      } else {
+        b.classList.remove('active');
+        b.style.backgroundColor = 'transparent';
+        b.style.color = '#94A3B8';
       }
     });
+
+    // 5. Hidratação da gaveta de Tráfego
+    if (pureCategory === 'trafego') {
+      if (typeof window.carregarAtivosEntreguesTrafego === 'function') {
+        window.carregarAtivosEntreguesTrafego();
+      } else if (typeof window.loadArchivedTrafficCards === 'function') {
+        window.loadArchivedTrafficCards();
+      }
+    }
   };
 
   window.trocarSubAbaWarRoom = window.switchWarRoomTab;
