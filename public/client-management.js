@@ -341,6 +341,33 @@ window.salvarCliente = async function(e) {
 
     if (result.error) throw result.error;
 
+    // --- SINCRONIZAÇÃO IMEDIATA DE MEMÓRIA E DOM ---
+    // Atualiza a variável global usada pelo Dashboard de BI,
+    // evitando que o usuário precise pressionar F5.
+    const novoAvgTicket = payload.avg_ticket || 0;
+    const clienteEditadoId = document.getElementById('client-modal-id')?.value;
+
+    if (window.currentClientData && String(window.currentClientData.id) === String(clienteEditadoId)) {
+      window.currentClientData.avg_ticket = novoAvgTicket;
+      window.currentClientData.ticket     = novoAvgTicket; // alias defensivo
+    }
+
+    // Atualiza o card "Ticket Médio (Ficha)" no Dashboard de BI diretamente no DOM
+    const elBiTicket  = document.getElementById('bi-val-ticket-medio');
+    const elBiFonte   = document.getElementById('bi-val-ticket-fonte');
+    if (elBiTicket && novoAvgTicket > 0) {
+      elBiTicket.innerText = novoAvgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      if (elBiFonte) elBiFonte.innerText = 'Ficha do Cliente (atualizado)';
+    }
+
+    // Se existir uma função central de re-render do BI, chama ela também
+    if (typeof window.obterTicketMedioClienteSeguro === 'function' && window.currentClientData) {
+      const infoTicket = window.obterTicketMedioClienteSeguro(window.currentClientData, null);
+      if (elBiTicket && infoTicket?.valorFormatado) elBiTicket.innerText = infoTicket.valorFormatado;
+      if (elBiFonte  && infoTicket?.fonte)          elBiFonte.innerText  = infoTicket.fonte;
+    }
+    // --- FIM DA SINCRONIZAÇÃO ---
+
     window.fecharModalNovoCliente();
     await window.carregarClientesDoSupabase();
 
