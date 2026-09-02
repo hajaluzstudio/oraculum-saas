@@ -943,7 +943,7 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
 // ============================================================================
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext, clientName, clientNiche, dossierContext } = req.body || {};
+    const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext, clientName, clientNiche, dossierContext, biContext } = req.body || {};
     const userMessage = message || prompt || '';
     const clientId = reqClientId || client_id;
 
@@ -1067,6 +1067,15 @@ O JSON deve ter exatamente esta estrutura:
 Responda com base estrita no Dossiê e nas regras do setor de ${nichoClienteFinal}.`;
       }
     }
+
+    // --- INJEÇÃO DINÂMICA DE MÉTRICAS DE BI NO SYSTEM PROMPT ---
+    // biContext é enviado pelo Oraculum Live com os valores reais dos cards do painel.
+    // É anexado de forma invisível para o usuário, mas lido nativamente pelo modelo.
+    if (biContext && typeof biContext === 'object' && Object.keys(biContext).length > 0) {
+      const biSystemBlock = `\n\n### Métricas Atuais do Cliente (Dashboard de BI)\n${JSON.stringify(biContext, null, 2)}`;
+      promptInstrucao = (promptInstrucao || '') + biSystemBlock;
+    }
+    // ---
 
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
