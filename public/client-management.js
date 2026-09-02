@@ -594,7 +594,7 @@ window.carregarClientesDoSupabase = async function() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'x-organization-id': window.currentOrganizationId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104'
+          'x-organization-id': window.currentOrganizationId || '6064bb16-9e92-40fa-a772-f975361e1f15'
         }
       });
       if (resApi.ok) {
