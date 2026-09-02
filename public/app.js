@@ -9577,6 +9577,22 @@ window.recalcularFeedbackLoop = async function(btnElement) {
         if (!error && dbData) {
           data = dbData;
         }
+
+        // --- INJEÇÃO: Sincronização Obrigatória da Ficha do Cliente ---
+        try {
+          const { data: dbClient } = await supa
+            .from('clients')
+            .select('avg_ticket, ticket, target_revenue, name, niche')
+            .eq('id', cleanId)
+            .maybeSingle();
+            
+          if (dbClient) {
+            window.currentClientData = { ...(window.currentClientData || {}), ...dbClient };
+          }
+        } catch(clientErr) {
+          console.warn('[BI] Falha ao sincronizar dados frescos da tabela clients:', clientErr);
+        }
+        // ---
       }
     } catch (e) {
       console.warn('[BI] Falha ao consultar Supabase:', e);
