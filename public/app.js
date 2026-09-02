@@ -1915,8 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
     }
 
-    const storageKey = `war_room_all_tasks_${clientId}`;
-    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    let existing = [];
     
     const sessionPautaTitle = `Pauta Estratégica: ${window.currentClientContext?.niche || window.currentClient?.niche || 'Geral'} (${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})})`;
     const batchId = 'batch_' + Date.now();
@@ -1956,7 +1955,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    localStorage.setItem(storageKey, JSON.stringify(existing));
+    // Persiste as tarefas via API REST (schema War Room preservado)
+    try {
+      await fetch('/api/war-room/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(existing)
+      });
+    } catch (e) {
+      console.warn('[War Room] Erro ao persistir tarefas via API:', e);
+    }
 
     const btn = document.querySelector('.btn-approve-chat') || (target && document.getElementById(target)?.querySelector('button'));
     if (btn) {
@@ -1967,32 +1975,6 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarSalaOperacaoCompleta();
   };
 
-  async function carregarSalaOperacaoCompleta() {
-    const warRoom = document.getElementById('tab-war-room');
-    if (!warRoom) return;
-
-    const activeClient = window.activeClient || window.currentClient || {};
-    const clientId = activeClient.id || activeClient.client_id || localStorage.getItem('active_client_id') || 'client_1707406730';
-
-    const storageKey = `war_room_all_tasks_${clientId}`;
-    let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
-
-    try {
-      const supabase = window.supabaseClient || window.supabase;
-      if (supabase) {
-        const { data } = await supabase.from('war_room_tasks').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
-        if (Array.isArray(data) && data.length > 0) {
-          tasks = [...tasks, ...data];
-        }
-      }
-    } catch (e) {}
-
-    history.forEach(msg => {
-      if (typeof window.appendChatMessage === 'function') {
-        window.appendChatMessage(msg.role, msg.content, msg.tasks_payload || msg.tasks, true);
-      }
-    });
-  };
 
   // Atualize appendChatMessage para invocar a persistência
   window.appendChatMessage = function(sender, text, tasksArray = [], isRestoring = false) {
@@ -2125,9 +2107,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clientId = window.currentActiveClientId || window.activeClientId || (window.activeClient && window.activeClient.id) || localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('active_client_id') || 'client_1707406730';
 
-    // Busca do LocalStorage
-    const storageKey = `war_room_all_tasks_${clientId}`;
-    let tasks = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    // Busca das tarefas via API REST (schema War Room preservado)
+    let tasks = [];
+    try {
+      const res = await fetch(`/api/war-room/${clientId}`);
+      if (res.ok) tasks = await res.json();
+    } catch (e) {
+      console.warn('[War Room] Erro ao buscar tarefas via API:', e);
+    }
 
     // Busca complementar do Supabase se disponível
     try {
