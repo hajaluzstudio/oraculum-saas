@@ -2111,7 +2111,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let tasks = [];
     try {
       const res = await fetch(`/api/war-room/${clientId}`);
-      if (res.ok) tasks = await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        tasks = Array.isArray(data) ? data : (data.tasks || []);
+        
+        // Se vier com dados consolidados, também podemos atualizar os caches se necessário
+        if (data.client) window.currentClientData = { ...(window.currentClientData || {}), ...data.client };
+      }
     } catch (e) {
       console.warn('[War Room] Erro ao buscar tarefas via API:', e);
     }

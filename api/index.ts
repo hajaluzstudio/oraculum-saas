@@ -2418,6 +2418,76 @@ app.post('/api/inspect-creative', async (req: Request, res: Response) => {
   }
 });
 
+// ==========================================
+// WAR ROOM ROUTES
+// ==========================================
+
+// GET /api/war-room/:clientId - Traz informações consolidadas (tarefas, ficha do cliente e BI)
+app.get('/api/war-room/:clientId', async (req: Request, res: Response) => {
+  try {
+    const { clientId } = req.params;
+    const cleanId = String(clientId).replace('client_', '');
+    
+    // 1. Busca Tarefas da War Room
+    const { data: tasks, error: tasksError } = await supabase
+      .from('war_room_tasks')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+      
+    if (tasksError) throw tasksError;
+
+    // 2. Busca Ficha do Cliente Consolidada
+    const { data: client } = await supabase
+      .from('clients')
+      .select('*')
+      .or(`id.eq.${clientId},id.eq.${cleanId},id.eq.client_${cleanId}`)
+      .maybeSingle();
+
+    // 3. Busca Último Snapshot de BI
+    const { data: biData } = await supabase
+      .from('bi_analytics_data')
+      .select('*')
+      .or(`client_id.eq.${clientId},client_id.eq.${cleanId},client_id.eq.client_${cleanId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return res.json({
+      success: true,
+      tasks: tasks || [],
+      client: client || null,
+      biMetrics: biData || null
+    });
+  } catch (error: any) {
+    console.error('[API War Room GET] Erro:', error);
+    return res.status(500).json({ success: false, error: error.message, tasks: [] });
+  }
+});
+
+// POST /api/war-room/batch - Salva array de tarefas da War Room
+app.post('/api/war-room/batch', async (req: Request, res: Response) => {
+  try {
+    const tasks = req.body;
+    if (!Array.isArray(tasks)) {
+      return res.status(400).json({ success: false, error: 'O corpo da requisição deve ser um array de tarefas.' });
+    }
+    
+    // Executa upsert em lote
+    const { data, error } = await supabase.from('war_room_tasks').upsert(tasks);
+    if (error) throw error;
+    
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('[API War Room POST] Erro:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==========================================
+// KANBAN ROUTES
+// ==========================================
+
 // GET /api/kanban
 app.get('/api/kanban', async (req: Request, res: Response) => {
   try {
