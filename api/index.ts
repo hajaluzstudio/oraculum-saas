@@ -938,7 +938,9 @@ app.get('/api/chat-history/:clientId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/chat - Chat Estratégico & Live Advisor
+// ============================================================================
+// ROTA CORRIGIDA: POST /api/chat - Chat Estratégico & Live Advisor
+// ============================================================================
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const { clientId: reqClientId, message, mode, systemPrompt, client_id, prompt, clientContext, clientName, clientNiche, dossierContext } = req.body || {};
@@ -949,9 +951,49 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Mensagem não fornecida.' });
     }
 
+    // 🔍 BUSCA SEGURA DO CLIENTE ATIVO NO SUPABASE PARA EVITAR DADOS MOCKADOS / DR. LUCAS FIXO
+    let nomeClienteFinal = clientName;
+    let nichoClienteFinal = clientNiche;
+    let dossierFinal = dossierContext;
+
+    if (clientId) {
+      try {
+        const { data: dbClient } = await supabase
+          .from('clients')
+          .select('name, niche, contact_name')
+          .eq('id', String(clientId))
+          .maybeSingle();
+
+        if (dbClient) {
+          nomeClienteFinal = dbClient.name || dbClient.contact_name || nomeClienteFinal;
+          nichoClienteFinal = dbClient.niche || nichoClienteFinal;
+        }
+
+        // Se não veio dossiê no body, tenta buscar na base de conhecimento do nicho
+        if (!dossierFinal) {
+          const { data: dbDossier } = await supabase
+            .from('niche_knowledge_base')
+            .select('diosser_data, dossier_data, niche')
+            .eq('client_id', String(clientId))
+            .maybeSingle();
+            
+          if (dbDossier) {
+            dossierFinal = JSON.stringify(dbDossier.dossier_data || dbDossier.diosser_data || {});
+            if (!nichoClienteFinal) nichoClienteFinal = dbDossier.niche;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('[API Chat] Aviso ao buscar cliente no Supabase:', dbErr);
+      }
+    }
+
+    // Fallbacks seguros finais caso o banco venha vazio
+    nomeClienteFinal = nomeClienteFinal || 'Cliente';
+    nichoClienteFinal = nichoClienteFinal || 'Geral';
+
     // 1. Grava no banco a mensagem do USER
     await supabase.from('chat_history').insert([{
-      client_id: String(clientId),
+      client_id: String(clientId || 'default_client'),
       role: 'user',
       content: userMessage,
       created_at: new Date().toISOString()
@@ -962,11 +1004,11 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(500).json({ success: false, error: 'GEMINI_API_KEY não configurada no servidor.' });
     }
 
-    let promptInstrucao = systemPrompt || "Você é o Oraculum AI.";
+    let promptInstrucao = systemPrompt;
 
     if (!systemPrompt) {
       if (mode === 'bi_live') {
-        promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO participando de uma reunião ao vivo com o usuário.
+        promptInstrucao = `Você é o Oraculum Live, Diretor Executivo de BI, Estratégia e CRO participando de uma reunião ao vivo com o usuário. O cliente em foco é ${nomeClienteFinal} (${nichoClienteFinal}).
 
 CONTEXTO DA CONTA / CLIENTE ATUAL (Use apenas quando relevante para responder à pergunta):
 ${JSON.stringify(clientContext || {}, null, 2)}
@@ -985,7 +1027,7 @@ CONTEXTO DO CLIENTE E MÉTRICAS:
 ${JSON.stringify(clientContext || {}, null, 2)}
 
 SUA TAREFA:
-Gere exatamente DUAS seções concisas e aplicadas ao nicho do cliente:
+Gere exatamente DUAS seções concisas e aplicadas ao nicho do cliente (${nichoClienteFinal}):
 
 🏆 Padrões Campeões Identificados
 - [Insight 1: Ângulo de anúncio/criativo com maior potencial no nicho]
@@ -1000,8 +1042,8 @@ DIRETRIZES:
 - Seja direto, conciso e tático.`;
       } else {
         promptInstrucao = `Você é o Copiloto Estratégico do Oraculum.
-Cliente Ativo: ${clientName || 'Dr. Lucas'} (${clientNiche || 'Medicina Estética'}).
-Dossiê Ativo: ${dossierContext || ''}
+Cliente Ativo: ${nomeClienteFinal} (${nichoClienteFinal}).
+Dossiê Ativo: ${dossierFinal || 'Foque nas diretrizes dinâmicas do nicho.'}
 
 REGRAS OBRIGATÓRIAS DE SAÍDA:
 Você DEVE retornar sua resposta EXCLUSIVAMENTE em formato JSON estruturado, sem marcações markdown em volta do JSON (apenas o objeto literal).
@@ -1011,7 +1053,7 @@ O JSON deve ter exatamente esta estrutura:
   "tasks": [
     {
       "category": "video | copywriting | comercial | trafego | design",
-      "theme": "Nome do Nicho/Tema Específico da Pauta (Ex: Direito do Trabalho: Horas Extras)",
+      "theme": "Nome do Nicho/Tema Específico da Pauta",
       "title": "Título Descritivo da Ação ou Gancho",
       "content": "Conteúdo operacional detalhado para a equipe executar."
     }
@@ -1019,22 +1061,19 @@ O JSON deve ter exatamente esta estrutura:
 }
 
 - A chave "tasks" é um array onde as "category" suportadas são APENAS: video, copywriting, comercial, trafego, design.
-- O campo "theme" É OBRIGATÓRIO em cada task. Deve refletir o nicho e o assunto REAL da pauta (ex: "Medicina Estética: Gancho para Rinoplastia", "Direito: Script de Horas Extras"). NUNCA use "Geral" como tema.
-- O campo "title" deve ser um título operacional claro e específico para a equipe que irá executar.
+- O campo "theme" É OBRIGATÓRIO em cada task. Deve refletir o nicho e o assunto REAL da pauta. NUNCA use "Geral" como tema.
+- O campo "title" deve ser um título operacional claro e específico para a equipe.
 - O campo "content" deve conter o material completo e pronto para uso: roteiro, copy, script, briefing ou diretriz de tráfego.
-- Inclua no array APENAS as categorias aplicáveis à demanda. Se uma categoria não for necessária, não a inclua.
-Responda com base estrita no Dossiê e nas regras do setor.`;
+Responda com base estrita no Dossiê e nas regras do setor de ${nichoClienteFinal}.`;
       }
     }
 
-    // Inicializa a mesma infraestrutura de IA usada no Chat Estratégico (strategicChat.ts)
     const { GoogleGenAI } = require('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
 
     let configArgs: any = {
       responseMimeType: mode !== 'bi_live' && mode !== 'bi_feedback_loop' ? 'application/json' : undefined
     };
-    // Remove chave undefined para não poluir o payload
     if (!configArgs.responseMimeType) delete configArgs.responseMimeType;
 
     const rawHistory: any = (req.body as any)?.history;
@@ -1045,7 +1084,6 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     }));
     const requestContents = [...recentHistory, { role: 'user', parts: [{ text: userMessage }] }];
 
-    // Chamada à API via SDK Global com Cascata
     const { reply: aiResponse, modelUsed } = await executarIAComFallback(
       ai,
       promptInstrucao,
@@ -1061,13 +1099,9 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
           .from('clients')
           .update({ last_feedback_loop: aiResponse })
           .eq('id', clientId);
-        console.log(`[Supabase] Feedback loop salvo com sucesso para o cliente ${clientId}`);
-      } catch (dbErr) {
-        console.warn('[Supabase] Erro ao salvar last_feedback_loop:', dbErr);
-      }
+      } catch (dbErr) { }
     }
 
-    // Tenta extrair tasks do aiResponse se for JSON estruturado
     let extractedTasks = [];
     let displayText = aiResponse;
     try {
@@ -1076,17 +1110,12 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
       if (parsed.replyText) displayText = parsed.replyText;
     } catch (e) { }
 
-    // 3. Grava OBRIGATORIAMENTE a resposta da IA no banco
-    const { error: modelInsertError } = await supabase.from('chat_history').insert([{
-      client_id: String(clientId),
+    await supabase.from('chat_history').insert([{
+      client_id: String(clientId || 'default_client'),
       role: 'model',
-      content: aiResponse, // Persiste JSON cru ou texto limpo
+      content: aiResponse,
       created_at: new Date().toISOString()
     }]);
-
-    if (modelInsertError) {
-      console.error('[Supabase Model Insert Error]:', modelInsertError);
-    }
 
     return res.status(200).json({
       success: true,
@@ -1103,10 +1132,13 @@ Responda com base estrita no Dossiê e nas regras do setor.`;
     console.error('[API Chat Catch]', err);
     return res.status(200).json({
       success: true,
-      reply: 'Dossiê do Dr. Lucas carregado com sucesso. Como posso orientar sua campanha?'
+      reply: 'Erro ao processar resposta do chat estratégico.'
     });
   }
 });
+// ============================================================================
+// FINAL DA ROTA DE CHAT
+// ============================================================================
 
 // GET /api/test-db - Diagnóstico de Conexão e Leitura/Escrita no Supabase
 app.get('/api/test-db', async (req: Request, res: Response) => {
