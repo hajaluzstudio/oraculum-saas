@@ -590,7 +590,7 @@ window.carregarClientesDoSupabase = async function() {
 
     // 1. Carrega via API Backend dedicada (service role, ignora RLS)
     try {
-      const resApi = await fetch('/api/clients', {
+      const resApi = await fetch('/api/clients?organization_id=all', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
