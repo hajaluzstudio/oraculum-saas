@@ -588,13 +588,21 @@ window.carregarClientesDoSupabase = async function() {
     const isMaster = session.role === 'master' || session.role === 'super_admin' || String(session.email || '').toLowerCase() === 'hajaluzstudio@gmail.com';
     const currentAgencyId = session.agency_id || session.agencyId || session.id;
 
-    // 1. Tenta carregar via API Backend dedicada (Vercel Serverless) com service role (ignora RLS)
+    // 1. Carrega via API Backend dedicada (service role, ignora RLS)
     try {
-      const resApi = await fetch('/api/clients?organization_id=all');
+      const resApi = await fetch('/api/clients', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': window.currentOrganizationId || 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104'
+        }
+      });
       if (resApi.ok) {
         const jsonApi = await resApi.json();
-        if (jsonApi.success && Array.isArray(jsonApi.data) && jsonApi.data.length > 0) {
-          data = jsonApi.data;
+        // Extração defensiva: cobre { success, data: [...] } e resposta direta como array
+        const clientes = jsonApi.data || (Array.isArray(jsonApi) ? jsonApi : null);
+        if (Array.isArray(clientes) && clientes.length > 0) {
+          data = clientes;
           console.log(`[Clients] ✅ ${data.length} clientes carregados via Backend API.`);
         }
       }
