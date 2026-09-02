@@ -599,35 +599,9 @@ window.carregarClientesDoSupabase = async function() {
         }
       }
     } catch (apiErr) {
-      console.warn('[Clients] Falha na API Backend, tentando fallback Supabase SDK:', apiErr);
+      console.warn('[Clients] Falha na API Backend:', apiErr);
     }
 
-    // 2. Fallback direto Supabase SDK
-    if ((!data || data.length === 0) && supaClient) {
-      try {
-        let query = supaClient.from('clients').select('*').order('created_at', { ascending: false });
-        if (!isMaster && currentAgencyId) {
-          query = query.eq('agency_id', currentAgencyId);
-        }
-        const res = await query;
-        if (!res.error && Array.isArray(res.data) && res.data.length > 0) {
-          data = res.data;
-          console.log(`[Clients] ✅ ${data.length} clientes carregados via Supabase Client.`);
-        }
-      } catch (clientErr) {
-        console.warn("Aviso de rede na consulta direta ao Supabase:", clientErr);
-      }
-    }
-
-    // 3. Fallback de cache local
-    if (!data || data.length === 0) {
-      try {
-        const localData = localStorage.getItem('oraculum_clients_cache');
-        if (localData) {
-          data = JSON.parse(localData);
-        }
-      } catch (e) {}
-    }
     
     let clientesFiltrados = data || [];
     if (!isMaster && currentAgencyId) {
@@ -642,12 +616,6 @@ window.carregarClientesDoSupabase = async function() {
     window.clientesMock = processedClients;
     window.clientsList = processedClients;
     window.globalClientsList = processedClients;
-
-    if (data && data.length > 0) {
-      try {
-        localStorage.setItem('oraculum_clients_cache', JSON.stringify(data));
-      } catch (e) {}
-    }
 
     // Gerencia seleção ativa
     if (processedClients.length === 0) {

@@ -2116,17 +2116,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('[War Room] Erro ao buscar tarefas via API:', e);
     }
 
-    // Busca complementar do Supabase se disponível
-    try {
-      const supabase = window.supabaseClient || window.supabase;
-      if (supabase) {
-        const { data } = await supabase.from('war_room_tasks').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
-        if (Array.isArray(data) && data.length > 0) {
-          tasks = [...tasks, ...data];
-        }
-      }
-    } catch (e) { console.warn('[War Room] Supabase fetch error:', e); }
-
     // Deduplicação e Sanitização
     const seen = new Set();
     tasks = tasks.map(t => ({ ...t, content: sanitizeTaskContent(t.content) })).filter(t => {
