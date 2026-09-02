@@ -1,5 +1,8 @@
 // ============================================================================
 // autonomousScraperAgent.ts — Agente Autônomo com Search Grounding e Failover
+// Módulo: Portal de Inteligência & Feed de Mercado
+// Isolamento: Este serviço é chamado APENAS pelas rotas /api/autonomous-scraper/*
+// NÃO é importado por: biTracker, strategicChat, nicheResearcher ou qualquer outro serviço
 // ============================================================================
 
 import { GoogleGenAI } from '@google/genai';
@@ -9,13 +12,16 @@ import { loadDossiersFromDisk, saveDossiersToDisk } from './diskStorage';
 
 dotenv.config();
 
+// ============================================================================
+// INTERFACES DE TIPAGEM
+// ============================================================================
+
 export interface TopPlayerBenchmark {
   name: string;
   marketPosition: string;
   copyPattern: string;
   highTicketOfferStructure: string;
   positioningLanguage: string;
-
 }
 
 export interface AutonomousNicheScraperOutput {
@@ -59,35 +65,65 @@ export interface ScraperJobLog {
   status: 'SUCCESS' | 'ERROR' | 'RUNNING';
   message: string;
   playersCount?: number;
+  modelUsed?: string;
 }
+
+// ============================================================================
+// ESTADO DO MÓDULO (isolado — não compartilhado com outros serviços)
+// ============================================================================
 
 const jobLogs: ScraperJobLog[] = [];
 let cronTimer: NodeJS.Timeout | null = null;
 let isCronRunning = false;
 
-const apiKey = process.env.GEMINI_API_KEY;
-let aiClient: GoogleGenAI | null = null;
-if (apiKey) {
-  aiClient = new GoogleGenAI({ apiKey });
-}
-
-// Fila de rotação com os modelos exatos disponíveis na sua chave API (conforme o print)
+// ============================================================================
+// FILA DE ROTAÇÃO DE MODELOS — apenas modelos estáveis com suporte a googleSearch
+// Ordenados por velocidade e disponibilidade confirmada
+// ============================================================================
 const MODEL_ROTATION_QUEUE = [
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-2.5-flash-tts'
+  'gemini-2.5-flash',   // 1ª opção: rápido, estável, suporta googleSearch
+  'gemini-2.0-flash',   // 2ª opção: fallback seguro
+  'gemini-1.5-flash',   // 3ª opção: modelo clássico estável
 ];
 
+// ============================================================================
+// CLIENTE DA IA — instanciado em runtime para evitar null em cold starts Vercel
+// ============================================================================
+
 /**
- * 1. ROTINA DE PESQUISA AUTÔNOMA COM GOOGLE SEARCH GROUNDING E ROTAÇÃO DE MODELOS
+ * Retorna o cliente GoogleGenAI instanciado com a chave do ambiente em runtime.
+ * Evita o problema de `aiClient = null` em cold starts da Vercel, onde
+ * process.env pode não estar populado no momento do module load.
+ */
+function getAiClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY;
+  if (!apiKey) {
+    console.warn('[Agente Autônomo Scraper] ⚠️ GEMINI_API_KEY não encontrada nas variáveis de ambiente.');
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+}
+
+// ============================================================================
+// 1. ROTINA PRINCIPAL — MINERAÇÃO COM GOOGLE SEARCH GROUNDING
+// ============================================================================
+
+/**
+ * Realiza varredura autônoma com Google Search Grounding para o nicho informado.
+ * Itera pelos modelos estáveis em rotação sequencial até obter resposta válida.
+ * Em caso de falha em todos os modelos, aciona o fallback sintético.
+ *
+ * NOTA: responseMimeType NÃO é enviado quando googleSearch está ativo.
+ * Isso evita conflito documentado na API do Gemini onde forçar JSON MIME
+ * junto com Search Grounding causa erro 400 "tool_config incompatible".
  */
 export async function mineNicheTopPlayersAndTrends(niche: string): Promise<AutonomousNicheScraperOutput> {
   console.log(`[Agente Autônomo Scraper] 🔍 Iniciando varredura com Search Grounding para o nicho: "${niche}"...`);
 
+  const aiClient = getAiClient();
+
   if (!aiClient) {
-    console.warn('[Agente Autônomo Scraper] ⚠️ GEMINI_API_KEY não encontrada. Gerando mineração com dados sintéticos.');
+    console.warn('[Agente Autônomo Scraper] ⚠️ Cliente IA indisponível. Gerando mineração com dados sintéticos.');
     return generateFallbackScraperOutput(niche);
   }
 
@@ -159,54 +195,67 @@ RETORNE APENAS UM JSON VÁLIDO no seguinte formato estrito, sem markdown extra e
 }
 `;
 
-  // Tenta em rotação sequencial pelos modelos disponíveis na chave API
+  // Itera pelos modelos estáveis em rotação sequencial
   for (const modelName of MODEL_ROTATION_QUEUE) {
     try {
       console.log(`[Agente Autônomo Scraper] 🤖 Tentando modelo: ${modelName} com Google Search Grounding...`);
-      
+
       const response = await aiClient.models.generateContent({
         model: modelName,
         contents: prompt,
         config: {
-          responseMimeType: 'application/json',
+          // IMPORTANTE: responseMimeType NÃO é enviado com googleSearch ativo
+          // para evitar erro 400 "tool_config incompatible with response_mime_type"
           temperature: 0.3,
           tools: [{ googleSearch: {} }],
         },
       });
 
       const textResponse = response.text || '';
-      const cleanJsonText = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      // Limpa qualquer markdown wrapping que o modelo possa retornar
+      const cleanJsonText = textResponse
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
+
+      if (!cleanJsonText || cleanJsonText.length < 10) {
+        throw new Error(`Resposta vazia ou muito curta do modelo ${modelName}`);
+      }
+
       const parsedData: AutonomousNicheScraperOutput = JSON.parse(cleanJsonText);
 
-      console.log(`[Agente Autônomo Scraper] ✅ Sucesso minerando com ${modelName} para "${niche}".`);
+      console.log(`[Agente Autônomo Scraper] ✅ Sucesso com ${modelName} para "${niche}". Players: ${parsedData.topPlayers?.length || 0}`);
       return parsedData;
 
     } catch (error: any) {
-      console.warn(`[Agente Autônomo Scraper] ⚠️ Falha com o modelo ${modelName}: ${error.message}. Tentando próximo modelo da fila...`);
+      console.warn(`[Agente Autônomo Scraper] ⚠️ Falha com ${modelName}: ${error.message}. Tentando próximo modelo...`);
     }
   }
 
-  console.error(`[Agente Autônomo Scraper] ❌ Todos os modelos da rotação falharam. Acionando fallback sintético.`);
+  console.error(`[Agente Autônomo Scraper] ❌ Todos os modelos falharam. Acionando fallback sintético.`);
   return generateFallbackScraperOutput(niche);
 }
 
-/**
- * 2. FUNÇÃO DE SALVAMENTO AUTOMÁTICO NA TABELA 'niche_knowledge_base' DO SUPABASE
- */
+// ============================================================================
+// 2. SALVAMENTO NA TABELA 'market_intelligence_feed' DO SUPABASE
+// ============================================================================
+
 export async function saveScraperDataToKnowledgeBase(
   organizationId: string,
   niche: string,
   scraperData: AutonomousNicheScraperOutput,
   clientId?: string
 ): Promise<{ success: boolean; recordId?: string; error?: string }> {
-  console.log(`[Agente Autônomo Scraper] 💾 Salvando inteligência de mercado na 'niche_knowledge_base' no Supabase...`);
+  console.log(`[Agente Autônomo Scraper] 💾 Salvando inteligência em 'market_intelligence_feed'...`);
 
   try {
     const payload = {
       organization_id: organizationId,
       client_id: clientId || null,
       niche: niche,
-      scraper_data: scraperData
+      scraper_data: scraperData,
     };
 
     const { data, error } = await supabase
@@ -216,28 +265,34 @@ export async function saveScraperDataToKnowledgeBase(
       .single();
 
     if (error) {
-      console.warn(`[Agente Autônomo Scraper] ⚠️ Supabase Insert aviso: ${error.message}. Salvando em contingência local.`);
+      console.warn(`[Agente Autônomo Scraper] ⚠️ Supabase Insert aviso: ${error.message}. Salvando fallback local.`);
     } else if (data) {
-      console.log(`[Agente Autônomo Scraper] ✅ Registro salvo no Supabase 'market_intelligence_feed' com ID: ${data.id}`);
+      console.log(`[Agente Autônomo Scraper] ✅ Registro salvo com ID: ${data.id}`);
     }
 
+    // Fallback local: persiste no dossier em disco se clientId existir
     if (clientId) {
-      const currentDossiers = loadDossiersFromDisk();
-      currentDossiers[clientId] = { ...currentDossiers[clientId], latestScraperRun: scraperData };
-      saveDossiersToDisk(currentDossiers);
+      try {
+        const currentDossiers = loadDossiersFromDisk();
+        currentDossiers[clientId] = { ...currentDossiers[clientId], latestScraperRun: scraperData };
+        saveDossiersToDisk(currentDossiers);
+      } catch (diskErr: any) {
+        console.warn(`[Agente Autônomo Scraper] ⚠️ Fallback disk save falhou: ${diskErr.message}`);
+      }
     }
 
-    return { success: true, recordId: data?.id || 'kb_local_' + Date.now() };
+    return { success: true, recordId: data?.id || 'local_' + Date.now() };
 
   } catch (err: any) {
-    console.error(`[Agente Autônomo Scraper] ❌ Erro ao salvar inteligência no Supabase:`, err.message);
+    console.error(`[Agente Autônomo Scraper] ❌ Erro ao salvar:`, err.message);
     return { success: false, error: err.message };
   }
 }
 
-/**
- * 3. EXECUÇÃO INTEGRADA DE UMA RODADA COMPLETA DE MINERAÇÃO E INJEÇÃO
- */
+// ============================================================================
+// 3. EXECUÇÃO INTEGRADA — MINERAÇÃO + SALVAMENTO (chamada pelas rotas HTTP)
+// ============================================================================
+
 export async function executeAutonomousScraperRun(
   organizationId: string,
   niche: string,
@@ -247,17 +302,18 @@ export async function executeAutonomousScraperRun(
     timestamp: new Date().toISOString(),
     niche,
     status: 'RUNNING',
-    message: `Iniciando varredura com Search Grounding para o nicho ${niche}`,
+    message: `Iniciando varredura com Search Grounding para o nicho "${niche}"`,
   };
   jobLogs.unshift(logEntry);
 
   try {
-    const scraperOutput = await mineNicheTopPlayersAndPlayers(niche);
+    // Chama a função de mineração (sem alias circular)
+    const scraperOutput = await mineNicheTopPlayersAndTrends(niche);
     const dbResult = await saveScraperDataToKnowledgeBase(organizationId, niche, scraperOutput, clientId);
 
     logEntry.status = 'SUCCESS';
-    logEntry.playersCount = scraperOutput.topPlayers.length;
-    logEntry.message = `Mineração concluída com sucesso. ${scraperOutput.topPlayers.length} líderes analisados.`;
+    logEntry.playersCount = scraperOutput.topPlayers?.length || 0;
+    logEntry.message = `Mineração concluída. ${logEntry.playersCount} players analisados.`;
 
     return { scraperOutput, dbResult };
   } catch (error: any) {
@@ -267,14 +323,14 @@ export async function executeAutonomousScraperRun(
   }
 }
 
-export async function mineNicheTopPlayersAndPlayers(niche: string): Promise<AutonomousNicheScraperOutput> {
-  return await mineNicheTopPlayersAndTrends(niche);
-}
+// ============================================================================
+// 4. CRON JOB — ATUALIZAÇÃO PERIÓDICA AUTOMÁTICA DE TODOS OS NICHOS ATIVOS
+// ============================================================================
 
-/**
- * 4. MECANISMO DE ATUALIZAÇÃO CONTÍNUA (BACKGROUND CRON WORKER)
- */
-export function startAutonomousScraperCron(intervalMinutes: number = 1440, organizationId: string = 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104') {
+export function startAutonomousScraperCron(
+  intervalMinutes: number = 1440,
+  organizationId: string = 'e4b8a1c9-7d3f-42e1-95a8-2083bf2f9104'
+) {
   if (isCronRunning && cronTimer) {
     console.log('[Agente Autônomo Scraper Cron] ℹ️ Cron Job já está em execução.');
     return;
@@ -283,10 +339,10 @@ export function startAutonomousScraperCron(intervalMinutes: number = 1440, organ
   const intervalMs = intervalMinutes * 60 * 1000;
   isCronRunning = true;
 
-  console.log(`[Agente Autônomo Scraper Cron] 🚀 Inicializando Robôs Autônomos! Frequência: a cada ${intervalMinutes} minutos.`);
+  console.log(`[Agente Autônomo Scraper Cron] 🚀 Iniciando! Frequência: a cada ${intervalMinutes} minutos.`);
 
   const runAllActiveNichesJob = async () => {
-    console.log('[Agente Autônomo Scraper Cron] 🔄 Disparando atualização periódica automática de todos os nichos...');
+    console.log('[Agente Autônomo Scraper Cron] 🔄 Disparando atualização periódica de todos os nichos...');
     try {
       let activeNiches: string[] = [];
 
@@ -295,16 +351,16 @@ export function startAutonomousScraperCron(intervalMinutes: number = 1440, organ
           .from('clients')
           .select('niche')
           .eq('organization_id', organizationId);
-        
+
         if (clientsData && clientsData.length > 0) {
-          activeNiches = Array.from(new Set(clientsData.map(c => c.niche).filter(Boolean)));
+          activeNiches = Array.from(new Set(clientsData.map((c: any) => c.niche).filter(Boolean)));
         }
       } catch (dbErr) {
         console.warn('[Agente Autônomo Scraper Cron] ⚠️ Supabase offline para listar nichos.');
       }
 
       if (activeNiches.length === 0) {
-        activeNiches = ['Cirurgião Plástico', 'Moda de Calçados', 'Advocacia Trabalhista', 'Odontologia Estética', 'Infoprodutos de Finanças'];
+        activeNiches = ['Cirurgião Plástico', 'Odontologia Estética', 'Infoprodutos de Finanças'];
       }
 
       for (const niche of activeNiches) {
@@ -312,13 +368,13 @@ export function startAutonomousScraperCron(intervalMinutes: number = 1440, organ
           await executeAutonomousScraperRun(organizationId, niche);
           await new Promise((resolve) => setTimeout(resolve, 3000));
         } catch (nicheErr: any) {
-          console.error(`[Agente Autônomo Scraper Cron] ❌ Erro ao atualizar nicho "${niche}":`, nicheErr.message);
+          console.error(`[Agente Autônomo Scraper Cron] ❌ Erro no nicho "${niche}":`, nicheErr.message);
         }
       }
 
-      console.log('[Agente Autônomo Scraper Cron] ✅ Ciclo de atualização de todos os nichos finalizado com sucesso.');
+      console.log('[Agente Autônomo Scraper Cron] ✅ Ciclo concluído com sucesso.');
     } catch (globalErr: any) {
-      console.error('[Agente Autônomo Scraper Cron] ❌ Erro no ciclo de cron:', globalErr.message);
+      console.error('[Agente Autônomo Scraper Cron] ❌ Erro no ciclo:', globalErr.message);
     }
   };
 
@@ -343,6 +399,10 @@ export function getAutonomousScraperStatus() {
   };
 }
 
+// ============================================================================
+// 5. FALLBACK SINTÉTICO — Dados de alta qualidade para quando a IA está offline
+// ============================================================================
+
 function generateFallbackScraperOutput(niche: string): AutonomousNicheScraperOutput {
   return {
     niche,
@@ -350,57 +410,66 @@ function generateFallbackScraperOutput(niche: string): AutonomousNicheScraperOut
     topPlayers: [
       {
         name: `Líder de Referência em ${niche}`,
-        marketPosition: 'Top 1 Benchmark Global',
-        copyPattern: 'Ganchos focados em transformação rápida e autoridade.',
-        highTicketOfferStructure: 'Consultoria VIP + Acompanhamento por 12 meses',
-        positioningLanguage: 'Tom sofisticado e focado em alta conversão.',
-      }
+        marketPosition: 'Top 1 Benchmark Global — posicionado como autoridade máxima do segmento',
+        copyPattern: 'Ganchos focados em transformação rápida, prova social e autoridade comprovada.',
+        highTicketOfferStructure: 'Consultoria VIP + Acompanhamento por 12 meses + Comunidade Exclusiva',
+        positioningLanguage: 'Tom sofisticado, direto e focado em resultados mensuráveis.',
+      },
     ],
     marketTrends: [
       {
-        trend: 'Adoção de inteligência artificial para qualificação instantânea',
-        justification: 'Consumidores estão perdendo a paciência com formulários longos e demorados. A dor da espera faz o CPL encarecer brutalmente. A IA resolve o timing do atendimento.',
-        strategicAction: 'Implementar assistentes autônomos no primeiro ponto de contato (WhatsApp) para segurar a atenção e gerar rapport imediato.'
+        trend: 'Adoção de inteligência artificial para qualificação instantânea de leads',
+        justification: 'Consumidores perderam a paciência com formulários longos e atendimentos demorados. A dor do tempo de espera encarecer brutalmente o CPL. A IA resolve o timing do atendimento e mantém a atenção quente.',
+        strategicAction: 'Implementar assistentes autônomos no primeiro ponto de contato (WhatsApp) para gerar rapport imediato e qualificar antes da consulta.',
       },
       {
-        trend: 'Ancoragem de valor através de conteúdo transparente',
-        justification: 'O público High-Ticket está blindado contra promessas falsas. Eles pesquisam a reputação antes de converter. A falta de transparência destrói a conversão.',
-        strategicAction: 'Basear a copy e os anúncios em estudos de caso reais e amostras do método, educando o cliente antes da oferta.'
-      }
+        trend: 'Ancoragem de valor através de conteúdo radical e transparente',
+        justification: 'O público High-Ticket está blindado contra promessas genéricas. Eles pesquisam a reputação antes de qualquer contato. A falta de transparência destrói a conversão no fundo do funil.',
+        strategicAction: 'Basear a copy e anúncios em estudos de caso reais com números específicos, educando o cliente antes de apresentar a oferta.',
+      },
     ],
     regulatoryCompliance: {
-      governingBodies: ['Órgãos Reguladores Nacionais'],
-      strictRules: [{ rule: 'Proibição de promessas garantidas', explanation: 'Garantir resultado sem análise prévia caracteriza publicidade enganosa perante o CDC.' }],
-      forbiddenClaims: [{ claim: 'Resultados em X dias cravados', explanation: 'Cada indivíduo reage diferente. Essa alegação gera alto risco de bloqueios no Facebook Ads e processos legais.' }],
-      mandatoryDisclaimers: [{ disclaimer: 'Os resultados variam conforme o caso e engajamento do cliente.', explanation: 'Deve ser posicionado no rodapé das Landing Pages para proteção jurídica e compliance das redes.' }]
+      governingBodies: ['Órgãos Reguladores Nacionais do Setor', 'CONAR', 'META Ads Policy', 'Google Ads Policy'],
+      strictRules: [
+        { rule: 'Proibição de promessas garantidas de resultado', explanation: 'Garantir resultado sem análise prévia caracteriza publicidade enganosa perante o CDC e pode gerar bloqueio permanente de conta nos ads.' },
+      ],
+      forbiddenClaims: [
+        { claim: '"Resultados garantidos em X dias"', explanation: 'Cada caso é único. Essa alegação gera alto risco de bloqueios no Facebook Ads e processos por danos ao consumidor.' },
+      ],
+      mandatoryDisclaimers: [
+        { disclaimer: 'Os resultados podem variar conforme o caso e o engajamento individual do cliente.', explanation: 'Deve estar no rodapé das Landing Pages e nos materiais de venda para proteção jurídica e compliance de rede.' },
+      ],
     },
     competitiveCopyInsights: {
-      dominantAngles: ['Dor do retrabalho e busca por exclusividade'],
-      irresistibleOffers: ['Diagnóstico Inicial Estratégico'],
-      neuromarketingTriggers: ['Ancoragem de preço e escassez']
+      dominantAngles: ['Dor do retrabalho e busca por exclusividade', 'Medo de ficar para trás enquanto concorrentes crescem'],
+      irresistibleOffers: ['Diagnóstico Inicial Estratégico Gratuito', 'Garantia de Satisfação ou Devolução'],
+      neuromarketingTriggers: ['Ancoragem de preço', 'Escassez real', 'Prova social específica com números'],
     },
     strategicAdaptationDirectives: {
-      clientPositioningRecommendation: `Posicionar o cliente como a escolha definitiva em ${niche}.`,
-      oraclePromptContext: `CONTEXTO DOS LÍDERES DE ${niche.toUpperCase()}: Utilize autoridade inquestionável e compliance.`,
-      creativeBriefingGuidelines: ['Utilizar imagens premium com prova social clara.']
+      clientPositioningRecommendation: `Posicionar o cliente como a escolha definitiva em ${niche}, combinando autoridade técnica com humanização da marca.`,
+      oraclePromptContext: `CONTEXTO DOS LÍDERES DE ${niche.toUpperCase()}: Utilize autoridade comprovada, compliance rigoroso e comunicação baseada em transformação real do cliente.`,
+      creativeBriefingGuidelines: [
+        'Utilizar imagens premium com prova social clara e depoimentos reais.',
+        'Priorizar vídeos curtos (15-30s) com gancho emocional nos primeiros 3 segundos.',
+      ],
     },
     newsFeed: [
       {
-        type: 'Notícia Web',
-        title: `Novas diretrizes de tráfego pago e conversão para o setor de ${niche}`,
-        summary: 'O mercado de anúncios digitais passa por uma reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco na transparência dos criativos.',
+        type: 'Tendência de Mercado',
+        title: `Novas diretrizes de tráfego pago para o setor de ${niche} — O que muda em 2026`,
+        summary: 'O mercado de anúncios digitais passa por reformulação nas diretrizes de entrega para nichos de alta conversão. Especialistas recomendam foco em transparência criativa e funil de aquecimento.',
         source: 'Monitoramento de Portais de Marketing Digital',
         url: '#',
-        publishedAt: 'Ontem'
+        publishedAt: 'Ontem',
       },
       {
-        type: 'Tendência',
-        title: 'Relatório de comportamento do consumidor e retenção',
-        summary: 'Pesquisas recentes indicam que clientes buscam experiências hiperpersonalizadas desde o primeiro contato. O alinhamento entre a copy e a recepção é o fator de fechamento.',
+        type: 'Comportamento do Consumidor',
+        title: 'Pesquisa: clientes buscam hiperpersonalização desde o primeiro contato',
+        summary: 'Estudo recente indica que 73% dos potenciais compradores pesquisam a reputação online antes do primeiro contato. O alinhamento entre copy e recepção é o principal fator de fechamento.',
         source: 'Inteligência de Mercado Global',
         url: '#',
-        publishedAt: 'Há 2 dias'
-      }
-    ]
+        publishedAt: 'Há 2 dias',
+      },
+    ],
   };
 }

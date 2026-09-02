@@ -2510,4 +2510,72 @@ app.post('/api/agency-settings', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// ROTAS ISOLADAS: Portal de Inteligência & Feed de Mercado
+// Escopo exclusivo — não tocam em nenhum outro módulo, tabela ou serviço
+// ============================================================================
+
+/**
+ * POST /api/autonomous-scraper/run
+ * Dispara uma rodada completa de varredura autônoma com Google Search Grounding.
+ * Body: { niche: string, clientId?: string, organizationId?: string }
+ * Retorna: { success: boolean, dossierData: AutonomousNicheScraperOutput }
+ */
+app.post('/api/autonomous-scraper/run', async (req: Request, res: Response) => {
+  try {
+    const { niche, clientId, organizationId } = req.body;
+
+    if (!niche || typeof niche !== 'string' || niche.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Campo "niche" é obrigatório e não pode estar vazio.',
+      });
+    }
+
+    const orgId = organizationId || clientId || 'default_org';
+
+    console.log(`[/api/autonomous-scraper/run] 🚀 Varredura solicitada — Nicho: "${niche}" | OrgId: ${orgId}`);
+
+    const { scraperOutput, dbResult } = await executeAutonomousScraperRun(
+      orgId,
+      niche.trim(),
+      clientId || undefined
+    );
+
+    console.log(`[/api/autonomous-scraper/run] ✅ Varredura concluída — Nicho: "${niche}"`);
+
+    return res.status(200).json({
+      success: true,
+      dossierData: scraperOutput,
+      dbResult,
+    });
+  } catch (error: any) {
+    console.error('[/api/autonomous-scraper/run] ❌ Erro na varredura:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Erro interno ao processar a varredura de inteligência.',
+    });
+  }
+});
+
+/**
+ * GET /api/autonomous-scraper/status
+ * Retorna o estado atual do Cron Job e os logs das últimas execuções.
+ * Retorna: { isCronRunning, totalJobsExecuted, recentLogs }
+ */
+app.get('/api/autonomous-scraper/status', async (_req: Request, res: Response) => {
+  try {
+    const status = getAutonomousScraperStatus();
+    return res.status(200).json({ success: true, ...status });
+  } catch (error: any) {
+    console.error('[/api/autonomous-scraper/status] ❌ Erro:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// FIM DAS ROTAS ISOLADAS: Portal de Inteligência
+// ============================================================================
+
 export default app;
+
