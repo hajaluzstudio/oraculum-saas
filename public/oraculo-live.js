@@ -357,10 +357,31 @@
     feed.scrollTop = feed.scrollHeight;
 
     try {
+      // --- SNAPSHOT DE MÉTRICAS DE BI (invisível para o usuário, contextualiza a IA) ---
+      const clienteAtivo = window.currentClientData || {};
+      const biContext = {
+        cliente_nome:       clienteAtivo.name   || '',
+        nicho:              clienteAtivo.niche   || '',
+        ticket_medio:       document.getElementById('bi-val-ticket-medio')?.innerText  || clienteAtivo.avg_ticket || '',
+        faturamento:        document.getElementById('bi-val-faturamento')?.innerText   || '',
+        gasto_ads:          document.getElementById('bi-val-gasto')?.innerText         || '',
+        lucro_liquido:      document.getElementById('bi-val-lucro')?.innerText         || '',
+        roas:               document.getElementById('bi-val-roas')?.innerText          || '',
+        taxa_conversao:     document.getElementById('bi-val-taxa-conv')?.innerText     || '',
+        cac_real:           document.getElementById('bi-val-cac-real')?.innerText      || '',
+        cpl_medio:          document.getElementById('bi-val-cpl-medio')?.innerText     || '',
+        ltv_cac:            document.getElementById('bi-val-ltv-cac')?.innerText       || '',
+        meta_faturamento:   clienteAtivo.target_revenue || '',
+        principal_servico:  clienteAtivo.main_service   || '',
+      };
+      // Remove entradas vazias para não poluir o contexto
+      Object.keys(biContext).forEach(k => { if (!biContext[k]) delete biContext[k]; });
+      // ---
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-organization-id': tenantId },
-        body: JSON.stringify({ clientId, message: texto, mode: 'bi_live' })
+        body: JSON.stringify({ clientId, message: texto, mode: 'bi_live', biContext })
       });
 
       const data = await response.json();
