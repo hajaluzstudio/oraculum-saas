@@ -717,63 +717,75 @@ window.carregarClientesDoSupabase = async function () {
     }
 
     setTimeout(() => {
-      window.renderizarListaClientes();
-      window.atualizarSeletorClientesOnboarding();
-    }, 100);
+      window.atualizarSeletorClientesOnboarding = function () {
+        const selectElement = document.querySelector('select') || document.getElementById('cliente-select') || document.querySelector('select[name*="cliente"]');
+        if (!selectElement) return;
 
-  } catch (err) {
-    console.error("❌ Erro ao processar clientes:", err);
-  }
-};
+        // Limpa as opções atuais mantendo apenas a padrão
+        selectElement.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
 
-// Sincronizador contínuo do visor superior
-function sincronizarVisorTopo() {
-  const selectHeaderDisplay = document.getElementById('active-client-display');
-  const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
-  const list = window.clientesMock || window.clientsList || [];
+        const clientes = window.listaClientesDoBanco || [];
 
-  if (selectHeaderDisplay && list.length > 0 && activeClientId) {
-    const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
-    if (clienteAtivoObj) {
-      selectHeaderDisplay.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
-    }
-  }
-}
+        clientes.forEach(cli => {
+          const option = document.createElement('option');
+          // Aceita tanto a propriedade 'id' quanto 'client_id' ou 'uuid'
+          option.value = cli.id || cli.client_id || cli.uuid;
+          // Aceita 'name', 'nome' ou 'nome_cliente'
+          option.textContent = cli.name || cli.nome || cli.nome_cliente || 'Cliente sem nome';
+          selectElement.appendChild(option);
+        });
 
-// SINCRONIZAÇÃO AUTOMÁTICA DO TÍTULO DO CLIENTE NO DASHBOARD DE BI
-(function sincronizarTituloClienteBI() {
-  function atualizarNomeClienteNoBI() {
-    const tituloBI = document.getElementById('bi-active-client-title');
-    const headerDisplay = document.getElementById('active-client-display');
+        console.log('[Seletor] Opções de clientes injetadas com sucesso no dropdown:', clientes.length);
+      };
 
-    if (!tituloBI) return;
+      // Sincronizador contínuo do visor superior
+      function sincronizarVisorTopo() {
+        const selectHeaderDisplay = document.getElementById('active-client-display');
+        const activeClientId = localStorage.getItem('oraculum_active_client') || sessionStorage.getItem('oraculum_active_client');
+        const list = window.clientesMock || window.clientsList || [];
 
-    let nomeCliente = headerDisplay ? headerDisplay.innerText.trim() : '';
-
-    if (!nomeCliente || nomeCliente === 'Carregando...' || nomeCliente === 'Cliente Selecionado') {
-      const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
-      if (window.clientesMock && Array.isArray(window.clientesMock) && activeClientId) {
-        const clienteObj = window.clientesMock.find(c => String(c.id) === String(activeClientId));
-        if (clienteObj) {
-          nomeCliente = clienteObj.name || clienteObj.nome || clienteObj.empresa;
-          if (clienteObj.niche || clienteObj.nicho) {
-            nomeCliente += ` (${clienteObj.niche || clienteObj.nicho})`;
+        if (selectHeaderDisplay && list.length > 0 && activeClientId) {
+          const clienteAtivoObj = list.find(c => String(c.id) === String(activeClientId));
+          if (clienteAtivoObj) {
+            selectHeaderDisplay.innerText = `${clienteAtivoObj.name} (${clienteAtivoObj.niche})`;
           }
         }
       }
-    }
 
-    if (nomeCliente && nomeCliente !== 'Carregando...' && nomeCliente !== 'Cliente Selecionado') {
-      if (tituloBI.innerText !== nomeCliente) {
-        tituloBI.innerText = nomeCliente;
-      }
-    }
-  }
+      // SINCRONIZAÇÃO AUTOMÁTICA DO TÍTULO DO CLIENTE NO DASHBOARD DE BI
+      (function sincronizarTituloClienteBI() {
+        function atualizarNomeClienteNoBI() {
+          const tituloBI = document.getElementById('bi-active-client-title');
+          const headerDisplay = document.getElementById('active-client-display');
 
-  setInterval(atualizarNomeClienteNoBI, 300);
-})();
+          if (!tituloBI) return;
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.carregarClientesDoSupabase();
-  setInterval(sincronizarVisorTopo, 1000);
-});
+          let nomeCliente = headerDisplay ? headerDisplay.innerText.trim() : '';
+
+          if (!nomeCliente || nomeCliente === 'Carregando...' || nomeCliente === 'Cliente Selecionado') {
+            const activeClientId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
+            if (window.clientesMock && Array.isArray(window.clientesMock) && activeClientId) {
+              const clienteObj = window.clientesMock.find(c => String(c.id) === String(activeClientId));
+              if (clienteObj) {
+                nomeCliente = clienteObj.name || clienteObj.nome || clienteObj.empresa;
+                if (clienteObj.niche || clienteObj.nicho) {
+                  nomeCliente += ` (${clienteObj.niche || clienteObj.nicho})`;
+                }
+              }
+            }
+          }
+
+          if (nomeCliente && nomeCliente !== 'Carregando...' && nomeCliente !== 'Cliente Selecionado') {
+            if (tituloBI.innerText !== nomeCliente) {
+              tituloBI.innerText = nomeCliente;
+            }
+          }
+        }
+
+        setInterval(atualizarNomeClienteNoBI, 300);
+      })();
+
+      window.addEventListener('DOMContentLoaded', () => {
+        window.carregarClientesDoSupabase();
+        setInterval(sincronizarVisorTopo, 1000);
+      });
