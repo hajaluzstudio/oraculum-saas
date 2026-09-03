@@ -623,26 +623,6 @@ window.carregarClientesDoSupabase = async function () {
       };
     })();
 
-    // 3. Garante que o fetch global envie esse ID em todas as requisições automaticamente
-    const originalFetch = window.fetch;
-    window.fetch = async function (url, options = {}) {
-      options.headers = options.headers || {};
-
-      // Injeta o x-organization-id se for uma chamada para a nossa API
-      if (typeof url === 'string' && url.includes('/api/')) {
-        const activeOrg = localStorage.getItem('organization_id') || currentOrgId;
-        if (activeOrg) {
-          if (options.headers instanceof Headers) {
-            options.headers.set('x-organization-id', activeOrg);
-          } else {
-            options.headers['x-organization-id'] = activeOrg;
-          }
-        }
-      }
-      return originalFetch(url, options);
-    };
-  }) ();
-
   // ----------------------------------------------------
 
   // 1. Carrega via API Backend dedicada (service role, ignora RLS)
