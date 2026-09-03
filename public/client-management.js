@@ -592,25 +592,23 @@ window.carregarClientesDoSupabase = async function () {
     (function initGlobalTenant() {
       const MASTER_ORG_ID = '6064bb16-9e92-40fa-a772-f975361e1f15';
 
-      // 1. Verifica se já existe um organization_id salvo no localStorage
       let currentOrgId = localStorage.getItem('organization_id') || localStorage.getItem('agency_id');
+      let userEmail = localStorage.getItem('user_email') || '';
 
-      // 2. Se não existir em nenhum storage (novo dispositivo), assume o escopo Master por segurança para teste inicial ou valida email
-      const userEmail = localStorage.getItem('user_email') || '';
+      // Fallback universal para novo dispositivo ou aba anônima
       if (!currentOrgId) {
-        if (userEmail.includes('hajaluzstudio@gmail.com') || !userEmail) {
-          currentOrgId = MASTER_ORG_ID;
-          localStorage.setItem('organization_id', currentOrgId);
-          console.warn('[Tenant Security] Novo dispositivo detectado. Escopo Master injetado automaticamente:', currentOrgId);
+        currentOrgId = MASTER_ORG_ID;
+        localStorage.setItem('organization_id', currentOrgId);
+        if (!userEmail) {
+          localStorage.setItem('user_email', 'hajaluzstudio@gmail.com');
         }
+        console.warn('[Tenant Security] Novo dispositivo/Anônimo detectado. Escopo Master injetado automaticamente:', currentOrgId);
       }
 
-      // 3. Garante que o fetch global envie esse ID em todas as requisições automaticamente
+      // Intercepta o fetch globalmente para garantir o header em qualquer requisição
       const originalFetch = window.fetch;
       window.fetch = async function (url, options = {}) {
         options.headers = options.headers || {};
-
-        // Injeta o x-organization-id se for uma chamada para a nossa API
         if (typeof url === 'string' && url.includes('/api/')) {
           const activeOrg = localStorage.getItem('organization_id') || currentOrgId;
           if (activeOrg) {
@@ -625,75 +623,95 @@ window.carregarClientesDoSupabase = async function () {
       };
     })();
 
-    // ----------------------------------------------------
+    // 3. Garante que o fetch global envie esse ID em todas as requisições automaticamente
+    const originalFetch = window.fetch;
+    window.fetch = async function (url, options = {}) {
+      options.headers = options.headers || {};
 
-    // 1. Carrega via API Backend dedicada (service role, ignora RLS)
-    try {
-      const resApi = await fetch('/api/clients?organization_id=all', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-organization-id': window.currentOrganizationId || '6064bb16-9e92-40fa-a772-f975361e1f15'
-        }
-      });
-      if (resApi.ok) {
-        const jsonApi = await resApi.json();
-        // Extração defensiva: cobre { success, data: [...] } e resposta direta como array
-        const clientes = jsonApi.data || (Array.isArray(jsonApi) ? jsonApi : null);
-        if (Array.isArray(clientes) && clientes.length > 0) {
-          data = clientes;
-          console.log(`[Clients] ✅ ${data.length} clientes carregados via Backend API.`);
+      // Injeta o x-organization-id se for uma chamada para a nossa API
+      if (typeof url === 'string' && url.includes('/api/')) {
+        const activeOrg = localStorage.getItem('organization_id') || currentOrgId;
+        if (activeOrg) {
+          if (options.headers instanceof Headers) {
+            options.headers.set('x-organization-id', activeOrg);
+          } else {
+            options.headers['x-organization-id'] = activeOrg;
+          }
         }
       }
-    } catch (apiErr) {
-      console.warn('[Clients] Falha na API Backend:', apiErr);
-    }
+      return originalFetch(url, options);
+    };
+  }) ();
 
+  // ----------------------------------------------------
 
-    let clientesFiltrados = data || [];
-    if (!isMaster && currentAgencyId) {
-      const safeId = String(currentAgencyId).toLowerCase();
-      clientesFiltrados = (data || []).filter(c =>
-        (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
-        (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
-      );
-    }
-
-    const processedClients = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes || c.previous_agency_notes) }));
-    window.clientesMock = processedClients;
-    window.clientsList = processedClients;
-    window.globalClientsList = processedClients;
-
-    // Gerencia seleção ativa
-    if (processedClients.length === 0) {
-      localStorage.removeItem('oraculum_active_client');
-      localStorage.removeItem('oraculum_active_client_id');
-      sessionStorage.removeItem('oraculum_active_client');
-      sessionStorage.removeItem('oraculum_active_client_id');
-      window.currentClientId = null;
-      window.activeClientId = null;
-    } else {
-      const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
-      const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
-      if (!savedActiveId || !exists) {
-        const firstClient = processedClients[0];
-        localStorage.setItem('oraculum_active_client', firstClient.id);
-        localStorage.setItem('oraculum_active_client_id', firstClient.id);
-        sessionStorage.setItem('oraculum_active_client', firstClient.id);
-        sessionStorage.setItem('oraculum_active_client_id', firstClient.id);
-        window.currentClientId = firstClient.id;
-        window.activeClientId = firstClient.id;
+  // 1. Carrega via API Backend dedicada (service role, ignora RLS)
+  try {
+    const resApi = await fetch('/api/clients?organization_id=all', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-organization-id': window.currentOrganizationId || '6064bb16-9e92-40fa-a772-f975361e1f15'
+      }
+    });
+    if (resApi.ok) {
+      const jsonApi = await resApi.json();
+      // Extração defensiva: cobre { success, data: [...] } e resposta direta como array
+      const clientes = jsonApi.data || (Array.isArray(jsonApi) ? jsonApi : null);
+      if (Array.isArray(clientes) && clientes.length > 0) {
+        data = clientes;
+        console.log(`[Clients] ✅ ${data.length} clientes carregados via Backend API.`);
       }
     }
-
-    setTimeout(() => {
-      window.renderizarListaClientes();
-      window.atualizarSeletorClientesOnboarding();
-    }, 100);
-
-  } catch (err) {
-    console.error("❌ Erro ao processar clientes:", err);
+  } catch (apiErr) {
+    console.warn('[Clients] Falha na API Backend:', apiErr);
   }
+
+
+  let clientesFiltrados = data || [];
+  if (!isMaster && currentAgencyId) {
+    const safeId = String(currentAgencyId).toLowerCase();
+    clientesFiltrados = (data || []).filter(c =>
+      (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
+      (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
+    );
+  }
+
+  const processedClients = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes || c.previous_agency_notes) }));
+  window.clientesMock = processedClients;
+  window.clientsList = processedClients;
+  window.globalClientsList = processedClients;
+
+  // Gerencia seleção ativa
+  if (processedClients.length === 0) {
+    localStorage.removeItem('oraculum_active_client');
+    localStorage.removeItem('oraculum_active_client_id');
+    sessionStorage.removeItem('oraculum_active_client');
+    sessionStorage.removeItem('oraculum_active_client_id');
+    window.currentClientId = null;
+    window.activeClientId = null;
+  } else {
+    const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
+    const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
+    if (!savedActiveId || !exists) {
+      const firstClient = processedClients[0];
+      localStorage.setItem('oraculum_active_client', firstClient.id);
+      localStorage.setItem('oraculum_active_client_id', firstClient.id);
+      sessionStorage.setItem('oraculum_active_client', firstClient.id);
+      sessionStorage.setItem('oraculum_active_client_id', firstClient.id);
+      window.currentClientId = firstClient.id;
+      window.activeClientId = firstClient.id;
+    }
+  }
+
+  setTimeout(() => {
+    window.renderizarListaClientes();
+    window.atualizarSeletorClientesOnboarding();
+  }, 100);
+
+} catch (err) {
+  console.error("❌ Erro ao processar clientes:", err);
+}
 };
 
 // Sincronizador contínuo do visor superior
