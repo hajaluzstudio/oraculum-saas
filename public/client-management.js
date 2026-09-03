@@ -718,24 +718,39 @@ window.carregarClientesDoSupabase = async function () {
 
     setTimeout(() => {
       window.atualizarSeletorClientesOnboarding = function () {
-        const selectElement = document.querySelector('select') || document.getElementById('cliente-select') || document.querySelector('select[name*="cliente"]');
-        if (!selectElement) return;
+        // Procura por qualquer select na tela que pertença ao onboarding ou gerenciamento de clientes
+        const selectElement = document.getElementById('cliente-select') ||
+                              document.querySelector('select[name*="cliente"]') ||
+                              document.querySelector('.onboarding-container select') ||
+                              document.querySelector('select');
 
-        // Limpa as opções atuais mantendo apenas a padrão
+        if (!selectElement) {
+          console.warn('[Seletor] Elemento select não encontrado na tela.');
+          return;
+        }
+
+        // Mantém apenas a primeira opção padrão
         selectElement.innerHTML = '<option value="">-- Selecione o Cliente para o Onboarding --</option>';
 
-        const clientes = window.listaClientesDoBanco || [];
+        // Coleta os clientes de qualquer fonte global disponível no sistema
+        const clientes = window.listaClientesDoBanco ||
+                         window.globalClientsList ||
+                         window.clientsList ||
+                         window.clientesMock || [];
+
+        if (clientes.length === 0) {
+          console.warn('[Seletor] Nenhum cliente encontrado nas variáveis globais para preencher o select.');
+          return;
+        }
 
         clientes.forEach(cli => {
           const option = document.createElement('option');
-          // Aceita tanto a propriedade 'id' quanto 'client_id' ou 'uuid'
           option.value = cli.id || cli.client_id || cli.uuid;
-          // Aceita 'name', 'nome' ou 'nome_cliente'
           option.textContent = cli.name || cli.nome || cli.nome_cliente || 'Cliente sem nome';
           selectElement.appendChild(option);
         });
 
-        console.log('[Seletor] Opções de clientes injetadas com sucesso no dropdown:', clientes.length);
+        console.log('[Seletor] Sucesso! Clientes injetados no dropdown:', clientes.length);
       };
 
       // Sincronizador contínuo do visor superior
