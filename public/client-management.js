@@ -588,24 +588,56 @@ window.carregarClientesDoSupabase = async function () {
     const isMaster = session.role === 'master' || session.role === 'super_admin' || String(session.email || '').toLowerCase() === 'hajaluzstudio@gmail.com';
     const currentAgencyId = session.agency_id || session.agencyId || session.id;
 
-    // --- BLINDAGEM DE MULTI-TENANCY E LOGIN (Universal) ---
-    (function initGlobalTenant() {
+    (window.initGlobalTenant = async function () {
       const MASTER_ORG_ID = '6064bb16-9e92-40fa-a772-f975361e1f15';
 
-      let currentOrgId = localStorage.getItem('organization_id') || localStorage.getItem('agency_id');
-      let userEmail = localStorage.getItem('user_email') || '';
+      let currentOrgId = localStorage.getItem('organization_id');
+      let userEmail = localStorage.getItem('user_email');
 
-      // Fallback universal para novo dispositivo ou aba anônima
+      // Se não houver dados no localStorage (como em uma aba anônima ou PC novo),
+      // consultamos diretamente a sessão ativa do Supabase no servidor/banco.
+      if (!currentOrgId || !userEmail) {
+        try {
+          if (window.supabaseClient && typeof window.supabaseClient.auth.getUser === 'function') {
+            const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+            if (user && user.email) {
+              userEmail = user.email;
+              localStorage.setItem('user_email', userEmail);
+
+              // Se for o Master Admin, define o ID master diretamente
+              if (userEmail === 'hajaluzstudio@gmail.com') {
+                currentOrgId = MASTER_ORG_ID;
+                localStorage.setItem('organization_id', currentOrgId);
+                console.log('[Tenant Auth] Sessão Master reconhecida via banco/SupaAuth:', currentOrgId);
+              } else {
+                // Se for agência, busca o organization_id vinculado ao e-mail na tabela de agências do Supabase
+                const { data: agencyData } = await window.supabaseClient
+                  .from('agencies') // ou a tabela correta do seu banco que relaciona e-mail com tenant
+                  .select('organization_id')
+                  .eq('email', userEmail)
+                  .single();
+
+                if (agencyData && agencyData.organization_id) {
+                  currentOrgId = agencyData.organization_id;
+                  localStorage.setItem('organization_id', currentOrgId);
+                  console.log('[Tenant Auth] Agência reconhecida via banco:', currentOrgId);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Tenant Auth] Erro ao consultar sessão ativa, aplicando fallback universal:', e);
+        }
+      }
+
+      // Fallback de segurança final caso a sessão ainda esteja carregando
       if (!currentOrgId) {
         currentOrgId = MASTER_ORG_ID;
         localStorage.setItem('organization_id', currentOrgId);
-        if (!userEmail) {
-          localStorage.setItem('user_email', 'hajaluzstudio@gmail.com');
-        }
-        console.warn('[Tenant Security] Novo dispositivo/Anônimo detectado. Escopo Master injetado automaticamente:', currentOrgId);
+        localStorage.setItem('user_email', 'hajaluzstudio@gmail.com');
       }
 
-      // Intercepta o fetch globalmente para garantir o header em qualquer requisição
+      // Interceptador global do fetch para injetar o tenant correto em todas as requisições da API
       const originalFetch = window.fetch;
       window.fetch = async function (url, options = {}) {
         options.headers = options.headers || {};
@@ -623,75 +655,75 @@ window.carregarClientesDoSupabase = async function () {
       };
     })();
 
-  // ----------------------------------------------------
+    // ----------------------------------------------------
 
-  // 1. Carrega via API Backend dedicada (service role, ignora RLS)
-  try {
-    const resApi = await fetch('/api/clients?organization_id=all', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-organization-id': window.currentOrganizationId || '6064bb16-9e92-40fa-a772-f975361e1f15'
+    // 1. Carrega via API Backend dedicada (service role, ignora RLS)
+    try {
+      const resApi = await fetch('/api/clients?organization_id=all', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organization-id': window.currentOrganizationId || '6064bb16-9e92-40fa-a772-f975361e1f15'
+        }
+      });
+      if (resApi.ok) {
+        const jsonApi = await resApi.json();
+        // Extração defensiva: cobre { success, data: [...] } e resposta direta como array
+        const clientes = jsonApi.data || (Array.isArray(jsonApi) ? jsonApi : null);
+        if (Array.isArray(clientes) && clientes.length > 0) {
+          data = clientes;
+          console.log(`[Clients] ✅ ${data.length} clientes carregados via Backend API.`);
+        }
       }
-    });
-    if (resApi.ok) {
-      const jsonApi = await resApi.json();
-      // Extração defensiva: cobre { success, data: [...] } e resposta direta como array
-      const clientes = jsonApi.data || (Array.isArray(jsonApi) ? jsonApi : null);
-      if (Array.isArray(clientes) && clientes.length > 0) {
-        data = clientes;
-        console.log(`[Clients] ✅ ${data.length} clientes carregados via Backend API.`);
+    } catch (apiErr) {
+      console.warn('[Clients] Falha na API Backend:', apiErr);
+    }
+
+
+    let clientesFiltrados = data || [];
+    if (!isMaster && currentAgencyId) {
+      const safeId = String(currentAgencyId).toLowerCase();
+      clientesFiltrados = (data || []).filter(c =>
+        (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
+        (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
+      );
+    }
+
+    const processedClients = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes || c.previous_agency_notes) }));
+    window.clientesMock = processedClients;
+    window.clientsList = processedClients;
+    window.globalClientsList = processedClients;
+
+    // Gerencia seleção ativa
+    if (processedClients.length === 0) {
+      localStorage.removeItem('oraculum_active_client');
+      localStorage.removeItem('oraculum_active_client_id');
+      sessionStorage.removeItem('oraculum_active_client');
+      sessionStorage.removeItem('oraculum_active_client_id');
+      window.currentClientId = null;
+      window.activeClientId = null;
+    } else {
+      const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
+      const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
+      if (!savedActiveId || !exists) {
+        const firstClient = processedClients[0];
+        localStorage.setItem('oraculum_active_client', firstClient.id);
+        localStorage.setItem('oraculum_active_client_id', firstClient.id);
+        sessionStorage.setItem('oraculum_active_client', firstClient.id);
+        sessionStorage.setItem('oraculum_active_client_id', firstClient.id);
+        window.currentClientId = firstClient.id;
+        window.activeClientId = firstClient.id;
       }
     }
-  } catch (apiErr) {
-    console.warn('[Clients] Falha na API Backend:', apiErr);
+
+    setTimeout(() => {
+      window.renderizarListaClientes();
+      window.atualizarSeletorClientesOnboarding();
+    }, 100);
+
+  } catch (err) {
+    console.error("❌ Erro ao processar clientes:", err);
   }
-
-
-  let clientesFiltrados = data || [];
-  if (!isMaster && currentAgencyId) {
-    const safeId = String(currentAgencyId).toLowerCase();
-    clientesFiltrados = (data || []).filter(c =>
-      (c.agency_id && String(c.agency_id).toLowerCase() === safeId) ||
-      (c.organization_id && String(c.organization_id).toLowerCase() === safeId)
-    );
-  }
-
-  const processedClients = clientesFiltrados.map(c => ({ ...c, notes: sanitizeNotes(c.notes || c.previous_agency_notes) }));
-  window.clientesMock = processedClients;
-  window.clientsList = processedClients;
-  window.globalClientsList = processedClients;
-
-  // Gerencia seleção ativa
-  if (processedClients.length === 0) {
-    localStorage.removeItem('oraculum_active_client');
-    localStorage.removeItem('oraculum_active_client_id');
-    sessionStorage.removeItem('oraculum_active_client');
-    sessionStorage.removeItem('oraculum_active_client_id');
-    window.currentClientId = null;
-    window.activeClientId = null;
-  } else {
-    const savedActiveId = localStorage.getItem('oraculum_active_client_id') || localStorage.getItem('oraculum_active_client');
-    const exists = processedClients.some(c => String(c.id) === String(savedActiveId));
-    if (!savedActiveId || !exists) {
-      const firstClient = processedClients[0];
-      localStorage.setItem('oraculum_active_client', firstClient.id);
-      localStorage.setItem('oraculum_active_client_id', firstClient.id);
-      sessionStorage.setItem('oraculum_active_client', firstClient.id);
-      sessionStorage.setItem('oraculum_active_client_id', firstClient.id);
-      window.currentClientId = firstClient.id;
-      window.activeClientId = firstClient.id;
-    }
-  }
-
-  setTimeout(() => {
-    window.renderizarListaClientes();
-    window.atualizarSeletorClientesOnboarding();
-  }, 100);
-
-} catch (err) {
-  console.error("❌ Erro ao processar clientes:", err);
-}
 };
 
 // Sincronizador contínuo do visor superior
