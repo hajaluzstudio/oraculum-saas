@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  oraculum-saas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oraculum_hybrid_marketing_saas
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./data_storage:/app/data_storage

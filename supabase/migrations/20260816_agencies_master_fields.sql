@@ -1,0 +1,14 @@
+-- Migration para expandir o cadastro de Agências com dados de faturamento, endereço e cobrança
+ALTER TABLE public.agencies
+ADD COLUMN IF NOT EXISTS cnpj VARCHAR(20),
+ADD COLUMN IF NOT EXISTS responsible_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS phone VARCHAR(30),
+ADD COLUMN IF NOT EXISTS zip_code VARCHAR(15),
+ADD COLUMN IF NOT EXISTS address_street VARCHAR(255),
+ADD COLUMN IF NOT EXISTS address_number VARCHAR(30),
+ADD COLUMN IF NOT EXISTS address_neighborhood VARCHAR(100),
+ADD COLUMN IF NOT EXISTS address_city VARCHAR(100),
+ADD COLUMN IF NOT EXISTS address_state VARCHAR(10),
+ADD COLUMN IF NOT EXISTS monthly_fee NUMERIC(10, 2) DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS due_day INTEGER DEFAULT 10,
+ADD COLUMN IF NOT EXISTS client_limit INTEGER DEFAULT 10;
