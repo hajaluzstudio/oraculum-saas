@@ -789,8 +789,8 @@ window.carregarClientesDoSupabase = async function () {
         window.carregarClientesDoSupabase();
         setInterval(sincronizarVisorTopo, 1000);
       });
-}
-}
-}
-}
-}
+    }, 0);
+  } catch (e) {
+    console.warn('[Clients] Erro no motor principal:', e);
+  }
+};
