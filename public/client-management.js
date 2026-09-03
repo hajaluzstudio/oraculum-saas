@@ -789,3 +789,8 @@ window.carregarClientesDoSupabase = async function () {
         window.carregarClientesDoSupabase();
         setInterval(sincronizarVisorTopo, 1000);
       });
+}
+}
+}
+}
+}
